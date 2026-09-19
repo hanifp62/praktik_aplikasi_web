@@ -47,14 +47,15 @@ class RouteFitService
     public function evaluate(User $user, ?HikingGoal $goal, Trail $trail): RouteFitResult
     {
         $status = $this->officialStatus->effectiveStatusForTrail($trail);
+        $segmentRestrictions = $this->officialStatus->segmentRestrictionsForTrail($trail);
         $failedRules = $this->hardConstraintFailures($goal, $trail, $status);
-        $warnings = $this->warningsFor($trail, $status);
+        $warnings = $this->warningsFor($trail, $status, $segmentRestrictions);
         $weights = $this->weights();
         $factors = $this->scorer->score($user, $goal, $trail, $weights);
 
         $score = $this->weightedScore($factors);
         $eligible = $failedRules === [];
-        $label = $eligible ? $this->label($score, $factors) : null;
+        $label = $eligible ? $this->label($score, $factors, $segmentRestrictions) : null;
 
         return new RouteFitResult(
             trail: $trail,
@@ -101,9 +102,10 @@ class RouteFitService
     }
 
     /**
+     * @param  array<int, array{segment: string, status: OfficialStatusValue, reason: ?string}>  $segmentRestrictions
      * @return array<int, string>
      */
-    private function warningsFor(Trail $trail, OfficialStatusValue $status): array
+    private function warningsFor(Trail $trail, OfficialStatusValue $status, array $segmentRestrictions = []): array
     {
         $warnings = [];
 
@@ -113,6 +115,17 @@ class RouteFitService
 
         if ($status === OfficialStatusValue::UNKNOWN) {
             $warnings[] = 'Status resmi jalur ini belum diketahui.';
+        }
+
+        // PRD §42: pembatasan pada satu segmen tidak menutup jalurnya, tetapi harus disebut
+        // dengan nama segmennya agar pendaki tahu sampai mana jalur dapat ditempuh.
+        foreach ($segmentRestrictions as $restriction) {
+            $warnings[] = rtrim(sprintf(
+                'Segmen %s berstatus %s.%s',
+                $restriction['segment'],
+                $restriction['status']->label(),
+                $restriction['reason'] ? ' '.$restriction['reason'].'.' : ''
+            ));
         }
 
         return $warnings;
@@ -138,8 +151,9 @@ class RouteFitService
      * PRD §29: three public labels only.
      *
      * @param  array<int, FactorScore>  $factors
+     * @param  array<int, array{segment: string, status: OfficialStatusValue, reason: ?string}>  $segmentRestrictions
      */
-    private function label(float $score, array $factors): RouteFitLabel
+    private function label(float $score, array $factors, array $segmentRestrictions = []): RouteFitLabel
     {
         $criticalFloor = (float) config('hiking.route_fit.critical_factor_floor');
 
@@ -181,6 +195,11 @@ class RouteFitService
             // Data non-kritis yang belum lengkap menyisakan hal yang harus dipastikan sendiri
             // oleh pendaki, sehingga jalur tidak boleh terbaca sepenuhnya cocok.
             if ($hasUnknown) {
+                return RouteFitLabel::PERLU_PERSIAPAN;
+            }
+
+            // Sebagian jalur tidak dapat ditempuh; pendaki perlu menyesuaikan rencananya.
+            if ($segmentRestrictions !== []) {
                 return RouteFitLabel::PERLU_PERSIAPAN;
             }
         }

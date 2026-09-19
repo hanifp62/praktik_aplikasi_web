@@ -6,6 +6,7 @@ use App\Enums\OfficialStatusValue;
 use App\Models\Mountain;
 use App\Models\OfficialStatus;
 use App\Models\Trail;
+use App\Models\TrailSegment;
 use Illuminate\Database\Eloquent\Model;
 
 class OfficialStatusService
@@ -57,6 +58,58 @@ class OfficialStatusService
         }
 
         return $trailStatus;
+    }
+
+    /**
+     * PRD §42: status dapat melekat pada SEGMENT, bukan hanya gunung dan jalur.
+     *
+     * Sebuah jalur boleh saja berstatus OPEN sementara salah satu segmennya ditutup —
+     * kasus nyata Semeru 2026, ketika pendakian dibuka tetapi hanya sampai Ranu Kumbolo.
+     * Pembatasan seperti ini tidak mengeksklusi jalur (PRD §26 memisahkan pembatasan dari
+     * pengecualian), tetapi wajib terlihat oleh pendaki.
+     *
+     * Satu query untuk seluruh segmen, bukan per segmen.
+     *
+     * @return array<int, array{segment: string, status: OfficialStatusValue, reason: ?string}>
+     */
+    public function segmentRestrictionsForTrail(Trail $trail): array
+    {
+        $segments = $trail->segments()->get(['id', 'name']);
+
+        if ($segments->isEmpty()) {
+            return [];
+        }
+
+        $statuses = OfficialStatus::query()
+            ->where('statusable_type', (new TrailSegment)->getMorphClass())
+            ->whereIn('statusable_id', $segments->pluck('id'))
+            ->currentlyEffective()
+            ->orderByDesc('effective_at')
+            ->orderByDesc('published_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $restrictions = [];
+
+        foreach ($segments as $segment) {
+            // Status paling akhir berlaku untuk tiap segmen; urutan sudah menurun.
+            $latest = $statuses->firstWhere('statusable_id', $segment->id);
+
+            if ($latest === null || ! in_array($latest->status, [
+                OfficialStatusValue::CLOSED,
+                OfficialStatusValue::RESTRICTED,
+            ], true)) {
+                continue;
+            }
+
+            $restrictions[] = [
+                'segment' => $segment->name,
+                'status' => $latest->status,
+                'reason' => $latest->reason,
+            ];
+        }
+
+        return $restrictions;
     }
 
     /**
