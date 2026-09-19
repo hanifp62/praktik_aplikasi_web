@@ -57,31 +57,58 @@ class CompatibilityScorer
     /**
      * PRD §17-18: overall physical demand is derived from distance, elevation gain and duration.
      * MDPL is deliberately not part of this calculation (BR-02).
+     *
+     * Dimensi yang datanya kosong TIDAK dihitung sebagai tingkat termudah. Menghitungnya
+     * sebagai rank 1 akan membuat jalur yang datanya paling sedikit terlihat paling aman —
+     * arah bias yang berlawanan dengan PRD §95. Dimensi kosong diabaikan dari rata-rata,
+     * dan bila ketiganya kosong beban fisik dinyatakan tidak diketahui.
      */
     public function physicalDemandRank(Trail $trail): int
     {
-        $elevation = match (true) {
-            ($trail->elevation_gain_m ?? 0) >= 1600 => 4,
-            ($trail->elevation_gain_m ?? 0) >= 1000 => 3,
-            ($trail->elevation_gain_m ?? 0) >= 600 => 2,
-            default => 1,
-        };
+        return $this->physicalDemand($trail)['rank'];
+    }
 
-        $distance = match (true) {
-            ((float) $trail->distance_km) >= 25 => 4,
-            ((float) $trail->distance_km) >= 15 => 3,
-            ((float) $trail->distance_km) >= 8 => 2,
-            default => 1,
-        };
+    /**
+     * @return array{rank: int, known: bool}
+     */
+    public function physicalDemand(Trail $trail): array
+    {
+        $ranks = [];
 
-        $duration = match (true) {
-            ($trail->estimated_duration_minutes ?? 0) >= 24 * 60 => 4,
-            ($trail->estimated_duration_minutes ?? 0) >= 12 * 60 => 3,
-            ($trail->estimated_duration_minutes ?? 0) >= 6 * 60 => 2,
-            default => 1,
-        };
+        if ($trail->elevation_gain_m !== null) {
+            $ranks[] = match (true) {
+                $trail->elevation_gain_m >= 1600 => 4,
+                $trail->elevation_gain_m >= 1000 => 3,
+                $trail->elevation_gain_m >= 600 => 2,
+                default => 1,
+            };
+        }
 
-        return (int) round(($elevation + $distance + $duration) / 3);
+        if ($trail->distance_km !== null) {
+            $ranks[] = match (true) {
+                ((float) $trail->distance_km) >= 25 => 4,
+                ((float) $trail->distance_km) >= 15 => 3,
+                ((float) $trail->distance_km) >= 8 => 2,
+                default => 1,
+            };
+        }
+
+        if ($trail->estimated_duration_minutes !== null) {
+            $ranks[] = match (true) {
+                $trail->estimated_duration_minutes >= 24 * 60 => 4,
+                $trail->estimated_duration_minutes >= 12 * 60 => 3,
+                $trail->estimated_duration_minutes >= 6 * 60 => 2,
+                default => 1,
+            };
+        }
+
+        if ($ranks === []) {
+            // Tidak ada satu pun dimensi fisik yang diketahui. Asumsi paling aman adalah
+            // menganggap jalur menuntut, bukan menganggapnya ringan.
+            return ['rank' => 4, 'known' => false];
+        }
+
+        return ['rank' => (int) round(array_sum($ranks) / count($ranks)), 'known' => true];
     }
 
     /**
@@ -103,18 +130,22 @@ class CompatibilityScorer
 
     private function experienceMatch(int $experienceRank, Trail $trail, array $weights): FactorScore
     {
-        $required = $this->physicalDemandRank($trail);
-        $score = $this->rankScore($experienceRank, $required);
+        $demand = $this->physicalDemand($trail);
+        $score = $this->rankScore($experienceRank, $demand['rank']);
 
-        $detail = $score >= $this->strongThreshold()
-            ? 'Tingkat pengalaman Anda sesuai dengan beban fisik jalur ini.'
-            : 'Beban fisik jalur ini lebih berat dibandingkan tingkat pengalaman yang Anda isi.';
+        $detail = match (true) {
+            ! $demand['known'] => 'Karakteristik fisik jalur (jarak, elevation gain, estimasi durasi) '
+                .'belum tersedia, sehingga kecocokan dengan pengalaman Anda belum dapat dinilai.',
+            $score >= $this->strongThreshold() => 'Tingkat pengalaman Anda sesuai dengan beban fisik jalur ini.',
+            default => 'Beban fisik jalur ini lebih berat dibandingkan tingkat pengalaman yang Anda isi.',
+        };
 
         return new FactorScore(
             CompatibilityFactor::EXPERIENCE_MATCH,
             $score,
             $this->weightFor(CompatibilityFactor::EXPERIENCE_MATCH, $weights),
             $detail,
+            isUnknown: ! $demand['known'],
         );
     }
 
@@ -129,7 +160,8 @@ class CompatibilityScorer
                 CompatibilityFactor::DURATION_MATCH,
                 0.6,
                 $this->weightFor(CompatibilityFactor::DURATION_MATCH, $weights),
-                'Estimasi durasi jalur atau target waktu Anda belum lengkap.',
+                'Estimasi durasi jalur atau target waktu Anda belum tersedia.',
+                isUnknown: true,
             );
         }
 
@@ -150,8 +182,21 @@ class CompatibilityScorer
 
     private function terrainMatch(User $user, Trail $trail, array $weights): FactorScore
     {
-        $demanding = array_filter($trail->terrainTypes(), fn ($terrain) => $terrain->isDemanding());
         $weight = $this->weightFor(CompatibilityFactor::TERRAIN_MATCH, $weights);
+
+        // Medan yang belum didata bukan berarti medan yang tidak menuntut. Membedakan
+        // keduanya mencegah sistem memberi rasa aman palsu (PRD §95).
+        if (blank($trail->terrain_character)) {
+            return new FactorScore(
+                CompatibilityFactor::TERRAIN_MATCH,
+                0.6,
+                $weight,
+                'Karakter medan jalur ini belum tersedia.',
+                isUnknown: true,
+            );
+        }
+
+        $demanding = array_filter($trail->terrainTypes(), fn ($terrain) => $terrain->isDemanding());
 
         if ($demanding === []) {
             return new FactorScore(
@@ -204,6 +249,7 @@ class CompatibilityScorer
                 0.6,
                 $weight,
                 'Data elevation gain jalur ini belum tersedia.',
+                isUnknown: true,
             );
         }
 
@@ -250,6 +296,7 @@ class CompatibilityScorer
                 0.6,
                 $weight,
                 'Tipe perjalanan belum ditentukan pada rencana Anda.',
+                isUnknown: true,
             );
         }
 

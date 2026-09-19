@@ -10,11 +10,17 @@ use App\Enums\CompatibilityFactor;
  */
 readonly class FactorScore
 {
+    /**
+     * @param  bool  $isUnknown  true ketika data yang dibutuhkan faktor ini belum tersedia.
+     *                           Skornya tetap dihitung untuk peringkat, tetapi label publik
+     *                           tidak boleh naik atas dasar data yang tidak ada (PRD §95).
+     */
     public function __construct(
         public CompatibilityFactor $factor,
         public float $score,
         public float $weight,
         public string $detail,
+        public bool $isUnknown = false,
     ) {}
 
     public function weighted(): float
@@ -43,6 +49,7 @@ readonly class FactorScore
             'score' => round($this->score, 4),
             'weight' => $this->weight,
             'detail' => $this->detail,
+            'is_unknown' => $this->isUnknown,
         ];
     }
 }

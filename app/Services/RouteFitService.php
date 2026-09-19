@@ -148,11 +148,21 @@ class RouteFitService
             fn (FactorScore $f) => in_array($f->factor, self::CRITICAL_FACTORS, true)
         );
 
+        // PRD §95. Ketiadaan data tidak boleh menaikkan label. Pada faktor kritis,
+        // data yang tidak ada berarti kecocokan memang tidak dapat dinilai.
+        foreach ($critical as $factor) {
+            if ($factor->isUnknown) {
+                return RouteFitLabel::KURANG_COCOK;
+            }
+        }
+
         foreach ($critical as $factor) {
             if ($factor->score < $criticalFloor) {
                 return RouteFitLabel::KURANG_COCOK;
             }
         }
+
+        $hasUnknown = array_filter($factors, fn (FactorScore $f) => $f->isUnknown) !== [];
 
         $label = match (true) {
             $score >= (float) config('hiking.route_fit.label_threshold_fit') => RouteFitLabel::COCOK,
@@ -166,6 +176,12 @@ class RouteFitService
                 if ($factor->isWeak()) {
                     return RouteFitLabel::PERLU_PERSIAPAN;
                 }
+            }
+
+            // Data non-kritis yang belum lengkap menyisakan hal yang harus dipastikan sendiri
+            // oleh pendaki, sehingga jalur tidak boleh terbaca sepenuhnya cocok.
+            if ($hasUnknown) {
+                return RouteFitLabel::PERLU_PERSIAPAN;
             }
         }
 

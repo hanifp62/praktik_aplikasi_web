@@ -30,6 +30,29 @@ readonly class RouteFitResult
     ) {}
 
     /**
+     * Apakah ada faktor yang tidak dapat dinilai karena datanya belum tersedia.
+     * Dipakai untuk menahan label agar tidak naik atas dasar ketiadaan data (PRD §95).
+     */
+    public function hasUnknownFactors(): bool
+    {
+        foreach ($this->factors as $factor) {
+            if ($factor->isUnknown) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<int, FactorScore>
+     */
+    public function unknownFactors(): array
+    {
+        return array_values(array_filter($this->factors, fn (FactorScore $f) => $f->isUnknown));
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function factorsToArray(): array

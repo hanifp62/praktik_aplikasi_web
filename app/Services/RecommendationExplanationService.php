@@ -35,6 +35,12 @@ class RecommendationExplanationService
         $lines = [];
 
         foreach ($factors as $factor) {
+            // Faktor yang datanya belum ada tidak pernah menjadi alasan sebuah jalur cocok,
+            // berapa pun skor sementaranya (PRD §95).
+            if ($factor->isUnknown) {
+                continue;
+            }
+
             if ($factor->isStrong()) {
                 $lines[] = $factor->detail;
             }
@@ -52,8 +58,16 @@ class RecommendationExplanationService
     {
         $lines = $warnings;
 
+        // Data yang belum ada disebutkan lebih dulu: pendaki harus tahu apa yang tidak
+        // diketahui sistem sebelum membaca sisanya (PRD §30, §91).
         foreach ($factors as $factor) {
-            if ($factor->isWeak()) {
+            if ($factor->isUnknown) {
+                $lines[] = $factor->detail;
+            }
+        }
+
+        foreach ($factors as $factor) {
+            if (! $factor->isUnknown && $factor->isWeak()) {
                 $lines[] = $factor->detail;
             }
         }
