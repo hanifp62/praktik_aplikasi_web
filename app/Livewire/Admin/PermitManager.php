@@ -81,9 +81,8 @@ class PermitManager extends Component
             'daily_quota' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'booking_opens_days_before' => ['nullable', 'integer', 'min:0', 'max:365'],
 
-            // Pemesanan tidak mungkin ditutup lebih awal daripada dibukanya — tetapi
-            // perbandingannya hanya masuk akal ketika keduanya memang diisi. Banyak
-            // pengelola hanya mengumumkan batas tutupnya saja.
+            // Perbandingan hanya berlaku bila keduanya diisi; banyak pengelola hanya
+            // mengumumkan batas tutupnya saja.
             'booking_closes_days_before' => array_merge(
                 ['nullable', 'integer', 'min:0', 'max:365'],
                 $this->booking_opens_days_before !== null ? ['lte:booking_opens_days_before'] : []

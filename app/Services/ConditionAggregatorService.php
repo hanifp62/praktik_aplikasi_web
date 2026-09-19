@@ -29,15 +29,8 @@ class ConditionAggregatorService
         // penyusunan peringatan, sehingga setiap agregasi memanggilnya dua kali.
         $weather = $this->weather->contextForTrail($trail);
 
-        // Peringatan dipisah menjadi dua kelompok dengan konsekuensi berbeda.
-        //
-        // route_warnings menyangkut jalurnya sendiri — kondisi lapangan yang dilaporkan
-        // komunitas, pembatasan segmen, area terbatas — dan tidak dapat diselesaikan
-        // pengguna hanya dengan mencentang daftar, sehingga menahan status READY.
-        //
-        // data_warnings menyangkut ketersediaan data kita sendiri. Keduanya tetap
-        // ditampilkan, tetapi kegagalan sumber eksternal tidak boleh memblokir alur
-        // (PRD §94).
+        // Dipisah karena konsekuensinya berbeda: route_warnings menahan READY,
+        // data_warnings hanya dilaporkan (PRD §94). Keduanya tetap ditampilkan.
         $routeWarnings = $this->routeWarnings($trail, $reports);
         $dataWarnings = $this->dataWarnings($weather);
 

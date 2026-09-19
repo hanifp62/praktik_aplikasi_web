@@ -84,10 +84,8 @@ class ConditionReportForm extends Component
             $disk = config('filesystems.report_photos_disk');
             $photoPath = $this->photo->store('condition-reports', $disk);
 
-            // PRD §82: foto ponsel membawa koordinat GPS pada EXIF-nya. Menerbitkannya
-            // berarti mempublikasikan lokasi presisi pendaki tanpa ia memilihnya.
-            // Kegagalan pembersihan tidak boleh menggagalkan laporan yang isinya tetap
-            // berguna, tetapi fotonya dibuang karena tidak dapat dipastikan bersih.
+            // EXIF foto ponsel membawa koordinat GPS pendaki (PRD §82). Foto yang gagal
+            // dibersihkan dibuang, tetapi laporannya tetap tersimpan.
             $absolute = Storage::disk($disk)->path($photoPath);
 
             if (! ImageSanitizer::trySanitize($absolute, (int) config('hiking.uploads.report_photo_max_dimension'))) {

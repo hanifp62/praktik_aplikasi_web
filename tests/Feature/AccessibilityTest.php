@@ -97,9 +97,8 @@ class AccessibilityTest extends TestCase
 
         preg_match('/<html[^>]*>/i', $html, $matches);
 
-        // Isi aplikasi berbahasa Indonesia; pembaca layar memakai atribut ini untuk
-        // memilih pelafalan yang benar. Membandingkan tag-nya saja, bukan seluruh
-        // halaman, supaya kegagalannya terbaca.
+        // Pembaca layar memakai atribut ini untuk memilih pelafalan. Dibandingkan
+        // tag-nya saja supaya kegagalan test terbaca.
         $this->assertStringContainsString('lang="id"', $matches[0] ?? '');
     }
 

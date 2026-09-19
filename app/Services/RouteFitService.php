@@ -149,9 +149,8 @@ class RouteFitService
             ));
         }
 
-        // Perizinan adalah peringatan, bukan pengecualian. Aturan booking berubah dan
-        // data kita bisa basi; menolak jalur atas dasar itu berisiko menyembunyikan
-        // jalur yang sebenarnya masih dapat diurus (PRD §43 — kita bukan otoritasnya).
+        // Peringatan, bukan pengecualian: aturan booking berubah dan data kita bisa
+        // basi, sedangkan kita bukan otoritasnya (PRD §43).
         $permitWarning = $this->permits->bookingWarningFor($trail, $goal?->target_date, $permit);
 
         if ($permitWarning !== null) {
@@ -282,9 +281,8 @@ class RouteFitService
             ))
             ->get();
 
-        // Bobot dihitung sekali per run, bukan sekali per jalur, dan status resmi serta
-        // pembatasan segmen seluruh kandidat dimuat lebih dulu. Tanpa ini jumlah query
-        // tumbuh linear terhadap jumlah jalur (PRD §96).
+        // Dimuat sekali per run, bukan per jalur: tanpa ini jumlah query tumbuh linear
+        // terhadap jumlah kandidat (PRD §96).
         $weights = $this->weights();
         $statuses = $this->officialStatus->effectiveStatusesForTrails($candidates);
         $restrictions = $this->officialStatus->segmentRestrictionsForTrails($candidates);

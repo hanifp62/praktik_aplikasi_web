@@ -82,9 +82,8 @@ class ReadinessDashboard extends Component
     {
         $assessment = $readiness->compute($this->trip);
 
-        // Instance yang tidak disimpan, hanya untuk ditampilkan. Data yang dikirim
-        // lewat render() tidak ikut diserialisasi Livewire, sehingga tidak ada
-        // model tanpa id yang perlu dihidrasi ulang.
+        // Tidak disimpan, hanya untuk ditampilkan; data dari render() tidak ikut
+        // diserialisasi Livewire sehingga model tanpa id tidak perlu dihidrasi.
         $check = new ReadinessCheck($assessment->toAttributes());
 
         return view('livewire.trips.readiness-dashboard', [

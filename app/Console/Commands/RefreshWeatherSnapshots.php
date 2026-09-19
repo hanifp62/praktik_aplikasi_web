@@ -14,10 +14,8 @@ class RefreshWeatherSnapshots extends Command
 
     public function handle(WeatherService $weather): int
     {
-        // Prakiraan BMKG melekat pada kode wilayah, bukan pada jalur. Beberapa jalur di
-        // satu kelurahan berbagi kode yang sama, jadi mengambil per jalur berarti
-        // memanggil area yang sama berulang kali — memboroskan kuota 60 permintaan per
-        // menit per IP dan menulis ulang baris yang sama.
+        // Prakiraan melekat pada kode wilayah, bukan pada jalur; mengambil per jalur
+        // memanggil area yang sama berulang dan memboroskan kuota 60/menit BMKG.
         $areas = Trail::query()
             ->published()
             ->whereNotNull('weather_adm4_code')

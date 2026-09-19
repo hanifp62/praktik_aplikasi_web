@@ -86,10 +86,8 @@ class HikeMode extends Component
         $session = $this->trip->hikingSession;
         $reached = (int) ($session?->reached_checkpoint_sequence ?? 0);
 
-        // Pendaki bisa membuka Hike Mode di tengah jalur — misalnya setelah aplikasi
-        // ditutup. Pos terdekat memberi perkiraan sampai mana ia sudah berjalan, jadi
-        // pos-pos sebelumnya dianggap terlewati. Pos terdekat itu sendiri tidak ikut
-        // dianggap tercapai kecuali pendaki benar-benar berada dalam radiusnya.
+        // Pendaki bisa membuka Hike Mode di tengah jalur, jadi pos sebelum yang terdekat
+        // dianggap terlewati. Yang terdekat sendiri hanya tercapai bila masuk radius.
         $nearest = $this->nearestCheckpoint($checkpoints);
 
         if ($nearest !== null) {

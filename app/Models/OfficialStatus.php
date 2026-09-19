@@ -64,10 +64,8 @@ class OfficialStatus extends Model
 
     protected static function booted(): void
     {
-        // Snapshot status resmi di-cache sebagai data publik (PRD §97). Pembatalannya
-        // dipasang pada model, bukan pada komponen admin, agar setiap jalur tulis —
-        // admin, seeder, impor di kemudian hari — ikut tercakup. Perubahan status
-        // menyangkut pembatasan jalur, jadi tidak boleh tertahan sampai TTL habis.
+        // Dipasang pada model, bukan pada komponen admin, agar setiap jalur tulis
+        // tercakup — penutupan jalur tidak boleh tertahan di cache sampai TTL habis.
         static::saved(fn (self $status) => $status->forgetAffectedTrailCaches());
         static::deleted(fn (self $status) => $status->forgetAffectedTrailCaches());
     }

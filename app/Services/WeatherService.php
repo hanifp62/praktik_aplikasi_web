@@ -112,9 +112,8 @@ class WeatherService
      */
     private function normalize(array $entry, Trail $trail, Carbon $fetchedAt): ?array
     {
-        // BMKG mengirim keduanya. `utc_datetime` tidak ambigu, sedangkan `local_datetime`
-        // adalah waktu lokal Indonesia tanpa penanda zona — menyimpannya apa adanya pada
-        // aplikasi bertimezone UTC menggeser seluruh jadwal tujuh jam.
+        // `local_datetime` adalah waktu lokal tanpa penanda zona; menyimpannya apa adanya
+        // pada aplikasi bertimezone UTC menggeser seluruh jadwal tujuh jam.
         $utcDatetime = $entry['utc_datetime'] ?? null;
         $localDatetime = $entry['local_datetime'] ?? null;
 

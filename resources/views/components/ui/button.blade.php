@@ -20,7 +20,9 @@
         'secondary' => 'border border-gray-300 bg-white text-gray-800 hover:bg-gray-50 focus-visible:ring-gray-500',
         'danger' => 'bg-danger-600 text-white hover:bg-danger-700 focus-visible:ring-danger-600',
         'ghost' => 'text-brand-700 underline underline-offset-2 hover:text-brand-900 focus-visible:ring-brand-600',
-        default => 'bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-600',
+        // brand-700, bukan brand-600: putih di atas brand-600 hanya 3.77:1 dan gagal AA
+        // untuk teks normal. Diverifikasi dengan contrast-check.py, bukan dikira-kira.
+        default => 'bg-brand-700 text-white hover:bg-brand-800 focus-visible:ring-brand-600',
     };
 
     $classes = $base.' '.$styles;

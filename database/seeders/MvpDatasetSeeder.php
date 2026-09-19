@@ -64,10 +64,8 @@ class MvpDatasetSeeder extends Seeder
                     ['mountain_id' => $mountain->id, 'trail_id' => null],
                     array_merge($entry['permit'], [
                         'data_source_id' => $source->id,
-                        // Sengaja tidak diberi verified_at: aturan ini disalin saat
-                        // pengembangan dan belum diperiksa ulang oleh siapa pun.
-                        // PRD §60 lebih baik menyatakan belum terverifikasi daripada
-                        // memberi kesan sudah.
+                        // Disalin saat pengembangan dan belum diperiksa ke pengelola,
+                        // jadi dibiarkan belum terverifikasi (PRD §60).
                         'verified_at' => null,
                     ])
                 );

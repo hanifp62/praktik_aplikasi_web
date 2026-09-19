@@ -43,7 +43,6 @@ class CoreJourneyTest extends TestCase
         $this->seed(PreparationTemplateSeeder::class);
         $trail = $this->publishedTrail();
 
-        // 1. Mendaftar.
         Volt::test('pages.auth.register')
             ->set('name', 'Rani')
             ->set('email', 'rani@contoh.test')
@@ -55,7 +54,6 @@ class CoreJourneyTest extends TestCase
         $user = User::where('email', 'rani@contoh.test')->firstOrFail();
         $this->actingAs($user);
 
-        // 2. Melengkapi profil pendaki.
         $user->profile()->create([
             'experience_level' => ExperienceLevel::INTERMEDIATE->value,
             'completed_at' => now(),
@@ -68,7 +66,7 @@ class CoreJourneyTest extends TestCase
 
         $this->assertTrue($user->fresh()->hasCompletedProfile(), 'Profil harus terhitung lengkap.');
 
-        // 3. Menentukan rencana; mesin route fit berjalan dan menyimpan jejak auditnya.
+        // Menyimpan goal menjalankan mesin route fit dan mencatat jejak auditnya.
         Livewire::test(GoalForm::class)
             ->set('trip_type', TripType::CAMPING->value)
             ->set('expected_duration_minutes', 720)
@@ -78,7 +76,6 @@ class CoreJourneyTest extends TestCase
 
         $run = RecommendationRun::where('user_id', $user->id)->latest('id')->firstOrFail();
 
-        // 4. Membuka hasil rekomendasi.
         $this->get(route('recommendations.show', $run))->assertOk();
 
         $result = $run->results()->where('eligible', true)->orderBy('rank')->first();
@@ -87,7 +84,6 @@ class CoreJourneyTest extends TestCase
         $this->assertNotNull($result->label, 'Setiap kandidat membawa label publik (PRD §29).');
         $this->assertNotEmpty($result->explanation, 'Setiap rekomendasi membawa penjelasan (PRD §30).');
 
-        // 5. Membuat trip dari jalur yang dipilih.
         Livewire::test(TripForm::class)
             ->set('trail_id', $result->trail_id)
             ->set('name', 'Rencana pertama')
@@ -98,7 +94,6 @@ class CoreJourneyTest extends TestCase
 
         $trip = TripPlan::where('user_id', $user->id)->firstOrFail();
 
-        // 6. Menyelesaikan checklist persiapan.
         $this->get(route('trips.preparation', $trip))->assertOk();
 
         $trip->preparationItems()->update([
@@ -108,7 +103,6 @@ class CoreJourneyTest extends TestCase
 
         $this->assertSame(100, $trip->fresh()->preparationCompletionPercent());
 
-        // 7. Pre-departure check.
         Livewire::test(ReadinessDashboard::class, ['trip' => $trip->fresh()])
             ->call('confirmPreDeparture')
             ->assertSet('preDepartureConfirmed', true);

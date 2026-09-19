@@ -119,9 +119,8 @@ class ReadinessService
             return ReadinessState::NEEDS_PREPARATION;
         }
 
-        // Dimensi ketiga PRD §38. Kondisi terkini tidak pernah menaikkan state menjadi
-        // NOT_RECOMMENDED — itu tetap khusus penutupan resmi — tetapi juga tidak boleh
-        // dibiarkan hanya menjadi teks peringatan sementara statenya berbunyi READY.
+        // Dimensi ketiga PRD §38. Tidak pernah menaikkan ke NOT_RECOMMENDED, yang tetap
+        // khusus penutupan resmi.
         if ($this->hasUnresolvedConditions($conditions)) {
             return ReadinessState::NEEDS_PREPARATION;
         }
@@ -134,16 +133,8 @@ class ReadinessService
      */
     private function hasUnresolvedConditions(array $conditions): bool
     {
-        // Peringatan agregator mencakup tag komunitas yang perlu diwaspadai, pembatasan
-        // segmen, dan area terbatas yang memotong jalur. Semuanya soal jalurnya sendiri
-        // dan tidak dapat diselesaikan pengguna hanya dengan mencentang daftar.
-        //
-        // Ketersediaan data cuaca sengaja TIDAK ikut memblokir. PRD §94 menuntut
-        // kegagalan sumber eksternal ditangani dengan anggun, dan memblokir READY
-        // ketika BMKG sedang tidak dapat dihubungi berarti satu layanan pihak ketiga
-        // dapat menahan seluruh pengguna dari langkah inti alur. Kondisi cuaca tetap
-        // dilaporkan pada penjelasan, dan PRD §36 sudah menempatkan "prakiraan
-        // diperiksa" sebagai item persiapan yang harus dikonfirmasi pengguna sendiri.
+        // Sengaja hanya route_warnings: ketersediaan data cuaca tidak memblokir, agar
+        // BMKG yang tidak dapat dihubungi tidak menahan pengguna dari READY (PRD §94).
         return ($conditions['route_warnings'] ?? []) !== [];
     }
 
