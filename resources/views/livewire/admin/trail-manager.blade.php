@@ -1,0 +1,137 @@
+<div class="py-8">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <x-ui.page-header title="Kelola Jalur"
+            description="Jalur hanya dapat dipublikasikan jika sumber data, karakteristik, checkpoint, dan status resmi sudah lengkap." />
+
+        @if (session('status'))
+            <div class="mb-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        <div class="mb-4">
+            <button wire:click="create"
+                class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                Tambah jalur
+            </button>
+        </div>
+
+        @if ($showForm)
+            <x-ui.card class="mb-6" :title="$editingId ? 'Ubah jalur' : 'Tambah jalur'">
+                <form wire:submit="save" class="space-y-4">
+                    <x-form.select name="mountain_id" label="Gunung" required placeholder="Pilih gunung"
+                        :options="$mountains->mapWithKeys(fn ($mountain) => [$mountain->id => $mountain->name])->all()" />
+
+                    <x-form.field name="name" label="Nama jalur" />
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <x-form.field name="distance_km" type="number" step="any" label="Jarak (km)" />
+                        <x-form.field name="elevation_gain_m" type="number" label="Elevation gain (m)" />
+                        <x-form.field name="elevation_loss_m" type="number" label="Elevation loss (m)" />
+                    </div>
+
+                    <x-form.field name="estimated_duration_minutes" type="number" label="Estimasi durasi (menit)" />
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <x-form.select name="technical_demand" label="Tingkat teknis" required placeholder="Pilih"
+                            :options="collect($technicalLevels)->mapWithKeys(fn ($level) => [$level->value => $level->label()])->all()" />
+                        <x-form.select name="navigation_complexity" label="Kompleksitas navigasi" required placeholder="Pilih"
+                            :options="collect($navigationLevels)->mapWithKeys(fn ($level) => [$level->value => $level->label()])->all()" />
+                        <x-form.select name="water_availability" label="Ketersediaan air" required placeholder="Pilih"
+                            :options="collect($waterLevels)->mapWithKeys(fn ($level) => [$level->value => $level->label()])->all()" />
+                    </div>
+
+                    <x-form.checkbox-group name="terrain_character" label="Karakter medan"
+                        :options="collect($terrainOptions)->mapWithKeys(fn ($terrain) => [$terrain->value => $terrain->label()])->all()" />
+
+                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" wire:model="camping_available"
+                            class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                        Tersedia area camping
+                    </label>
+
+                    <x-form.field name="starting_point" label="Titik awal" />
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <x-form.field name="weather_adm4_code" label="Kode wilayah BMKG (adm4)"
+                            hint="Dipakai untuk mengambil prakiraan area sekitar jalur." />
+                        <x-form.field name="weather_reference_area" label="Nama area referensi cuaca" />
+                    </div>
+
+                    <x-form.select name="data_source_id" label="Sumber data" placeholder="Belum ditentukan"
+                        :options="$sources->mapWithKeys(fn ($source) => [$source->id => $source->source_name])->all()" />
+
+                    <div>
+                        <x-input-label for="description" value="Deskripsi" />
+                        <textarea id="description" wire:model="description" rows="3"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"></textarea>
+                        <x-input-error :messages="$errors->get('description')" class="mt-2" />
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="submit"
+                            class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            Simpan
+                        </button>
+                        <button type="button" wire:click="$set('showForm', false)"
+                            class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Batal
+                        </button>
+                    </div>
+                </form>
+            </x-ui.card>
+        @endif
+
+        <div class="overflow-x-auto rounded-lg bg-white shadow-sm">
+            <table class="min-w-full text-sm">
+                <caption class="sr-only">Daftar jalur</caption>
+                <thead>
+                    <tr class="border-b border-gray-200 text-left text-gray-500">
+                        <th scope="col" class="p-4">Jalur</th>
+                        <th scope="col" class="p-4">Gunung</th>
+                        <th scope="col" class="p-4">Checkpoint</th>
+                        <th scope="col" class="p-4">Publikasi</th>
+                        <th scope="col" class="p-4">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($trails as $trail)
+                        <tr class="border-b border-gray-100">
+                            <td class="p-4 font-medium text-gray-900">{{ $trail->name }}</td>
+                            <td class="p-4 text-gray-700">{{ $trail->mountain->name }}</td>
+                            <td class="p-4 text-gray-700">{{ $trail->checkpoints_count }}</td>
+                            <td class="p-4 text-gray-700">
+                                {{ $trail->is_published ? 'Tayang' : 'Draft' }}
+                                @if ($trail->archived_at)
+                                    <span class="ml-1 text-xs text-gray-500">(diarsipkan)</span>
+                                @endif
+                            </td>
+                            <td class="p-4">
+                                <div class="flex flex-wrap gap-2">
+                                    <button wire:click="edit({{ $trail->id }})"
+                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
+                                        Ubah
+                                    </button>
+                                    <a href="{{ route('admin.checkpoints', $trail) }}" wire:navigate
+                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
+                                        Checkpoint
+                                    </a>
+                                    <button wire:click="togglePublish({{ $trail->id }})"
+                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
+                                        {{ $trail->is_published ? 'Tarik dari publikasi' : 'Publikasikan' }}
+                                    </button>
+                                    <button wire:click="toggleArchive({{ $trail->id }})"
+                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
+                                        {{ $trail->archived_at ? 'Aktifkan' : 'Arsipkan' }}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6">{{ $trails->links() }}</div>
+    </div>
+</div>

@@ -1,0 +1,140 @@
+<div class="py-8">
+    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <x-ui.page-header
+            title="Rekomendasi Jalur"
+            description="Label kecocokan menjelaskan hubungan antara profil Anda, rencana perjalanan, dan karakteristik jalur. Label ini bukan penilaian keselamatan.">
+            <p class="mt-2 text-xs text-gray-500">
+                Dihasilkan {{ $run->generated_at->translatedFormat('d M Y H:i') }} &middot; engine {{ $run->engine_version }}
+            </p>
+        </x-ui.page-header>
+
+        @if ($eligible->isEmpty())
+            <x-ui.card title="Belum ada jalur yang sesuai">
+                <p class="text-sm text-gray-600">
+                    Tidak ada jalur yang memenuhi batasan rencana Anda saat ini. Anda dapat melonggarkan
+                    target durasi atau batas elevation gain, atau menelusuri jalur secara manual.
+                </p>
+                <a href="{{ route('trails.index') }}" wire:navigate
+                    class="mt-3 inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Telusuri jalur manual
+                </a>
+            </x-ui.card>
+        @endif
+
+        @if (count($comparison) >= 2)
+            <div class="mb-4 flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <p class="text-sm text-emerald-900">{{ count($comparison) }} jalur dipilih untuk dibandingkan.</p>
+                <button wire:click="compare"
+                    class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    Bandingkan
+                </button>
+            </div>
+        @endif
+
+        <ul class="space-y-4">
+            @foreach ($eligible as $result)
+                <li>
+                    <x-ui.card>
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-semibold text-gray-900">
+                                    <a href="{{ route('trails.show', $result->trail) }}" wire:navigate
+                                        class="hover:underline focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                        {{ $result->trail->name }}
+                                    </a>
+                                </h2>
+                                <p class="text-sm text-gray-600">{{ $result->trail->mountain->name }}</p>
+                            </div>
+                            <x-ui.fit-badge :label="$result->label" />
+                        </div>
+
+                        <dl class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                            <div>
+                                <dt class="text-gray-500">Jarak</dt>
+                                <dd class="font-medium text-gray-900">{{ $result->trail->distance_km ?? '-' }} km</dd>
+                            </div>
+                            <div>
+                                <dt class="text-gray-500">Elevation gain</dt>
+                                <dd class="font-medium text-gray-900">{{ $result->trail->elevation_gain_m ?? '-' }} m</dd>
+                            </div>
+                            <div>
+                                <dt class="text-gray-500">Estimasi durasi</dt>
+                                <dd class="font-medium text-gray-900">
+                                    {{ $result->trail->estimated_duration_minutes ? round($result->trail->estimated_duration_minutes / 60, 1).' jam' : '-' }}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-gray-500">Tingkat teknis</dt>
+                                <dd class="font-medium text-gray-900">{{ $result->trail->technical_demand->label() }}</dd>
+                            </div>
+                        </dl>
+
+                        @if ($result->warnings)
+                            <ul class="mt-3 space-y-1 text-sm text-amber-900">
+                                @foreach ($result->warnings as $warning)
+                                    <li class="rounded-md bg-amber-50 px-3 py-2">{{ $warning }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
+
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <button wire:click="toggleExplanation({{ $result->id }})"
+                                aria-expanded="{{ $expandedResultId === $result->id ? 'true' : 'false' }}"
+                                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                Mengapa jalur ini?
+                            </button>
+                            <button wire:click="toggleComparison({{ $result->trail_id }})"
+                                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                {{ in_array($result->trail_id, $comparison, true) ? 'Batal bandingkan' : 'Tambah ke perbandingan' }}
+                            </button>
+                            <button wire:click="selectTrail({{ $result->trail_id }})"
+                                class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                Pilih jalur ini
+                            </button>
+                        </div>
+
+                        @if ($expandedResultId === $result->id)
+                            <div class="mt-4 space-y-3 border-t border-gray-100 pt-4">
+                                @foreach (['why_it_fits' => 'Mengapa cocok', 'what_to_watch' => 'Yang perlu diperhatikan', 'preparation_gap' => 'Persiapan yang belum selesai'] as $key => $heading)
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-gray-900">{{ $heading }}</h3>
+                                        <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                                            @forelse ($result->explanation[$key] ?? [] as $line)
+                                                <li>{{ $line }}</li>
+                                            @empty
+                                                <li class="list-none text-gray-500">Tidak ada catatan.</li>
+                                            @endforelse
+                                        </ul>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </x-ui.card>
+                </li>
+            @endforeach
+        </ul>
+
+        @if ($excluded->isNotEmpty())
+            <section class="mt-8">
+                <h2 class="text-base font-semibold text-gray-900">Tidak masuk rekomendasi</h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    Jalur berikut dikecualikan oleh batasan yang bersifat pasti, misalnya status resmi tutup
+                    atau durasi yang tidak sesuai rencana.
+                </p>
+                <ul class="mt-3 space-y-2">
+                    @foreach ($excluded as $result)
+                        <li class="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+                            <span class="font-medium text-gray-900">{{ $result->trail->name }}</span>
+                            <span class="text-gray-600">&middot; {{ $result->trail->mountain->name }}</span>
+                            <ul class="mt-1 list-disc pl-5 text-gray-600">
+                                @foreach ($result->failed_rules ?? [] as $rule)
+                                    <li>{{ __('recommendation.'.$rule) }}</li>
+                                @endforeach
+                            </ul>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+    </div>
+</div>

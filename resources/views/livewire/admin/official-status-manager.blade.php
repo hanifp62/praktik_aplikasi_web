@@ -1,0 +1,90 @@
+<div class="py-8">
+    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <x-ui.page-header title="Kelola Status Resmi"
+            description="Status dapat melekat pada gunung, jalur, atau segmen. Status gunung yang terbuka tidak otomatis berarti semua jalurnya terbuka." />
+
+        @if (session('status'))
+            <div class="mb-4 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        <x-ui.card class="mb-6" title="Catat status resmi">
+            <form wire:submit="save" class="space-y-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <x-form.select name="scope" label="Cakupan" required placeholder="Pilih cakupan" live
+                        :options="collect($scopes)->mapWithKeys(fn ($scope) => [$scope->value => $scope->label()])->all()" />
+                    <x-form.select name="statusable_id" label="Objek" required placeholder="Pilih objek"
+                        :options="$targets" />
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <x-form.select name="status" label="Status" required placeholder="Pilih status"
+                        :options="collect($statuses)->mapWithKeys(fn ($status) => [$status->value => $status->label()])->all()" />
+                    <x-form.select name="data_source_id" label="Sumber data terdaftar" placeholder="Belum ditentukan"
+                        :options="$sources->mapWithKeys(fn ($source) => [$source->id => $source->source_name])->all()" />
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <x-form.field name="source" label="Nama sumber (teks bebas)" />
+                    <x-form.field name="source_url" type="url" label="URL sumber" />
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <x-form.field name="published_at" type="date" label="Tanggal publikasi sumber" />
+                    <x-form.field name="effective_at" type="date" label="Berlaku mulai" />
+                    <x-form.field name="expires_at" type="date" label="Berlaku sampai (opsional)" />
+                </div>
+
+                <x-form.field name="reason" label="Alasan" />
+
+                <div>
+                    <x-input-label for="notes" value="Catatan" />
+                    <textarea id="notes" wire:model="notes" rows="2"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"></textarea>
+                    <x-input-error :messages="$errors->get('notes')" class="mt-2" />
+                </div>
+
+                <button type="submit"
+                    class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    Simpan status
+                </button>
+            </form>
+        </x-ui.card>
+
+        <div class="overflow-x-auto rounded-lg bg-white shadow-sm">
+            <table class="min-w-full text-sm">
+                <caption class="sr-only">Riwayat status resmi</caption>
+                <thead>
+                    <tr class="border-b border-gray-200 text-left text-gray-500">
+                        <th scope="col" class="p-4">Objek</th>
+                        <th scope="col" class="p-4">Cakupan</th>
+                        <th scope="col" class="p-4">Status</th>
+                        <th scope="col" class="p-4">Sumber</th>
+                        <th scope="col" class="p-4">Berlaku</th>
+                        <th scope="col" class="p-4">Dicatat oleh</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($records as $record)
+                        <tr class="border-b border-gray-100">
+                            <td class="p-4 font-medium text-gray-900">{{ $record->statusable?->name ?? '-' }}</td>
+                            <td class="p-4 text-gray-700">{{ $record->scope->label() }}</td>
+                            <td class="p-4"><x-ui.status-badge :status="$record->status" /></td>
+                            <td class="p-4 text-gray-700">{{ $record->source ?? '-' }}</td>
+                            <td class="p-4 text-gray-700">
+                                {{ $record->effective_at?->translatedFormat('d M Y') ?? '-' }}
+                                @if ($record->expires_at)
+                                    &ndash; {{ $record->expires_at->translatedFormat('d M Y') }}
+                                @endif
+                            </td>
+                            <td class="p-4 text-gray-700">{{ $record->recordedBy?->name ?? 'Sistem' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6">{{ $records->links() }}</div>
+    </div>
+</div>

@@ -60,7 +60,33 @@ return [
             'report' => false,
         ],
 
+        // Supabase Storage speaks the S3 protocol. Keys are server-side only (PRD §79).
+        'supabase' => [
+            'driver' => 's3',
+            'key' => env('SUPABASE_STORAGE_KEY'),
+            'secret' => env('SUPABASE_STORAGE_SECRET'),
+            'region' => env('SUPABASE_STORAGE_REGION', 'ap-southeast-1'),
+            'bucket' => env('SUPABASE_STORAGE_BUCKET'),
+            'endpoint' => env('SUPABASE_STORAGE_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Community Photo Disk
+    |--------------------------------------------------------------------------
+    |
+    | Disk used for community trail condition photos. Defaults to the local public
+    | disk so the feature works without Supabase Storage credentials; set it to
+    | "supabase" once SUPABASE_STORAGE_* is configured.
+    |
+    */
+
+    'report_photos_disk' => env('REPORT_PHOTOS_DISK', 'public'),
 
     /*
     |--------------------------------------------------------------------------
