@@ -117,6 +117,26 @@ class ConditionAggregatorService
             $warnings[] = 'Data cuaca tidak tersedia untuk area referensi jalur ini.';
         }
 
+        // PRD §42: pembatasan resmi pada segmen tertentu tidak menutup jalur, tetapi
+        // pendaki harus tahu sampai mana jalur dapat ditempuh.
+        foreach ($this->officialStatus->segmentRestrictionsForTrail($trail) as $restriction) {
+            $warnings[] = rtrim(sprintf(
+                'Segmen %s berstatus %s.%s',
+                $restriction['segment'],
+                $restriction['status']->label(),
+                $restriction['reason'] ? ' '.$restriction['reason'].'.' : ''
+            ));
+        }
+
+        // PRD §65-66: area terbatas yang memotong jalur.
+        foreach ($trail->restrictedAreas() as $area) {
+            $warnings[] = rtrim(sprintf(
+                'Jalur ini bersinggungan dengan area terbatas: %s.%s',
+                $area->name,
+                $area->reason ? ' '.$area->reason.'.' : ''
+            ));
+        }
+
         return $warnings;
     }
 }

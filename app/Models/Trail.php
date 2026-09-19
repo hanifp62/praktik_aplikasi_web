@@ -10,6 +10,7 @@ use App\Models\Concerns\HasSpatialColumns;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -110,6 +111,41 @@ class Trail extends Model
     public function meetsPublishingRequirements(): bool
     {
         return $this->publishabilityReport() === [];
+    }
+
+    /**
+     * PRD §65-66: area terbatas yang benar-benar memotong geometri jalur ini, ditambah
+     * area yang dicatat langsung terhadap jalur atau gunungnya.
+     *
+     * Pencocokan geometri memerlukan PostGIS. Pada koneksi tanpa PostGIS — termasuk
+     * SQLite yang dipakai suite test — bagian spasialnya dilewati dan hanya kaitan
+     * eksplisit yang dikembalikan, bukan dianggap tidak ada sama sekali.
+     *
+     * @return Collection<int, RestrictedArea>
+     */
+    public function restrictedAreas(): Collection
+    {
+        $query = RestrictedArea::query()->currentlyEffective();
+
+        if (static::spatialSupported()) {
+            return $query
+                ->where(function (Builder $group) {
+                    $group->where('trail_id', $this->getKey())
+                        ->orWhere('mountain_id', $this->mountain_id)
+                        ->orWhereRaw(
+                            'ST_Intersects(restricted_areas.geometry, (SELECT t.geometry FROM trails t WHERE t.id = ?))',
+                            [$this->getKey()]
+                        );
+                })
+                ->get();
+        }
+
+        return $query
+            ->where(function (Builder $group) {
+                $group->where('trail_id', $this->getKey())
+                    ->orWhere('mountain_id', $this->mountain_id);
+            })
+            ->get();
     }
 
     /**
