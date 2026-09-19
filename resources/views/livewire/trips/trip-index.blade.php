@@ -6,10 +6,7 @@
         @if ($trips->isEmpty())
             <x-ui.card>
                 <p class="text-sm text-gray-600">Belum ada rencana trip.</p>
-                <a href="{{ route('goals.create') }}" wire:navigate
-                    class="mt-3 inline-block rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
-                    Mulai dari rencana pendakian
-                </a>
+                <x-ui.button href="{{ route('goals.create') }}">Mulai dari rencana pendakian</x-ui.button>
             </x-ui.card>
         @else
             <ul class="space-y-3">
@@ -20,7 +17,7 @@
                                 <div>
                                     <h2 class="text-base font-semibold text-gray-900">
                                         <a href="{{ route('trips.show', $trip) }}" wire:navigate
-                                            class="hover:underline focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            class="hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500">
                                             {{ $trip->name }}
                                         </a>
                                     </h2>

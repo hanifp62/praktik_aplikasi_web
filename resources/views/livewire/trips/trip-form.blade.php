@@ -21,15 +21,12 @@
             <div>
                 <x-input-label for="notes" value="Catatan (opsional)" />
                 <textarea id="notes" wire:model="notes" rows="3"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"></textarea>
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
                 <x-input-error :messages="$errors->get('notes')" class="mt-2" />
             </div>
 
             <div class="border-t border-gray-100 pt-4">
-                <button type="submit"
-                    class="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-auto">
-                    Simpan dan lanjut ke persiapan
-                </button>
+                <x-ui.button type="submit">Simpan dan lanjut ke persiapan</x-ui.button>
             </div>
         </form>
     </div>

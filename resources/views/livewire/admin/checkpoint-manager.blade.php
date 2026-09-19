@@ -4,9 +4,7 @@
             :description="$trail->name" />
 
         @if (session('status'))
-            <div class="mb-4 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
-            </div>
+            <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
 
         <x-ui.card class="mb-6" :title="$editingId ? 'Ubah checkpoint' : 'Tambah checkpoint'">
@@ -28,14 +26,11 @@
                 <div>
                     <x-input-label for="notes" value="Catatan" />
                     <textarea id="notes" wire:model="notes" rows="2"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"></textarea>
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
                     <x-input-error :messages="$errors->get('notes')" class="mt-2" />
                 </div>
 
-                <button type="submit"
-                    class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    Simpan checkpoint
-                </button>
+                <x-ui.button type="submit">Simpan checkpoint</x-ui.button>
             </form>
         </x-ui.card>
 
@@ -64,7 +59,7 @@
                                     class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">Ubah</button>
                                 <button wire:click="delete({{ $checkpoint->id }})"
                                     wire:confirm="Hapus checkpoint ini?"
-                                    class="rounded border border-rose-300 px-2 py-1 text-xs text-rose-700 hover:bg-rose-50">Hapus</button>
+                                    class="rounded border border-danger-300 px-2 py-1 text-xs text-danger-700 hover:bg-danger-50">Hapus</button>
                             </span>
                         </li>
                     @endforeach

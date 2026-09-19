@@ -14,7 +14,7 @@
             <div>
                 <x-input-label for="technical" value="Tingkat teknis" />
                 <select id="technical" wire:model.live="technical"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
                     <option value="">Semua</option>
                     @foreach ($technicalLevels as $level)
                         <option value="{{ $level->value }}">{{ $level->label() }}</option>
@@ -39,7 +39,7 @@
                         <x-ui.card>
                             <h2 class="text-base font-semibold text-gray-900">
                                 <a href="{{ route('trails.show', $trail) }}" wire:navigate
-                                    class="hover:underline focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    class="hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500">
                                     {{ $trail->name }}
                                 </a>
                             </h2>

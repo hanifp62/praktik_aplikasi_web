@@ -4,16 +4,11 @@
             description="Jalur hanya dapat dipublikasikan jika sumber data, karakteristik, checkpoint, dan status resmi sudah lengkap." />
 
         @if (session('status'))
-            <div class="mb-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
-                {{ session('status') }}
-            </div>
+            <x-ui.alert variant="success" class="mb-4">{{ session('status') }}</x-ui.alert>
         @endif
 
         <div class="mb-4">
-            <button wire:click="create"
-                class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                Tambah jalur
-            </button>
+            <x-ui.button wire:click="create">Tambah jalur</x-ui.button>
         </div>
 
         @if ($showForm)
@@ -46,7 +41,7 @@
 
                     <label class="flex items-center gap-2 text-sm text-gray-700">
                         <input type="checkbox" wire:model="camping_available"
-                            class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                            class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
                         Tersedia area camping
                     </label>
 
@@ -64,15 +59,12 @@
                     <div>
                         <x-input-label for="description" value="Deskripsi" />
                         <textarea id="description" wire:model="description" rows="3"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"></textarea>
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
                         <x-input-error :messages="$errors->get('description')" class="mt-2" />
                     </div>
 
                     <div class="flex gap-3">
-                        <button type="submit"
-                            class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            Simpan
-                        </button>
+                        <x-ui.button type="submit">Simpan</x-ui.button>
                         <button type="button" wire:click="$set('showForm', false)"
                             class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                             Batal

@@ -4,16 +4,11 @@
             description="Tambah, ubah, atau arsipkan data gunung. Setiap perubahan tercatat di audit log." />
 
         @if (session('status'))
-            <div class="mb-4 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
-            </div>
+            <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
 
         <div class="mb-4">
-            <button wire:click="create"
-                class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                Tambah gunung
-            </button>
+            <x-ui.button wire:click="create">Tambah gunung</x-ui.button>
         </div>
 
         @if ($showForm)
@@ -38,15 +33,12 @@
                     <div>
                         <x-input-label for="description" value="Deskripsi" />
                         <textarea id="description" wire:model="description" rows="3"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"></textarea>
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
                         <x-input-error :messages="$errors->get('description')" class="mt-2" />
                     </div>
 
                     <div class="flex gap-3">
-                        <button type="submit"
-                            class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            Simpan
-                        </button>
+                        <x-ui.button type="submit">Simpan</x-ui.button>
                         <button type="button" wire:click="$set('showForm', false)"
                             class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                             Batal

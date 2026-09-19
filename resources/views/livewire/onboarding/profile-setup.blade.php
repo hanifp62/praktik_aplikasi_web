@@ -10,7 +10,7 @@
                     <li class="flex-1">
                         <span @class([
                             'block rounded-md border px-3 py-2 text-center',
-                            'border-emerald-600 bg-emerald-50 font-medium text-emerald-900' => $step === $index + 1,
+                            'border-brand-600 bg-brand-50 font-medium text-brand-900' => $step === $index + 1,
                             'border-gray-200 text-gray-600' => $step !== $index + 1,
                         ]) @if ($step === $index + 1) aria-current="step" @endif>
                             {{ $index + 1 }}. {{ $stepLabel }}
@@ -35,7 +35,7 @@
                     <div>
                         <x-input-label for="bio" value="Catatan singkat (opsional)" />
                         <textarea id="bio" wire:model="bio" rows="3"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"></textarea>
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
                         <x-input-error :messages="$errors->get('bio')" class="mt-2" />
                     </div>
                 </fieldset>
@@ -87,20 +87,14 @@
 
             <div class="flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
                 <button type="button" wire:click="previousStep" @disabled($step === 1)
-                    class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-40">
+                    class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-40">
                     Kembali
                 </button>
 
                 @if ($step < 3)
-                    <button type="button" wire:click="nextStep"
-                        class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        Lanjut
-                    </button>
+                    <x-ui.button type="button" wire:click="nextStep">Lanjut</x-ui.button>
                 @else
-                    <button type="submit"
-                        class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        Simpan profil
-                    </button>
+                    <x-ui.button type="submit">Simpan profil</x-ui.button>
                 @endif
             </div>
         </form>

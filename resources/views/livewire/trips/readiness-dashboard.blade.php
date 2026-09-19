@@ -4,17 +4,15 @@
             :description="$trip->name.' - '.$trip->trail->name" />
 
         @if (session('status'))
-            <div class="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
-            </div>
+            <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
 
         @php
             $state = $check?->computed_state;
             $stateClasses = match ($state?->value) {
-                'READY' => 'border-emerald-300 bg-emerald-50 text-emerald-900',
-                'NEEDS_PREPARATION' => 'border-amber-300 bg-amber-50 text-amber-900',
-                'NOT_RECOMMENDED' => 'border-rose-300 bg-rose-50 text-rose-900',
+                'READY' => 'border-brand-300 bg-brand-50 text-brand-900',
+                'NEEDS_PREPARATION' => 'border-warn-300 bg-warn-50 text-warn-900',
+                'NOT_RECOMMENDED' => 'border-danger-300 bg-danger-50 text-danger-900',
                 default => 'border-gray-300 bg-gray-50 text-gray-900',
             };
         @endphp
@@ -82,21 +80,18 @@
 
         <div class="flex flex-wrap gap-3">
             <button wire:click="recompute"
-                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                 Hitung ulang
             </button>
             <a href="{{ route('trips.preparation', $trip) }}" wire:navigate
-                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                 Kembali ke persiapan
             </a>
             @if ($state !== \App\Enums\ReadinessState::NOT_RECOMMENDED)
-                <button wire:click="confirmPreDeparture"
-                    class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    Konfirmasi pre-departure check
-                </button>
+                <x-ui.button wire:click="confirmPreDeparture">Konfirmasi pre-departure check</x-ui.button>
             @endif
             <a href="{{ route('trips.show', $trip) }}" wire:navigate
-                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                 Detail trip
             </a>
         </div>

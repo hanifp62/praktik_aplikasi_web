@@ -4,9 +4,7 @@
             description="Catatan perjalanan Anda, kelengkapan persiapan saat itu, dan laporan kondisi yang Anda kirim." />
 
         @if (session('status'))
-            <div class="mb-4 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
-            </div>
+            <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
 
         @if ($entries->isEmpty())
@@ -40,14 +38,14 @@
 
                             <div class="mt-3 flex flex-wrap gap-3 text-sm">
                                 <a href="{{ route('trips.show', $entry->trip_plan_id) }}" wire:navigate
-                                    class="text-emerald-700 underline">Lihat trip</a>
+                                    class="text-brand-700 underline">Lihat trip</a>
                                 @if ($entry->conditionReport)
                                     <span class="text-gray-600">
                                         Laporan kondisi: {{ $entry->conditionReport->moderation_status->label() }}
                                     </span>
                                 @else
                                     <a href="{{ route('reports.create', ['trail' => $entry->trail_id, 'trip' => $entry->trip_plan_id]) }}"
-                                        wire:navigate class="text-emerald-700 underline">Kirim laporan kondisi</a>
+                                        wire:navigate class="text-brand-700 underline">Kirim laporan kondisi</a>
                                 @endif
                             </div>
                         </x-ui.card>

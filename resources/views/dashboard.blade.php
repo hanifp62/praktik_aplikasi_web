@@ -8,34 +8,28 @@
             @if (! auth()->user()->hasCompletedProfile())
                 <x-ui.card title="Lengkapi profil pendaki"
                     subtitle="Rekomendasi jalur membutuhkan data pengalaman dan preferensi Anda.">
-                    <a href="{{ route('onboarding') }}" wire:navigate
-                        class="inline-block rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        Isi profil sekarang
-                    </a>
+                    <x-ui.button href="{{ route('onboarding') }}">Isi profil sekarang</x-ui.button>
                 </x-ui.card>
             @else
                 <x-ui.card title="Mulai rencana pendakian"
                     subtitle="Tentukan target perjalanan Anda untuk melihat jalur yang sesuai.">
-                    <a href="{{ route('goals.create') }}" wire:navigate
-                        class="inline-block rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        Buat rencana pendakian
-                    </a>
+                    <x-ui.button href="{{ route('goals.create') }}">Buat rencana pendakian</x-ui.button>
                 </x-ui.card>
             @endif
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <x-ui.card title="Jalur">
-                    <a href="{{ route('trails.index') }}" wire:navigate class="text-sm text-emerald-700 underline">
+                    <a href="{{ route('trails.index') }}" wire:navigate class="text-sm text-brand-700 underline">
                         Jelajahi jalur
                     </a>
                 </x-ui.card>
                 <x-ui.card title="Trip">
-                    <a href="{{ route('trips.index') }}" wire:navigate class="text-sm text-emerald-700 underline">
+                    <a href="{{ route('trips.index') }}" wire:navigate class="text-sm text-brand-700 underline">
                         Rencana trip saya
                     </a>
                 </x-ui.card>
                 <x-ui.card title="Riwayat">
-                    <a href="{{ route('history') }}" wire:navigate class="text-sm text-emerald-700 underline">
+                    <a href="{{ route('history') }}" wire:navigate class="text-sm text-brand-700 underline">
                         Riwayat pendakian
                     </a>
                 </x-ui.card>

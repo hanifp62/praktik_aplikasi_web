@@ -25,7 +25,7 @@
             <div class="flex items-center justify-between">
                 <h2 class="text-sm font-medium text-gray-500">Posisi Anda</h2>
                 <button type="button" x-on:click="requestPosition()"
-                    class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                     Perbarui posisi
                 </button>
             </div>
@@ -51,7 +51,7 @@
                 @foreach ($checkpoints as $checkpoint)
                     <li @class([
                         'rounded px-2 py-1',
-                        'bg-emerald-50 font-medium text-emerald-900' => ($nextCheckpoint['id'] ?? null) === $checkpoint['id'],
+                        'bg-brand-50 font-medium text-brand-900' => ($nextCheckpoint['id'] ?? null) === $checkpoint['id'],
                         'text-gray-700' => ($nextCheckpoint['id'] ?? null) !== $checkpoint['id'],
                     ])>
                         {{ $checkpoint['sequence'] }}. {{ $checkpoint['name'] }}

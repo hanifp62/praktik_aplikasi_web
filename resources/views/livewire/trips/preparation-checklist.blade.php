@@ -4,9 +4,7 @@
             :description="$trip->name.' - '.$trip->trail->name.', '.$trip->trail->mountain->name" />
 
         @if (session('status'))
-            <div class="mb-4 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
-            </div>
+            <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
 
         <x-ui.card class="mb-6">
@@ -17,19 +15,16 @@
                 </div>
                 <div class="flex gap-2">
                     <button wire:click="regenerate"
-                        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                         Perbarui daftar
                     </button>
-                    <a href="{{ route('trips.readiness', $trip) }}" wire:navigate
-                        class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        Cek kesiapan
-                    </a>
+                    <x-ui.button href="{{ route('trips.readiness', $trip) }}">Cek kesiapan</x-ui.button>
                 </div>
             </div>
             <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100"
                 role="progressbar" aria-valuenow="{{ $completion }}" aria-valuemin="0" aria-valuemax="100"
                 aria-label="Kemajuan persiapan">
-                <div class="h-full bg-emerald-500" style="width: {{ $completion }}%"></div>
+                <div class="h-full bg-brand-500" style="width: {{ $completion }}%"></div>
             </div>
             <p class="mt-3 text-xs text-gray-500">
                 Status &ldquo;Belum dikonfirmasi&rdquo; berarti item tersebut belum Anda pastikan, bukan berarti
@@ -51,7 +46,7 @@
                                             <p class="text-sm font-medium text-gray-900">
                                                 {{ $item->label }}
                                                 @if ($item->is_critical)
-                                                    <span class="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900">
+                                                    <span class="ml-1 rounded bg-warn-100 px-1.5 py-0.5 text-xs text-warn-900">
                                                         Kritis
                                                     </span>
                                                 @endif
@@ -68,8 +63,8 @@
                                                     wire:click="setStatus({{ $item->id }}, '{{ $status->value }}')"
                                                     aria-pressed="{{ $item->status === $status ? 'true' : 'false' }}"
                                                     @class([
-                                                        'rounded-md border px-2.5 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500',
-                                                        'border-emerald-600 bg-emerald-600 text-white' => $item->status === $status,
+                                                        'rounded-md border px-2.5 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500',
+                                                        'border-brand-600 bg-brand-600 text-white' => $item->status === $status,
                                                         'border-gray-300 text-gray-700 hover:bg-gray-50' => $item->status !== $status,
                                                     ])>
                                                     {{ $status->label() }}

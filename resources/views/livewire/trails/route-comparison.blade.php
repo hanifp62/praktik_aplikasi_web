@@ -24,7 +24,7 @@
                                     <span class="block font-semibold text-gray-900">{{ $trail->name }}</span>
                                     <span class="block text-xs font-normal text-gray-600">{{ $trail->mountain->name }}</span>
                                     <button wire:click="removeTrail({{ $trail->id }})"
-                                        class="mt-1 text-xs text-gray-500 underline focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                        class="mt-1 text-xs text-gray-500 underline focus:outline-none focus:ring-2 focus:ring-brand-500">
                                         Hapus dari perbandingan
                                     </button>
                                 </th>

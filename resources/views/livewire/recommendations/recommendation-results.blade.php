@@ -22,12 +22,9 @@
         @endif
 
         @if (count($comparison) >= 2)
-            <div class="mb-4 flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3">
-                <p class="text-sm text-emerald-900">{{ count($comparison) }} jalur dipilih untuk dibandingkan.</p>
-                <button wire:click="compare"
-                    class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    Bandingkan
-                </button>
+            <div class="mb-4 flex items-center justify-between rounded-md border border-brand-200 bg-brand-50 px-4 py-3">
+                <p class="text-sm text-brand-900">{{ count($comparison) }} jalur dipilih untuk dibandingkan.</p>
+                <x-ui.button wire:click="compare">Bandingkan</x-ui.button>
             </div>
         @endif
 
@@ -39,7 +36,7 @@
                             <div>
                                 <h2 class="text-lg font-semibold text-gray-900">
                                     <a href="{{ route('trails.show', $result->trail) }}" wire:navigate
-                                        class="hover:underline focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                        class="hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500">
                                         {{ $result->trail->name }}
                                     </a>
                                 </h2>
@@ -70,9 +67,9 @@
                         </dl>
 
                         @if ($result->warnings)
-                            <ul class="mt-3 space-y-1 text-sm text-amber-900">
+                            <ul class="mt-3 space-y-1 text-sm text-warn-900">
                                 @foreach ($result->warnings as $warning)
-                                    <li class="rounded-md bg-amber-50 px-3 py-2">{{ $warning }}</li>
+                                    <li class="rounded-md bg-warn-50 px-3 py-2">{{ $warning }}</li>
                                 @endforeach
                             </ul>
                         @endif
@@ -80,17 +77,16 @@
                         <div class="mt-4 flex flex-wrap gap-2">
                             <button wire:click="toggleExplanation({{ $result->id }})"
                                 aria-expanded="{{ $expandedResultId === $result->id ? 'true' : 'false' }}"
-                                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                                 Mengapa jalur ini?
                             </button>
                             <button wire:click="toggleComparison({{ $result->trail_id }})"
-                                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                                 {{ in_array($result->trail_id, $comparison, true) ? 'Batal bandingkan' : 'Tambah ke perbandingan' }}
                             </button>
-                            <button wire:click="selectTrail({{ $result->trail_id }})"
-                                class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <x-ui.button wire:click="selectTrail({{ $result->trail_id }})">
                                 Pilih jalur ini
-                            </button>
+                            </x-ui.button>
                         </div>
 
                         @if ($expandedResultId === $result->id)

@@ -15,16 +15,14 @@
         </x-ui.page-header>
 
         @if (session('status'))
-            <div class="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
-            </div>
+            <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <x-ui.card title="Persiapan">
                 <p class="text-2xl font-semibold text-gray-900">{{ $trip->preparationCompletionPercent() }}%</p>
                 <a href="{{ route('trips.preparation', $trip) }}" wire:navigate
-                    class="mt-2 inline-block text-sm text-emerald-700 underline">Buka daftar persiapan</a>
+                    class="mt-2 inline-block text-sm text-brand-700 underline">Buka daftar persiapan</a>
             </x-ui.card>
 
             <x-ui.card title="Kesiapan">
@@ -32,7 +30,7 @@
                     {{ $trip->latestReadinessCheck?->computed_state->label() ?? 'Belum dinilai' }}
                 </p>
                 <a href="{{ route('trips.readiness', $trip) }}" wire:navigate
-                    class="mt-2 inline-block text-sm text-emerald-700 underline">Cek kesiapan</a>
+                    class="mt-2 inline-block text-sm text-brand-700 underline">Cek kesiapan</a>
             </x-ui.card>
         </div>
 
@@ -46,18 +44,12 @@
             <x-ui.card title="Tindakan">
                 <div class="flex flex-wrap gap-3">
                     @if ($trip->status !== \App\Enums\TripStatus::IN_PROGRESS)
-                        <button wire:click="startHike"
-                            class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            Mulai hike mode
-                        </button>
+                        <x-ui.button wire:click="startHike">Mulai hike mode</x-ui.button>
                     @else
-                        <a href="{{ route('trips.hike', $trip) }}" wire:navigate
-                            class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
-                            Buka hike mode
-                        </a>
+                        <x-ui.button href="{{ route('trips.hike', $trip) }}">Buka hike mode</x-ui.button>
                     @endif
                     <button wire:click="cancel"
-                        class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                         Batalkan trip
                     </button>
                 </div>
@@ -73,14 +65,11 @@
                     <div>
                         <x-input-label for="personal_notes" value="Catatan pribadi (opsional)" />
                         <textarea id="personal_notes" wire:model="personal_notes" rows="3"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"></textarea>
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
                         <x-input-error :messages="$errors->get('personal_notes')" class="mt-2" />
                     </div>
 
-                    <button type="submit"
-                        class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        Tandai selesai
-                    </button>
+                    <x-ui.button type="submit">Tandai selesai</x-ui.button>
                 </form>
             </x-ui.card>
         @endif

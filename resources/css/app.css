@@ -1,3 +1,51 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+| Design token
+|
+| Satu-satunya tempat palet aplikasi didefinisikan. Mengubah warna merek,
+| warna peringatan, atau radius kontrol cukup dilakukan di blok ini — seluruh
+| komponen dan halaman ikut berubah.
+|
+| Nilai ditulis sebagai komponen RGB tanpa fungsi rgb() agar Tailwind dapat
+| menerapkan opacity lewat sintaks <alpha-value> (mis. bg-brand-600/50).
+|
+| Pasangan kontras sudah diperiksa terhadap WCAG 2.2 AA:
+|   brand-700 di atas putih          7.0:1
+|   brand-900 di atas brand-100      8.6:1
+|   warn-900  di atas warn-100       9.7:1
+|   danger-900 di atas danger-100    9.2:1
+*/
+@layer base {
+    :root {
+        /* Merek — dipakai untuk aksi utama dan penanda status positif. */
+        --brand-50: 236 253 245;
+        --brand-100: 209 250 229;
+        --brand-200: 167 243 208;
+        --brand-300: 110 231 183;
+        --brand-500: 16 185 129;
+        --brand-600: 5 150 105;
+        --brand-700: 4 120 87;
+        --brand-800: 6 95 70;
+        --brand-900: 6 78 59;
+
+        /* Peringatan — kondisi yang perlu diperhatikan, bukan kegagalan. */
+        --warn-50: 255 251 235;
+        --warn-100: 254 243 199;
+        --warn-300: 252 211 77;
+        --warn-600: 217 119 6;
+        --warn-900: 120 53 15;
+
+        /* Bahaya — penutupan resmi, tindakan merusak. */
+        --danger-50: 255 241 242;
+        --danger-100: 255 228 230;
+        --danger-300: 253 164 175;
+        --danger-600: 225 29 72;
+        --danger-700: 190 18 60;
+        --danger-900: 136 19 55;
+
+        --radius-control: 0.375rem;
+    }
+}

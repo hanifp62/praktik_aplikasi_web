@@ -2,9 +2,9 @@
 
 @php
     $classes = match ($status?->value) {
-        'OPEN' => 'bg-emerald-100 text-emerald-900 border-emerald-300',
-        'RESTRICTED' => 'bg-amber-100 text-amber-900 border-amber-300',
-        'CLOSED' => 'bg-rose-100 text-rose-900 border-rose-300',
+        'OPEN' => 'bg-brand-100 text-brand-900 border-brand-300',
+        'RESTRICTED' => 'bg-warn-100 text-warn-900 border-warn-300',
+        'CLOSED' => 'bg-danger-100 text-danger-900 border-danger-300',
         default => 'bg-gray-100 text-gray-700 border-gray-300',
     };
 @endphp

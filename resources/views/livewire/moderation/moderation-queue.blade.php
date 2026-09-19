@@ -6,7 +6,7 @@
         <div class="mb-4 max-w-xs">
             <x-input-label for="filter" value="Filter status" />
             <select id="filter" wire:model.live="filter"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
                 <option value="">Semua</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}">{{ $status->label() }}</option>
@@ -63,12 +63,12 @@
                                 </label>
                                 <input id="reason-{{ $report->id }}" type="text"
                                     wire:model="reasons.{{ $report->id }}"
-                                    class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                                    class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500">
 
                                 <div class="flex flex-wrap gap-2">
                                     @foreach ($actions as $action)
                                         <button wire:click="act({{ $report->id }}, '{{ $action->value }}')"
-                                            class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                                             {{ $action->label() }}
                                         </button>
                                     @endforeach

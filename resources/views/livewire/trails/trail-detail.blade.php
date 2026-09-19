@@ -95,7 +95,7 @@
                     Area referensi: {{ $conditions['weather_context']['reference_area'] ?? 'Tidak dicatat' }}
                 </p>
                 @if ($conditions['weather_context']['message'])
-                    <p class="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    <p class="mt-2 rounded-md bg-warn-50 px-3 py-2 text-sm text-warn-900">
                         {{ $conditions['weather_context']['message'] }}
                     </p>
                 @endif
@@ -212,7 +212,7 @@
                     <dd class="text-gray-900">
                         {{ $trail->dataSource?->source_name ?? 'Belum tercatat' }}
                         @if ($trail->dataSource?->source_url)
-                            &middot; <a class="text-emerald-700 underline" href="{{ $trail->dataSource->source_url }}"
+                            &middot; <a class="text-brand-700 underline" href="{{ $trail->dataSource->source_url }}"
                                 rel="noopener noreferrer" target="_blank">tautan sumber</a>
                         @endif
                     </dd>
@@ -229,12 +229,9 @@
         </x-ui.card>
 
         <div class="flex flex-wrap gap-3">
-            <button wire:click="createTrip"
-                class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                Buat rencana trip
-            </button>
+            <x-ui.button wire:click="createTrip">Buat rencana trip</x-ui.button>
             <a href="{{ route('reports.create', ['trail' => $trail->id]) }}" wire:navigate
-                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
                 Laporkan kondisi jalur
             </a>
         </div>
