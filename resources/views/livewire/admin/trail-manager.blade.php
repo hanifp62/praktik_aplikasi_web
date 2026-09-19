@@ -102,22 +102,10 @@
                             </td>
                             <td class="p-4">
                                 <div class="flex flex-wrap gap-2">
-                                    <button wire:click="edit({{ $trail->id }})"
-                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
-                                        Ubah
-                                    </button>
-                                    <a href="{{ route('admin.checkpoints', $trail) }}" wire:navigate
-                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
-                                        Checkpoint
-                                    </a>
-                                    <button wire:click="togglePublish({{ $trail->id }})"
-                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
-                                        {{ $trail->is_published ? 'Tarik dari publikasi' : 'Publikasikan' }}
-                                    </button>
-                                    <button wire:click="toggleArchive({{ $trail->id }})"
-                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
-                                        {{ $trail->archived_at ? 'Aktifkan' : 'Arsipkan' }}
-                                    </button>
+                                    <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $trail->id }})">Ubah</x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm" href="{{ route('admin.checkpoints', $trail) }}">Checkpoint</x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm" wire:click="togglePublish({{ $trail->id }})">{{ $trail->is_published ? 'Tarik dari publikasi' : 'Publikasikan' }}</x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm" wire:click="toggleArchive({{ $trail->id }})">{{ $trail->archived_at ? 'Aktifkan' : 'Arsipkan' }}</x-ui.button>
                                 </div>
 
                                 {{-- PRD §110: kurator harus tahu apa yang kurang, bukan sekadar ditolak. --}}

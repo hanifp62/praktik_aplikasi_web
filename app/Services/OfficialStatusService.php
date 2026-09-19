@@ -198,7 +198,7 @@ class OfficialStatusService
     /**
      * PRD §42: status dapat melekat pada SEGMENT, bukan hanya gunung dan jalur.
      *
-     * Sebuah jalur boleh saja berstatus OPEN sementara salah satu segmennya ditutup —
+     * Sebuah jalur boleh saja berstatus OPEN sementara salah satu segmennya ditutup:
      * kasus nyata Semeru 2026, ketika pendakian dibuka tetapi hanya sampai Ranu Kumbolo.
      * Pembatasan seperti ini tidak mengeksklusi jalur (PRD §26 memisahkan pembatasan dari
      * pengecualian), tetapi wajib terlihat oleh pendaki.

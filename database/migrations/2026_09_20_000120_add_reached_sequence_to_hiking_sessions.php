@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Hike Mode sebelumnya menentukan checkpoint berikutnya sebagai "satu setelah yang
  * terdekat". Pendaki yang masih 100 m sebelum Pos 3 paling dekat ke Pos 3, sehingga
- * sistem menunjuk Pos 4 — pos yang sedang dituju justru dilewati dan jarak yang
+ * sistem menunjuk Pos 4, pos yang sedang dituju justru dilewati dan jarak yang
  * ditampilkan mengarah ke pos yang salah.
  *
  * Kemajuan perlu diingat: sebuah pos dianggap tercapai setelah pendaki pernah berada

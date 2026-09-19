@@ -15,7 +15,7 @@ use Tests\TestCase;
  *
  * Perintah weather:refresh iterasi per jalur, bukan per kode wilayah. Beberapa jalur
  * pada satu kelurahan berbagi kode adm4 yang sama, sehingga satu area dipanggil
- * berkali-kali — memboroskan kuota BMKG yang dibatasi 60 permintaan per menit per IP
+ * berkali-kali, memboroskan kuota BMKG yang dibatasi 60 permintaan per menit per IP
  * dan menulis ulang baris yang sama.
  *
  * ConditionAggregatorService juga menghitung konteks cuaca dua kali untuk satu jalur:

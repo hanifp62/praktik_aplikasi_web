@@ -21,7 +21,7 @@ use Tests\TestCase;
  * gunungnya masing-masing satu query per jalur, lalu hasilnya ditulis baris per baris.
  *
  * Terhadap basis data jarak jauh dengan RTT sekitar 30 ms, 58 query saja sudah
- * melewati target p95 satu detik pada PRD §96 — dan jumlahnya tumbuh linear terhadap
+ * melewati target p95 satu detik pada PRD §96: dan jumlahnya tumbuh linear terhadap
  * jumlah jalur. Anggaran query di sini menahan agar regresinya tidak kembali diam-diam.
  */
 class RecommendationQueryBudgetTest extends TestCase

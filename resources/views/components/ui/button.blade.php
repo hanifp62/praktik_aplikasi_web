@@ -1,5 +1,6 @@
 @props([
     'variant' => 'primary',
+    'size' => 'md',
     'href' => null,
     'navigate' => true,
 ])
@@ -10,10 +11,15 @@
     min-h-11 memenuhi ukuran target sentuh WCAG 2.2 (PRD §87) dan
     focus-visible:ring memenuhi focus visibility. Mengubah bentuk tombol
     di seluruh aplikasi cukup dilakukan di berkas ini.
+
+    Ukuran "sm" hanya mengecilkan tampilannya, tidak area sentuhnya: jempol tidak
+    ikut mengecil ketika tombolnya terlihat lebih kecil.
 --}}
 @php
-    $base = 'inline-flex items-center justify-center gap-2 rounded-control px-4 py-2 min-h-11 '
-        .'text-sm font-medium transition focus:outline-none focus-visible:ring-2 '
+    $sizing = $size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm';
+
+    $base = 'inline-flex items-center justify-center gap-2 rounded-control min-h-11 '
+        .$sizing.' font-medium transition focus:outline-none focus-visible:ring-2 '
         .'focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
     $styles = match ($variant) {

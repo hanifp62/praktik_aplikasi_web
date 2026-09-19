@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * BMKG mengirim dua penanda waktu: `local_datetime` dalam waktu lokal Indonesia dan
  * `utc_datetime` yang tidak ambigu. Sebelumnya hanya `local_datetime` yang disimpan,
- * dan karena timezone aplikasi adalah UTC, nilai WIB itu tersimpan seolah-olah UTC —
+ * dan karena timezone aplikasi adalah UTC, nilai WIB itu tersimpan seolah-olah UTC:
  * seluruh jadwal prakiraan bergeser tujuh jam.
  *
  * `forecast_at` menyimpan instan sebenarnya dalam UTC dan menjadi satu-satunya kolom

@@ -9,7 +9,7 @@ use Illuminate\Support\Carbon;
  * Konversi zona waktu Indonesia.
  *
  * Seluruh instan disimpan dalam UTC. Zona untuk menampilkannya kembali melekat pada
- * gunung, bukan pada pengguna — prakiraan cuaca sebuah jalur di Rinjani tetap WITA
+ * gunung, bukan pada pengguna, prakiraan cuaca sebuah jalur di Rinjani tetap WITA
  * meskipun dibaca pendaki yang sedang berada di Jakarta.
  */
 class Timezone

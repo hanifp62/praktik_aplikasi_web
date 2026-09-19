@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Aturan perizinan pendakian yang berlaku untuk satu jalur atau satu gunung.
  *
  * Ini adalah catatan tentang aturan pihak lain, bukan sistem perizinan kita sendiri.
- * Sistem tidak pernah memesan, memverifikasi, atau melacak kuota — ia hanya
+ * Sistem tidak pernah memesan, memverifikasi, atau melacak kuota. Ia hanya
  * memberi tahu pendaki apa yang perlu ia urus dan ke mana.
  */
 #[Fillable([

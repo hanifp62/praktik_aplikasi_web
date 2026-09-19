@@ -65,12 +65,9 @@
                             </td>
                             <td class="p-4">
                                 <div class="flex flex-wrap gap-2">
-                                    <button wire:click="edit({{ $source->id }})"
-                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">Ubah</button>
-                                    <button wire:click="verify({{ $source->id }})"
-                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">Verifikasi</button>
-                                    <button wire:click="dispute({{ $source->id }})"
-                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">Tandai diperdebatkan</button>
+                                    <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $source->id }})">Ubah</x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm" wire:click="verify({{ $source->id }})">Verifikasi</x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm" wire:click="dispute({{ $source->id }})">Tandai diperdebatkan</x-ui.button>
                                 </div>
                             </td>
                         </tr>

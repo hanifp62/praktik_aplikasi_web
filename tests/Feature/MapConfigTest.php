@@ -16,7 +16,7 @@ use Tests\TestCase;
 /**
  * F-26 dan F-27.
  *
- * Peta memakai demotiles.maplibre.org — tile demo MapLibre yang hanya memuat batas
+ * Peta memakai demotiles.maplibre.org, tile demo MapLibre yang hanya memuat batas
  * negara. Di jalur pendakian layarnya praktis kosong, sehingga fiturnya tidak
  * mengerjakan apa pun yang berguna.
  *
@@ -46,7 +46,7 @@ class MapConfigTest extends TestCase
     }
 
     /**
-     * Hanya blok skrip peta, bukan seluruh halaman — kegagalan test yang membuang
+     * Hanya blok skrip peta, bukan seluruh halaman. Kegagalan test yang membuang
      * dua puluh ribu karakter HTML tidak dapat dibaca siapa pun.
      */
     private function mapScript(): string

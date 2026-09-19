@@ -9,7 +9,7 @@ use Tests\TestCase;
 /**
  * WCAG 2.2 AA: teks normal butuh 4.5:1, teks besar dan komponen non-teks 3:1.
  *
- * Rasio kontras tidak dapat ditaksir dengan mata — mata melebih-lebihkan kontras pada
+ * Rasio kontras tidak dapat ditaksir dengan mata, mata melebih-lebihkan kontras pada
  * pasangan yang berdekatan. Sebelum test ini ada, palet aplikasi membawa empat klaim
  * rasio yang ditulis tanpa pernah dihitung, dan tiga di antaranya keliru. Yang lolos
  * dari pemeriksaan itu adalah tombol primer: putih di atas brand-600 hanya 3.77:1.
@@ -90,7 +90,7 @@ class ColourContrastTest extends TestCase
     }
 
     /**
-     * Membaca nilai RGB langsung dari design token, bukan dari salinan di test —
+     * Membaca nilai RGB langsung dari design token, bukan dari salinan di test:
      * mengubah token harus langsung terlihat di sini.
      *
      * @return array{0: int, 1: int, 2: int}|null

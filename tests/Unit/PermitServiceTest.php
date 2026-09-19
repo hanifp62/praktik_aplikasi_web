@@ -17,7 +17,7 @@ use Tests\TestCase;
  * menutup pemesanan H-2, dan mewajibkan pemandu terdaftar.
  *
  * Tanpa data ini sistem akan menyatakan trip besok siap padahal izinnya sudah mustahil
- * didapat — ketidakcocokan antara alur kerja dan realita yang paling besar.
+ * didapat, ketidakcocokan antara alur kerja dan realita yang paling besar.
  */
 class PermitServiceTest extends TestCase
 {

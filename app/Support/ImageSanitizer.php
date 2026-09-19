@@ -10,7 +10,7 @@ use Throwable;
  *
  * Foto yang diambil dengan ponsel membawa EXIF, termasuk koordinat GPS presisi tempat
  * foto itu diambil. Menerbitkannya pada laporan komunitas berarti mempublikasikan
- * lokasi pendaki tanpa ia memilihnya — persis yang dilarang §82.
+ * lokasi pendaki tanpa ia memilihnya, persis yang dilarang §82.
  *
  * Re-encode lewat GD tidak membawa segmen EXIF apa pun, sehingga pembersihan terjadi
  * sebagai akibat dari penulisan ulang, bukan dengan menghapus tag satu per satu.

@@ -117,8 +117,8 @@ class Trail extends Model
      * PRD §65-66: area terbatas yang benar-benar memotong geometri jalur ini, ditambah
      * area yang dicatat langsung terhadap jalur atau gunungnya.
      *
-     * Pencocokan geometri memerlukan PostGIS. Pada koneksi tanpa PostGIS — termasuk
-     * SQLite yang dipakai suite test — bagian spasialnya dilewati dan hanya kaitan
+     * Pencocokan geometri memerlukan PostGIS. Pada koneksi tanpa PostGIS, termasuk
+     * SQLite yang dipakai suite test, bagian spasialnya dilewati dan hanya kaitan
      * eksplisit yang dikembalikan, bukan dianggap tidak ada sama sekali.
      *
      * @return Collection<int, RestrictedArea>

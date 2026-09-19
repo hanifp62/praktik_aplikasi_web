@@ -41,7 +41,7 @@ class PermitService
      * Aturan perizinan untuk banyak jalur sekaligus, dalam satu query.
      *
      * Versi per-jalur membutuhkan dua query masing-masing; dipakai di dalam perulangan
-     * kandidat, itu mengembalikan pertumbuhan linear yang baru saja dihapus dari mesin
+     * kandidat, cara itu mengembalikan pertumbuhan linear yang baru saja dihapus dari mesin
      * rekomendasi.
      *
      * @param  Collection<int, Trail>  $trails
@@ -77,7 +77,7 @@ class PermitService
      * Peringatan bila tanggal target jatuh di luar jendela pemesanan.
      *
      * Mengembalikan null ketika tidak ada aturan tercatat. Ketiadaan data bukan
-     * alasan untuk mengarang peringatan — PRD §95 berlaku dua arah: tidak tahu
+     * alasan untuk mengarang peringatan, PRD §95 berlaku dua arah: tidak tahu
      * tidak sama dengan bermasalah.
      */
     public function bookingWarningFor(

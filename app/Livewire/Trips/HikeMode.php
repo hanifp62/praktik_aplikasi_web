@@ -67,7 +67,7 @@ class HikeMode extends Component
     /**
      * Pos berikutnya adalah pos pertama menurut urutan yang belum tercapai.
      *
-     * Aturan lama — "satu setelah yang terdekat" — melewati pos yang sedang dituju:
+     * Aturan lama, "satu setelah yang terdekat", melewati pos yang sedang dituju:
      * pendaki 100 m sebelum Pos 3 paling dekat ke Pos 3, lalu sistem menunjuk Pos 4.
      *
      * Sebuah pos dianggap tercapai setelah pendaki pernah berada dalam radius

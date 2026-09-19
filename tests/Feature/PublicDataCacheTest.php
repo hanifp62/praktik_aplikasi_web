@@ -19,7 +19,7 @@ use Tests\TestCase;
  * aman dibagikan lewat cache bersama. Data privat pengguna tidak pernah masuk ke sana.
  *
  * Yang dijaga di sini bukan hanya bahwa cache-nya bekerja, tetapi bahwa ia dibatalkan
- * ketika statusnya berubah — status yang menyangkut pembatasan jalur tidak boleh
+ * ketika statusnya berubah, status yang menyangkut pembatasan jalur tidak boleh
  * tertahan sampai TTL-nya habis.
  */
 class PublicDataCacheTest extends TestCase

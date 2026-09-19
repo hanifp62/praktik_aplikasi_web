@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * PRD §95 — prinsip default-safe.
+ * PRD §95: prinsip default-safe.
  *
  * Sebelum perbaikan ini, karakteristik jalur yang kosong dipetakan ke rank
  * termudah, sehingga semakin sedikit data yang dimiliki sebuah jalur, semakin

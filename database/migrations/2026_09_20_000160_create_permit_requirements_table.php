@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
  * ini, sistem akan menyatakan trip besok siap padahal izinnya sudah mustahil didapat.
  *
  * Aturan melekat pada jalur bila spesifik, atau pada gunung bila berlaku umum.
- * Mengikuti model kepercayaan PRD §60, tiap baris membawa sumber dan waktu verifikasi —
+ * Mengikuti model kepercayaan PRD §60, tiap baris membawa sumber dan waktu verifikasi:
  * aturan perizinan berubah dan data yang tidak bertanggal tidak dapat dipercaya.
  */
 return new class extends Migration

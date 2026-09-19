@@ -16,7 +16,7 @@ use Livewire\WithPagination;
  * Pengelolaan aturan perizinan pendakian (PRD §36 Logistik, §60, §61).
  *
  * Aturan izin menentukan apakah sebuah pendakian dapat terjadi sama sekali, dan ia
- * berubah — kuota disesuaikan, jendela pemesanan digeser, kewajiban pemandu
+ * berubah, kuota disesuaikan, jendela pemesanan digeser, kewajiban pemandu
  * ditambahkan. Karena itu tiap baris membawa sumber dan waktu verifikasi, dan setiap
  * perubahannya masuk jejak audit.
  *

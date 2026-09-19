@@ -14,7 +14,7 @@ use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * PRD §110 — jalur tidak boleh dipublikasikan sebelum data minimumnya lengkap.
+ * PRD §110: jalur tidak boleh dipublikasikan sebelum data minimumnya lengkap.
  *
  * Gerbangnya sudah ada sejak awal tetapi belum punya test yang menjaganya, dan
  * belum memberi tahu kurator apa yang sebenarnya kurang.

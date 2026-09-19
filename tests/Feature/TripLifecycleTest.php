@@ -21,7 +21,7 @@ use Tests\TestCase;
  * F-11, F-12, F-13.
  *
  * Pembuatan trip hanya memvalidasi exists:trails,id sehingga jalur yang belum
- * dipublikasikan atau sudah diarsipkan tetap dapat dipakai — padahal mesin route fit
+ * dipublikasikan atau sudah diarsipkan tetap dapat dipakai, padahal mesin route fit
  * menolak jalur seperti itu sebagai hard constraint.
  *
  * Tidak ada penjaga transisi status, sehingga trip yang sudah dibatalkan masih dapat

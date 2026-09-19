@@ -8,8 +8,8 @@ use App\Enums\ReadinessState;
  * Hasil perhitungan readiness sebagai nilai murni, tanpa efek samping.
  *
  * Memisahkan perhitungan dari penyimpanan penting karena halaman readiness dibuka
- * berkali-kali: sebelumnya tiap kali dibuka sebuah baris baru ditulis, dan baris
- * terbaru selalu menimpa penanda pre_departure_confirmed milik baris sebelumnya —
+ * berkali-kali. Sebelumnya tiap kali dibuka sebuah baris baru ditulis, dan baris
+ * terbaru menimpa penanda pre_departure_confirmed milik baris sebelumnya, sehingga
  * konfirmasi pengguna hilang begitu halaman dimuat ulang.
  */
 readonly class ReadinessAssessment

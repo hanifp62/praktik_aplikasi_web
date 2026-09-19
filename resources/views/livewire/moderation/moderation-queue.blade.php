@@ -76,10 +76,7 @@
 
                                 <div class="flex flex-wrap gap-2">
                                     @foreach ($actions as $action)
-                                        <button wire:click="act({{ $report->id }}, '{{ $action->value }}')"
-                                            class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                                            {{ $action->label() }}
-                                        </button>
+                                        <x-ui.button variant="secondary" size="sm" wire:click="act({{ $report->id }}, '{{ $action->value }}')">{{ $action->label() }}</x-ui.button>
                                     @endforeach
                                 </div>
                             </div>

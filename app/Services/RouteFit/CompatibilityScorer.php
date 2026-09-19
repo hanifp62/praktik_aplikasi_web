@@ -59,7 +59,7 @@ class CompatibilityScorer
      * MDPL is deliberately not part of this calculation (BR-02).
      *
      * Dimensi yang datanya kosong TIDAK dihitung sebagai tingkat termudah. Menghitungnya
-     * sebagai rank 1 akan membuat jalur yang datanya paling sedikit terlihat paling aman —
+     * sebagai rank 1 akan membuat jalur yang datanya paling sedikit terlihat paling aman:
      * arah bias yang berlawanan dengan PRD §95. Dimensi kosong diabaikan dari rata-rata,
      * dan bila ketiganya kosong beban fisik dinyatakan tidak diketahui.
      */

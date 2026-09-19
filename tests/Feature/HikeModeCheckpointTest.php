@@ -20,7 +20,7 @@ use Tests\TestCase;
  *
  * Checkpoint berikutnya sebelumnya ditentukan sebagai "satu setelah yang terdekat".
  * Pendaki yang masih 100 m sebelum Pos 3 paling dekat ke Pos 3, sehingga sistem
- * menunjuk Pos 4 — pos yang sedang dituju dilewati dan jarak yang ditampilkan
+ * menunjuk Pos 4, pos yang sedang dituju dilewati dan jarak yang ditampilkan
  * mengarah ke pos yang salah.
  *
  * Posisi juga diterima tanpa pemeriksaan rentang sama sekali.

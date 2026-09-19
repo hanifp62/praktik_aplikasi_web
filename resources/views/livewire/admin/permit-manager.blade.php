@@ -165,15 +165,8 @@
                                     </td>
                                     <td class="py-3">
                                         <div class="flex flex-wrap gap-2">
-                                            <button wire:click="edit({{ $rule->id }})"
-                                                class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
-                                                Ubah
-                                            </button>
-                                            <button wire:click="delete({{ $rule->id }})"
-                                                wire:confirm="Hapus aturan perizinan ini?"
-                                                class="rounded border border-danger-300 px-2 py-1 text-xs text-danger-900 hover:bg-danger-50">
-                                                Hapus
-                                            </button>
+                                            <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $rule->id }})">Ubah</x-ui.button>
+                                            <x-ui.button variant="danger" size="sm" wire:click="delete({{ $rule->id }})" wire:confirm="Hapus aturan perizinan ini?">Hapus</x-ui.button>
                                         </div>
                                     </td>
                                 </tr>

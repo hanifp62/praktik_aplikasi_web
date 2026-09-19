@@ -9,7 +9,7 @@ use App\Models\Trail;
 use Illuminate\Support\Facades\DB;
 
 /**
- * F-29 — kode spasial yang selama ini tidak pernah dijalankan test mana pun.
+ * F-29: kode spasial yang selama ini tidak pernah dijalankan test mana pun.
  */
 class TrailGeometryTest extends SpatialTestCase
 {

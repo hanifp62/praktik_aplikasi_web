@@ -9,14 +9,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * PRD §87 — target WCAG 2.2 AA.
+ * PRD §87: target WCAG 2.2 AA.
  *
  * Yang diperiksa di sini adalah hal-hal yang dapat diperiksa mesin dan mudah rusak
  * tanpa disadari: setiap kontrol form punya label, pesan kesalahan terkait ke
  * kontrolnya, dan makna tidak pernah disampaikan lewat warna saja.
  *
- * Yang tidak dapat diperiksa di sini — urutan fokus yang masuk akal, teks alternatif
- * yang benar-benar bermakna, kontras pada seluruh kombinasi — tetap membutuhkan
+ * Yang tidak dapat diperiksa di sini, urutan fokus yang masuk akal, teks alternatif
+ * yang benar-benar bermakna, kontras pada seluruh kombinasi, tetap membutuhkan
  * pemeriksaan manusia. Test ini mempersempit, bukan menggantikannya.
  */
 class AccessibilityTest extends TestCase

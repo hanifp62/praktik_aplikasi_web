@@ -19,7 +19,7 @@ use Livewire\Component;
  *
  * Membuka halaman ini hanya menghitung, tidak menyimpan. Baris ReadinessCheck baru
  * ditulis ketika pengguna meminta perhitungan ulang atau mengonfirmasi pre-departure
- * check — keduanya peristiwa nyata yang layak masuk riwayat, tidak seperti sekadar
+ * check, keduanya peristiwa nyata yang layak masuk riwayat, tidak seperti sekadar
  * memuat halaman.
  */
 #[Layout('layouts.app')]

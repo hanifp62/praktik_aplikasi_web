@@ -19,8 +19,8 @@ use Tests\TestCase;
  * URL langsung. PRD §67 mensyaratkan jalur unggah privat dengan akses baca
  * terkendali dan moderasi.
  *
- * Sekaligus foto itu tidak pernah ditampilkan ke siapa pun — antrean moderasi hanya
- * menulis "Laporan menyertakan foto." — sehingga moderator tidak dapat memoderasinya
+ * Sekaligus foto itu tidak pernah ditampilkan ke siapa pun, antrean moderasi hanya
+ * menulis "Laporan menyertakan foto.", sehingga moderator tidak dapat memoderasinya
  * dan penggunanya tidak pernah melihatnya. Penyimpanannya murni liabilitas.
  */
 class ReportPhotoAccessTest extends TestCase

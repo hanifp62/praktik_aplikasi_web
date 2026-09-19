@@ -58,7 +58,7 @@ class PreparationService
      * memang punya aturan tercatat.
      *
      * Ditandai kritis karena tidak seperti perlengkapan, izin tidak dapat diurus di
-     * basecamp pada hari keberangkatan — jendela pemesanannya sudah lewat.
+     * basecamp pada hari keberangkatan, jendela pemesanannya sudah lewat.
      */
     private function addPermitItem(TripPlan $trip): void
     {

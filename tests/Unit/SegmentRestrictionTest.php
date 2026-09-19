@@ -18,12 +18,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * PRD §42 — status resmi dapat berada pada level MOUNTAIN, TRAIL, SEGMENT, atau AREA.
+ * PRD §42: status resmi dapat berada pada level MOUNTAIN, TRAIL, SEGMENT, atau AREA.
  *
  * Admin sudah dapat mencatat status ber-scope SEGMENT, tetapi tidak ada satu pun
  * service yang membacanya, sehingga pembatasan segmen tidak terlihat sama sekali
  * oleh pengguna. Realitanya persis kasus Semeru: jalur dibuka, tetapi hanya sampai
- * Ranu Kumbolo — puncaknya ditutup.
+ * Ranu Kumbolo, puncaknya ditutup.
  */
 class SegmentRestrictionTest extends TestCase
 {

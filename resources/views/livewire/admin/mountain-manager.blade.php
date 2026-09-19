@@ -73,14 +73,8 @@
                             <td class="p-4 text-gray-700">{{ $mountain->isArchived() ? 'Diarsipkan' : 'Aktif' }}</td>
                             <td class="p-4">
                                 <div class="flex gap-2">
-                                    <button wire:click="edit({{ $mountain->id }})"
-                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
-                                        Ubah
-                                    </button>
-                                    <button wire:click="toggleArchive({{ $mountain->id }})"
-                                        class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
-                                        {{ $mountain->isArchived() ? 'Aktifkan' : 'Arsipkan' }}
-                                    </button>
+                                    <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $mountain->id }})">Ubah</x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm" wire:click="toggleArchive({{ $mountain->id }})">{{ $mountain->isArchived() ? 'Aktifkan' : 'Arsipkan' }}</x-ui.button>
                                 </div>
                             </td>
                         </tr>

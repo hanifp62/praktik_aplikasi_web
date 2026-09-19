@@ -22,7 +22,7 @@ use Tests\TestCase;
  *
  * ReadinessService::evaluate() selalu membuat baris baru, dan komponennya
  * memanggilnya dari mount(). Akibatnya sekadar membuka halaman menulis ke basis
- * data — tiga kali buka menghasilkan tiga baris — dan penanda
+ * data, tiga kali buka menghasilkan tiga baris, dan penanda
  * pre_departure_confirmed yang ditulis pada satu baris langsung digantikan baris
  * baru pada pemuatan berikutnya, sehingga konfirmasi pengguna hilang.
  *

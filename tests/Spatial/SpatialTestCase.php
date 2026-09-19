@@ -12,7 +12,7 @@ use Throwable;
  *
  * Suite utama berjalan di SQLite, tempat kolom geografi tidak ada dan seluruh helper
  * spasial sengaja menjadi no-op yang aman. Konsekuensinya, kode spasial tidak pernah
- * benar-benar dijalankan oleh test mana pun — termasuk scopeNearby(), yang pada SQLite
+ * benar-benar dijalankan oleh test mana pun, termasuk scopeNearby(), yang pada SQLite
  * mengembalikan query tanpa penyaringan sama sekali dan karena itu akan lolos
  * meski logikanya salah.
  *

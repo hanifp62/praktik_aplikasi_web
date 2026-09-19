@@ -26,7 +26,7 @@ use Livewire\Volt\Volt;
 use Tests\TestCase;
 
 /**
- * PRD §100 — E2E core journey.
+ * PRD §100: E2E core journey.
  *
  * Register → Profil → Rencana → Rekomendasi → Pilih jalur → Trip → Persiapan → Check.
  *

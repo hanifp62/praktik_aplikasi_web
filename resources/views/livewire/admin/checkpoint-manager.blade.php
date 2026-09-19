@@ -51,17 +51,10 @@
                                 @endif
                             </span>
                             <span class="flex gap-2">
-                                <button wire:click="move({{ $checkpoint->id }}, -1)"
-                                    class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                                    aria-label="Naikkan urutan {{ $checkpoint->name }}">Naik</button>
-                                <button wire:click="move({{ $checkpoint->id }}, 1)"
-                                    class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                                    aria-label="Turunkan urutan {{ $checkpoint->name }}">Turun</button>
-                                <button wire:click="edit({{ $checkpoint->id }})"
-                                    class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">Ubah</button>
-                                <button wire:click="delete({{ $checkpoint->id }})"
-                                    wire:confirm="Hapus checkpoint ini?"
-                                    class="rounded border border-danger-300 px-2 py-1 text-xs text-danger-700 hover:bg-danger-50">Hapus</button>
+                                <x-ui.button variant="secondary" size="sm" wire:click="move({{ $checkpoint->id }}, -1)" aria-label="Naikkan urutan {{ $checkpoint->name }}">Naik</x-ui.button>
+                                <x-ui.button variant="secondary" size="sm" wire:click="move({{ $checkpoint->id }}, 1)" aria-label="Turunkan urutan {{ $checkpoint->name }}">Turun</x-ui.button>
+                                <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $checkpoint->id }})">Ubah</x-ui.button>
+                                <x-ui.button variant="danger" size="sm" wire:click="delete({{ $checkpoint->id }})" wire:confirm="Hapus checkpoint ini?">Hapus</x-ui.button>
                             </span>
                         </li>
                     @endforeach

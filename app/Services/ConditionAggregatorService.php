@@ -151,7 +151,7 @@ class ConditionAggregatorService
      * Peringatan tentang ketersediaan data kita sendiri, bukan tentang jalurnya.
      *
      * PRD §47: ketiadaan data cuaca dilaporkan apa adanya, tidak pernah disamakan
-     * dengan cuaca yang baik — tetapi juga tidak memblokir alur (PRD §94).
+     * dengan cuaca yang baik, tetapi juga tidak memblokir alur (PRD §94).
      *
      * @param  array<string, mixed>  $weather
      * @return array<int, string>

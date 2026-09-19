@@ -65,7 +65,7 @@ class OfficialStatus extends Model
     protected static function booted(): void
     {
         // Dipasang pada model, bukan pada komponen admin, agar setiap jalur tulis
-        // tercakup — penutupan jalur tidak boleh tertahan di cache sampai TTL habis.
+        // tercakup, penutupan jalur tidak boleh tertahan di cache sampai TTL habis.
         static::saved(fn (self $status) => $status->forgetAffectedTrailCaches());
         static::deleted(fn (self $status) => $status->forgetAffectedTrailCaches());
     }

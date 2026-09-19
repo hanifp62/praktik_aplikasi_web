@@ -31,7 +31,7 @@ class DesignSystemTest extends TestCase
     }
 
     /**
-     * Yang dilarang bukan pemakaian token merek — token justru boleh dipakai bebas,
+     * Yang dilarang bukan pemakaian token merek, token justru boleh dipakai bebas,
      * itu gunanya. Yang dilarang adalah menulis ulang resep tombol primer
      * (bg-brand-600 berpasangan dengan hover:bg-brand-700) di luar komponen,
      * karena resep itulah yang sebelumnya terduplikasi di 18 view.
@@ -96,6 +96,42 @@ class DesignSystemTest extends TestCase
         // WCAG 2.2: ukuran target sentuh dan focus yang terlihat (PRD §87).
         $this->assertStringContainsString('min-h-11', $button);
         $this->assertStringContainsString('focus-visible:ring', $button);
+    }
+
+    /**
+     * Jempol tidak ikut mengecil ketika tombolnya terlihat lebih kecil. WCAG 2.2
+     * menuntut area sentuh sekitar 44px, sedangkan tombol kecil buatan tangan di
+     * halaman admin sebelumnya hanya sekitar 24px.
+     */
+    public function test_no_view_builds_an_undersized_touch_target(): void
+    {
+        $offenders = [];
+
+        foreach ($this->bladeFiles() as $file) {
+            if ($this->isComponent($file->getRelativePathname())) {
+                continue;
+            }
+
+            if (preg_match('/class="[^"]*(?:px-2 py-1 text-xs|px-3 py-1\.5 text-xs)[^"]*"/', $file->getContents())) {
+                $offenders[] = $file->getRelativePathname();
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $offenders,
+            "Tombol kecil harus lewat <x-ui.button size=\"sm\">, yang tetap memberi area 44px:\n"
+                .implode("\n", $offenders)
+        );
+    }
+
+    public function test_the_small_button_size_keeps_the_full_touch_area(): void
+    {
+        $button = File::get(resource_path('views/components/ui/button.blade.php'));
+
+        // min-h-11 berada di kelas dasar, bukan di dalam cabang ukuran, sehingga
+        // ukuran "sm" tidak dapat menghilangkannya.
+        $this->assertMatchesRegularExpression('/\$base = .*min-h-11/s', $button);
     }
 
     /**

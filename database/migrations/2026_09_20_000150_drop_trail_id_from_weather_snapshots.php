@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * jalur. Beberapa jalur di kelurahan yang sama berbagi baris yang sama.
  *
  * Karena updateOrCreate berkunci pada (adm4_code, forecast_at), kolom trail_id berisi
- * jalur mana pun yang kebetulan diproses terakhir — nilainya menyesatkan. Lebih buruk,
+ * jalur mana pun yang kebetulan diproses terakhir, nilainya menyesatkan. Lebih buruk,
  * cascadeOnDelete-nya membuat penghapusan satu jalur ikut menghapus data cuaca yang
  * masih dipakai jalur lain di area yang sama.
  */
