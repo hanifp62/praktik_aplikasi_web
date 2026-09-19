@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'trip_plan_id', 'user_id', 'current_checkpoint_id', 'status',
+    'trip_plan_id', 'user_id', 'current_checkpoint_id', 'reached_checkpoint_sequence', 'status',
     'started_at', 'ended_at', 'location_updated_at',
 ])]
 // BR-13: precise location stays private by default and is never serialised with the model.

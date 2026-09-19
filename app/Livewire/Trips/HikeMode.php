@@ -4,7 +4,7 @@ namespace App\Livewire\Trips;
 
 use App\Models\Checkpoint;
 use App\Models\TripPlan;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -42,6 +42,15 @@ class HikeMode extends Component
     {
         $this->authorize('update', $this->trip);
 
+        // Nilai ini datang dari browser dan tidak boleh dipercaya begitu saja.
+        Validator::make(
+            ['latitude' => $latitude, 'longitude' => $longitude],
+            [
+                'latitude' => ['required', 'numeric', 'between:-90,90'],
+                'longitude' => ['required', 'numeric', 'between:-180,180'],
+            ]
+        )->validate();
+
         $this->latitude = $latitude;
         $this->longitude = $longitude;
 
@@ -55,6 +64,16 @@ class HikeMode extends Component
         $this->resolveNextCheckpoint();
     }
 
+    /**
+     * Pos berikutnya adalah pos pertama menurut urutan yang belum tercapai.
+     *
+     * Aturan lama — "satu setelah yang terdekat" — melewati pos yang sedang dituju:
+     * pendaki 100 m sebelum Pos 3 paling dekat ke Pos 3, lalu sistem menunjuk Pos 4.
+     *
+     * Sebuah pos dianggap tercapai setelah pendaki pernah berada dalam radius
+     * kedatangannya, dan kemajuan itu diingat pada sesi sehingga tidak hilang ketika
+     * pendaki turun kembali atau berputar.
+     */
     private function resolveNextCheckpoint(): void
     {
         $checkpoints = $this->checkpointCoordinates();
@@ -63,42 +82,89 @@ class HikeMode extends Component
             return;
         }
 
-        $nearestIndex = null;
-        $nearestDistance = null;
+        $radius = (int) config('hiking.hike_mode.checkpoint_arrival_radius_m');
+        $session = $this->trip->hikingSession;
+        $reached = (int) ($session?->reached_checkpoint_sequence ?? 0);
 
-        foreach ($checkpoints as $index => $checkpoint) {
-            if ($checkpoint['lat'] === null) {
+        // Pendaki bisa membuka Hike Mode di tengah jalur — misalnya setelah aplikasi
+        // ditutup. Pos terdekat memberi perkiraan sampai mana ia sudah berjalan, jadi
+        // pos-pos sebelumnya dianggap terlewati. Pos terdekat itu sendiri tidak ikut
+        // dianggap tercapai kecuali pendaki benar-benar berada dalam radiusnya.
+        $nearest = $this->nearestCheckpoint($checkpoints);
+
+        if ($nearest !== null) {
+            $reached = max($reached, (int) $nearest['sequence'] - 1);
+        }
+
+        foreach ($checkpoints as $checkpoint) {
+            if ($checkpoint['lat'] === null || $checkpoint['sequence'] <= $reached) {
                 continue;
             }
 
             $distance = $this->haversineMeters($this->latitude, $this->longitude, $checkpoint['lat'], $checkpoint['lng']);
 
-            if ($nearestDistance === null || $distance < $nearestDistance) {
-                $nearestDistance = $distance;
-                $nearestIndex = $index;
+            if ($distance <= $radius) {
+                // Kemajuan tidak pernah mundur, sehingga pendaki yang turun kembali
+                // tidak dikembalikan ke pos yang sudah ia lewati.
+                $reached = max($reached, (int) $checkpoint['sequence']);
             }
         }
 
-        if ($nearestIndex === null) {
-            return;
+        $next = null;
+
+        foreach ($checkpoints as $checkpoint) {
+            if ($checkpoint['sequence'] > $reached) {
+                $next = $checkpoint;
+                break;
+            }
         }
 
-        // The next checkpoint is the one after the closest, falling back to the closest at the end.
-        $next = $checkpoints[$nearestIndex + 1] ?? $checkpoints[$nearestIndex];
+        // Seluruh pos sudah dilewati: tetap tunjukkan yang terakhir sebagai rujukan.
+        $next ??= end($checkpoints) ?: null;
+
+        if ($next === null) {
+            return;
+        }
 
         $this->nextCheckpoint = $next;
         $this->distanceToNextMeters = $next['lat'] === null
             ? null
             : round($this->haversineMeters($this->latitude, $this->longitude, $next['lat'], $next['lng']));
 
-        if (isset($next['id'])) {
-            $this->trip->hikingSession?->update(['current_checkpoint_id' => $next['id']]);
+        $session?->update([
+            'reached_checkpoint_sequence' => $reached,
+            'current_checkpoint_id' => $next['id'] ?? null,
+        ]);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $checkpoints
+     * @return array<string, mixed>|null
+     */
+    private function nearestCheckpoint(array $checkpoints): ?array
+    {
+        $nearest = null;
+        $shortest = null;
+
+        foreach ($checkpoints as $checkpoint) {
+            if ($checkpoint['lat'] === null) {
+                continue;
+            }
+
+            $distance = $this->haversineMeters($this->latitude, $this->longitude, $checkpoint['lat'], $checkpoint['lng']);
+
+            if ($shortest === null || $distance < $shortest) {
+                $shortest = $distance;
+                $nearest = $checkpoint;
+            }
         }
+
+        return $nearest;
     }
 
     private function haversineMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
-        $earthRadius = 6371000;
+        $earthRadius = (int) config('hiking.hike_mode.earth_radius_m');
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
 
@@ -112,28 +178,15 @@ class HikeMode extends Component
      */
     public function checkpointCoordinates(): array
     {
-        if (! Checkpoint::spatialSupported()) {
-            return $this->trip->trail->checkpoints
-                ->map(fn (Checkpoint $checkpoint) => [
-                    'id' => $checkpoint->id,
-                    'name' => $checkpoint->name,
-                    'sequence' => $checkpoint->sequence,
-                    'lat' => null,
-                    'lng' => null,
-                ])->all();
-        }
-
-        return DB::table('checkpoints')
-            ->where('trail_id', $this->trip->trail_id)
-            ->orderBy('sequence')
-            ->selectRaw('id, name, sequence, ST_Y(location::geometry) as lat, ST_X(location::geometry) as lng')
-            ->get()
-            ->map(fn ($row) => [
-                'id' => $row->id,
-                'name' => $row->name,
-                'sequence' => $row->sequence,
-                'lat' => $row->lat !== null ? (float) $row->lat : null,
-                'lng' => $row->lng !== null ? (float) $row->lng : null,
+        // Koordinat dibaca dari kolom biasa, bukan diekstrak dari kolom geografi.
+        // Sumber yang sama bekerja di mana pun, termasuk koneksi tanpa PostGIS.
+        return $this->trip->trail->checkpoints
+            ->map(fn (Checkpoint $checkpoint) => [
+                'id' => $checkpoint->id,
+                'name' => $checkpoint->name,
+                'sequence' => (int) $checkpoint->sequence,
+                'lat' => $checkpoint->latitude,
+                'lng' => $checkpoint->longitude,
             ])
             ->all();
     }

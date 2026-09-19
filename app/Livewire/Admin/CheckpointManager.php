@@ -71,9 +71,9 @@ class CheckpointManager extends Component
         $this->elevation_m = $checkpoint->elevation_m;
         $this->notes = $checkpoint->notes;
 
-        $point = $checkpoint->readGeoJson('location');
-        $this->longitude = $point['coordinates'][0] ?? null;
-        $this->latitude = $point['coordinates'][1] ?? null;
+        // Dibaca dari kolom biasa; tidak perlu SQL spasial hanya untuk mengisi form.
+        $this->latitude = $checkpoint->latitude;
+        $this->longitude = $checkpoint->longitude;
     }
 
     public function save(AuditLogService $audit): void
@@ -100,7 +100,7 @@ class CheckpointManager extends Component
         }
 
         if ($this->latitude !== null && $this->longitude !== null) {
-            $checkpoint->writePoint('location', $this->latitude, $this->longitude);
+            $checkpoint->setCoordinates($this->latitude, $this->longitude);
         }
 
         $this->resetForm();
