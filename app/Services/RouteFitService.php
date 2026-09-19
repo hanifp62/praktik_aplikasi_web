@@ -29,10 +29,6 @@ class RouteFitService
 {
     public const ENGINE_VERSION = 'route-fit-v1';
 
-    private const LABEL_THRESHOLD_FIT = 0.75;
-
-    private const LABEL_THRESHOLD_PREPARE = 0.50;
-
     /**
      * Factors that gate the top label: a serious gap here can never read as "Cocok".
      */
@@ -145,20 +141,22 @@ class RouteFitService
      */
     private function label(float $score, array $factors): RouteFitLabel
     {
+        $criticalFloor = (float) config('hiking.route_fit.critical_factor_floor');
+
         $critical = array_filter(
             $factors,
             fn (FactorScore $f) => in_array($f->factor, self::CRITICAL_FACTORS, true)
         );
 
         foreach ($critical as $factor) {
-            if ($factor->score < 0.34) {
+            if ($factor->score < $criticalFloor) {
                 return RouteFitLabel::KURANG_COCOK;
             }
         }
 
         $label = match (true) {
-            $score >= self::LABEL_THRESHOLD_FIT => RouteFitLabel::COCOK,
-            $score >= self::LABEL_THRESHOLD_PREPARE => RouteFitLabel::PERLU_PERSIAPAN,
+            $score >= (float) config('hiking.route_fit.label_threshold_fit') => RouteFitLabel::COCOK,
+            $score >= (float) config('hiking.route_fit.label_threshold_prepare') => RouteFitLabel::PERLU_PERSIAPAN,
             default => RouteFitLabel::KURANG_COCOK,
         };
 

@@ -24,12 +24,12 @@ readonly class FactorScore
 
     public function isStrong(): bool
     {
-        return $this->score >= 0.75;
+        return $this->score >= (float) config('hiking.route_fit.strong_factor_threshold');
     }
 
     public function isWeak(): bool
     {
-        return $this->score < 0.5;
+        return $this->score < (float) config('hiking.route_fit.weak_factor_threshold');
     }
 
     /**

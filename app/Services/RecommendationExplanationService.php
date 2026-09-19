@@ -82,7 +82,7 @@ class RecommendationExplanationService
         $lines = [];
 
         foreach ($factors as $factor) {
-            if ($factor->score < 0.75) {
+            if ($factor->score < (float) config('hiking.route_fit.strong_factor_threshold')) {
                 $lines[] = match ($factor->factor->value) {
                     'experience_match' => 'Tinjau kembali karakteristik jalur dan pertimbangkan jalur latihan sebelum mencoba jalur ini.',
                     'technical_match' => 'Pelajari bagian teknis jalur dan siapkan perlengkapan yang sesuai.',

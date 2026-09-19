@@ -17,9 +17,23 @@ use App\Models\User;
 class CompatibilityScorer
 {
     /**
-     * Fallback elevation-gain reference per experience level when the hiker has no recorded history.
+     * Batas sebuah faktor dianggap kuat; dikalibrasi lewat config/hiking.php.
      */
-    private const ELEVATION_REFERENCE = [1 => 600, 2 => 1000, 3 => 1600, 4 => 2200];
+    private function strongThreshold(): float
+    {
+        return (float) config('hiking.route_fit.strong_factor_threshold');
+    }
+
+    /**
+     * Referensi elevation gain per rank pengalaman, dipakai hanya bila pendaki
+     * belum mencatat riwayat maupun preferensi sendiri.
+     */
+    private function elevationReference(int $experienceRank): int
+    {
+        $reference = config('hiking.route_fit.elevation_reference');
+
+        return (int) ($reference[$experienceRank] ?? end($reference));
+    }
 
     /**
      * @param  array<string, float>  $weights
@@ -92,7 +106,7 @@ class CompatibilityScorer
         $required = $this->physicalDemandRank($trail);
         $score = $this->rankScore($experienceRank, $required);
 
-        $detail = $score >= 0.75
+        $detail = $score >= $this->strongThreshold()
             ? 'Tingkat pengalaman Anda sesuai dengan beban fisik jalur ini.'
             : 'Beban fisik jalur ini lebih berat dibandingkan tingkat pengalaman yang Anda isi.';
 
@@ -122,7 +136,7 @@ class CompatibilityScorer
         $ratio = $trailMinutes / max(1, $targetMinutes);
         $score = $ratio <= 1 ? 1.0 : max(0.0, 1.0 - ($ratio - 1));
 
-        $detail = $score >= 0.75
+        $detail = $score >= $this->strongThreshold()
             ? 'Estimasi durasi jalur masih masuk dalam target waktu Anda.'
             : sprintf('Estimasi durasi jalur (%d jam) melebihi target waktu Anda.', (int) round($trailMinutes / 60));
 
@@ -156,7 +170,7 @@ class CompatibilityScorer
             array_map(fn ($terrain) => in_array($terrain->value, $known, true) ? null : $terrain->label(), $demanding)
         ));
 
-        $detail = $score >= 0.75
+        $detail = $score >= $this->strongThreshold()
             ? 'Anda sudah memiliki pengalaman pada karakter medan utama jalur ini.'
             : 'Terdapat medan yang belum pernah Anda lalui: '.implode(', ', $missing).'.';
 
@@ -167,7 +181,7 @@ class CompatibilityScorer
     {
         $score = $this->rankScore($experienceRank, $trail->technical_demand->expectedExperienceRank());
 
-        $detail = $score >= 0.75
+        $detail = $score >= $this->strongThreshold()
             ? sprintf('Tingkat teknis jalur (%s) sesuai dengan pengalaman Anda.', $trail->technical_demand->label())
             : sprintf('Tingkat teknis jalur (%s) di atas pengalaman yang Anda isi.', $trail->technical_demand->label());
 
@@ -195,12 +209,12 @@ class CompatibilityScorer
 
         $reference = $user->experience?->highest_elevation_gain_m
             ?? $user->preference?->max_elevation_gain_preference_m
-            ?? self::ELEVATION_REFERENCE[$experienceRank];
+            ?? $this->elevationReference($experienceRank);
 
         $ratio = $gain / max(1, $reference);
         $score = $ratio <= 1 ? 1.0 : max(0.0, 1.0 - ($ratio - 1));
 
-        $detail = $score >= 0.75
+        $detail = $score >= $this->strongThreshold()
             ? sprintf('Elevation gain %d m masih sebanding dengan pengalaman Anda.', $gain)
             : sprintf('Elevation gain %d m lebih besar dari referensi pengalaman Anda (%d m).', $gain, $reference);
 
@@ -213,7 +227,7 @@ class CompatibilityScorer
         $required = $trail->navigation_complexity->expectedNavigationRank();
         $score = $this->rankScore($userRank, $required, 0.5);
 
-        $detail = $score >= 0.75
+        $detail = $score >= $this->strongThreshold()
             ? sprintf('Kompleksitas navigasi jalur (%s) sesuai dengan pengalaman navigasi Anda.', $trail->navigation_complexity->label())
             : sprintf('Kompleksitas navigasi jalur (%s) menuntut kemampuan navigasi lebih dari yang Anda isi.', $trail->navigation_complexity->label());
 
