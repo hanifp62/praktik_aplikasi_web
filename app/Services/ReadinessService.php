@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\FreshnessState;
 use App\Enums\OfficialStatusValue;
 use App\Enums\ReadinessState;
 use App\Enums\RouteFitLabel;
@@ -39,7 +40,7 @@ class ReadinessService
         $status = $this->officialStatus->effectiveStatusForTrail($trip->trail);
         $conditions = $this->conditions->forTrail($trip->trail);
 
-        $state = $this->determineState($fit, $status, $preparationState);
+        $state = $this->determineState($fit, $status, $preparationState, $conditions);
 
         return new ReadinessAssessment(
             state: $state,
@@ -55,7 +56,7 @@ class ReadinessService
                 'weather' => $conditions['weather_context'],
                 'community' => $conditions['community_context'],
             ],
-            explanation: $this->explain($state, $fit, $status, $preparationState, $conditions['warnings']),
+            explanation: $this->explain($state, $fit, $status, $preparationState, $conditions),
         );
     }
 
@@ -93,9 +94,14 @@ class ReadinessService
 
     /**
      * @param  array<string, mixed>  $preparationState
+     * @param  array<string, mixed>  $conditions
      */
-    private function determineState(RouteFitResult $fit, OfficialStatusValue $status, array $preparationState): ReadinessState
-    {
+    private function determineState(
+        RouteFitResult $fit,
+        OfficialStatusValue $status,
+        array $preparationState,
+        array $conditions,
+    ): ReadinessState {
         // PRD §39: NOT_RECOMMENDED is reserved for clear product-level conditions such as an
         // official closure or a hard incompatibility - never a judgement about the person.
         if ($status === OfficialStatusValue::CLOSED || ! $fit->eligible) {
@@ -113,12 +119,37 @@ class ReadinessService
             return ReadinessState::NEEDS_PREPARATION;
         }
 
+        // Dimensi ketiga PRD §38. Kondisi terkini tidak pernah menaikkan state menjadi
+        // NOT_RECOMMENDED — itu tetap khusus penutupan resmi — tetapi juga tidak boleh
+        // dibiarkan hanya menjadi teks peringatan sementara statenya berbunyi READY.
+        if ($this->hasUnresolvedConditions($conditions)) {
+            return ReadinessState::NEEDS_PREPARATION;
+        }
+
         return ReadinessState::READY;
     }
 
     /**
+     * @param  array<string, mixed>  $conditions
+     */
+    private function hasUnresolvedConditions(array $conditions): bool
+    {
+        // Peringatan agregator mencakup tag komunitas yang perlu diwaspadai, pembatasan
+        // segmen, dan area terbatas yang memotong jalur. Semuanya soal jalurnya sendiri
+        // dan tidak dapat diselesaikan pengguna hanya dengan mencentang daftar.
+        //
+        // Ketersediaan data cuaca sengaja TIDAK ikut memblokir. PRD §94 menuntut
+        // kegagalan sumber eksternal ditangani dengan anggun, dan memblokir READY
+        // ketika BMKG sedang tidak dapat dihubungi berarti satu layanan pihak ketiga
+        // dapat menahan seluruh pengguna dari langkah inti alur. Kondisi cuaca tetap
+        // dilaporkan pada penjelasan, dan PRD §36 sudah menempatkan "prakiraan
+        // diperiksa" sebagai item persiapan yang harus dikonfirmasi pengguna sendiri.
+        return ($conditions['route_warnings'] ?? []) !== [];
+    }
+
+    /**
      * @param  array<string, mixed>  $preparationState
-     * @param  array<int, string>  $conditionWarnings
+     * @param  array<string, mixed>  $conditions
      * @return array<string, array<int, string>>
      */
     private function explain(
@@ -126,10 +157,12 @@ class ReadinessService
         RouteFitResult $fit,
         OfficialStatusValue $status,
         array $preparationState,
-        array $conditionWarnings,
+        array $conditions,
     ): array {
         $reasons = [];
         $outstanding = [];
+        $conditionWarnings = $conditions['warnings'] ?? [];
+        $weather = $conditions['weather_context'] ?? [];
 
         if ($status === OfficialStatusValue::CLOSED) {
             $reasons[] = 'Status resmi jalur ini tercatat TUTUP.';
@@ -159,8 +192,16 @@ class ReadinessService
             $outstanding[] = sprintf('Persiapan baru %d%% dikonfirmasi.', $preparationState['completion_percent'] ?? 0);
         }
 
+        // Pengguna harus tahu bahwa yang menahan kesiapannya adalah data cuaca, bukan
+        // sesuatu yang ia lupa kerjakan (PRD §47).
+        if (($weather['available'] ?? false) === false) {
+            $outstanding[] = 'Data cuaca area sekitar jalur belum tersedia, sehingga kondisi terkini belum dapat diperiksa.';
+        } elseif (($weather['freshness'] ?? null) === FreshnessState::STALE->value) {
+            $outstanding[] = 'Data cuaca belum berhasil diperbarui, sehingga kondisi terkini belum dapat dipastikan.';
+        }
+
         if ($state === ReadinessState::READY) {
-            $reasons[] = 'Route fit, persiapan, dan status resmi saat ini tidak menunjukkan isu yang belum selesai.';
+            $reasons[] = 'Route fit, persiapan, status resmi, dan kondisi terkini saat ini tidak menunjukkan isu yang belum selesai.';
         }
 
         return [

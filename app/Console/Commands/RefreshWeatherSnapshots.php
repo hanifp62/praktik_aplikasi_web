@@ -14,34 +14,44 @@ class RefreshWeatherSnapshots extends Command
 
     public function handle(WeatherService $weather): int
     {
-        $trails = Trail::query()
+        // Prakiraan BMKG melekat pada kode wilayah, bukan pada jalur. Beberapa jalur di
+        // satu kelurahan berbagi kode yang sama, jadi mengambil per jalur berarti
+        // memanggil area yang sama berulang kali — memboroskan kuota 60 permintaan per
+        // menit per IP dan menulis ulang baris yang sama.
+        $areas = Trail::query()
             ->published()
             ->whereNotNull('weather_adm4_code')
             ->when($this->option('trail'), fn ($query, $id) => $query->whereKey($id))
-            ->get();
+            ->get()
+            ->unique('weather_adm4_code')
+            ->values();
 
-        if ($trails->isEmpty()) {
-            $this->info('No published trails with a weather reference area.');
+        if ($areas->isEmpty()) {
+            $this->info('Tidak ada jalur terpublikasi dengan area referensi cuaca.');
 
             return self::SUCCESS;
         }
 
         $failed = 0;
 
-        foreach ($trails as $trail) {
+        foreach ($areas as $trail) {
             $stored = $weather->refreshForTrail($trail);
 
             if ($stored === 0) {
                 $failed++;
-                $this->warn(sprintf('No forecast stored for %s (adm4 %s).', $trail->name, $trail->weather_adm4_code));
+                $this->warn(sprintf('Tidak ada prakiraan tersimpan untuk area %s.', $trail->weather_adm4_code));
 
                 continue;
             }
 
-            $this->line(sprintf('%s: %d snapshots.', $trail->name, $stored));
+            $this->line(sprintf('%s: %d prakiraan.', $trail->weather_adm4_code, $stored));
         }
 
-        $this->info(sprintf('Done. %d trails processed, %d without new data.', $trails->count(), $failed));
+        $this->info(sprintf(
+            'Selesai. %d area diproses, %d tanpa data baru.',
+            $areas->count(),
+            $failed
+        ));
 
         return self::SUCCESS;
     }

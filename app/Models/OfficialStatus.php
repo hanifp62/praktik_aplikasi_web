@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\OfficialStatusValue;
 use App\Enums\StatusScope;
+use App\Services\OfficialStatusService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -59,5 +60,29 @@ class OfficialStatus extends Model
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    protected static function booted(): void
+    {
+        // Snapshot status resmi di-cache sebagai data publik (PRD §97). Pembatalannya
+        // dipasang pada model, bukan pada komponen admin, agar setiap jalur tulis —
+        // admin, seeder, impor di kemudian hari — ikut tercakup. Perubahan status
+        // menyangkut pembatasan jalur, jadi tidak boleh tertahan sampai TTL habis.
+        static::saved(fn (self $status) => $status->forgetAffectedTrailCaches());
+        static::deleted(fn (self $status) => $status->forgetAffectedTrailCaches());
+    }
+
+    private function forgetAffectedTrailCaches(): void
+    {
+        $trailIds = match ($this->statusable_type) {
+            (new Trail)->getMorphClass() => [$this->statusable_id],
+            (new Mountain)->getMorphClass() => Trail::where('mountain_id', $this->statusable_id)->pluck('id')->all(),
+            (new TrailSegment)->getMorphClass() => TrailSegment::where('id', $this->statusable_id)->pluck('trail_id')->all(),
+            default => [],
+        };
+
+        foreach ($trailIds as $trailId) {
+            OfficialStatusService::forgetCachedSnapshot((int) $trailId);
+        }
     }
 }

@@ -9,6 +9,7 @@ use App\Models\Trail;
 use App\Models\TrailSegment;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class OfficialStatusService
 {
@@ -244,6 +245,34 @@ class OfficialStatusService
         }
 
         return $restrictions;
+    }
+
+    /**
+     * PRD §97: hanya data publik yang boleh masuk cache bersama. Snapshot status resmi
+     * adalah data publik yang sama untuk setiap pengguna, sehingga aman dibagikan.
+     * Tidak ada apa pun yang terikat pengguna di dalamnya.
+     */
+    public function cachedSnapshotForTrail(Trail $trail): array
+    {
+        return Cache::remember(
+            self::snapshotCacheKey($trail->id),
+            (int) config('hiking.cache.public_ttl_seconds'),
+            fn () => $this->snapshotForTrail($trail)
+        );
+    }
+
+    /**
+     * Dipanggil ketika admin mengubah status resmi, supaya perubahan yang menyangkut
+     * pembatasan jalur tidak tertahan di cache sampai TTL-nya habis.
+     */
+    public static function forgetCachedSnapshot(int $trailId): void
+    {
+        Cache::forget(self::snapshotCacheKey($trailId));
+    }
+
+    private static function snapshotCacheKey(int $trailId): string
+    {
+        return "trail:{$trailId}:official-status-snapshot";
     }
 
     /**
