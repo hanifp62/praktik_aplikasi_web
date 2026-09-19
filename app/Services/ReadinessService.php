@@ -7,6 +7,7 @@ use App\Enums\ReadinessState;
 use App\Enums\RouteFitLabel;
 use App\Models\ReadinessCheck;
 use App\Models\TripPlan;
+use App\Services\Readiness\ReadinessAssessment;
 use App\Services\RouteFit\RouteFitResult;
 
 /**
@@ -22,7 +23,14 @@ class ReadinessService
         private readonly ConditionAggregatorService $conditions,
     ) {}
 
-    public function evaluate(TripPlan $trip): ReadinessCheck
+    /**
+     * Menghitung readiness tanpa menyentuh basis data untuk menulis.
+     *
+     * Membuka halaman readiness bukan sebuah peristiwa yang layak dicatat; yang layak
+     * dicatat adalah ketika pengguna meminta perhitungan ulang atau mengonfirmasi
+     * pre-departure check.
+     */
+    public function compute(TripPlan $trip): ReadinessAssessment
     {
         $trip->loadMissing(['trail.mountain', 'preparationItems', 'user.profile', 'user.experience', 'user.preference', 'hikingGoal']);
 
@@ -33,24 +41,54 @@ class ReadinessService
 
         $state = $this->determineState($fit, $status, $preparationState);
 
-        return ReadinessCheck::create([
-            'trip_plan_id' => $trip->id,
-            'computed_state' => $state->value,
-            'route_fit_snapshot' => [
+        return new ReadinessAssessment(
+            state: $state,
+            routeFitSnapshot: [
                 'label' => $fit->label?->value,
                 'eligible' => $fit->eligible,
                 'failed_rules' => $fit->failedRules,
                 'engine_version' => $fit->engineVersion,
             ],
-            'preparation_state' => $preparationState,
-            'official_status_snapshot' => $conditions['official_status'],
-            'condition_snapshot' => [
+            preparationState: $preparationState,
+            officialStatusSnapshot: $conditions['official_status'],
+            conditionSnapshot: [
                 'weather' => $conditions['weather_context'],
                 'community' => $conditions['community_context'],
             ],
-            'explanation' => $this->explain($state, $fit, $status, $preparationState, $conditions['warnings']),
-            'computed_at' => now(),
-        ]);
+            explanation: $this->explain($state, $fit, $status, $preparationState, $conditions['warnings']),
+        );
+    }
+
+    /**
+     * Menyimpan hasil perhitungan sebagai satu baris ReadinessCheck.
+     */
+    public function record(TripPlan $trip, ?ReadinessAssessment $assessment = null): ReadinessCheck
+    {
+        $assessment ??= $this->compute($trip);
+
+        return ReadinessCheck::create(array_merge(
+            ['trip_plan_id' => $trip->id],
+            $assessment->toAttributes()
+        ));
+    }
+
+    /**
+     * Check tersimpan terakhir untuk trip ini, atau null bila belum pernah dicatat.
+     */
+    public function latestCheck(TripPlan $trip): ?ReadinessCheck
+    {
+        return ReadinessCheck::query()
+            ->where('trip_plan_id', $trip->id)
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * Hitung lalu simpan. Dipertahankan untuk pemanggil yang memang ingin keduanya.
+     */
+    public function evaluate(TripPlan $trip): ReadinessCheck
+    {
+        return $this->record($trip);
     }
 
     /**

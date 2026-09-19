@@ -7,6 +7,13 @@
             <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
 
+        @if ($preDepartureConfirmed)
+            <x-ui.alert variant="success" title="Pre-departure check sudah dikonfirmasi">
+                Dicatat {{ \App\Support\Timezone::display($preDepartureConfirmedAt, \App\Support\Timezone::forTrail($trip->trail)) ?? 'sebelumnya' }}.
+                Kondisi di bawah tetap dihitung ulang setiap halaman dibuka, jadi periksa kembali sebelum berangkat.
+            </x-ui.alert>
+        @endif
+
         @php
             $state = $check?->computed_state;
             $stateClasses = match ($state?->value) {
@@ -88,7 +95,9 @@
                 Kembali ke persiapan
             </a>
             @if ($state !== \App\Enums\ReadinessState::NOT_RECOMMENDED)
-                <x-ui.button wire:click="confirmPreDeparture">Konfirmasi pre-departure check</x-ui.button>
+                <x-ui.button wire:click="confirmPreDeparture">
+                    {{ $preDepartureConfirmed ? 'Konfirmasi ulang pre-departure check' : 'Konfirmasi pre-departure check' }}
+                </x-ui.button>
             @endif
             <a href="{{ route('trips.show', $trip) }}" wire:navigate
                 class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
