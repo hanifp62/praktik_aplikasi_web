@@ -33,7 +33,7 @@
                                         @endif
                                     </p>
                                     <p class="mt-1 text-xs text-gray-500">
-                                        Dilaporkan oleh {{ $report->user->name }} &middot;
+                                        Dilaporkan oleh {{ $report->authorLabel() }} &middot;
                                         pendakian {{ $report->hike_date->translatedFormat('d M Y') }} &middot;
                                         dikirim {{ $report->created_at->diffForHumans() }}
                                     </p>

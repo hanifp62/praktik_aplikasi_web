@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'trail_id', 'trail_segment_id', 'user_id', 'hike_date', 'condition_tags',
@@ -76,5 +77,28 @@ class TrailConditionReport extends Model
     public function daysSinceHike(): int
     {
         return (int) $this->hike_date->diffInDays(now());
+    }
+
+    /**
+     * PRD §84: pengguna yang menghapus akunnya kehilangan kaitan ke laporannya, tetapi
+     * laporan yang sudah disetujui tetap berguna bagi pendaki lain. Label netral ini
+     * dipakai di seluruh tampilan, bukan $report->user->name yang akan menjadi null.
+     */
+    public function authorLabel(): string
+    {
+        return $this->user?->name ?? 'Pendaki terdahulu';
+    }
+
+    protected static function booted(): void
+    {
+        // Berkas foto tidak ikut terhapus oleh penghapusan baris, sehingga tanpa ini
+        // gambar milik laporan yang sudah hilang tetap tertinggal di penyimpanan.
+        static::deleting(function (self $report) {
+            if (blank($report->photo_path)) {
+                return;
+            }
+
+            Storage::disk(config('filesystems.report_photos_disk'))->delete($report->photo_path);
+        });
     }
 }

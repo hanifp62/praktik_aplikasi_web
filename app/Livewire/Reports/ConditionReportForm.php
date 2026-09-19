@@ -10,6 +10,7 @@ use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Services\AnalyticsRecorder;
 use App\Support\ImageSanitizer;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -70,6 +71,12 @@ class ConditionReportForm extends Component
     {
         $this->validate();
 
+        // PRD §100. Laporan menulis ke basis data dan masuk antrean moderasi manusia,
+        // jadi batasnya menjaga moderator sekaligus penyimpanan.
+        if (! $this->withinRateLimit()) {
+            return;
+        }
+
         $photoPath = null;
 
         if ($this->photo) {
@@ -112,6 +119,30 @@ class ConditionReportForm extends Component
 
         session()->flash('status', 'Laporan terkirim dan menunggu moderasi sebelum tampil untuk pengguna lain.');
         $this->redirectRoute('history', navigate: true);
+    }
+
+    /**
+     * Batas per pengguna, bukan global, supaya satu pengguna yang berlebihan tidak
+     * membungkam pengguna lain.
+     */
+    private function withinRateLimit(): bool
+    {
+        $key = 'report-submit:'.auth()->id();
+        $limit = (int) config('hiking.rate_limits.report_submissions_per_hour');
+
+        if (RateLimiter::tooManyAttempts($key, $limit)) {
+            $this->addError('form', sprintf(
+                'Anda sudah mengirim %d laporan dalam satu jam terakhir. Coba lagi dalam %d menit.',
+                $limit,
+                (int) ceil(RateLimiter::availableIn($key) / 60)
+            ));
+
+            return false;
+        }
+
+        RateLimiter::hit($key, 3600);
+
+        return true;
     }
 
     public function render()

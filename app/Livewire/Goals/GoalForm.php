@@ -8,6 +8,7 @@ use App\Enums\TripType;
 use App\Models\HikingGoal;
 use App\Services\AnalyticsRecorder;
 use App\Services\RouteFitService;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -72,6 +73,23 @@ class GoalForm extends Component
 
             return;
         }
+
+        // PRD §100. Satu run mengevaluasi seluruh jalur kandidat dan menyimpan jejak
+        // auditnya, jadi biayanya sebanding dengan ukuran dataset.
+        $key = 'recommendation-run:'.$user->id;
+        $limit = (int) config('hiking.rate_limits.recommendation_runs_per_hour');
+
+        if (RateLimiter::tooManyAttempts($key, $limit)) {
+            $this->addError('form', sprintf(
+                'Anda sudah membuat %d rencana dalam satu jam terakhir. Coba lagi dalam %d menit.',
+                $limit,
+                (int) ceil(RateLimiter::availableIn($key) / 60)
+            ));
+
+            return;
+        }
+
+        RateLimiter::hit($key, 3600);
 
         $goal = HikingGoal::create([
             'user_id' => $user->id,
