@@ -41,6 +41,8 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 | Menambah faktor kompatibilitas baru | `App\Enums\CompatibilityFactor` + method baru di `CompatibilityScorer::score()` |
 | Menambah kategori item persiapan | `App\Enums\PreparationCategory` + seeder `PreparationTemplateSeeder` |
 | Menambah tag kondisi jalur | `App\Enums\ConditionTag` |
+| Mengubah zona waktu sebuah gunung | Kolom `mountains.timezone` |
+| Mencatat aturan izin sebuah jalur | Tabel `permit_requirements` (belum ada CRUD admin) |
 
 ## Lapisan kode
 
@@ -53,14 +55,17 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 | Service | Tanggung jawab |
 |---|---|
 | `RouteFitService` | Tiga lapis mesin rekomendasi: hard constraint, kompatibilitas, preferensi (PRD §25) |
-| `RouteFit\CompatibilityScorer` | Menilai tiap faktor 0..1 |
+| `RouteFit\CompatibilityScorer` | Menilai tiap faktor 0..1, dan menandai faktor yang datanya belum ada |
 | `RecommendationExplanationService` | Mengubah skor menjadi penjelasan yang dibaca manusia |
-| `OfficialStatusService` | Status resmi dan aturan kaskade gunung → jalur → segmen |
-| `WeatherService` | Integrasi BMKG, normalisasi, dan kesegaran |
+| `OfficialStatusService` | Status resmi, kaskade gunung → jalur → segmen, dan cache snapshot publik |
+| `WeatherService` | Integrasi BMKG, normalisasi ke UTC, dan kesegaran |
 | `ConditionAggregatorService` | Menggabungkan status, cuaca, dan laporan komunitas **tanpa mencampur otoritasnya** |
-| `PreparationService` | Membangun checklist dari karakteristik jalur |
-| `ReadinessService` | Menggabungkan route fit + persiapan + kondisi menjadi satu state |
+| `PermitService` | Aturan perizinan pihak lain dan benturan jendela booking |
+| `PreparationService` | Membangun checklist dari karakteristik jalur dan aturan izinnya |
+| `ReadinessService` | `compute()` menghitung tanpa efek samping, `record()` menyimpan |
 | `AuditLogService`, `AnalyticsRecorder` | Jejak audit dan funnel |
+
+**`app/Support`** — utilitas yang tidak memuat kebijakan produk: `Timezone` (konversi WIB/WITA/WIT), `ImageSanitizer` (pembersih EXIF), `PostGis` (kolom geografi).
 
 **`app/Policies`** — otorisasi tingkat objek. Setiap komponen Livewire yang menerima model dari route **wajib** memanggil `$this->authorize()` di `mount()`.
 
@@ -77,6 +82,16 @@ Aturan berikut berasal dari PRD dan ada test yang menjaganya. Melanggarnya membu
 5. **OPEN di level gunung tidak berarti seluruh jalurnya OPEN.** Pembatasan turun ke bawah; kelonggaran tidak. (§42)
 6. **Lokasi diminta hanya di Hike Mode**, tidak di halaman lain. (§83)
 7. **Makna tidak pernah disampaikan lewat warna saja.** (§87)
+8. **Kegagalan sumber eksternal tidak memblokir alur.** BMKG yang tidak dapat dihubungi dilaporkan apa adanya, tetapi tidak menahan pengguna dari langkah inti. (§94)
+9. **Waktu disimpan UTC, ditampilkan dalam zona gunungnya** lengkap dengan penanda WIB/WITA/WIT. (§93)
+
+## Yang belum ada
+
+Dicatat terbuka supaya tidak terlupakan:
+
+- **CRUD admin untuk `permit_requirements`.** Aturan izin hanya dapat dimasukkan lewat seeder atau tinker.
+- **Pemeriksaan aksesibilitas manual.** Test hanya menutup hal yang dapat diperiksa mesin: label, struktur judul, bahasa dokumen. Urutan fokus, kebermaknaan teks alternatif, dan kontras pada seluruh kombinasi masih butuh mata manusia.
+- **Suite spasial di mesin pengembang.** Berjalan di CI, tetapi melewati dirinya secara lokal sampai `SPATIAL_TEST_DSN` diisi.
 
 ## Basis data
 
