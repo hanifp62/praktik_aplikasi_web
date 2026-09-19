@@ -72,7 +72,7 @@
             @if ($weather['available'] ?? false)
                 <p class="text-sm text-gray-700">Area referensi: {{ $weather['reference_area'] ?? 'Tidak dicatat' }}</p>
                 <p class="mt-1 text-xs text-gray-500">Sumber: {{ $weather['source'] ?? 'BMKG' }}</p>
-                <x-ui.freshness :state="$weather['freshness'] ?? null" :timestamp="$weather['fetched_at'] ?? null" />
+                <x-ui.freshness :state="$weather['freshness'] ?? null" :timestamp="$weather['fetched_at'] ?? null" :timezone="$weather['timezone'] ?? null" />
             @else
                 <p class="text-sm text-gray-600">{{ $weather['message'] ?? 'Data cuaca tidak tersedia.' }}</p>
             @endif

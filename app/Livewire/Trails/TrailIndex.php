@@ -40,8 +40,13 @@ class TrailIndex extends Component
         $trails = Trail::query()
             ->published()
             ->with('mountain')
-            ->when($this->search, fn ($query, $search) => $query->where('name', 'like', "%{$search}%")
-                ->orWhereHas('mountain', fn ($q) => $q->where('name', 'like', "%{$search}%")))
+            // Kondisi pencarian wajib dikurung. Tanpa grup, OR-nya menggantung di luar
+            // published() sehingga jalur draft dan yang diarsipkan ikut lolos begitu
+            // nama gunungnya cocok.
+            ->when($this->search, fn ($query, $search) => $query->where(
+                fn ($group) => $group->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('mountain', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ))
             ->when($this->technical, fn ($query, $technical) => $query->where('technical_demand', $technical))
             ->when($this->region, fn ($query, $region) => $query->whereHas(
                 'mountain',

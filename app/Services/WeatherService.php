@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\FreshnessState;
 use App\Models\Trail;
 use App\Models\WeatherSnapshot;
+use App\Support\Timezone;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -50,7 +51,7 @@ class WeatherService
             }
 
             WeatherSnapshot::updateOrCreate(
-                ['adm4_code' => $normalized['adm4_code'], 'local_datetime' => $normalized['local_datetime']],
+                ['adm4_code' => $normalized['adm4_code'], 'forecast_at' => $normalized['forecast_at']],
                 $normalized
             );
 
@@ -111,17 +112,27 @@ class WeatherService
      */
     private function normalize(array $entry, Trail $trail, Carbon $fetchedAt): ?array
     {
+        // BMKG mengirim keduanya. `utc_datetime` tidak ambigu, sedangkan `local_datetime`
+        // adalah waktu lokal Indonesia tanpa penanda zona — menyimpannya apa adanya pada
+        // aplikasi bertimezone UTC menggeser seluruh jadwal tujuh jam.
+        $utcDatetime = $entry['utc_datetime'] ?? null;
         $localDatetime = $entry['local_datetime'] ?? null;
 
-        if (blank($localDatetime)) {
+        if (blank($utcDatetime) && blank($localDatetime)) {
             return null;
         }
 
+        $forecastAt = blank($utcDatetime)
+            // Tanpa utc_datetime, satu-satunya asumsi yang dapat dipakai adalah zona
+            // gunung yang bersangkutan.
+            ? Carbon::parse($localDatetime, Timezone::forTrail($trail))->utc()
+            : Carbon::parse($utcDatetime, 'UTC');
+
         return [
-            'trail_id' => $trail->id,
             'adm4_code' => $trail->weather_adm4_code,
             'reference_area' => $trail->weather_reference_area,
-            'local_datetime' => Carbon::parse($localDatetime),
+            'forecast_at' => $forecastAt,
+            'local_datetime' => $localDatetime,
             'weather_description' => $entry['weather_desc'] ?? null,
             'temperature_c' => isset($entry['t']) ? (float) $entry['t'] : null,
             'humidity_percent' => isset($entry['hu']) ? (int) $entry['hu'] : null,
@@ -148,8 +159,8 @@ class WeatherService
 
         return WeatherSnapshot::query()
             ->where('adm4_code', $trail->weather_adm4_code)
-            ->whereBetween('local_datetime', [now()->subHours(3), now()->addHours($hours)])
-            ->orderBy('local_datetime')
+            ->whereBetween('forecast_at', [now()->subHours(3), now()->addHours($hours)])
+            ->orderBy('forecast_at')
             ->get();
     }
 
@@ -187,16 +198,23 @@ class WeatherService
         }
 
         $freshness = $this->freshness($latest->fetched_at);
+        $timezone = Timezone::forTrail($trail);
 
         return [
             'available' => true,
             'source' => $latest->source,
             'reference_area' => $latest->reference_area ?? $trail->weather_reference_area,
+            'timezone' => $timezone,
+            'timezone_label' => Timezone::label($timezone),
             'fetched_at' => $latest->fetched_at?->toIso8601String(),
+            // Waktu yang dibaca pengguna selalu dalam zona gunungnya, lengkap dengan
+            // penandanya; tanpa itu tidak ada cara tahu jam mana yang dimaksud.
+            'fetched_at_display' => Timezone::display($latest->fetched_at, $timezone),
             'analysis_date' => $latest->analysis_date?->toIso8601String(),
             'freshness' => $freshness->value,
             'message' => $freshness === FreshnessState::STALE
-                ? 'Data cuaca belum berhasil diperbarui. Data terakhir tersedia pada '.$latest->fetched_at?->translatedFormat('d M Y H:i').'.'
+                ? 'Data cuaca belum berhasil diperbarui. Data terakhir tersedia pada '
+                    .Timezone::display($latest->fetched_at, $timezone).'.'
                 : null,
             'forecast' => $this->forecastForTrail($trail)->all(),
         ];

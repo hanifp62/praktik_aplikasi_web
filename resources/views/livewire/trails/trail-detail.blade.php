@@ -104,7 +104,9 @@
                         <caption class="sr-only">Prakiraan cuaca per tiga jam</caption>
                         <thead>
                             <tr class="text-left text-gray-500">
-                                <th scope="col" class="py-2 pr-4">Waktu</th>
+                                <th scope="col" class="py-2 pr-4">
+                                    Waktu ({{ $conditions['weather_context']['timezone_label'] ?? 'WIB' }})
+                                </th>
                                 <th scope="col" class="py-2 pr-4">Cuaca</th>
                                 <th scope="col" class="py-2 pr-4">Suhu</th>
                                 <th scope="col" class="py-2 pr-4">Kelembapan</th>
@@ -113,7 +115,12 @@
                         <tbody>
                             @foreach (array_slice($conditions['weather_context']['forecast'], 0, 8) as $snapshot)
                                 <tr class="border-t border-gray-100">
-                                    <td class="py-2 pr-4">{{ $snapshot->local_datetime->translatedFormat('d M H:i') }}</td>
+                                    <td class="py-2 pr-4">
+                                        {{ $snapshot->forecast_at
+                                            ->copy()
+                                            ->setTimezone($conditions['weather_context']['timezone'] ?? \App\Support\Timezone::DEFAULT)
+                                            ->translatedFormat('d M H:i') }}
+                                    </td>
                                     <td class="py-2 pr-4">{{ $snapshot->weather_description ?? '-' }}</td>
                                     <td class="py-2 pr-4">{{ $snapshot->temperature_c ?? '-' }} &deg;C</td>
                                     <td class="py-2 pr-4">{{ $snapshot->humidity_percent ?? '-' }}%</td>
@@ -124,7 +131,8 @@
                 </div>
                 <p class="mt-3 text-xs text-gray-500">Sumber data cuaca: {{ $conditions['weather_context']['source'] }}</p>
                 <x-ui.freshness :state="$conditions['weather_context']['freshness']"
-                    :timestamp="$conditions['weather_context']['fetched_at']" />
+                    :timestamp="$conditions['weather_context']['fetched_at']"
+                    :timezone="$conditions['weather_context']['timezone'] ?? null" />
             @else
                 <p class="text-sm text-gray-600">{{ $conditions['weather_context']['message'] }}</p>
             @endif

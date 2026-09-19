@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
-    'name', 'slug', 'province', 'region', 'elevation_mdpl', 'description',
+    'name', 'slug', 'province', 'region', 'timezone', 'elevation_mdpl', 'description',
     'data_source_id', 'archived_at',
 ])]
 #[Hidden(['location'])]
