@@ -28,8 +28,8 @@ Route::view('/', 'welcome');
 Route::view('/awal', 'awal');
 
 Route::middleware(['auth'])->group(function () {
-    Route::view('dashboard', 'dashboard')->middleware('verified')->name('dashboard');
-    Route::view('profile', 'profile')->name('profile');
+    Route::view('dashboard', 'dashboard', ['title' => 'Dasbor'])->middleware('verified')->name('dashboard');
+    Route::view('profile', 'profile', ['title' => 'Profil Akun'])->name('profile');
 
     // Profile -> goal -> route fit -> plan -> prepare -> check -> hike -> report -> history.
     Route::get('onboarding', ProfileSetup::class)->name('onboarding');

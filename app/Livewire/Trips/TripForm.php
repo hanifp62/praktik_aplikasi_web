@@ -9,6 +9,7 @@ use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Services\AnalyticsRecorder;
 use App\Services\PreparationService;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -62,7 +63,11 @@ class TripForm extends Component
     protected function rules(): array
     {
         return [
-            'trail_id' => ['required', 'exists:trails,id'],
+            // Mesin route fit menolak jalur yang belum dipublikasikan sebagai hard
+            // constraint; pembuatan trip tidak boleh menjadi jalan pintas melewatinya.
+            'trail_id' => ['required', Rule::exists('trails', 'id')->where(
+                fn ($query) => $query->where('is_published', true)->whereNull('archived_at')
+            )],
             'hiking_goal_id' => ['nullable', 'exists:hiking_goals,id'],
             'name' => ['required', 'string', 'max:120'],
             'planned_date' => ['required', 'date', 'after_or_equal:today'],

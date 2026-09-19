@@ -8,7 +8,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
-#[Title('Rencana Trip Saya')]
+#[Title('Trip Saya')]
 class TripIndex extends Component
 {
     use WithPagination;
