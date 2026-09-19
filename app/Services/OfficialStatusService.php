@@ -7,6 +7,7 @@ use App\Models\Mountain;
 use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\TrailSegment;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 class OfficialStatusService
@@ -58,6 +59,139 @@ class OfficialStatusService
         }
 
         return $trailStatus;
+    }
+
+    /**
+     * Status efektif untuk banyak jalur sekaligus.
+     *
+     * Versi per-jalur membutuhkan dua query masing-masing, sehingga mesin rekomendasi
+     * tumbuh linear terhadap jumlah kandidat. Di sini seluruh status jalur diambil
+     * dalam satu query dan seluruh status gunung dalam satu query lagi, lalu aturan
+     * kaskade §42 diterapkan di memori.
+     *
+     * @param  Collection<int, Trail>  $trails
+     * @return array<int, OfficialStatusValue> berkunci id jalur
+     */
+    public function effectiveStatusesForTrails(Collection $trails): array
+    {
+        if ($trails->isEmpty()) {
+            return [];
+        }
+
+        $trailStatuses = $this->latestStatusesFor((new Trail)->getMorphClass(), $trails->pluck('id'));
+        $mountainIds = $trails->pluck('mountain_id')->filter()->unique();
+        $mountainStatuses = $this->latestStatusesFor((new Mountain)->getMorphClass(), $mountainIds);
+
+        $effective = [];
+
+        foreach ($trails as $trail) {
+            $trailStatus = $trailStatuses[$trail->id] ?? OfficialStatusValue::UNKNOWN;
+            $mountainStatus = $mountainStatuses[$trail->mountain_id] ?? OfficialStatusValue::UNKNOWN;
+
+            $effective[$trail->id] = $this->cascade($trailStatus, $mountainStatus);
+        }
+
+        return $effective;
+    }
+
+    /**
+     * Pembatasan segmen untuk banyak jalur sekaligus, dalam dua query.
+     *
+     * @param  Collection<int, Trail>  $trails
+     * @return array<int, array<int, array{segment: string, status: OfficialStatusValue, reason: ?string}>>
+     */
+    public function segmentRestrictionsForTrails(Collection $trails): array
+    {
+        $restrictions = array_fill_keys($trails->pluck('id')->all(), []);
+
+        if ($trails->isEmpty()) {
+            return $restrictions;
+        }
+
+        $segments = TrailSegment::query()
+            ->whereIn('trail_id', $trails->pluck('id'))
+            ->get(['id', 'trail_id', 'name']);
+
+        if ($segments->isEmpty()) {
+            return $restrictions;
+        }
+
+        $statuses = OfficialStatus::query()
+            ->where('statusable_type', (new TrailSegment)->getMorphClass())
+            ->whereIn('statusable_id', $segments->pluck('id'))
+            ->currentlyEffective()
+            ->orderByDesc('effective_at')
+            ->orderByDesc('published_at')
+            ->orderByDesc('id')
+            ->get();
+
+        foreach ($segments as $segment) {
+            $latest = $statuses->firstWhere('statusable_id', $segment->id);
+
+            if ($latest === null || ! $this->isRestrictive($latest->status)) {
+                continue;
+            }
+
+            $restrictions[$segment->trail_id][] = [
+                'segment' => $segment->name,
+                'status' => $latest->status,
+                'reason' => $latest->reason,
+            ];
+        }
+
+        return $restrictions;
+    }
+
+    /**
+     * Status terbaru yang sedang berlaku untuk setiap entitas dari satu tipe.
+     *
+     * @param  \Illuminate\Support\Collection<int, int>  $ids
+     * @return array<int, OfficialStatusValue>
+     */
+    private function latestStatusesFor(string $morphClass, $ids): array
+    {
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        $rows = OfficialStatus::query()
+            ->where('statusable_type', $morphClass)
+            ->whereIn('statusable_id', $ids)
+            ->currentlyEffective()
+            ->orderByDesc('effective_at')
+            ->orderByDesc('published_at')
+            ->orderByDesc('id')
+            ->get(['statusable_id', 'status']);
+
+        $latest = [];
+
+        foreach ($rows as $row) {
+            // Urutan sudah menurun, jadi kemunculan pertama adalah yang terbaru.
+            $latest[$row->statusable_id] ??= $row->status;
+        }
+
+        return $latest;
+    }
+
+    /**
+     * PRD §42: pembatasan turun dari gunung ke jalur; kelonggaran tidak pernah naik.
+     */
+    private function cascade(OfficialStatusValue $trailStatus, OfficialStatusValue $mountainStatus): OfficialStatusValue
+    {
+        if ($mountainStatus === OfficialStatusValue::CLOSED) {
+            return OfficialStatusValue::CLOSED;
+        }
+
+        if ($mountainStatus === OfficialStatusValue::RESTRICTED && $trailStatus !== OfficialStatusValue::CLOSED) {
+            return OfficialStatusValue::RESTRICTED;
+        }
+
+        return $trailStatus;
+    }
+
+    private function isRestrictive(OfficialStatusValue $status): bool
+    {
+        return in_array($status, [OfficialStatusValue::CLOSED, OfficialStatusValue::RESTRICTED], true);
     }
 
     /**

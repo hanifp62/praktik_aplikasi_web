@@ -76,8 +76,8 @@ class WeatherServiceTest extends TestCase
     {
         $trail = Trail::factory()->create(['weather_adm4_code' => '33.08.10.2001']);
         WeatherSnapshot::factory()->create([
-            'trail_id' => $trail->id,
             'adm4_code' => $trail->weather_adm4_code,
+            'forecast_at' => now()->subDays(2),
             'local_datetime' => now()->subDays(2),
             'fetched_at' => now()->subDays(2),
         ]);

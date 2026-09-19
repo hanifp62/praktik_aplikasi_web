@@ -44,13 +44,26 @@ class RouteFitService
         private readonly RecommendationExplanationService $explanations,
     ) {}
 
-    public function evaluate(User $user, ?HikingGoal $goal, Trail $trail): RouteFitResult
-    {
-        $status = $this->officialStatus->effectiveStatusForTrail($trail);
-        $segmentRestrictions = $this->officialStatus->segmentRestrictionsForTrail($trail);
+    /**
+     * @param  array<string, float>|null  $weights  bobot yang sudah dihitung; dioper saat
+     *                                              mengevaluasi banyak jalur agar tidak
+     *                                              diambil ulang dari basis data per jalur
+     * @param  array<int, array{segment: string, status: OfficialStatusValue, reason: ?string}>|null  $segmentRestrictions
+     */
+    public function evaluate(
+        User $user,
+        ?HikingGoal $goal,
+        Trail $trail,
+        ?array $weights = null,
+        ?OfficialStatusValue $status = null,
+        ?array $segmentRestrictions = null,
+    ): RouteFitResult {
+        $status ??= $this->officialStatus->effectiveStatusForTrail($trail);
+        $segmentRestrictions ??= $this->officialStatus->segmentRestrictionsForTrail($trail);
+        $weights ??= $this->weights();
+
         $failedRules = $this->hardConstraintFailures($goal, $trail, $status);
         $warnings = $this->warningsFor($trail, $status, $segmentRestrictions);
-        $weights = $this->weights();
         $factors = $this->scorer->score($user, $goal, $trail, $weights);
 
         $score = $this->weightedScore($factors);
@@ -252,15 +265,29 @@ class RouteFitService
             ))
             ->get();
 
-        $results = $candidates->map(fn (Trail $trail) => $this->evaluate($user, $goal, $trail));
+        // Bobot dihitung sekali per run, bukan sekali per jalur, dan status resmi serta
+        // pembatasan segmen seluruh kandidat dimuat lebih dulu. Tanpa ini jumlah query
+        // tumbuh linear terhadap jumlah jalur (PRD §96).
+        $weights = $this->weights();
+        $statuses = $this->officialStatus->effectiveStatusesForTrails($candidates);
+        $restrictions = $this->officialStatus->segmentRestrictionsForTrails($candidates);
 
-        return DB::transaction(function () use ($user, $goal, $results) {
+        $results = $candidates->map(fn (Trail $trail) => $this->evaluate(
+            $user,
+            $goal,
+            $trail,
+            $weights,
+            $statuses[$trail->id] ?? null,
+            $restrictions[$trail->id] ?? [],
+        ));
+
+        return DB::transaction(function () use ($user, $goal, $results, $weights) {
             $run = RecommendationRun::create([
                 'user_id' => $user->id,
                 'hiking_goal_id' => $goal->id,
                 'engine_version' => self::ENGINE_VERSION,
                 'input_snapshot' => $this->inputSnapshot($user, $goal),
-                'rules_evaluated' => $this->weights(),
+                'rules_evaluated' => $weights,
                 'warnings' => $results->flatMap(fn (RouteFitResult $r) => $r->warnings)->unique()->values()->all(),
                 'generated_at' => now(),
             ]);
@@ -269,19 +296,29 @@ class RouteFitService
                 ->sortByDesc(fn (RouteFitResult $result) => [$result->eligible ? 1 : 0, $result->internalScore])
                 ->values();
 
+            $now = now();
+            $rows = [];
+
             foreach ($ranked as $index => $result) {
-                RecommendationResult::create([
+                $rows[] = [
                     'recommendation_run_id' => $run->id,
                     'trail_id' => $result->trail->id,
                     'eligible' => $result->eligible,
                     'label' => $result->label?->value,
                     'internal_score' => $result->internalScore,
-                    'matched_factors' => $result->factorsToArray(),
-                    'failed_rules' => $result->failedRules,
-                    'warnings' => $result->warnings,
-                    'explanation' => $result->explanation,
+                    'matched_factors' => json_encode($result->factorsToArray()),
+                    'failed_rules' => json_encode($result->failedRules),
+                    'warnings' => json_encode($result->warnings),
+                    'explanation' => json_encode($result->explanation),
                     'rank' => $index + 1,
-                ]);
+                    // Bulk insert melewati Eloquent, jadi timestamp diisi manual.
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            if ($rows !== []) {
+                RecommendationResult::insert($rows);
             }
 
             return $run->load('results.trail.mountain');
