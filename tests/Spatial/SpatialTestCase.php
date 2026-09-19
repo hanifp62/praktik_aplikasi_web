@@ -27,6 +27,12 @@ abstract class SpatialTestCase extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Basis data yang jelas bukan basis data uji. RefreshDatabase menghapus seluruh
+     * isi tabel, jadi salah isi DSN sekali saja berarti kehilangan data sungguhan.
+     */
+    private const HOST_TERLARANG = ['supabase.co', 'supabase.com', 'rds.amazonaws.com', 'neon.tech'];
+
     protected function setUp(): void
     {
         $dsn = env('SPATIAL_TEST_DSN');
@@ -35,6 +41,7 @@ abstract class SpatialTestCase extends TestCase
             $this->markTestSkipped('SPATIAL_TEST_DSN belum diisi; suite spasial dilewati.');
         }
 
+        $this->refuseProductionLookingHost($dsn);
         $this->configureConnection($dsn);
 
         parent::setUp();
@@ -43,6 +50,28 @@ abstract class SpatialTestCase extends TestCase
             DB::statement('CREATE EXTENSION IF NOT EXISTS postgis');
         } catch (Throwable $exception) {
             $this->markTestSkipped('PostGIS tidak tersedia pada basis data uji: '.$exception->getMessage());
+        }
+    }
+
+    /**
+     * Suite ini memakai RefreshDatabase, yang mengosongkan seluruh tabel. Menolak host
+     * yang tampak seperti basis data sungguhan lebih murah daripada memulihkan data.
+     */
+    private function refuseProductionLookingHost(string $dsn): void
+    {
+        $host = parse_url($dsn, PHP_URL_HOST) ?: '';
+
+        foreach (self::HOST_TERLARANG as $terlarang) {
+            if (str_contains($host, $terlarang)) {
+                $this->fail(
+                    "SPATIAL_TEST_DSN menunjuk ke {$host}, yang tampak seperti basis data sungguhan. "
+                    .'Suite ini menghapus seluruh isi tabel. Pakai Postgres lokal, bukan basis data yang Anda pakai.'
+                );
+            }
+        }
+
+        if (blank(parse_url($dsn, PHP_URL_PATH))) {
+            $this->fail('SPATIAL_TEST_DSN tidak menyebutkan nama basis data.');
         }
     }
 

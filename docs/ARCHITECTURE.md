@@ -93,6 +93,14 @@ Dicatat terbuka supaya tidak terlupakan:
 - **Pemeriksaan aksesibilitas manual.** Test hanya menutup hal yang dapat diperiksa mesin: label, struktur judul, bahasa dokumen. Urutan fokus, kebermaknaan teks alternatif, dan kontras pada seluruh kombinasi masih butuh mata manusia.
 - **Suite spasial di mesin pengembang.** Berjalan di CI, tetapi melewati dirinya secara lokal sampai `SPATIAL_TEST_DSN` diisi.
 
+## Catatan operasional
+
+**PHP di Windows butuh CA bundle.** Tanpa `curl.cainfo` dan `openssl.cafile` di `php.ini`, setiap panggilan HTTPS dari PHP gagal dengan cURL error 60, termasuk pengambilan prakiraan BMKG. `curl.exe` tetap berhasil karena membawa bundle sendiri, sehingga gejalanya mudah salah dibaca sebagai masalah API. Arahkan keduanya ke sebuah `ca-bundle.crt`; Git for Windows sudah menyertakan satu.
+
+**Suite spasial menghapus isi basis data.** Ia memakai RefreshDatabase, jadi `SPATIAL_TEST_DSN` harus menunjuk Postgres lokal. Host yang tampak seperti basis data sungguhan ditolak oleh guard di `tests/Spatial/SpatialTestCase.php`, tetapi guard itu mengenali pola nama, bukan segalanya.
+
+**Prakiraan cuaca perlu dijadwalkan.** `weather:refresh` sudah terdaftar dua kali sehari di `routes/console.php`, tetapi scheduler Laravel hanya berjalan bila `php artisan schedule:work` atau cron memanggilnya. Tanpa itu kolom cuaca akan basi lalu kosong.
+
 ## Basis data
 
 PostgreSQL + PostGIS lewat Supabase. Kolom geografi (`geography(TYPE,4326)`) ditambahkan dengan SQL mentah lewat `App\Support\PostGis` karena Laravel tidak punya tipe kolomnya, lengkap dengan index GIST.
