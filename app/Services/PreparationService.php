@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\PreparationCategory;
 use App\Enums\PreparationStatus;
 use App\Models\PreparationItem;
 use App\Models\PreparationTemplate;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\DB;
  */
 class PreparationService
 {
+    private const PERMIT_LABEL = 'Booking izin pendakian (SIMAKSI)';
+
+    public function __construct(private readonly PermitService $permits) {}
+
     /**
      * Builds the trip checklist from the trail-specific template when one exists, otherwise
      * from the default template. Existing item statuses are preserved on regeneration.
@@ -42,8 +47,47 @@ class PreparationService
                 );
             }
 
+            $this->addPermitItem($trip);
+
             return $trip->preparationItems()->get();
         });
+    }
+
+    /**
+     * Item persiapan khusus untuk perizinan pendakian, dibuat hanya bila jalurnya
+     * memang punya aturan tercatat.
+     *
+     * Ditandai kritis karena tidak seperti perlengkapan, izin tidak dapat diurus di
+     * basecamp pada hari keberangkatan — jendela pemesanannya sudah lewat.
+     */
+    private function addPermitItem(TripPlan $trip): void
+    {
+        $requirement = $this->permits->requirementFor($trip->trail);
+
+        if ($requirement === null) {
+            return;
+        }
+
+        $description = $requirement->summary();
+
+        if ($requirement->booking_url) {
+            $description .= ' · Pemesanan: '.$requirement->booking_url;
+        }
+
+        $existing = $trip->preparationItems()
+            ->whereNull('preparation_item_id')
+            ->where('label', self::PERMIT_LABEL)
+            ->first();
+
+        TripPreparationItem::updateOrCreate(
+            ['trip_plan_id' => $trip->id, 'preparation_item_id' => null, 'label' => self::PERMIT_LABEL],
+            [
+                'category' => PreparationCategory::LOGISTICS->value,
+                'description' => $description,
+                'is_critical' => true,
+                'status' => $existing?->status?->value ?? PreparationStatus::NOT_CONFIRMED->value,
+            ]
+        );
     }
 
     /**

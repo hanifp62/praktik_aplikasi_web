@@ -4,6 +4,7 @@ namespace App\Livewire\Trails;
 
 use App\Models\Trail;
 use App\Services\ConditionAggregatorService;
+use App\Services\PermitService;
 use App\Services\RouteFitService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -40,6 +41,7 @@ class TrailDetail extends Component
             'conditions' => $conditions->forTrail($this->trail),
             'fit' => $fit,
             'geometry' => $this->trail->readGeoJson('geometry'),
+            'permit' => app(PermitService::class)->requirementFor($this->trail),
         ])->title($this->trail->name.' - '.$this->trail->mountain->name);
     }
 }

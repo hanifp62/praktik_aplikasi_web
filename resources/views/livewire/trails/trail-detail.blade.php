@@ -88,6 +88,61 @@
             </p>
         </x-ui.card>
 
+        {{-- PRD §36 Logistik. Sistem mencatat aturan pihak lain, tidak menggantikannya. --}}
+        @if ($permit)
+            <x-ui.card class="border-l-4 border-l-slate-700" title="Perizinan pendakian"
+                subtitle="Informasi aturan pengelola. Pemesanan tetap dilakukan melalui sistem resmi mereka.">
+                <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                    <div>
+                        <dt class="text-gray-500">Penyelenggara</dt>
+                        <dd class="font-medium text-gray-900">{{ $permit->authority }}</dd>
+                    </div>
+                    @if ($permit->daily_quota)
+                        <div>
+                            <dt class="text-gray-500">Kuota harian</dt>
+                            <dd class="font-medium text-gray-900">{{ $permit->daily_quota }} pendaki</dd>
+                        </div>
+                    @endif
+                    @if ($permit->booking_closes_days_before !== null)
+                        <div>
+                            <dt class="text-gray-500">Batas pemesanan</dt>
+                            <dd class="font-medium text-gray-900">H-{{ $permit->booking_closes_days_before }}</dd>
+                        </div>
+                    @endif
+                    @if ($permit->max_duration_days)
+                        <div>
+                            <dt class="text-gray-500">Durasi maksimum</dt>
+                            <dd class="font-medium text-gray-900">{{ $permit->max_duration_days }} hari</dd>
+                        </div>
+                    @endif
+                    <div>
+                        <dt class="text-gray-500">Pemandu</dt>
+                        <dd class="font-medium text-gray-900">
+                            {{ $permit->guide_required ? 'Wajib pemandu terdaftar' : 'Tidak diwajibkan' }}
+                        </dd>
+                    </div>
+                </dl>
+
+                @if ($permit->notes)
+                    <p class="mt-3 text-sm text-gray-700">{{ $permit->notes }}</p>
+                @endif
+
+                @if ($permit->booking_url)
+                    <x-ui.button variant="secondary" class="mt-4" :href="$permit->booking_url"
+                        :navigate="false" target="_blank" rel="noopener noreferrer">
+                        Buka sistem pemesanan resmi
+                    </x-ui.button>
+                @endif
+
+                <x-ui.freshness :timestamp="$permit->verified_at?->toIso8601String()" prefix="Aturan diverifikasi"
+                    :timezone="\App\Support\Timezone::forTrail($trail)" />
+                <p class="mt-1 text-xs text-gray-500">
+                    Sumber: {{ $permit->source ?? 'Belum dicatat' }}. Aturan perizinan dapat berubah;
+                    periksa kembali ke penyelenggara sebelum berangkat.
+                </p>
+            </x-ui.card>
+        @endif
+
         <x-ui.card title="Prakiraan cuaca area sekitar jalur"
             subtitle="Prakiraan berbasis wilayah administrasi, bukan kondisi puncak.">
             @if ($conditions['weather_context']['available'])

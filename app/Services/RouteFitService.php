@@ -7,6 +7,7 @@ use App\Enums\OfficialStatusValue;
 use App\Enums\RouteFitLabel;
 use App\Enums\TripType;
 use App\Models\HikingGoal;
+use App\Models\PermitRequirement;
 use App\Models\RecommendationResult;
 use App\Models\RecommendationRule;
 use App\Models\RecommendationRun;
@@ -42,6 +43,7 @@ class RouteFitService
         private readonly CompatibilityScorer $scorer,
         private readonly OfficialStatusService $officialStatus,
         private readonly RecommendationExplanationService $explanations,
+        private readonly PermitService $permits,
     ) {}
 
     /**
@@ -57,13 +59,14 @@ class RouteFitService
         ?array $weights = null,
         ?OfficialStatusValue $status = null,
         ?array $segmentRestrictions = null,
+        PermitRequirement|false|null $permit = false,
     ): RouteFitResult {
         $status ??= $this->officialStatus->effectiveStatusForTrail($trail);
         $segmentRestrictions ??= $this->officialStatus->segmentRestrictionsForTrail($trail);
         $weights ??= $this->weights();
 
         $failedRules = $this->hardConstraintFailures($goal, $trail, $status);
-        $warnings = $this->warningsFor($trail, $status, $segmentRestrictions);
+        $warnings = $this->warningsFor($trail, $status, $segmentRestrictions, $goal, $permit);
         $factors = $this->scorer->score($user, $goal, $trail, $weights);
 
         $score = $this->weightedScore($factors);
@@ -118,8 +121,13 @@ class RouteFitService
      * @param  array<int, array{segment: string, status: OfficialStatusValue, reason: ?string}>  $segmentRestrictions
      * @return array<int, string>
      */
-    private function warningsFor(Trail $trail, OfficialStatusValue $status, array $segmentRestrictions = []): array
-    {
+    private function warningsFor(
+        Trail $trail,
+        OfficialStatusValue $status,
+        array $segmentRestrictions = [],
+        ?HikingGoal $goal = null,
+        PermitRequirement|false|null $permit = false,
+    ): array {
         $warnings = [];
 
         if ($status === OfficialStatusValue::RESTRICTED) {
@@ -139,6 +147,15 @@ class RouteFitService
                 $restriction['status']->label(),
                 $restriction['reason'] ? ' '.$restriction['reason'].'.' : ''
             ));
+        }
+
+        // Perizinan adalah peringatan, bukan pengecualian. Aturan booking berubah dan
+        // data kita bisa basi; menolak jalur atas dasar itu berisiko menyembunyikan
+        // jalur yang sebenarnya masih dapat diurus (PRD §43 — kita bukan otoritasnya).
+        $permitWarning = $this->permits->bookingWarningFor($trail, $goal?->target_date, $permit);
+
+        if ($permitWarning !== null) {
+            $warnings[] = $permitWarning;
         }
 
         return $warnings;
@@ -271,6 +288,7 @@ class RouteFitService
         $weights = $this->weights();
         $statuses = $this->officialStatus->effectiveStatusesForTrails($candidates);
         $restrictions = $this->officialStatus->segmentRestrictionsForTrails($candidates);
+        $permits = $this->permits->requirementsForTrails($candidates);
 
         $results = $candidates->map(fn (Trail $trail) => $this->evaluate(
             $user,
@@ -279,6 +297,7 @@ class RouteFitService
             $weights,
             $statuses[$trail->id] ?? null,
             $restrictions[$trail->id] ?? [],
+            $permits[$trail->id] ?? null,
         ));
 
         return DB::transaction(function () use ($user, $goal, $results, $weights) {
