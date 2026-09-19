@@ -3,6 +3,8 @@
         <x-ui.page-header title="Kelola Gunung"
             description="Tambah, ubah, atau arsipkan data gunung. Setiap perubahan tercatat di audit log." />
 
+        <x-ui.admin-nav />
+
         @if (session('status'))
             <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif

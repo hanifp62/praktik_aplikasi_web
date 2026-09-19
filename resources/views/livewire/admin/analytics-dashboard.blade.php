@@ -3,6 +3,8 @@
         <x-ui.page-header title="Analitik"
             description="Funnel perencanaan pendakian, dari profil sampai laporan kondisi." />
 
+        <x-ui.admin-nav />
+
         <x-ui.card class="mb-6" title="North star metric"
             subtitle="Persentase pemilihan jalur yang berlanjut sampai pre-departure check.">
             <p class="text-3xl font-semibold text-gray-900">

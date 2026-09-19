@@ -7,6 +7,7 @@ use App\Models\DataSource;
 use App\Models\HikingGoal;
 use App\Models\Mountain;
 use App\Models\OfficialStatus;
+use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\TripPlan;
@@ -15,6 +16,7 @@ use App\Policies\DataSourcePolicy;
 use App\Policies\HikingGoalPolicy;
 use App\Policies\MountainPolicy;
 use App\Policies\OfficialStatusPolicy;
+use App\Policies\PermitRequirementPolicy;
 use App\Policies\TrailConditionReportPolicy;
 use App\Policies\TrailPolicy;
 use App\Policies\TripPlanPolicy;
@@ -39,5 +41,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(DataSource::class, DataSourcePolicy::class);
         Gate::policy(OfficialStatus::class, OfficialStatusPolicy::class);
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
+        Gate::policy(PermitRequirement::class, PermitRequirementPolicy::class);
     }
 }

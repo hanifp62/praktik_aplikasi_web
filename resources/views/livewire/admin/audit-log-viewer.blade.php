@@ -3,6 +3,8 @@
         <x-ui.page-header title="Audit Log"
             description="Catatan tindakan kritis: perubahan status resmi, data jalur dan gunung, moderasi, sumber data, dan peran pengguna." />
 
+        <x-ui.admin-nav />
+
         <div class="mb-4 max-w-sm">
             <x-input-label for="action" value="Filter aksi" />
             <x-text-input id="action" wire:model.live.debounce.400ms="action" class="mt-1 block w-full"

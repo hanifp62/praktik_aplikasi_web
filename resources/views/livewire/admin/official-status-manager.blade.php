@@ -3,6 +3,8 @@
         <x-ui.page-header title="Kelola Status Resmi"
             description="Status dapat melekat pada gunung, jalur, atau segmen. Status gunung yang terbuka tidak otomatis berarti semua jalurnya terbuka." />
 
+        <x-ui.admin-nav />
+
         @if (session('status'))
             <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif

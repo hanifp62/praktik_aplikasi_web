@@ -3,6 +3,8 @@
         <x-ui.page-header title="Kelola Sumber Data"
             description="Setiap data penting harus memiliki sumber, tipe sumber, waktu pengambilan, dan status verifikasi." />
 
+        <x-ui.admin-nav />
+
         @if (session('status'))
             <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif

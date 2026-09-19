@@ -42,7 +42,8 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 | Menambah kategori item persiapan | `App\Enums\PreparationCategory` + seeder `PreparationTemplateSeeder` |
 | Menambah tag kondisi jalur | `App\Enums\ConditionTag` |
 | Mengubah zona waktu sebuah gunung | Kolom `mountains.timezone` |
-| Mencatat aturan izin sebuah jalur | Tabel `permit_requirements` (belum ada CRUD admin) |
+| Mencatat aturan izin sebuah jalur | `/admin/permits` |
+| Menambah halaman admin baru | Daftarkan route-nya, lalu tambahkan ke `resources/views/components/ui/admin-nav.blade.php` |
 
 ## Lapisan kode
 
@@ -89,7 +90,6 @@ Aturan berikut berasal dari PRD dan ada test yang menjaganya. Melanggarnya membu
 
 Dicatat terbuka supaya tidak terlupakan:
 
-- **CRUD admin untuk `permit_requirements`.** Aturan izin hanya dapat dimasukkan lewat seeder atau tinker.
 - **Pemeriksaan aksesibilitas manual.** Test hanya menutup hal yang dapat diperiksa mesin: label, struktur judul, bahasa dokumen. Urutan fokus, kebermaknaan teks alternatif, dan kontras pada seluruh kombinasi masih butuh mata manusia.
 - **Suite spasial di mesin pengembang.** Berjalan di CI, tetapi melewati dirinya secara lokal sampai `SPATIAL_TEST_DSN` diisi.
 

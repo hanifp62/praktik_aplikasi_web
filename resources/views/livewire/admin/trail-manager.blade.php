@@ -3,6 +3,8 @@
         <x-ui.page-header title="Kelola Jalur"
             description="Jalur hanya dapat dipublikasikan jika sumber data, karakteristik, checkpoint, dan status resmi sudah lengkap." />
 
+        <x-ui.admin-nav />
+
         @if (session('status'))
             <x-ui.alert variant="success" class="mb-4">{{ session('status') }}</x-ui.alert>
         @endif

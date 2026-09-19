@@ -14,6 +14,7 @@ use App\Models\Checkpoint;
 use App\Models\DataSource;
 use App\Models\Mountain;
 use App\Models\OfficialStatus;
+use App\Models\PermitRequirement;
 use App\Models\Trail;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -57,6 +58,20 @@ class MvpDatasetSeeder extends Seeder
             );
 
             $mountain->writePoint('location', $entry['lat'], $entry['lng']);
+
+            if (isset($entry['permit'])) {
+                PermitRequirement::updateOrCreate(
+                    ['mountain_id' => $mountain->id, 'trail_id' => null],
+                    array_merge($entry['permit'], [
+                        'data_source_id' => $source->id,
+                        // Sengaja tidak diberi verified_at: aturan ini disalin saat
+                        // pengembangan dan belum diperiksa ulang oleh siapa pun.
+                        // PRD §60 lebih baik menyatakan belum terverifikasi daripada
+                        // memberi kesan sudah.
+                        'verified_at' => null,
+                    ])
+                );
+            }
 
             foreach ($entry['trails'] as $trailData) {
                 $trail = Trail::updateOrCreate(
@@ -175,6 +190,18 @@ class MvpDatasetSeeder extends Seeder
             ],
             [
                 'name' => 'Gunung Merbabu',
+                'permit' => [
+                    'authority' => 'Balai TN Gunung Merbabu',
+                    'booking_url' => null,
+                    'daily_quota' => null,
+                    'booking_opens_days_before' => null,
+                    'booking_closes_days_before' => null,
+                    'guide_required' => false,
+                    'max_duration_days' => null,
+                    'notes' => 'Pendaftaran dilakukan di basecamp masing-masing jalur. Ketentuan kuota mengikuti pengumuman pengelola.',
+                    'source' => 'Informasi basecamp (disalin saat pengembangan, belum diverifikasi)',
+                    'source_url' => null,
+                ],
                 'province' => 'Jawa Tengah',
                 'region' => 'Jawa Tengah',
                 'elevation_mdpl' => 3145,
@@ -263,6 +290,18 @@ class MvpDatasetSeeder extends Seeder
             ],
             [
                 'name' => 'Gunung Gede',
+                'permit' => [
+                    'authority' => 'Balai Besar TN Gunung Gede Pangrango',
+                    'booking_url' => 'https://booking.gedepangrango.org',
+                    'daily_quota' => 600,
+                    'booking_opens_days_before' => 30,
+                    'booking_closes_days_before' => 1,
+                    'guide_required' => false,
+                    'max_duration_days' => 2,
+                    'notes' => 'Pendakian ditutup setiap awal tahun untuk pemulihan ekosistem. Periksa pengumuman resmi.',
+                    'source' => 'Situs resmi pengelola (disalin saat pengembangan, belum diverifikasi)',
+                    'source_url' => 'https://gedepangrango.org',
+                ],
                 'province' => 'Jawa Barat',
                 'region' => 'Jawa Barat',
                 'elevation_mdpl' => 2958,

@@ -7,6 +7,7 @@ use App\Livewire\Admin\CheckpointManager;
 use App\Livewire\Admin\DataSourceManager;
 use App\Livewire\Admin\MountainManager;
 use App\Livewire\Admin\OfficialStatusManager;
+use App\Livewire\Admin\PermitManager;
 use App\Livewire\Admin\TrailManager;
 use App\Livewire\Goals\GoalForm;
 use App\Livewire\History\HikingHistoryPage;
@@ -62,6 +63,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('trails/{trail}/checkpoints', CheckpointManager::class)->name('checkpoints');
     Route::get('sources', DataSourceManager::class)->name('sources');
     Route::get('official-statuses', OfficialStatusManager::class)->name('statuses');
+    Route::get('permits', PermitManager::class)->name('permits');
     Route::get('audit-logs', AuditLogViewer::class)->name('audit');
     Route::get('analytics', AnalyticsDashboard::class)->name('analytics');
 });
