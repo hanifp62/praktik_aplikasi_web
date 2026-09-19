@@ -41,7 +41,13 @@
         </div>
 
         <div class="overflow-hidden rounded-lg bg-white shadow-sm">
-            <div id="hike-map" class="h-80 w-full" role="img"
+            {{--
+                Peta adalah wilayah interaktif, bukan gambar. role="img" menuntut teks
+                alternatif yang tidak mungkin diberikan untuk peta yang dapat digeser,
+                dan menyembunyikan isinya dari pembaca layar. Daftar checkpoint di
+                bawah adalah alternatif non-visualnya.
+            --}}
+            <div id="hike-map" class="h-80 w-full" role="region"
                 aria-label="Peta jalur {{ $trip->trail->name }} dan posisi checkpoint"></div>
         </div>
 
@@ -66,10 +72,9 @@
         </a>
     </div>
 
-    @push('scripts')
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
-    @endpush
+    <p class="text-xs text-gray-500">
+        Peta: {{ config('hiking.map.attribution') }}
+    </p>
 
     <script>
         function hikeMode() {
@@ -116,12 +121,33 @@
                         ? [checkpoints[0].lng, checkpoints[0].lat]
                         : geometry.coordinates[0];
 
+                    // Sumber tile dibaca dari config/hiking.php supaya tim dapat
+                    // berpindah penyedia tanpa menyentuh kode ini.
+                    const mapConfig = @json($mapConfig);
+
+                    const style = mapConfig.styleUrl || {
+                        version: 8,
+                        sources: {
+                            basemap: {
+                                type: 'raster',
+                                tiles: mapConfig.rasterTiles,
+                                tileSize: 256,
+                                maxzoom: mapConfig.maxZoom,
+                                attribution: mapConfig.attribution,
+                            },
+                        },
+                        layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
+                    };
+
                     const map = new maplibregl.Map({
                         container: 'hike-map',
-                        style: 'https://demotiles.maplibre.org/style.json',
+                        style: style,
                         center: center,
-                        zoom: 12,
+                        zoom: 13,
+                        maxZoom: mapConfig.maxZoom,
                     });
+
+                    map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
                     map.on('load', () => {
                         if (geometry) {
