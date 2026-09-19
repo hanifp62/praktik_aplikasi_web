@@ -176,8 +176,10 @@ class TrailManager extends Component
         }
 
         // PRD §110: publishing is blocked until the minimum data quality set exists.
-        if (! $trail->meetsPublishingRequirements()) {
-            session()->flash('status', 'Jalur belum memenuhi syarat publikasi: sumber data, karakteristik, checkpoint, dan status resmi wajib lengkap.');
+        $missing = $trail->publishabilityReport();
+
+        if ($missing !== []) {
+            session()->flash('status', 'Jalur belum dapat dipublikasikan. '.implode(' ', $missing));
 
             return;
         }

@@ -109,11 +109,44 @@ class Trail extends Model
      */
     public function meetsPublishingRequirements(): bool
     {
-        return $this->data_source_id !== null
-            && $this->distance_km !== null
-            && $this->elevation_gain_m !== null
-            && $this->estimated_duration_minutes !== null
-            && $this->checkpoints()->exists()
-            && $this->officialStatuses()->exists();
+        return $this->publishabilityReport() === [];
+    }
+
+    /**
+     * PRD §110: syarat minimum sebelum sebuah jalur boleh dipublikasikan.
+     *
+     * Mengembalikan daftar yang belum terpenuhi agar kurator tahu persis apa yang
+     * harus dilengkapi, bukan sekadar ditolak tanpa penjelasan. Daftar kosong
+     * berarti jalur lolos.
+     *
+     * @return array<int, string>
+     */
+    public function publishabilityReport(): array
+    {
+        $missing = [];
+
+        if ($this->data_source_id === null) {
+            $missing[] = 'Sumber data belum ditetapkan.';
+        }
+
+        if ($this->distance_km === null || $this->elevation_gain_m === null || $this->estimated_duration_minutes === null) {
+            $missing[] = 'Karakteristik dasar belum lengkap (jarak, elevation gain, estimasi durasi).';
+        }
+
+        if (! $this->checkpoints()->exists()) {
+            $missing[] = 'Jalur belum memiliki checkpoint.';
+        }
+
+        if (! $this->officialStatuses()->exists()) {
+            $missing[] = 'Status resmi belum pernah dicatat.';
+        }
+
+        // Geometri hanya dapat diperiksa pada koneksi berkemampuan PostGIS; pada
+        // SQLite kolomnya memang tidak ada sehingga syarat ini dilewati.
+        if (static::spatialSupported() && $this->readGeoJson('geometry') === null) {
+            $missing[] = 'Geometri jalur belum tersedia.';
+        }
+
+        return $missing;
     }
 }

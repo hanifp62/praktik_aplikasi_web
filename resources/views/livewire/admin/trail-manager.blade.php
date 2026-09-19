@@ -117,6 +117,17 @@
                                         {{ $trail->archived_at ? 'Aktifkan' : 'Arsipkan' }}
                                     </button>
                                 </div>
+
+                                {{-- PRD §110: kurator harus tahu apa yang kurang, bukan sekadar ditolak. --}}
+                                @php($missing = $trail->publishabilityReport())
+
+                                @if (! $trail->is_published && $missing !== [])
+                                    <ul class="mt-2 list-disc space-y-0.5 pl-4 text-xs text-warn-900">
+                                        @foreach ($missing as $requirement)
+                                            <li>{{ $requirement }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
