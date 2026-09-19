@@ -53,8 +53,17 @@
                                 <p class="mt-3 text-sm text-gray-700">{{ $report->note }}</p>
                             @endif
 
+                            {{-- PRD §67: moderasi foto hanya mungkin bila fotonya terlihat. --}}
                             @if ($report->photo_path)
-                                <p class="mt-2 text-xs text-gray-500">Laporan menyertakan foto.</p>
+                                <figure class="mt-3">
+                                    <img src="{{ route('reports.photo', $report) }}"
+                                        alt="Foto kondisi jalur yang dilampirkan pada laporan tanggal {{ $report->hike_date->translatedFormat('d M Y') }}"
+                                        loading="lazy"
+                                        class="max-h-64 rounded-md border border-gray-200">
+                                    <figcaption class="mt-1 text-xs text-gray-500">
+                                        Foto dari pelapor. Periksa sebelum menyetujui.
+                                    </figcaption>
+                                </figure>
                             @endif
 
                             <div class="mt-4 space-y-2">

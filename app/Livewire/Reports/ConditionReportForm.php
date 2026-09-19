@@ -9,6 +9,8 @@ use App\Models\HikingHistory;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Services\AnalyticsRecorder;
+use App\Support\ImageSanitizer;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -72,7 +74,21 @@ class ConditionReportForm extends Component
 
         if ($this->photo) {
             // Randomised filename keeps user-supplied names out of the storage path.
-            $photoPath = $this->photo->store('condition-reports', config('filesystems.report_photos_disk'));
+            $disk = config('filesystems.report_photos_disk');
+            $photoPath = $this->photo->store('condition-reports', $disk);
+
+            // PRD §82: foto ponsel membawa koordinat GPS pada EXIF-nya. Menerbitkannya
+            // berarti mempublikasikan lokasi presisi pendaki tanpa ia memilihnya.
+            // Kegagalan pembersihan tidak boleh menggagalkan laporan yang isinya tetap
+            // berguna, tetapi fotonya dibuang karena tidak dapat dipastikan bersih.
+            $absolute = Storage::disk($disk)->path($photoPath);
+
+            if (! ImageSanitizer::trySanitize($absolute, (int) config('hiking.uploads.report_photo_max_dimension'))) {
+                Storage::disk($disk)->delete($photoPath);
+                $photoPath = null;
+
+                session()->flash('status', 'Foto tidak dapat diproses dan tidak disertakan. Laporan tetap tersimpan.');
+            }
         }
 
         $report = TrailConditionReport::create([

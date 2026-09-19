@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ReportPhotoController;
 use App\Livewire\Admin\AnalyticsDashboard;
 use App\Livewire\Admin\AuditLogViewer;
 use App\Livewire\Admin\CheckpointManager;
@@ -48,6 +49,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('trips/{trip}/hike', HikeMode::class)->name('trips.hike');
 
     Route::get('reports/create', ConditionReportForm::class)->name('reports.create');
+    Route::get('reports/{report}/photo', ReportPhotoController::class)->name('reports.photo');
     Route::get('history', HikingHistoryPage::class)->name('history');
 });
 

@@ -198,6 +198,13 @@
                             @if ($report->note)
                                 <p class="mt-2 text-gray-700">{{ $report->note }}</p>
                             @endif
+
+                            @if ($report->photo_path)
+                                <img src="{{ route('reports.photo', $report) }}"
+                                    alt="Foto kondisi jalur dari pendakian {{ $report->hike_date->translatedFormat('d M Y') }}"
+                                    loading="lazy"
+                                    class="mt-2 max-h-56 rounded-md border border-gray-200">
+                            @endif
                             <p class="mt-1 text-xs text-gray-500">
                                 Dilaporkan {{ $report->created_at->diffForHumans() }} berdasarkan pendakian
                                 {{ $report->hike_date->translatedFormat('d M Y') }}

@@ -86,7 +86,7 @@ return [
     |
     */
 
-    'report_photos_disk' => env('REPORT_PHOTOS_DISK', 'public'),
+    'report_photos_disk' => env('REPORT_PHOTOS_DISK', 'local'),
 
     /*
     |--------------------------------------------------------------------------
