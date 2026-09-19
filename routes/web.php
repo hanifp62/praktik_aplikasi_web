@@ -26,7 +26,6 @@ use App\Livewire\Trips\TripShow;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
-Route::view('/awal', 'awal');
 
 Route::middleware(['auth'])->group(function () {
     Route::view('dashboard', 'dashboard', ['title' => 'Dasbor'])->middleware('verified')->name('dashboard');

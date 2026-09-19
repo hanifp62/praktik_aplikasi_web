@@ -11,6 +11,16 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <!--
+            Suite spasial membutuhkan Postgres dengan PostGIS. Tanpa SPATIAL_TEST_DSN
+            ia melewati dirinya sendiri dengan pesan yang jelas, bukan gagal, sehingga
+            kontributor tanpa Postgres lokal tetap dapat menjalankan seluruh suite —
+            dan tetap diingatkan bahwa suite ini ada. Cara menjalankannya penuh ada di
+            docs/CONTRIBUTING.md.
+        -->
+        <testsuite name="Spatial">
+            <directory>tests/Spatial</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

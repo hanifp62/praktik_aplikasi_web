@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, hardening]
   pull_request:
     branches: [main, develop]
 
@@ -10,14 +10,34 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # Suite spasial membutuhkan PostGIS sungguhan. Tanpa service ini, seluruh kode
+    # geografi hanya dijalankan sebagai no-op di SQLite dan kesalahannya tidak akan
+    # pernah terlihat (PRD §66).
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: hiking
+          POSTGRES_PASSWORD: hiking
+          POSTGRES_DB: hiking_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hiking"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
-          extensions: mbstring, pdo, pdo_sqlite, pdo_pgsql
+          # Disamakan dengan versi pengembangan; perbedaan minor PHP adalah sumber
+          # kegagalan yang hanya muncul di satu sisi.
+          php-version: '8.5'
+          extensions: mbstring, pdo, pdo_sqlite, pdo_pgsql, gd, exif
           coverage: none
 
       - name: Install PHP dependencies
@@ -32,7 +52,12 @@ jobs:
         run: vendor/bin/pint --test
 
       - name: Unit and feature tests
-        run: php artisan test
+        run: php artisan test --testsuite=Unit --testsuite=Feature
+
+      - name: Spatial tests (PostGIS)
+        env:
+          SPATIAL_TEST_DSN: pgsql://hiking:hiking@127.0.0.1:5432/hiking_test
+        run: php artisan test --testsuite=Spatial
 
       - name: Install Node dependencies
         run: npm ci
