@@ -25,3 +25,19 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Skill yang dipasang lewat npx (emilkowalski, impeccable, taste-skill).
+#
+# Berkas aslinya ada di .agents/skills dan itu yang dilacak. Salinan di
+# .claude/skills berupa symlink berjalur absolut yang hanya berlaku di mesin
+# pemasangnya, dan .github/skills salinan ketiga dari isi yang sama. Skill
+# antislop yang sudah lebih dulu dilacak tidak terpengaruh aturan ini.
+/.claude/skills/*
+/.github/skills/
+/.claude/agents/impeccable-*.md
+/.claude/settings.local.json
+
+# Mesin impeccable: 15 MB biner Windows-only, dan tiga salinannya. Dapat dipasang
+# ulang dengan `npx impeccable install`, jadi tidak ada alasan menanamkannya
+# selamanya di riwayat git.
+*/skills/impeccable/scripts/bin/
