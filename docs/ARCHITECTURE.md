@@ -92,6 +92,8 @@ Dicatat terbuka supaya tidak terlupakan:
 
 - **Pemeriksaan aksesibilitas manual.** Test hanya menutup hal yang dapat diperiksa mesin: label, struktur judul, bahasa dokumen. Urutan fokus, kebermaknaan teks alternatif, dan kontras pada seluruh kombinasi masih butuh mata manusia.
 - **Suite spasial di mesin pengembang.** Berjalan di CI, tetapi melewati dirinya secara lokal sampai `SPATIAL_TEST_DSN` diisi.
+- **Kurasi data lapangan.** Per 20 September 2026: 7 jalur, semuanya tayang, **0 punya geometri**; 34 checkpoint, **0 punya koordinat**; 7 status resmi tercatat, semuanya `UNKNOWN`. Artinya peta tidak dapat menggambar jalur, mode pendakian tidak dapat mengenali checkpoint terdekat, dan ketujuh jalur yang tayang tidak lolos gerbang §110. Koordinat gunung sungguhan tidak boleh dikarang: angka yang salah pada fitur navigasi lapangan lebih berbahaya daripada tidak ada angka. Ini pekerjaan kurator, bukan pekerjaan kode.
+- **Pengambilan sumber resmi dan pemeriksaan data basi.** §98 menyebut keduanya sebagai pekerjaan background. Yang ada baru `weather:refresh`. Tidak ada yang memberi tahu admin bahwa status resmi sebuah jalur sudah kedaluwarsa atau lama tidak diverifikasi; status yang kedaluwarsa diam-diam kembali menjadi `UNKNOWN` (aman menurut §95, tetapi senyap).
 
 ## Catatan operasional
 

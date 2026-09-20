@@ -94,10 +94,15 @@
                             <td class="p-4 font-medium text-gray-900">{{ $trail->name }}</td>
                             <td class="p-4 text-gray-700">{{ $trail->mountain->name }}</td>
                             <td class="p-4 text-gray-700">{{ $trail->checkpoints_count }}</td>
+                            @php($missing = $trail->publishabilityReport())
+
                             <td class="p-4 text-gray-700">
                                 {{ $trail->is_published ? 'Tayang' : 'Draft' }}
                                 @if ($trail->archived_at)
                                     <span class="ml-1 text-xs text-gray-500">(diarsipkan)</span>
+                                @endif
+                                @if ($trail->is_published && $missing !== [])
+                                    <span class="ml-1 text-xs font-medium text-warn-900">(syarat belum lengkap)</span>
                                 @endif
                             </td>
                             <td class="p-4">
@@ -108,11 +113,18 @@
                                     <x-ui.button variant="secondary" size="sm" wire:click="toggleArchive({{ $trail->id }})">{{ $trail->archived_at ? 'Aktifkan' : 'Arsipkan' }}</x-ui.button>
                                 </div>
 
-                                {{-- PRD §110: kurator harus tahu apa yang kurang, bukan sekadar ditolak. --}}
-                                @php($missing = $trail->publishabilityReport())
+                                {{--
+                                    PRD §110: kurator harus tahu apa yang kurang, bukan sekadar ditolak.
 
-                                @if (! $trail->is_published && $missing !== [])
-                                    <ul class="mt-2 list-disc space-y-0.5 pl-4 text-xs text-warn-900">
+                                    Daftar ini juga tampil untuk jalur yang sudah tayang. Gerbangnya hanya
+                                    berjalan saat tombol publikasi ditekan, sehingga jalur yang syaratnya
+                                    berubah atau datanya dihapus setelah terbit tidak pernah diperiksa ulang.
+                                --}}
+                                @if ($missing !== [])
+                                    <p class="mt-2 text-xs font-medium text-warn-900">
+                                        {{ $trail->is_published ? 'Tayang padahal belum memenuhi syarat:' : 'Belum dapat dipublikasikan:' }}
+                                    </p>
+                                    <ul class="mt-1 list-disc space-y-0.5 pl-4 text-xs text-warn-900">
                                         @foreach ($missing as $requirement)
                                             <li>{{ $requirement }}</li>
                                         @endforeach

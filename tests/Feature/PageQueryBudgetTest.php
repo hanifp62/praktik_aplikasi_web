@@ -2,12 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ExperienceLevel;
+use App\Enums\PreparationCategory;
+use App\Enums\PreparationStatus;
+use App\Enums\TripStatus;
+use App\Enums\TripType;
 use App\Enums\UserRole;
 use App\Models\Checkpoint;
 use App\Models\DataSource;
 use App\Models\Mountain;
 use App\Models\Trail;
+use App\Models\TripPlan;
+use App\Models\TripPreparationItem;
 use App\Models\User;
+use App\Services\PreparationService;
+use Database\Seeders\PreparationTemplateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +85,61 @@ class PageQueryBudgetTest extends TestCase
         $banyak = $this->countQueries('/trails/'.$trail->slug);
 
         $this->assertSame($sedikit, $banyak, "Beban tumbuh: {$sedikit} lalu {$banyak}.");
+    }
+
+    /**
+     * Readiness adalah halaman yang diukur North Star (§63): bagian rencana yang benar
+     * benar sampai ke pemeriksaan sebelum berangkat. Halaman itulah yang paling tidak
+     * boleh melambat ketika sebuah trip mengumpulkan banyak item persiapan.
+     */
+    public function test_the_readiness_page_does_not_grow_with_the_number_of_preparation_items(): void
+    {
+        $trip = $this->trip();
+
+        $this->actingAs($trip->user);
+        $url = '/trips/'.$trip->id.'/readiness';
+        $this->get($url)->assertOk();
+        $sedikit = $this->countQueries($url);
+
+        for ($i = 0; $i < 30; $i++) {
+            TripPreparationItem::create([
+                'trip_plan_id' => $trip->id,
+                'category' => PreparationCategory::EQUIPMENT->value,
+                'label' => 'Item tambahan '.$i,
+                'is_critical' => false,
+                'status' => PreparationStatus::NOT_CONFIRMED->value,
+            ]);
+        }
+
+        $banyak = $this->countQueries($url);
+
+        $this->assertSame($sedikit, $banyak, "Beban tumbuh: {$sedikit} lalu {$banyak}.");
+    }
+
+    private function trip(): TripPlan
+    {
+        $this->seed(PreparationTemplateSeeder::class);
+
+        $user = User::factory()->create();
+        $user->profile()->create([
+            'experience_level' => ExperienceLevel::INTERMEDIATE->value,
+            'completed_at' => now(),
+        ]);
+
+        $trail = $this->seedTrails(1)->first();
+
+        $trip = TripPlan::create([
+            'user_id' => $user->id,
+            'trail_id' => $trail->id,
+            'name' => 'Uji anggaran',
+            'planned_date' => now()->addDays(10)->toDateString(),
+            'trip_type' => TripType::CAMPING->value,
+            'status' => TripStatus::PLANNED->value,
+        ]);
+
+        app(PreparationService::class)->generateFor($trip);
+
+        return $trip;
     }
 
     private function countQueries(string $url): int

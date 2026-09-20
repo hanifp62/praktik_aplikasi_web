@@ -81,6 +81,34 @@ class TrailPublishGateTest extends TestCase
         $this->assertFalse($trail->fresh()->is_published);
     }
 
+    /**
+     * Gerbangnya hanya berjalan pada saat tombol publikasi ditekan, sehingga jalur yang
+     * sudah telanjur tayang tidak pernah diperiksa ulang. Ketika syaratnya berubah, atau
+     * ketika datanya dihapus setelah terbit, daftar admin tetap menampilkannya sebagai
+     * "Tayang" tanpa satu pun peringatan. Di basis data sungguhan hari ini, ketujuh
+     * jalur yang tayang tidak memenuhi syarat geometri.
+     */
+    public function test_a_published_trail_that_no_longer_qualifies_is_flagged(): void
+    {
+        $trail = $this->completeTrail();
+        $trail->update(['is_published' => true]);
+        $trail->update(['data_source_id' => null]);
+
+        Livewire::actingAs($this->admin())
+            ->test(TrailManager::class)
+            ->assertSee('Sumber data belum ditetapkan.');
+    }
+
+    public function test_a_published_trail_that_still_qualifies_is_not_flagged(): void
+    {
+        $trail = $this->completeTrail();
+        $trail->update(['is_published' => true]);
+
+        Livewire::actingAs($this->admin())
+            ->test(TrailManager::class)
+            ->assertDontSee('Sumber data belum ditetapkan.');
+    }
+
     private function completeTrail(): Trail
     {
         $trail = Trail::factory()->unpublished()->create([
