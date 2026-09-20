@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\PermitRequirement;
 use App\Models\Trail;
+use App\Support\Timezone;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 /**
  * Aturan perizinan pendakian (PRD §36 Logistik).
@@ -128,7 +130,20 @@ class PermitService
             return null;
         }
 
-        $daysAhead = (int) now()->startOfDay()->diffInDays($targetDate->copy()->startOfDay(), false);
+        // now() menyelesaikan "hari ini" menurut zona aplikasi (UTC, config/app.php),
+        // dan tidak ada pendaki yang hidup di UTC: selama tujuh jam setiap hari tanggal
+        // UTC masih kemarin bagi WIB, sehingga daysAhead terhitung satu lebih banyak dan
+        // jendela pemesanan yang sebenarnya sudah tertutup masih tampak terbuka.
+        //
+        // Ini tenggat yang bergerak maju (forward-looking): sistem tidak boleh pernah
+        // membuat sisa waktu tampak lebih longgar daripada kenyataan. WIB adalah zona
+        // Indonesia yang paling akhir berganti hari, jadi tanggalnya selalu yang terkecil
+        // di antara ketiganya; memakainya sebagai "hari ini" membuat daysAhead tidak
+        // pernah dihitung lebih kecil daripada yang dialami pendaki di zona mana pun
+        // (lihat docblock Timezone::earliestDateInIndonesia()).
+        $today = Carbon::parse(Timezone::earliestDateInIndonesia());
+
+        $daysAhead = (int) $today->diffInDays($targetDate->copy()->startOfDay(), false);
 
         if ($daysAhead < 0) {
             return null;

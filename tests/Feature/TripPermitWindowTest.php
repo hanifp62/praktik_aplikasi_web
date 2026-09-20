@@ -118,4 +118,36 @@ class TripPermitWindowTest extends TestCase
         $this->halaman($this->tripBerjarak(10, denganIzin: false))
             ->assertDontSee('Pemesanan izin');
     }
+
+    /**
+     * Pukul 18:00 UTC sudah pukul 01:00 keesokan harinya di WIB (UTC+7): persis jendela
+     * tujuh jam yang dijelaskan di docblock Timezone::earliestDateInIndonesia(). Rencana
+     * yang jatuh H-1 menurut WIB, dengan jendela tutup H-2, harus terbaca DITUTUP. Bila
+     * PermitService memakai now() mentah (UTC, masih membaca tanggal kemarin), acuan
+     * "hari ini"-nya mundur satu hari sehingga daysAhead ikut lebih besar satu, dan
+     * rencana yang sama justru terbaca masih TERBUKA padahal tenggatnya sudah lewat.
+     */
+    public function test_it_says_booking_closed_when_wib_date_has_rolled_over_but_utc_has_not(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-10 18:00:00', 'UTC'));
+
+        $trail = Trail::factory()->easy()->create();
+
+        PermitRequirement::factory()->create([
+            'trail_id' => $trail->id,
+            'authority' => 'Balai Besar TN Bromo Tengger Semeru',
+            'booking_opens_days_before' => 30,
+            'booking_closes_days_before' => 2,
+        ]);
+
+        $trip = TripPlan::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'trail_id' => $trail->id,
+            'planned_date' => '2026-09-12',
+        ]);
+
+        $this->halaman($trip)
+            ->assertSee('sudah ditutup')
+            ->assertDontSee('sedang dibuka');
+    }
 }
