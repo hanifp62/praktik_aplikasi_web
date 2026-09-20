@@ -3,10 +3,12 @@
     'size' => 'md',
     'href' => null,
     'navigate' => true,
+    'target' => null,
+    'confirm' => null,
 ])
 
 {{--
-    Satu-satunya definisi gaya tombol aplikasi.
+    Satu-satunya definisi gaya dan perilaku tombol aplikasi.
 
     min-h-11 memenuhi ukuran target sentuh WCAG 2.2 (PRD §87) dan
     focus-visible:ring memenuhi focus visibility. Mengubah bentuk tombol
@@ -14,6 +16,11 @@
 
     Ukuran "sm" hanya mengecilkan tampilannya, tidak area sentuhnya: jempol tidak
     ikut mengecil ketika tombolnya terlihat lebih kecil.
+
+    Keadaan sedang memproses juga tinggal di sini, bukan ditambal di tiap halaman. Di
+    jaringan tipis pengguna menekan tombol, tidak ada yang terlihat berubah, lalu ia
+    menekannya lagi; tombol yang menonaktifkan dirinya sendiri mencegah aksi ganda itu
+    sekaligus menjawab pertanyaan "apakah tadi tersimpan".
 --}}
 @php
     $sizing = $size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm';
@@ -32,6 +39,20 @@
     };
 
     $classes = $base.' '.$styles;
+
+    // Tanpa wire:target, satu permintaan Livewire memutar spinner setiap tombol di
+    // halaman itu, termasuk yang tidak ada hubungannya. Aksi pada wire:click sudah
+    // menamai dirinya sendiri, jadi dipakai langsung; formulir menyebutkannya lewat
+    // prop target karena aksinya ada di wire:submit milik form, bukan di tombol.
+    $aksi = $target ?? $attributes->get('wire:click');
+
+    $loading = [
+        'wire:loading.attr' => 'disabled',
+    ];
+
+    if ($aksi) {
+        $loading['wire:target'] = $aksi;
+    }
 @endphp
 
 @if ($href)
@@ -39,7 +60,18 @@
         {{ $slot }}
     </a>
 @else
-    <button {{ $attributes->merge(['type' => 'button', 'class' => $classes]) }}>
+    <button
+        @if ($confirm) wire:confirm="{{ $confirm }}" @endif
+        {{ $attributes->merge(array_merge(['type' => 'button', 'class' => $classes], $loading)) }}
+    >
+        <span wire:loading @if ($aksi) wire:target="{{ $aksi }}" @endif class="inline-flex items-center gap-2">
+            <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />
+            </svg>
+            <span class="sr-only">Memproses</span>
+        </span>
+
         {{ $slot }}
     </button>
 @endif

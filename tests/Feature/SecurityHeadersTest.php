@@ -70,6 +70,19 @@ class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString('https://tile.contoh-peta.id', $csp);
     }
 
+    /**
+     * Kedua layout memuat Figtree dari Bunny Fonts. CSP yang hanya mengizinkan 'self'
+     * memblokirnya tanpa pesan apa pun, dan aplikasi diam-diam jatuh ke font sistem.
+     */
+    public function test_the_font_host_the_layouts_actually_use_is_allowed(): void
+    {
+        $csp = $this->get('/login')->assertOk()->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString('style-src', $csp);
+        $this->assertMatchesRegularExpression('/style-src[^;]*fonts\.bunny\.net/', $csp);
+        $this->assertMatchesRegularExpression('/font-src[^;]*fonts\.bunny\.net/', $csp);
+    }
+
     public function test_an_authenticated_page_carries_the_headers_too(): void
     {
         $this->actingAs(User::factory()->create())

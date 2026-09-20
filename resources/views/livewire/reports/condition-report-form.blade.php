@@ -38,7 +38,7 @@
                 Laporan akan melalui moderasi sebelum ditampilkan kepada pengguna lain.
             </div>
 
-            <x-ui.button type="submit">Kirim laporan</x-ui.button>
+            <x-ui.button type="submit" target="save">Kirim laporan</x-ui.button>
         </form>
     </div>
 </div>

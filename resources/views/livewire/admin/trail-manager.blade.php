@@ -66,7 +66,7 @@
                     </div>
 
                     <div class="flex gap-3">
-                        <x-ui.button type="submit">Simpan</x-ui.button>
+                        <x-ui.button type="submit" target="save">Simpan</x-ui.button>
                         <button type="button" wire:click="$set('showForm', false)"
                             class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                             Batal
@@ -110,8 +110,22 @@
                                     <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $trail->id }})">Ubah</x-ui.button>
                                     <x-ui.button variant="secondary" size="sm" href="{{ route('admin.checkpoints', $trail) }}">Checkpoint</x-ui.button>
                                     <x-ui.button variant="secondary" size="sm" href="{{ route('admin.geometry', $trail) }}">Geometri</x-ui.button>
-                                    <x-ui.button variant="secondary" size="sm" wire:click="togglePublish({{ $trail->id }})">{{ $trail->is_published ? 'Tarik dari publikasi' : 'Publikasikan' }}</x-ui.button>
-                                    <x-ui.button variant="secondary" size="sm" wire:click="toggleArchive({{ $trail->id }})">{{ $trail->archived_at ? 'Aktifkan' : 'Arsipkan' }}</x-ui.button>
+                                    {{--
+                                        Konfirmasi hanya pada arah yang menghilangkan jalur dari
+                                        hadapan pendaki. Menerbitkan atau mengaktifkan kembali tidak
+                                        perlu dihalangi, dan pesannya menyebutkan akibatnya, bukan
+                                        sekadar bertanya apakah yakin.
+                                    --}}
+                                    <x-ui.button variant="secondary" size="sm"
+                                        wire:click="togglePublish({{ $trail->id }})"
+                                        :confirm="$trail->is_published ? 'Tarik jalur ini dari publikasi? Pendaki tidak akan menemukannya lagi di pencarian maupun rekomendasi.' : null">
+                                        {{ $trail->is_published ? 'Tarik dari publikasi' : 'Publikasikan' }}
+                                    </x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm"
+                                        wire:click="toggleArchive({{ $trail->id }})"
+                                        :confirm="$trail->archived_at ? null : 'Arsipkan jalur ini? Jalur yang diarsipkan hilang dari pencarian dan tidak dapat dipilih untuk trip baru.'">
+                                        {{ $trail->archived_at ? 'Aktifkan' : 'Arsipkan' }}
+                                    </x-ui.button>
                                 </div>
 
                                 {{--

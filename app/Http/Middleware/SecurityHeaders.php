@@ -48,8 +48,12 @@ class SecurityHeaders
             // skrip inline. Keduanya menuntut unsafe-eval dan unsafe-inline; mengaku apa
             // adanya lebih berguna daripada menulis CSP ketat yang memutus antarmuka.
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-            "style-src 'self' 'unsafe-inline'",
-            "font-src 'self' data:",
+
+            // Kedua layout memuat Figtree dari Bunny Fonts. Tanpa asal ini di style-src
+            // dan font-src, CSP memblokirnya diam-diam dan seluruh aplikasi jatuh ke
+            // font sistem tanpa satu pun pesan kesalahan yang terlihat.
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net",
+            "font-src 'self' data: https://fonts.bunny.net",
 
             // MapLibre menjalankan pengurai tile di web worker yang dibuat dari blob.
             "worker-src 'self' blob:",

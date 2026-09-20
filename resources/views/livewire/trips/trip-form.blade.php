@@ -26,7 +26,7 @@
             </div>
 
             <div class="border-t border-gray-100 pt-4">
-                <x-ui.button type="submit">Simpan dan lanjut ke persiapan</x-ui.button>
+                <x-ui.button type="submit" target="save">Simpan dan lanjut ke persiapan</x-ui.button>
             </div>
         </form>
     </div>

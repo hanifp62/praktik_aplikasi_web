@@ -94,7 +94,7 @@
                 @if ($step < 3)
                     <x-ui.button type="button" wire:click="nextStep">Lanjut</x-ui.button>
                 @else
-                    <x-ui.button type="submit">Simpan profil</x-ui.button>
+                    <x-ui.button type="submit" target="save">Simpan profil</x-ui.button>
                 @endif
             </div>
         </form>

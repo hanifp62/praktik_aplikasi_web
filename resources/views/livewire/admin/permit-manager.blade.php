@@ -120,7 +120,7 @@
                 </div>
 
                 <div class="flex flex-wrap gap-2">
-                    <x-ui.button type="submit">{{ $editingId ? 'Simpan perubahan' : 'Catat aturan' }}</x-ui.button>
+                    <x-ui.button type="submit" target="save">{{ $editingId ? 'Simpan perubahan' : 'Catat aturan' }}</x-ui.button>
                     @if ($editingId)
                         <x-ui.button variant="secondary" wire:click="cancel" type="button">Batal</x-ui.button>
                     @endif

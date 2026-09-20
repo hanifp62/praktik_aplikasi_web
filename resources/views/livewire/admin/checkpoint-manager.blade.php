@@ -32,7 +32,7 @@
                     <x-input-error :messages="$errors->get('notes')" class="mt-2" />
                 </div>
 
-                <x-ui.button type="submit">Simpan checkpoint</x-ui.button>
+                <x-ui.button type="submit" target="save">Simpan checkpoint</x-ui.button>
             </form>
         </x-ui.card>
 

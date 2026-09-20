@@ -69,7 +69,7 @@
                         <x-input-error :messages="$errors->get('personal_notes')" class="mt-2" />
                     </div>
 
-                    <x-ui.button type="submit">Tandai selesai</x-ui.button>
+                    <x-ui.button type="submit" target="complete">Tandai selesai</x-ui.button>
                 </form>
             </x-ui.card>
         @endif
