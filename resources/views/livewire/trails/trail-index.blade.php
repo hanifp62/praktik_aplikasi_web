@@ -65,5 +65,40 @@
 
             <div class="mt-6">{{ $trails->links() }}</div>
         @endif
+
+        {{--
+            Bagian terpisah, tidak pernah dicampur ke hasil di atas.
+
+            Pendaki yang mencari gunung yang jalurnya belum berdata tanpa ini hanya
+            melihat layar kosong, seolah gunungnya tidak ada. Padahal yang belum ada
+            adalah keterangannya, dan itu keadaan yang berbeda.
+        --}}
+        @if ($menunggu->isNotEmpty())
+            <section class="mt-10 border-t border-gray-200 pt-6">
+                <h2 class="text-lg font-semibold text-gray-900">Jalur yang datanya belum tersedia</h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    Jalur berikut sudah dikenali sistem, tetapi keterangannya belum dimasukkan
+                    pihak yang berwenang. Belum dapat direncanakan dari sini.
+                </p>
+
+                <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    @foreach ($menunggu as $jalur)
+                        <li>
+                            <a href="{{ route('trails.show', $jalur->slug) }}" wire:navigate
+                                class="block rounded-lg border border-gray-200 p-4 transition hover:bg-gray-50
+                                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                                <span class="block font-medium text-gray-900">{{ $jalur->name }}</span>
+                                <span class="mt-0.5 block text-sm text-gray-600">
+                                    {{ $jalur->mountain->name }} &middot; {{ $jalur->mountain->province }}
+                                </span>
+                                <span class="mt-2 inline-block rounded-md bg-warn-100 px-2 py-0.5 text-xs font-medium text-warn-900">
+                                    Menunggu masukan pengelola
+                                </span>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
     </div>
 </div>

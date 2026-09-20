@@ -167,6 +167,38 @@ class Trail extends Model
     }
 
     /**
+     * Apa yang masih ditunggu, dalam bahasa pendaki.
+     *
+     * publishabilityReport() memakai bahasa kurator: "Sumber data belum ditetapkan".
+     * Pendaki tidak peduli pada nama kolom; ia ingin tahu apa yang tidak dapat ia
+     * ketahui dari halaman ini, supaya tahu apa yang harus ia cari di tempat lain.
+     *
+     * @return array<int, string>
+     */
+    public function awaitingData(): array
+    {
+        $menunggu = [];
+
+        if ($this->distance_km === null || $this->elevation_gain_m === null || $this->estimated_duration_minutes === null) {
+            $menunggu[] = 'Jarak, elevation gain, dan estimasi durasi';
+        }
+
+        if ($this->countFor('checkpoints') === 0) {
+            $menunggu[] = 'Daftar pos dan checkpoint';
+        }
+
+        if (static::spatialSupported() && $this->readGeoJson('geometry') === null) {
+            $menunggu[] = 'Jalur pada peta';
+        }
+
+        if ($this->countFor('officialStatuses') === 0) {
+            $menunggu[] = 'Keterangan status resmi';
+        }
+
+        return $menunggu;
+    }
+
+    /**
      * PRD §110: syarat minimum sebelum sebuah jalur boleh dipublikasikan.
      *
      * Mengembalikan daftar yang belum terpenuhi agar kurator tahu persis apa yang

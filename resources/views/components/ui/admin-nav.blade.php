@@ -13,6 +13,7 @@
         'admin.sources' => 'Sumber Data',
         'admin.statuses' => 'Status Resmi',
         'admin.permits' => 'Perizinan',
+        'admin.credentials' => 'Kredensial Ahli',
         'admin.audit' => 'Jejak Audit',
         'admin.analytics' => 'Analitik',
     ];

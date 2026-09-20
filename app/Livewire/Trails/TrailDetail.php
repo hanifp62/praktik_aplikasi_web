@@ -32,6 +32,16 @@ class TrailDetail extends Component
 
     public function render(ConditionAggregatorService $conditions, RouteFitService $routeFit)
     {
+        // Jalur yang belum terbit tidak punya cukup data untuk dinilai maupun
+        // direncanakan. Halamannya tetap dapat dibuka, tetapi yang ditampilkan adalah
+        // keadaan menunggu, bukan rincian setengah jadi yang terbaca seperti rincian utuh.
+        if (! $this->trail->is_published) {
+            return view('livewire.trails.trail-awaiting', [
+                'menunggu' => $this->trail->awaitingData(),
+                'badan' => $this->trail->mountain->responsibleAuthority(),
+            ])->title($this->trail->name.' - '.$this->trail->mountain->name);
+        }
+
         $user = auth()->user();
         $fit = $user?->hasCompletedProfile()
             ? $routeFit->evaluate($user, $user->hikingGoals()->latest()->first(), $this->trail)

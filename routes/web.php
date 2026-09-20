@@ -5,6 +5,7 @@ use App\Http\Controllers\ReportPhotoController;
 use App\Livewire\Admin\AnalyticsDashboard;
 use App\Livewire\Admin\AuditLogViewer;
 use App\Livewire\Admin\CheckpointManager;
+use App\Livewire\Admin\CredentialManager;
 use App\Livewire\Admin\DataSourceManager;
 use App\Livewire\Admin\MountainManager;
 use App\Livewire\Admin\OfficialStatusManager;
@@ -68,6 +69,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('sources', DataSourceManager::class)->name('sources');
     Route::get('official-statuses', OfficialStatusManager::class)->name('statuses');
     Route::get('permits', PermitManager::class)->name('permits');
+    Route::get('credentials', CredentialManager::class)->name('credentials');
     Route::get('audit-logs', AuditLogViewer::class)->name('audit');
     Route::get('analytics', AnalyticsDashboard::class)->name('analytics');
 });

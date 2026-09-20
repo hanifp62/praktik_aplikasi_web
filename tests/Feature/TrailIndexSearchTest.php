@@ -34,7 +34,9 @@ class TrailIndexSearchTest extends TestCase
             ->test(TrailIndex::class)
             ->set('search', 'Rahasia')
             ->assertSee('Jalur Terbit')
-            ->assertDontSee('Jalur Draft');
+            // Draft kini boleh tampil di bagian "belum tersedia" yang terpisah, tetapi
+            // tidak boleh masuk daftar hasil. Pemisahannya diuji di AwaitingDataTest.
+            ->assertSeeInOrder(['Jalur Terbit', 'Jalur yang datanya belum tersedia', 'Jalur Draft']);
     }
 
     public function test_searching_by_mountain_name_never_exposes_archived_trails(): void

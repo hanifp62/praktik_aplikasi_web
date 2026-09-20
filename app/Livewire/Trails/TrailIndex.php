@@ -4,6 +4,7 @@ namespace App\Livewire\Trails;
 
 use App\Enums\TechnicalDemand;
 use App\Models\Trail;
+use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -57,6 +58,38 @@ class TrailIndex extends Component
         return view('livewire.trails.trail-index', [
             'trails' => $trails,
             'technicalLevels' => TechnicalDemand::cases(),
+            'menunggu' => $this->jalurMenunggu(),
         ]);
+    }
+
+    /**
+     * Jalur yang dikenal sistem tetapi datanya belum dimasukkan pihak berwenang.
+     *
+     * Ditampilkan terpisah, tidak pernah dicampur ke hasil. Pendaki yang mencari "Lawu"
+     * tanpa ini hanya melihat layar kosong, seolah gunungnya tidak ada, padahal yang
+     * belum ada adalah keterangannya.
+     *
+     * Dibatasi jumlahnya karena ini bukan daftar utama, melainkan petunjuk bahwa jalurnya
+     * dikenal dan sedang menunggu.
+     *
+     * @return Collection<int, Trail>
+     */
+    private function jalurMenunggu()
+    {
+        return Trail::query()
+            ->active()
+            ->where('is_published', false)
+            ->with('mountain')
+            ->when($this->search, fn ($query, $search) => $query->where(
+                fn ($group) => $group->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('mountain', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ))
+            ->when($this->region, fn ($query, $region) => $query->whereHas(
+                'mountain',
+                fn ($q) => $q->where('region', $region)->orWhere('province', $region)
+            ))
+            ->orderBy('name')
+            ->limit(8)
+            ->get();
     }
 }

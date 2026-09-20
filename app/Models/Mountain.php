@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -38,6 +39,25 @@ class Mountain extends Model
      * Kolom geografi dipakai kueri spasial dan diam pada koneksi tanpa PostGIS; kolom
      * biasa yang dibaca aplikasi, sehingga koordinat tetap tersedia di mana pun.
      */
+    public function authorities(): BelongsToMany
+    {
+        return $this->belongsToMany(Authority::class)->withTimestamps();
+    }
+
+    /**
+     * Badan yang berwenang menyatakan keadaan jalur di gunung ini, untuk disebut namanya
+     * ketika sebuah data belum ada (PRD §43).
+     *
+     * Lembaga sertifikasi dan asosiasi profesi sengaja tidak masuk: mereka mengesahkan
+     * orang, bukan menyatakan keadaan jalur. Menyebut BNSP sebagai pihak yang ditunggu
+     * untuk data jalur akan salah alamat.
+     */
+    public function responsibleAuthority(): ?Authority
+    {
+        return $this->authorities
+            ->first(fn (Authority $a) => $a->type->mayDeclareTrailStatus());
+    }
+
     public function setCoordinates(?float $latitude, ?float $longitude): void
     {
         $this->forceFill(['latitude' => $latitude, 'longitude' => $longitude])->save();
