@@ -25,6 +25,19 @@ class RecommendationResults extends Component
     /** @var array<int, int> */
     public array $comparison = [];
 
+    /**
+     * Berapa jalur teratas yang dirender. Sisanya ditambahkan sepuluh demi sepuluh
+     * atas permintaan, tidak pernah dibuang.
+     */
+    public int $ditampilkan = self::SEKALI_TAMPIL;
+
+    private const SEKALI_TAMPIL = 10;
+
+    public function tampilkanLagi(): void
+    {
+        $this->ditampilkan += self::SEKALI_TAMPIL;
+    }
+
     public function mount(RecommendationRun $run): void
     {
         abort_unless($run->user_id === auth()->id(), 403);
@@ -69,9 +82,11 @@ class RecommendationResults extends Component
     public function render()
     {
         $results = $this->run->results;
+        $eligible = $results->where('eligible', true);
 
         return view('livewire.recommendations.recommendation-results', [
-            'eligible' => $results->where('eligible', true),
+            'eligible' => $eligible->take($this->ditampilkan),
+            'sisaEligible' => max(0, $eligible->count() - $this->ditampilkan),
             'excluded' => $results->where('eligible', false),
             'penyebabKosong' => $this->penyebabKosong($results),
         ]);

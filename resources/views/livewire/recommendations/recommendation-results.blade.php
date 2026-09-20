@@ -132,6 +132,17 @@
             @endforeach
         </ul>
 
+        {{--
+            Sisanya ditambahkan atas permintaan, tidak pernah dibuang: membatasi daftar
+            tidak boleh berarti menyembunyikan jalur yang lolos penilaian. Jumlahnya
+            disebut supaya pendaki tahu persis berapa yang belum dilihatnya.
+        --}}
+        @if ($sisaEligible > 0)
+            <div class="mt-4">
+                <x-ui.button variant="secondary" wire:click="tampilkanLagi">Tampilkan {{ $sisaEligible }} jalur lainnya</x-ui.button>
+            </div>
+        @endif
+
         @if ($excluded->isNotEmpty())
             <section class="mt-8">
                 <h2 class="text-base font-semibold text-gray-900">Tidak masuk rekomendasi</h2>
