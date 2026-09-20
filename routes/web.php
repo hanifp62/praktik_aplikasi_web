@@ -18,6 +18,7 @@ use App\Livewire\Admin\TrailManager;
 use App\Livewire\Admin\UsabilityStudy;
 use App\Livewire\Contribute\TrailContribution;
 use App\Livewire\Dashboard;
+use App\Livewire\Feed\TrailNews;
 use App\Livewire\Goals\GoalForm;
 use App\Livewire\History\HikerProgress;
 use App\Livewire\History\HikeSummary;
@@ -68,6 +69,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('reports/create', ConditionReportForm::class)->name('reports.create');
     Route::get('reports/{report}/photo', ReportPhotoController::class)->name('reports.photo');
+    Route::get('kabar', TrailNews::class)->name('news');
     Route::get('progres', HikerProgress::class)->name('progress');
     Route::get('history', HikingHistoryPage::class)->name('history');
     Route::get('history/{trip}', HikeSummary::class)->name('history.summary');

@@ -2,12 +2,14 @@
 
 namespace App\Livewire\Trails;
 
+use App\Models\MountainFollow;
 use App\Models\ReportThank;
 use App\Models\Trail;
 use App\Services\CheckpointPaceService;
 use App\Services\ConditionAggregatorService;
 use App\Services\PermitService;
 use App\Services\RouteFitService;
+use App\Services\TrailNewsService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -80,6 +82,22 @@ class TrailDetail extends Component
             ->all();
     }
 
+    /**
+     * Mengikuti gunung jalur ini, atau berhenti mengikutinya.
+     *
+     * Gunungnya yang diikuti, bukan jalurnya: penutupan hampir selalu diumumkan untuk
+     * kawasan, dan pendaki yang mengikuti satu jalur Merbabu tetap perlu tahu ketika
+     * seluruh Merbabu ditutup.
+     */
+    public function ikutiGunung(bool $ya = true): void
+    {
+        $kunci = ['user_id' => auth()->id(), 'mountain_id' => $this->trail->mountain_id];
+
+        $ya
+            ? MountainFollow::firstOrCreate($kunci)
+            : MountainFollow::where($kunci)->delete();
+    }
+
     public function createTrip(): void
     {
         $this->redirectRoute('trips.create', ['trail' => $this->trail->id], navigate: true);
@@ -112,6 +130,7 @@ class TrailDetail extends Component
             // Waktu tempuh antarpos dari rekaman pendaki. Hasilnya di-cache mengikuti
             // TTL publik, jadi halaman ini tidak menghitung ulang tiap kali dibuka.
             'tempoPos' => app(CheckpointPaceService::class)->forTrail($this->trail),
+            'mengikutiGunung' => app(TrailNewsService::class)->follows($user, $this->trail->mountain),
             'terimaKasihSaya' => $this->sudahBerterimaKasih(
                 collect($kondisi['community_context']['reports'] ?? [])->pluck('id')->all()
             ),

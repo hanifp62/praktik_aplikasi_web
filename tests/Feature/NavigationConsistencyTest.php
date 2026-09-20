@@ -48,12 +48,15 @@ class NavigationConsistencyTest extends TestCase
 
         preg_match_all("/<x-nav-link :href=\"route\('([a-z.]+)'\)/", $isi, $cocok);
 
-        // Progres berada sesudah riwayat karena ia agregat dari riwayat, bukan langkah
-        // tersendiri dalam alurnya. Menempatkannya sebelum riwayat pernah lolos ke
-        // dalam kode dan ditangkap test ini.
+        // Empat yang pertama adalah alur perencanaan. Tiga yang terakhir permukaan
+        // kembali, yaitu alasan membuka aplikasi ketika alurnya sudah selesai, dan
+        // ketiganya berkelompok di ujung alih-alih menyela alurnya.
+        //
+        // Dua kali percobaan menempatkannya di tengah lolos ke dalam kode dan ditangkap
+        // test ini: progres sebelum riwayat, lalu kabar tepat setelah dasbor.
         $this->assertSame(
-            ['dashboard', 'goals.create', 'trails.index', 'trips.index', 'history', 'progress'],
-            array_slice($cocok[1], 0, 6)
+            ['dashboard', 'goals.create', 'trails.index', 'trips.index', 'history', 'progress', 'news'],
+            array_slice($cocok[1], 0, 7)
         );
     }
 

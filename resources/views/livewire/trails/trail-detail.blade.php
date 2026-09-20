@@ -11,6 +11,21 @@
                     <span class="text-sm text-gray-600">{{ $fit->label?->description() }}</span>
                 </div>
             @endif
+
+            {{--
+                Gunungnya yang diikuti, bukan jalurnya, dan tombolnya menyebutnya begitu:
+                penutupan hampir selalu diumumkan untuk kawasan, dan mengikuti satu jalur
+                tidak akan mengabarkan penutupan seluruh gunungnya.
+            --}}
+            <div class="mt-3">
+                <x-ui.button variant="secondary" size="sm"
+                    wire:click="ikutiGunung({{ $mengikutiGunung ? 'false' : 'true' }})"
+                    aria-pressed="{{ $mengikutiGunung ? 'true' : 'false' }}">
+                    {{ $mengikutiGunung
+                        ? 'Berhenti mengikuti '.$trail->mountain->name
+                        : 'Ikuti kabar '.$trail->mountain->name }}
+                </x-ui.button>
+            </div>
         </x-ui.page-header>
 
         @php
