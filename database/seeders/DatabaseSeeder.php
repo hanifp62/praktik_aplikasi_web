@@ -40,6 +40,7 @@ class DatabaseSeeder extends Seeder
             // menempel pada gunung yang sama dan diperbarui, bukan digandakan.
             MountainSeeder::class,
             OfficialStatusSeeder::class,
+            PermitRequirementSeeder::class,
         ]);
     }
 }
