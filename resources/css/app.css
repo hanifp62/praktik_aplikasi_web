@@ -150,6 +150,25 @@
         font-weight: 500;
         letter-spacing: -0.02em;
         line-height: 1.15;
+
+        /* Judul dua baris kerap menyisakan satu kata sendirian di baris kedua, dan itu
+           terbaca sebagai kelalaian tata letak, bukan sebagai pilihan. */
+        text-wrap: balance;
+    }
+
+    /*
+     * Paragraf memakai pretty, bukan balance.
+     *
+     * balance menyeimbangkan seluruh blok dan peramban berhenti menerapkannya setelah
+     * beberapa baris, jadi ia pantas untuk judul dan sia-sia untuk prosa. pretty hanya
+     * menjaga baris terakhir tidak tersisa satu kata, dan itu yang dibutuhkan paragraf.
+     *
+     * Di lapisan base, bukan sebagai kelas yang harus diingat setiap penulis view: kelas
+     * yang harus diingat akan terlupakan di halaman berikutnya, dan CSS yang tidak pernah
+     * dipakai siapa pun adalah bita mati.
+     */
+    p {
+        text-wrap: pretty;
     }
 
     /*
