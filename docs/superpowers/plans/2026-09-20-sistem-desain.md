@@ -68,7 +68,7 @@ Disalin dari spec. Setiap tugas tunduk padanya tanpa perlu diulang:
 **Nilai awalnya sengaja identik dengan abu yang digantikan**, sehingga tugas ini tidak
 mengubah satu piksel pun. Itu yang membuat Tugas 2 dapat diverifikasi.
 
-- [ ] **Langkah 1: Tulis test yang gagal**
+- [x] **Langkah 1: Tulis test yang gagal**
 
 Buat `tests/Feature/SemanticTokenTest.php`:
 
@@ -123,12 +123,12 @@ class SemanticTokenTest extends TestCase
 }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [x] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/SemanticTokenTest.php`
 Harapkan: GAGAL, delapan test, pesan "Token --text-primary belum ada."
 
-- [ ] **Langkah 3: Tambahkan token**
+- [x] **Langkah 3: Tambahkan token**
 
 Di `resources/css/app.css`, tepat sesudah `--radius-control: 0.375rem;`:
 
@@ -162,7 +162,7 @@ Di `resources/css/app.css`, tepat sesudah `--radius-control: 0.375rem;`:
         --border-subtle: 229 231 235;
 ```
 
-- [ ] **Langkah 4: Petakan ke Tailwind**
+- [x] **Langkah 4: Petakan ke Tailwind**
 
 Di `tailwind.config.js`, di dalam `colors`, sesudah `control: token('control-border'),`:
 
@@ -178,12 +178,12 @@ Di `tailwind.config.js`, di dalam `colors`, sesudah `control: token('control-bor
                 muted: token('text-muted'),
 ```
 
-- [ ] **Langkah 5: Jalankan dan pastikan lulus**
+- [x] **Langkah 5: Jalankan dan pastikan lulus**
 
 Jalankan: `php artisan test tests/Feature/SemanticTokenTest.php`
 Harapkan: LULUS, delapan test.
 
-- [ ] **Langkah 6: Suite penuh, Pint, build, commit**
+- [x] **Langkah 6: Suite penuh, Pint, build, commit**
 
 ```bash
 ./vendor/bin/pint
@@ -207,7 +207,7 @@ berubah.
 Ini penggantian nama murni. Karena nilai tokennya identik, **rupanya wajib tidak
 berubah**, dan 746 test yang sudah ada adalah buktinya.
 
-- [ ] **Langkah 1: Tulis sapuan yang gagal**
+- [x] **Langkah 1: Tulis sapuan yang gagal**
 
 Tambahkan ke `tests/Feature/SemanticTokenTest.php`:
 
@@ -234,12 +234,12 @@ Tambahkan ke `tests/Feature/SemanticTokenTest.php`:
     }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [x] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/SemanticTokenTest.php --filter=semantic_layer`
 Harapkan: GAGAL, menyebut sekitar 60 berkas.
 
-- [ ] **Langkah 3: Ganti yang dapat diganti mekanis**
+- [x] **Langkah 3: Ganti yang dapat diganti mekanis**
 
 ```bash
 grep -rl 'gray-' resources/views --include=*.blade.php | xargs sed -i \
@@ -253,7 +253,7 @@ grep -rl 'gray-' resources/views --include=*.blade.php | xargs sed -i \
   -e 's/\bbg-gray-50\b/bg-surface-sunken/g'
 ```
 
-- [ ] **Langkah 4: Tinjau `bg-gray-100` satu per satu**
+- [x] **Langkah 4: Tinjau `bg-gray-100` satu per satu**
 
 ```bash
 grep -rn 'bg-gray-100' resources/views --include=*.blade.php
@@ -268,12 +268,12 @@ Untuk setiap baris, pilih sasarannya menurut perannya:
 `bg-gray-100` tidak dapat disapu rata karena satu kelas yang sama dipakai untuk kanvas
 halaman dan untuk chip kecil, dan keduanya menuju token berbeda.
 
-- [ ] **Langkah 5: Jalankan sapuan dan pastikan lulus**
+- [x] **Langkah 5: Jalankan sapuan dan pastikan lulus**
 
 Jalankan: `php artisan test tests/Feature/SemanticTokenTest.php`
 Harapkan: LULUS, sembilan test.
 
-- [ ] **Langkah 6: Buktikan rupanya tidak berubah**
+- [x] **Langkah 6: Buktikan rupanya tidak berubah**
 
 ```bash
 php artisan test
@@ -283,7 +283,7 @@ Harapkan: 755 test hijau **tanpa satu pun test disunting**. Test yang merah di s
 berarti `sed` mengenai kelas yang tidak dimaksud, dan harus dikembalikan satu per satu,
 bukan testnya yang disesuaikan.
 
-- [ ] **Langkah 7: Pint, build, commit**
+- [x] **Langkah 7: Pint, build, commit**
 
 ```bash
 ./vendor/bin/pint
@@ -310,7 +310,7 @@ git commit -m "refactor: 597 abu mentah diganti kelas semantik, rupa tidak berub
 Inilah satu-satunya tugas yang mengubah tampilan, dan ia mengubahnya di seluruh aplikasi
 sekaligus.
 
-- [ ] **Langkah 1: Tulis test yang gagal**
+- [x] **Langkah 1: Tulis test yang gagal**
 
 Buat `tests/Feature/SurfaceSystemTest.php`:
 
@@ -374,12 +374,12 @@ class SurfaceSystemTest extends TestCase
 }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [x] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/SurfaceSystemTest.php`
 Harapkan: GAGAL, tiga test.
 
-- [ ] **Langkah 3: Hangatkan netral dan kanvas**
+- [x] **Langkah 3: Hangatkan netral dan kanvas**
 
 Di `resources/css/app.css`, ganti tujuh nilai yang ditambahkan Tugas 1, **beserta tiga
 baris rasio di komentar di atasnya**, menjadi:
@@ -408,7 +408,7 @@ terhadap kanvas saja dan mendapat 4,63:1, tetapi label dan metadata juga muncul 
 permukaan yang tidak ikut dihitung. Nilai baru ini terukur 5,11:1 terhadap kanvas, 5,34:1
 terhadap kartu, dan 4,89:1 terhadap sumur. Langkah berikutnya yang menguncinya.
 
-- [ ] **Langkah 4: Kunci pasangan semantik dengan test yang menghitung**
+- [x] **Langkah 4: Kunci pasangan semantik dengan test yang menghitung**
 
 Di `tests/Feature/ColourContrastTest.php`, tambahkan sembilan baris di akhir `textPairs()`,
 sebelum `];`:
@@ -437,7 +437,7 @@ Harapkan: LULUS. Kembalikan `--text-muted` ke `120 113 108` sekali untuk melihat
 "metadata di atas sumur" gagal pada 4,40:1, lalu kembalikan lagi. Test yang tidak pernah
 terlihat merah belum terbukti memeriksa apa pun.
 
-- [ ] **Langkah 5: Ganti bayangan kartu dengan garis rambut**
+- [x] **Langkah 5: Ganti bayangan kartu dengan garis rambut**
 
 Di `resources/views/components/ui/card.blade.php` baris 3:
 
@@ -452,14 +452,14 @@ Di `resources/views/components/ui/card.blade.php` baris 3:
 <section {{ $attributes->merge(['class' => 'rounded-lg border border-subtle bg-surface p-6']) }}>
 ```
 
-- [ ] **Langkah 6: Cabut 48 bayangan kartu**
+- [x] **Langkah 6: Cabut 48 bayangan kartu**
 
 ```bash
 grep -rl 'shadow-sm' resources/views --include=*.blade.php \
   | xargs sed -i 's/ shadow-sm//g; s/shadow-sm //g'
 ```
 
-- [ ] **Langkah 7: Beri lapisan melayang satu elevasi yang disengaja**
+- [x] **Langkah 7: Beri lapisan melayang satu elevasi yang disengaja**
 
 Tiga sisa bayangan bukan kartu: `components/dropdown.blade.php` (`shadow-lg`),
 `components/modal.blade.php` (`shadow-xl`), dan `layouts/guest.blade.php` (`shadow-md`).
@@ -496,7 +496,7 @@ polanya `\bshadow-(sm|md|lg|xl)\b` tidak mengenainya, jadi tidak ada yang perlu 
 Periksa saja dengan `grep -rn 'shadow-' resources/views` bahwa yang tersisa hanya
 `shadow-overlay`.
 
-- [ ] **Langkah 8: Naikkan skala judul**
+- [x] **Langkah 8: Naikkan skala judul**
 
 Ganti seluruh isi `resources/views/components/ui/page-header.blade.php`:
 
@@ -521,7 +521,7 @@ Ganti seluruh isi `resources/views/components/ui/page-header.blade.php`:
 </div>
 ```
 
-- [ ] **Langkah 9: Naikkan judul kartu**
+- [x] **Langkah 9: Naikkan judul kartu**
 
 Di `resources/views/components/ui/card.blade.php`:
 
@@ -534,7 +534,7 @@ Di `resources/views/components/ui/card.blade.php`:
     @endif
 ```
 
-- [ ] **Langkah 10: Jalankan, Pint, build, commit**
+- [x] **Langkah 10: Jalankan, Pint, build, commit**
 
 ```bash
 php artisan test
@@ -562,7 +562,7 @@ Phosphor, berat `regular`, ditanam sebagai SVG sebaris. Bukan Lucide maupun Hero
 keduanya pilihan bawaan hampir semua antarmuka hasil AI, dan memakainya berarti mengulang
 tanda tangan yang sedang dihapus.
 
-- [ ] **Langkah 1: Tulis test yang gagal**
+- [x] **Langkah 1: Tulis test yang gagal**
 
 Buat `tests/Feature/IconSystemTest.php`:
 
@@ -634,12 +634,12 @@ class IconSystemTest extends TestCase
 }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [x] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/IconSystemTest.php`
 Harapkan: GAGAL, lima test, "Unable to locate a class or view for component [ui.icon]".
 
-- [ ] **Langkah 3: Bangun komponennya**
+- [x] **Langkah 3: Bangun komponennya**
 
 Buat `resources/views/components/ui/icon.blade.php`:
 
@@ -679,12 +679,12 @@ Buat `resources/views/components/ui/icon.blade.php`:
 @endif
 ```
 
-- [ ] **Langkah 4: Jalankan dan pastikan lulus**
+- [x] **Langkah 4: Jalankan dan pastikan lulus**
 
 Jalankan: `php artisan test tests/Feature/IconSystemTest.php`
 Harapkan: LULUS, lima test.
 
-- [ ] **Langkah 5: Pakai di tempat yang membawa arti**
+- [x] **Langkah 5: Pakai di tempat yang membawa arti**
 
 Di `resources/views/components/ui/checkpoint-journey.blade.php`, pada baris yang menyebut
 naik atau turun antarpos, sisipkan ikon arah sebelum teksnya:
@@ -702,7 +702,7 @@ naik atau turun antarpos, sisipkan ikon arah sebelum teksnya:
 
 Ikonnya `aria-hidden` karena teks di sebelahnya sudah menyebut arahnya.
 
-- [ ] **Langkah 6: Jalankan, Pint, build, commit**
+- [x] **Langkah 6: Jalankan, Pint, build, commit**
 
 ```bash
 php artisan test
@@ -725,7 +725,7 @@ Nol `og:`, nol `twitter:`, dan tidak ada `rel="icon"` meskipun berkasnya ada. Ha
 jalur publik dibuat khusus untuk dibagikan, lalu setiap tautannya muncul sebagai URL
 telanjang.
 
-- [ ] **Langkah 1: Tulis test yang gagal**
+- [x] **Langkah 1: Tulis test yang gagal**
 
 Buat `tests/Feature/SocialMetaTest.php`:
 
@@ -788,12 +788,12 @@ class SocialMetaTest extends TestCase
 }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [x] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/SocialMetaTest.php`
 Harapkan: GAGAL, tiga test.
 
-- [ ] **Langkah 3: Tambahkan ikon situs ke layout aplikasi**
+- [x] **Langkah 3: Tambahkan ikon situs ke layout aplikasi**
 
 Di `resources/views/layouts/app.blade.php`, tepat sesudah baris `<meta name="theme-color" ...>`:
 
@@ -805,7 +805,7 @@ Di `resources/views/layouts/app.blade.php`, tepat sesudah baris `<meta name="the
         <link rel="apple-touch-icon" href="/icons/app-192.png">
 ```
 
-- [ ] **Langkah 4: Tambahkan kartu sosial ke halaman publik**
+- [x] **Langkah 4: Tambahkan kartu sosial ke halaman publik**
 
 Di `resources/views/public/trail.blade.php`, tepat sesudah baris `<link rel="canonical" ...>`:
 
@@ -828,7 +828,7 @@ Di `resources/views/public/trail.blade.php`, tepat sesudah baris `<link rel="can
         <meta name="twitter:card" content="summary">
 ```
 
-- [ ] **Langkah 5: Jalankan, Pint, build, commit**
+- [x] **Langkah 5: Jalankan, Pint, build, commit**
 
 ```bash
 php artisan test
@@ -854,7 +854,7 @@ Dipasang di lapisan base, bukan sebagai kelas baru. Kelas `.prosa` yang harus di
 setiap penulis view adalah kelas yang akan terlupakan di halaman berikutnya, dan CSS yang
 tidak pernah dipakai siapa pun adalah bita mati — persis cacat yang dijaga guard lain.
 
-- [ ] **Langkah 1: Tulis test yang gagal**
+- [x] **Langkah 1: Tulis test yang gagal**
 
 Buat `tests/Feature/ReadingMeasureTest.php`:
 
@@ -924,14 +924,14 @@ class ReadingMeasureTest extends TestCase
 }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [x] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/ReadingMeasureTest.php`
 Harapkan: GAGAL pada dua test pertama. Yang ketiga sudah lulus karena Tugas 3 memasang
 `max-w-prose` di kedua komponen; ia ada di sini untuk menahannya tetap terpasang, bukan
 untuk memperkenalkannya.
 
-- [ ] **Langkah 3: Tambahkan aturannya**
+- [x] **Langkah 3: Tambahkan aturannya**
 
 Di `resources/css/app.css`, di dalam blok `h1` yang sudah ada, tambahkan satu baris:
 
@@ -959,7 +959,7 @@ Lalu tepat sesudah blok `h1`:
     }
 ```
 
-- [ ] **Langkah 4: Jalankan, Pint, build, commit**
+- [x] **Langkah 4: Jalankan, Pint, build, commit**
 
 ```bash
 php artisan test
@@ -981,7 +981,7 @@ git commit -m "feat: judul diseimbangkan dan paragraf tidak berakhir satu kata"
 Empat `wire:loading` di seluruh aplikasi, tanpa satu pun skeleton. Halaman yang
 menjalankan mesin rekomendasi diam sampai isinya tiba.
 
-- [ ] **Langkah 1: Tulis test yang gagal**
+- [x] **Langkah 1: Tulis test yang gagal**
 
 Buat `tests/Feature/SkeletonTest.php`:
 
@@ -1035,12 +1035,12 @@ class SkeletonTest extends TestCase
 }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [x] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/SkeletonTest.php`
 Harapkan: GAGAL, tiga test.
 
-- [ ] **Langkah 3: Bangun komponennya**
+- [x] **Langkah 3: Bangun komponennya**
 
 Buat `resources/views/components/ui/skeleton.blade.php`:
 
@@ -1066,7 +1066,7 @@ Buat `resources/views/components/ui/skeleton.blade.php`:
 </div>
 ```
 
-- [ ] **Langkah 4: Pakai di halaman hasil rekomendasi**
+- [x] **Langkah 4: Pakai di halaman hasil rekomendasi**
 
 Di `resources/views/livewire/recommendations/recommendation-results.blade.php`, tepat
 sebelum `<ul class="space-y-4">`:
@@ -1075,7 +1075,7 @@ sebelum `<ul class="space-y-4">`:
         <x-ui.skeleton :rows="4" wire:loading wire:target="tampilkanLagi" class="mb-4" />
 ```
 
-- [ ] **Langkah 5: Jalankan, Pint, build, commit**
+- [x] **Langkah 5: Jalankan, Pint, build, commit**
 
 ```bash
 php artisan test
@@ -1127,3 +1127,49 @@ Dua hal berubah karena pengukuran itu. Rencana semula menyebut `shadow-xl` ada d
 dropdown — ia ada di modal. Dan nilai `--text-muted` di spec, yang hanya dihitung terhadap
 kanvas, gagal AA di atas `--surface-sunken` pada 4,40:1; nilai di Tugas 3 digelapkan satu
 tingkat dan ketiga permukaannya ikut dihitung.
+
+---
+
+## Hasil
+
+Selesai 20 September 2026, tujuh tugas, tujuh commit, dari `fdc800a` sampai `0181e6c`.
+
+| Diukur | Sebelum | Sesudah |
+|---|---|---|
+| Test | 746 | **786** (775 lulus, 11 dilewati) |
+| Abu mentah Tailwind di view | 597 | **0** |
+| Token semantik | 1 | **8** |
+| Pasangan kontras yang dihitung | 11 | **20** |
+| Bayangan sebagai pemisah | 51 | **0** (2 elevasi bernama) |
+| Tag sosial | 0 | **8** |
+| `rel="icon"` | 0 | **3 layout** |
+| Skeleton | 0 | 1 komponen bersama |
+| Bundel CSS terbangun | — | 52,7 kB |
+
+Tiga hal berbeda dari rencana, semuanya karena pengukuran menemukan sesuatu.
+
+**1. Migrasi Tugas 2 tidak sepenuhnya mekanis.** Sesudah delapan penggantian `sed`,
+tersisa tiga puluh kelas yang tidak punya pasangan langsung: tirai modal, track
+`factor-bars`, focus ring tombol sekunder, batas hover nav, ikon hamburger, dan tombol
+Breeze. Masing-masing diputuskan menurut perannya. Empat di antaranya nilainya persis
+sama, enam sengaja bergeser satu tingkat, dan satu-satunya yang menguat adalah batas
+hover nav — karena ia penanda interaktif, bukan garis dekoratif.
+
+**2. Nilai `--text-muted` di spec gagal AA, dan testnya yang menemukannya.** Spec
+menghitung 4,63:1 terhadap kanvas. Sembilan pasangan semantik yang ditambahkan ke
+`ColourContrastTest` menghitungnya juga terhadap sumur dan mendapat **4,39:1**. Nilainya
+digelapkan satu tingkat. Sebelum menerima hasilnya, nilai spec dikembalikan sekali untuk
+melihat baris itu benar-benar merah — test yang tidak pernah terlihat gagal belum
+terbukti memeriksa apa pun.
+
+**3. Satu temuan tak terduga, diperbaiki di Tugas 3.** `x-primary-button` masih tombol
+Breeze berwarna netral gelap dan dipakai di delapan halaman auth dan profil, sementara
+seluruh aplikasi memakai tombol merek. Layar pertama yang dilihat orang membawa tombol
+yang berbeda dari produknya. Sekarang ia meneruskan ke `x-ui.button`, dan kedelapan
+halaman itu ikut mendapat target sentuh 44px WCAG 2.2 serta keadaan sedang memproses yang
+mencegah kiriman ganda di jaringan tipis — dua hal yang tidak pernah dimilikinya.
+
+Satu test juga harus diperbaiki, bukan berkasnya: `test_the_page_title_carries_real_weight`
+menolak `page-header` karena komentarnya menyebut `text-2xl` untuk menjelaskan mengapa
+ukuran itu ditinggalkan. Penjelasan itu layak disimpan, jadi testnya yang belajar
+melewati komentar Blade, sama seperti sapuan lain di suite ini.
