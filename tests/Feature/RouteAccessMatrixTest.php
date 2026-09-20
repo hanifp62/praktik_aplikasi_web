@@ -35,6 +35,21 @@ class RouteAccessMatrixTest extends TestCase
         'sw.js',
         'offline',
         'up',
+
+        /*
+         * Halaman jalur publik dan sitemap-nya, satu-satunya bagian aplikasi yang
+         * sengaja terlihat mesin pencari.
+         *
+         * Keduanya dibaca robot lebih sering daripada manusia dan isinya sengaja hanya
+         * keterangan berumur panjang: tanpa status resmi, tanpa prakiraan cuaca, tanpa
+         * data pribadi siapa pun. PublicTrailPageTest yang menjaga batas itu.
+         *
+         * 'pendakian/{trail:slug}' tidak perlu didaftarkan karena slug contohnya tidak
+         * ada dan rutenya menjawab 404, tetapi ditulis di sini supaya pembaca berikutnya
+         * tahu ia memang publik dan bukan kelolosan.
+         */
+        'sitemap.xml',
+        'pendakian/{trail:slug}',
     ];
 
     public function test_every_route_is_either_public_by_design_or_closed_to_guests(): void

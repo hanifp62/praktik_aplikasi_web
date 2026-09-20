@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\HikeTrackController;
 use App\Http\Controllers\ProgressiveWebAppController;
+use App\Http\Controllers\PublicTrailController;
 use App\Http\Controllers\ReportPhotoController;
 use App\Livewire\Admin\AnalyticsDashboard;
 use App\Livewire\Admin\AuditLogViewer;
@@ -39,6 +40,20 @@ use App\Livewire\Trips\TripShow;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
+
+/*
+ * Halaman jalur publik.
+ *
+ * Satu-satunya bagian aplikasi ini yang terlihat oleh mesin pencari. Seluruh halaman
+ * jalur berada di balik login sebelumnya, sehingga orang yang mencari nama gunung tidak
+ * pernah menemukan apa pun dari sini.
+ *
+ * Isinya sengaja hanya keterangan yang berumur panjang: tanpa status resmi dan tanpa
+ * prakiraan cuaca. Cuplikan mesin pencari berumur lebih panjang daripada isinya, dan
+ * status yang benar hari ini akan tetap terbaca berhari-hari sesudah jalurnya ditutup.
+ */
+Route::get('pendakian/{trail:slug}', [PublicTrailController::class, 'show'])->name('public.trail');
+Route::get('sitemap.xml', [PublicTrailController::class, 'sitemap'])->name('public.sitemap');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', Dashboard::class)->middleware('verified')->name('dashboard');
