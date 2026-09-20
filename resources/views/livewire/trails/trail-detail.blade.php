@@ -224,7 +224,7 @@
                     Area referensi: {{ $conditions['weather_context']['reference_area'] ?? 'Tidak dicatat' }}
                 </p>
                 @if ($conditions['weather_context']['message'])
-                    <p class="mt-2 rounded-md bg-warn-50 px-3 py-2 text-sm text-warn-900">
+                    <p class="mt-2 rounded-control bg-warn-50 px-3 py-2 text-sm text-warn-900">
                         {{ $conditions['weather_context']['message'] }}
                     </p>
                 @endif
@@ -284,7 +284,7 @@
                 <h2 class="text-base font-semibold text-primary">Segmen jalur</h2>
                 <ol class="mt-4 space-y-2 text-sm">
                     @foreach ($trail->segments as $segment)
-                        <li class="rounded-md border border-subtle px-3 py-2">
+                        <li class="rounded-control border border-subtle px-3 py-2">
                             <span class="font-medium text-primary">{{ $segment->sequence }}. {{ $segment->name }}</span>
                             <span class="text-secondary">
                                 &middot; {{ $segment->distance_km ?? '-' }} km &middot; gain {{ $segment->elevation_gain_m ?? '-' }} m
@@ -305,7 +305,7 @@
             @if ($conditions['community_context']['available'])
                 <ul class="space-y-3">
                     @foreach ($conditions['community_context']['reports'] as $report)
-                        <li class="rounded-md border border-subtle px-3 py-2 text-sm">
+                        <li class="rounded-control border border-subtle px-3 py-2 text-sm">
                             <div class="flex flex-wrap gap-2">
                                 @foreach ($report->tags() as $tag)
                                     <span class="rounded-full bg-community-50 px-2.5 py-0.5 text-xs text-community-900">{{ $tag->label() }}</span>
@@ -319,7 +319,7 @@
                                 <img src="{{ route('reports.photo', $report) }}"
                                     alt="Foto kondisi jalur dari pendakian {{ $report->hike_date->translatedFormat('d M Y') }}"
                                     loading="lazy"
-                                    class="mt-2 max-h-56 rounded-md border border-subtle">
+                                    class="mt-2 max-h-56 rounded-control border border-subtle">
                             @endif
                             {{--
                                 Pelapornya disebut. Relasi user sudah dimuat eager di

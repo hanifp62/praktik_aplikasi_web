@@ -39,7 +39,7 @@
                     <x-ui.card :title="$category->label()">
                         <ul class="space-y-3">
                             @foreach ($items as $item)
-                                <li class="rounded-md border border-subtle p-3">
+                                <li class="rounded-control border border-subtle p-3">
                                     <div class="flex flex-wrap items-start justify-between gap-3">
                                         <div>
                                             <p class="text-sm font-medium text-primary">
@@ -73,7 +73,7 @@
                                                         pernah meninggalkan tombol yang tak terlihat.
                                                     --}}
                                                     @class([
-                                                        'inline-flex min-h-11 items-center rounded-md border px-3 py-1 text-xs font-medium',
+                                                        'inline-flex min-h-11 items-center rounded-control border px-3 py-1 text-xs font-medium',
                                                         'transition-colors duration-150 ease-out motion-reduce:transition-none',
                                                         'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1',
                                                         'border-brand-700 bg-brand-700 text-white' => $item->status === $status,

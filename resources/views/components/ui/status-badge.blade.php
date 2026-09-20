@@ -9,7 +9,7 @@
     };
 @endphp
 
-<span class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm font-medium {{ $classes }}">
+<span class="inline-flex items-center gap-1.5 rounded-control border px-2.5 py-1 text-sm font-medium {{ $classes }}">
     <span class="sr-only">Status resmi:</span>
     {{ $status?->label() ?? 'Belum diketahui' }}
     @if ($scope)

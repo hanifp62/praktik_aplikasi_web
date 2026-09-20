@@ -13,7 +13,7 @@
             seluruh label di bawahnya harus dibaca, jadi ia harus terbaca lebih dulu.
         --}}
         @if ($profilBerubah)
-            <div class="mb-6 rounded-md border border-warn-300 bg-warn-50 p-4">
+            <div class="mb-6 rounded-control border border-warn-300 bg-warn-50 p-4">
                 <p class="text-sm font-medium text-warn-900">Profil Anda berubah sejak penilaian ini dibuat</p>
                 <p class="mt-1 text-sm text-warn-900">
                     Label kecocokan di halaman ini dihitung terhadap profil Anda yang lama, dan
@@ -59,7 +59,7 @@
         @endif
 
         @if (count($comparison) >= 2)
-            <div class="mb-4 flex items-center justify-between rounded-md border border-brand-200 bg-brand-50 px-4 py-3">
+            <div class="mb-4 flex items-center justify-between rounded-control border border-brand-200 bg-brand-50 px-4 py-3">
                 <p class="text-sm text-brand-900">{{ count($comparison) }} jalur dipilih untuk dibandingkan.</p>
                 <x-ui.button wire:click="compare">Bandingkan</x-ui.button>
             </div>
@@ -130,7 +130,7 @@
                         </dl>
 
                         @if ($result->trailHasChangedSinceRun())
-                            <p class="mt-3 rounded-md border border-warn-300 bg-warn-50 px-3 py-2 text-sm text-warn-900">
+                            <p class="mt-3 rounded-control border border-warn-300 bg-warn-50 px-3 py-2 text-sm text-warn-900">
                                 Data jalur ini berubah setelah penilaian dibuat. Angka di atas adalah
                                 yang dipakai menilai; buka halaman jalur untuk keterangan terkini.
                             </p>
@@ -139,7 +139,7 @@
                         @if ($result->warnings)
                             <ul class="mt-3 space-y-1 text-sm text-warn-900">
                                 @foreach ($result->warnings as $warning)
-                                    <li class="rounded-md bg-warn-50 px-3 py-2">{{ $warning }}</li>
+                                    <li class="rounded-control bg-warn-50 px-3 py-2">{{ $warning }}</li>
                                 @endforeach
                             </ul>
                         @endif
@@ -226,7 +226,7 @@
                 </p>
                 <ul class="mt-3 space-y-2">
                     @foreach ($excluded as $result)
-                        <li class="rounded-md border border-subtle bg-surface-sunken px-4 py-3 text-sm">
+                        <li class="rounded-control border border-subtle bg-surface-sunken px-4 py-3 text-sm">
                             <span class="font-medium text-primary">{{ $result->trail->name }}</span>
                             <span class="text-secondary">&middot; {{ $result->trail->mountain->name }}</span>
                             <ul class="mt-1 list-disc pl-5 text-secondary">

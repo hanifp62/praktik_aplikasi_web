@@ -42,7 +42,7 @@
                 Bagian terpenting halaman ini. Pendaki yang sampai ke sini sedang mencari
                 jawaban, dan jawabannya memang ada, hanya bukan di sini.
             --}}
-            <p class="mt-4 rounded-md border border-warn-300 bg-warn-50 p-3 text-sm text-warn-900">
+            <p class="mt-4 rounded-control border border-warn-300 bg-warn-50 p-3 text-sm text-warn-900">
                 Selama keterangannya belum ada, jangan menganggap jalur ini terbuka maupun
                 tertutup. Tanyakan langsung ke
                 {{ $badan?->displayName() ?? 'pengelola kawasan' }} atau ke basecamp sebelum

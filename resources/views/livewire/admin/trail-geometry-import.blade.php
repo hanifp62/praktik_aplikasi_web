@@ -50,7 +50,7 @@
                     <x-input-label for="saringan" value="Saring berdasarkan nama" />
                     <input id="saringan" type="text" wire:model.live.debounce.300ms="saringan"
                         placeholder="misalnya: Kledung"
-                        class="mt-1 block w-full max-w-sm rounded-md border-control text-sm focus:border-brand-600 focus:ring-brand-600">
+                        class="mt-1 block w-full max-w-sm rounded-control border-control text-sm focus:border-brand-600 focus:ring-brand-600">
 
                     <p class="mt-2 text-xs text-secondary">
                         {{ number_format(count($kandidat), 0, ',', '.') }} jalur kaki terpetakan di sekitar
@@ -160,7 +160,7 @@
                         punya angka dari pengelola tidak boleh tertimpa hitungan satu berkas.
                     --}}
                     @if ($tanjakan)
-                        <div class="rounded-md border border-subtle p-3">
+                        <div class="rounded-control border border-subtle p-3">
                             <p class="text-sm font-medium text-primary">Ketinggian terbaca dari berkas ini</p>
 
                             <dl class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">

@@ -87,7 +87,7 @@
                 <div>
                     <x-input-label for="notes" value="Catatan" />
                     <textarea id="notes" wire:model="notes" rows="2"
-                        class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
+                        class="mt-1 block w-full rounded-control border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                     <x-input-error :messages="$errors->get('notes')" class="mt-2" />
                 </div>
 

@@ -72,7 +72,7 @@ class TypographySystemTest extends TestCase
      * ketebalan saja habis setelah dua tingkat.
      *
      * Yang dituntut keluarganya ada, bukan berupa unduhan. Versi pertama memeriksa
-     * "mono: [" dan menolak konfigurasi ketika mono beralih ke tumpukan sistem — padahal
+     * "mono: [" dan menolak konfigurasi ketika mono beralih ke tumpukan sistem, padahal
      * peralihan itu justru perbaikannya: huruf mono yang diunduh seluruh pengguna hanya
      * dipakai dua baris di satu halaman admin.
      */

@@ -25,7 +25,7 @@
                 <p>
                     Halaman ini tidak dapat dimuat karena perangkat Anda sedang tanpa jaringan.
                 </p>
-                <p class="rounded-md border border-warn-300 bg-warn-50 p-3 text-sm text-warn-900">
+                <p class="rounded-control border border-warn-300 bg-warn-50 p-3 text-sm text-warn-900">
                     Aplikasi sengaja tidak menampilkan data lama saat luring. Status jalur dan
                     prakiraan cuaca berubah, dan salinan kemarin yang terlihat seperti keadaan
                     sekarang lebih berbahaya daripada tidak ada tampilan sama sekali.

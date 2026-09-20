@@ -9,7 +9,7 @@
                 @foreach (['Pengalaman', 'Rekam jejak', 'Preferensi'] as $index => $stepLabel)
                     <li class="flex-1">
                         <span @class([
-                            'block rounded-md border px-3 py-2 text-center',
+                            'block rounded-control border px-3 py-2 text-center',
                             'border-brand-600 bg-brand-50 font-medium text-brand-900' => $step === $index + 1,
                             'border-subtle text-secondary' => $step !== $index + 1,
                         ]) @if ($step === $index + 1) aria-current="step" @endif>
@@ -35,7 +35,7 @@
                     <div>
                         <x-input-label for="bio" value="Catatan singkat (opsional)" />
                         <textarea id="bio" wire:model="bio" rows="3"
-                            class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
+                            class="mt-1 block w-full rounded-control border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                         <x-input-error :messages="$errors->get('bio')" class="mt-2" />
                     </div>
                 </fieldset>

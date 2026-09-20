@@ -14,7 +14,7 @@ use Tests\TestCase;
  * Halaman jalur publik dibuat khusus untuk ditemukan dan dibagikan, lalu setiap
  * tautannya muncul sebagai URL telanjang tanpa judul maupun gambar. Nol og:, nol
  * twitter:, dan tidak ada rel="icon" di mana pun meskipun berkasnya sudah ada di
- * public/ sejak awal — cacat pertumbuhan yang diperkenalkan bersama halamannya sendiri.
+ * public/ sejak awal, cacat pertumbuhan yang diperkenalkan bersama halamannya sendiri.
  */
 class SocialMetaTest extends TestCase
 {

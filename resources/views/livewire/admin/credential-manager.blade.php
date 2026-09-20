@@ -12,7 +12,7 @@
         <div class="mb-4 max-w-xs">
             <x-input-label for="filter" value="Filter status" />
             <select id="filter" wire:model.live="filter"
-                class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600">
+                class="mt-1 block w-full rounded-control border-control focus:border-brand-600 focus:ring-brand-600">
                 <option value="">Semua</option>
                 {{-- daftar tetap: pilihan yang ditetapkan di kode, tidak pernah kosong. --}}
                 @foreach ($statuses as $status)
@@ -40,7 +40,7 @@
                                 </div>
 
                                 <div class="text-right text-xs">
-                                    <span class="rounded-md bg-surface-sunken px-2.5 py-1 font-medium text-secondary">
+                                    <span class="rounded-control bg-surface-sunken px-2.5 py-1 font-medium text-secondary">
                                         {{ $k->verification_status->label() }}
                                     </span>
 
@@ -85,7 +85,7 @@
                                     Catatan pemeriksaan (opsional)
                                 </label>
                                 <input id="catatan-{{ $k->id }}" type="text" wire:model="catatan.{{ $k->id }}"
-                                    class="block w-full rounded-md border-control text-sm focus:border-brand-600 focus:ring-brand-600">
+                                    class="block w-full rounded-control border-control text-sm focus:border-brand-600 focus:ring-brand-600">
 
                                 <p class="text-xs text-secondary">
                                     Verifikasi memberi pemegangnya hak menyunting data jalur di kawasan

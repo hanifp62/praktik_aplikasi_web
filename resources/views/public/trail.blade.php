@@ -22,7 +22,7 @@
 
         {{--
             Kartu sosial. Halaman ini dibuat untuk ditemukan dan dibagikan, dan tautan
-            tanpa kartu muncul sebagai URL telanjang di setiap tempat ia ditempel —
+            tanpa kartu muncul sebagai URL telanjang di setiap tempat ia ditempel:
             grup pendakian, pesan langsung, papan rencana perjalanan.
 
             Gambarnya ikon aplikasi, bukan foto jalur: foto jalur berasal dari laporan
@@ -32,7 +32,7 @@
             Yang berumur pendek tetap tidak ikut, sama seperti isi halamannya: status
             resmi dan prakiraan cuaca hanya ada di dalam aplikasi (§94, §95). Cuplikan
             pencarian hidup lebih lama daripada isinya, dan kartu sosial hidup lebih lama
-            lagi — ia tersimpan di percakapan orang.
+            lagi, karena ia tersimpan di percakapan orang.
         --}}
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="apple-touch-icon" href="/icons/app-192.png">
@@ -118,7 +118,7 @@
                 terbuka. Yang disebut bukan permintaan mendaftar, melainkan ke mana
                 status terkini dicari dan mengapa ia tidak ada di sini.
             --}}
-            <section class="rounded-md border border-warn-300 bg-warn-50 p-4">
+            <section class="rounded-control border border-warn-300 bg-warn-50 p-4">
                 <h2 class="text-base font-semibold text-warn-900">Sebelum berangkat</h2>
                 <p class="mt-2 text-sm text-warn-900">
                     Halaman ini sengaja tidak memuat <strong>status resmi terkini</strong> maupun

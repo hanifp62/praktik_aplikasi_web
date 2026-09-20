@@ -16,7 +16,7 @@
             <ol class="space-y-2">
                 @forelse ($funnel as $event => $count)
                     @php $enum = \App\Enums\AnalyticsEvent::tryFrom($event); @endphp
-                    <li class="flex items-center justify-between rounded-md border border-subtle px-3 py-2 text-sm">
+                    <li class="flex items-center justify-between rounded-control border border-subtle px-3 py-2 text-sm">
                         <span class="text-secondary">{{ $enum?->label() ?? $event }}</span>
                         <span class="font-semibold text-primary">{{ $count }}</span>
                     </li>

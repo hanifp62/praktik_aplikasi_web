@@ -57,7 +57,7 @@
                             {{-- Pelapor berhak tahu apa yang salah, kalau tidak ia tidak dapat
                                  memperbaikinya dan usaha moderator menulis alasan terbuang. --}}
                             @if ($entry->conditionReport?->rejectionReason())
-                                <p class="mt-2 rounded-md border border-warn-300 bg-warn-50 p-3 text-sm text-warn-900">
+                                <p class="mt-2 rounded-control border border-warn-300 bg-warn-50 p-3 text-sm text-warn-900">
                                     Alasan moderator: {{ $entry->conditionReport->rejectionReason() }}
                                 </p>
                             @endif

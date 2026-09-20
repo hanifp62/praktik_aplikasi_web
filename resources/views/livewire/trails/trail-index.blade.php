@@ -14,7 +14,7 @@
             <div>
                 <x-input-label for="technical" value="Tingkat teknis" />
                 <select id="technical" wire:model.live="technical"
-                    class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600">
+                    class="mt-1 block w-full rounded-control border-control focus:border-brand-600 focus:ring-brand-600">
                     <option value="">Semua</option>
                     {{-- daftar tetap: pilihan yang ditetapkan di kode, tidak pernah kosong. --}}
                     @foreach ($technicalLevels as $level)
@@ -92,7 +92,7 @@
                                 <span class="mt-0.5 block text-sm text-secondary">
                                     {{ $jalur->mountain->name }} &middot; {{ $jalur->mountain->province }}
                                 </span>
-                                <span class="mt-2 inline-block rounded-md bg-warn-100 px-2 py-0.5 text-xs font-medium text-warn-900">
+                                <span class="mt-2 inline-block rounded-control bg-warn-100 px-2 py-0.5 text-xs font-medium text-warn-900">
                                     Menunggu masukan pengelola
                                 </span>
                             </a>

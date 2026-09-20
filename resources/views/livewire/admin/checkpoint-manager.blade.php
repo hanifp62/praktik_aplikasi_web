@@ -28,7 +28,7 @@
                 <div>
                     <x-input-label for="notes" value="Catatan" />
                     <textarea id="notes" wire:model="notes" rows="2"
-                        class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
+                        class="mt-1 block w-full rounded-control border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                     <x-input-error :messages="$errors->get('notes')" class="mt-2" />
                 </div>
 
@@ -42,7 +42,7 @@
             @else
                 <ol class="space-y-2">
                     @foreach ($checkpoints as $checkpoint)
-                        <li class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-subtle px-3 py-2 text-sm">
+                        <li class="flex flex-wrap items-center justify-between gap-3 rounded-control border border-subtle px-3 py-2 text-sm">
                             <span>
                                 <span class="font-medium text-primary">{{ $checkpoint->sequence }}. {{ $checkpoint->name }}</span>
                                 <span class="text-secondary">&middot; {{ $checkpoint->checkpoint_type->label() }}</span>

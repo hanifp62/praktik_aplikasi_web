@@ -22,19 +22,19 @@
             <div>
                 <x-input-label for="note" value="Catatan (opsional)" />
                 <textarea id="note" wire:model="note" rows="3"
-                    class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
+                    class="mt-1 block w-full rounded-control border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                 <x-input-error :messages="$errors->get('note')" class="mt-2" />
             </div>
 
             <div>
                 <x-input-label for="photo" value="Foto (opsional, maksimal 4 MB)" />
                 <input id="photo" type="file" wire:model="photo" accept="image/jpeg,image/png,image/webp"
-                    class="mt-1 block w-full text-sm text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-800">
+                    class="mt-1 block w-full text-sm text-secondary file:mr-3 file:rounded-control file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-800">
                 <div wire:loading wire:target="photo" class="mt-1 text-xs text-muted">Mengunggah foto...</div>
                 <x-input-error :messages="$errors->get('photo')" class="mt-2" />
             </div>
 
-            <div class="rounded-md bg-surface-sunken px-4 py-3 text-sm text-secondary">
+            <div class="rounded-control bg-surface-sunken px-4 py-3 text-sm text-secondary">
                 Laporan akan melalui moderasi sebelum ditampilkan kepada pengguna lain.
             </div>
 

@@ -23,7 +23,7 @@
                         </div>
 
                         <span @class([
-                            'rounded-md px-2.5 py-1 text-xs font-medium',
+                            'rounded-control px-2.5 py-1 text-xs font-medium',
                             'bg-brand-100 text-brand-900' => $baris['keadaan'] === \App\Services\SchedulerHealthService::SEHAT,
                             'bg-warn-100 text-warn-900' => $baris['keadaan'] === \App\Services\SchedulerHealthService::TERLAMBAT,
                             'bg-danger-100 text-danger-900' => in_array($baris['keadaan'], [
@@ -53,7 +53,7 @@
                     </dl>
 
                     @if ($baris['ringkasan'])
-                        <p class="mt-3 rounded-md bg-danger-50 px-3 py-2 text-sm text-danger-900">{{ $baris['ringkasan'] }}</p>
+                        <p class="mt-3 rounded-control bg-danger-50 px-3 py-2 text-sm text-danger-900">{{ $baris['ringkasan'] }}</p>
                     @endif
 
                     @if ($baris['keadaan'] === \App\Services\SchedulerHealthService::BELUM_PERNAH)

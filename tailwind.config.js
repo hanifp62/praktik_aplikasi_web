@@ -3,7 +3,7 @@ import forms from '@tailwindcss/forms';
 
 /**
  * Warna merek dibaca dari design token di resources/css/app.css.
- * Untuk mengubah palet aplikasi, sunting token di sana — jangan menambah
+ * Untuk mengubah palet aplikasi, sunting token di sana, jangan menambah
  * warna mentah di sini atau di view.
  */
 const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;

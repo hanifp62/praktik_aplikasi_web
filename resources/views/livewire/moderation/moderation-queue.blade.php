@@ -10,7 +10,7 @@
         <div class="mb-4 max-w-xs">
             <x-input-label for="filter" value="Filter status" />
             <select id="filter" wire:model.live="filter"
-                class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600">
+                class="mt-1 block w-full rounded-control border-control focus:border-brand-600 focus:ring-brand-600">
                 <option value="">Semua</option>
                 {{-- daftar tetap: pilihan yang ditetapkan di kode, tidak pernah kosong. --}}
                 @foreach ($statuses as $status)
@@ -43,7 +43,7 @@
                                         dikirim {{ $report->created_at->diffForHumans() }}
                                     </p>
                                 </div>
-                                <span class="rounded-md bg-surface-sunken px-2.5 py-1 text-xs font-medium text-secondary">
+                                <span class="rounded-control bg-surface-sunken px-2.5 py-1 text-xs font-medium text-secondary">
                                     {{ $report->moderation_status->label() }}
                                 </span>
                             </div>
@@ -64,7 +64,7 @@
                                     <img src="{{ route('reports.photo', $report) }}"
                                         alt="Foto kondisi jalur yang dilampirkan pada laporan tanggal {{ $report->hike_date->translatedFormat('d M Y') }}"
                                         loading="lazy"
-                                        class="max-h-64 rounded-md border border-subtle">
+                                        class="max-h-64 rounded-control border border-subtle">
                                     <figcaption class="mt-1 text-xs text-muted">
                                         Foto dari pelapor. Periksa sebelum menyetujui.
                                     </figcaption>
@@ -77,7 +77,7 @@
                                 </label>
                                 <input id="reason-{{ $report->id }}" type="text"
                                     wire:model="reasons.{{ $report->id }}"
-                                    class="block w-full rounded-md border-control text-sm focus:border-brand-600 focus:ring-brand-600">
+                                    class="block w-full rounded-control border-control text-sm focus:border-brand-600 focus:ring-brand-600">
 
                                 <p class="text-xs text-secondary">
                                     Alasan pada penolakan dan penghapusan ditampilkan kepada pelapor di riwayatnya.

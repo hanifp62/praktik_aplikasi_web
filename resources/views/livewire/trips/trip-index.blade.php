@@ -29,7 +29,7 @@
                                     </p>
                                 </div>
                                 <div class="text-right">
-                                    <span class="inline-block rounded-md bg-surface-sunken px-2.5 py-1 text-xs font-medium text-secondary">
+                                    <span class="inline-block rounded-control bg-surface-sunken px-2.5 py-1 text-xs font-medium text-secondary">
                                         {{ $trip->status->label() }}
                                     </span>
                                     @if ($trip->trailIsWithdrawn())

@@ -3,7 +3,7 @@
 
     Sebelumnya hanya `admin.trails` yang tertaut dari navigasi utama, sehingga halaman
     admin lain hanya dapat dicapai dengan mengetik URL-nya. Kurator data bekerja
-    berpindah-pindah antara gunung, jalur, checkpoint, sumber, dan status — memaksanya
+    berpindah-pindah antara gunung, jalur, checkpoint, sumber, dan status, memaksanya
     menghafal alamat adalah hambatan yang tidak perlu.
 --}}
 @php

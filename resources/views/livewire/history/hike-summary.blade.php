@@ -28,7 +28,7 @@
             <p class="mt-1 text-sm text-secondary">
                 {{ $riwayat->completed_at->translatedFormat('l, d F Y') }}
             </p>
-            <span class="mt-2 inline-block rounded-md bg-surface-sunken px-2.5 py-1 text-sm font-medium text-secondary">
+            <span class="mt-2 inline-block rounded-control bg-surface-sunken px-2.5 py-1 text-sm font-medium text-secondary">
                 {{ $riwayat->completion_state->label() }}
             </span>
         </x-ui.page-header>

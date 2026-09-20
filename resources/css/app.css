@@ -7,7 +7,7 @@
 | Design token
 |
 | Satu-satunya tempat palet aplikasi didefinisikan. Mengubah warna merek,
-| warna peringatan, atau radius kontrol cukup dilakukan di blok ini — seluruh
+| warna peringatan, atau radius kontrol cukup dilakukan di blok ini: seluruh
 | komponen dan halaman ikut berubah.
 |
 | Nilai ditulis sebagai komponen RGB tanpa fungsi rgb() agar Tailwind dapat
@@ -24,11 +24,11 @@
 |   danger-900 di atas danger-100    7.97:1
 |
 | brand-600 hanya 3.77:1 terhadap putih, jadi ia dipakai untuk garis dan
-| focus ring — yang ambangnya 3:1 — bukan sebagai latar teks.
+| focus ring (yang ambangnya 3:1), bukan sebagai latar teks.
 */
 @layer base {
     :root {
-        /* Merek — dipakai untuk aksi utama dan penanda status positif. */
+        /* Merek, dipakai untuk aksi utama dan penanda status positif. */
         --brand-50: 236 253 245;
         --brand-100: 209 250 229;
         --brand-200: 167 243 208;
@@ -39,7 +39,7 @@
         --brand-800: 6 95 70;
         --brand-900: 6 78 59;
 
-        /* Peringatan — kondisi yang perlu diperhatikan, bukan kegagalan. */
+        /* Peringatan: kondisi yang perlu diperhatikan, bukan kegagalan. */
         --warn-50: 255 251 235;
         --warn-100: 254 243 199;
         --warn-300: 252 211 77;
@@ -51,7 +51,7 @@
         --community-500: 14 165 233;
         --community-900: 12 74 110;
 
-        /* Bahaya — penutupan resmi, tindakan merusak. */
+        /* Bahaya: penutupan resmi, tindakan merusak. */
         --danger-50: 255 241 242;
         --danger-100: 255 228 230;
         --danger-300: 253 164 175;
@@ -84,7 +84,7 @@
          *
          * Rasio di bawah dihitung terhadap tiga permukaan, bukan terhadap putih saja.
          * Nilai muted yang dirancang spec berhenti di 4.40:1 ketika label duduk di atas
-         * sumur — gagal AA di permukaan yang tidak ikut dihitung — jadi ia digelapkan
+         * sumur (gagal AA di permukaan yang tidak ikut dihitung), jadi ia digelapkan
          * satu tingkat. ColourContrastTest yang menguncinya.
          *
          *   text-primary   di atas canvas   16.73:1   sumur 16.02:1
