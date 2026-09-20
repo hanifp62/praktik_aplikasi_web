@@ -36,6 +36,9 @@ new class extends Component
                     <x-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*')" wire:navigate>
                         Jalur
                     </x-nav-link>
+                    <x-nav-link :href="route('goals.create')" :active="request()->routeIs('goals.*')" wire:navigate>
+                        Buat Rencana
+                    </x-nav-link>
                     <x-nav-link :href="route('trips.index')" :active="request()->routeIs('trips.*')" wire:navigate>
                         Trip
                     </x-nav-link>
@@ -99,10 +102,37 @@ new class extends Component
 
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+        {{--
+            Menu ini harus mencerminkan menu desktop. PRD §88 menempatkan ponsel sebagai
+            platform utama, sehingga navigasi yang hanya memuat Dashboard berarti seluruh
+            aplikasi tidak terjangkau justru di tempat ia paling sering dipakai.
+        --}}
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                {{ __('Dashboard') }}
+                Dasbor
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('goals.create')" :active="request()->routeIs('goals.*')" wire:navigate>
+                Buat Rencana
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*')" wire:navigate>
+                Jalur
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('trips.index')" :active="request()->routeIs('trips.*')" wire:navigate>
+                Trip
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('history')" :active="request()->routeIs('history')" wire:navigate>
+                Riwayat
+            </x-responsive-nav-link>
+            @if (auth()->user()?->isModerator())
+                <x-responsive-nav-link :href="route('moderation.queue')" :active="request()->routeIs('moderation.*')" wire:navigate>
+                    Moderasi
+                </x-responsive-nav-link>
+            @endif
+            @if (auth()->user()?->isAdmin())
+                <x-responsive-nav-link :href="route('admin.trails')" :active="request()->routeIs('admin.*')" wire:navigate>
+                    Admin
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
