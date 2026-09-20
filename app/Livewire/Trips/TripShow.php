@@ -10,6 +10,8 @@ use App\Models\HikingHistory;
 use App\Models\TripPlan;
 use App\Services\AnalyticsRecorder;
 use App\Services\PermitService;
+use App\Services\TrailFitService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -125,11 +127,27 @@ class TripShow extends Component
 
     public function render(PermitService $permits)
     {
+        // Trip sudah punya goal, jadi kecocokannya yang tajam, bukan yang dasar.
+        //
+        // forTrails() meneruskan koleksinya ke OfficialStatusService dan PermitService,
+        // dan keduanya menuntut Eloquent\Collection secara ketat, bukan Support\Collection
+        // biasa. collect() menghasilkan yang biasa dan gagal dengan TypeError di sini.
+        $ringkasanFit = ($this->trip->trail && auth()->user()?->hasCompletedProfile())
+            ? (app(TrailFitService::class)->forTrails(
+                auth()->user(),
+                // Bukan collect(): itu Support\Collection, dan forTrails() jatuh ke
+                // TypeError di dalamnya karena penerima aslinya menuntut Eloquent\Collection.
+                Collection::make([$this->trip->trail]),
+                $this->trip->hikingGoal,
+            )[$this->trip->trail->id] ?? null)
+            : null;
+
         return view('livewire.trips.trip-show', [
             'completionStates' => CompletionState::cases(),
             // Dihitung ulang setiap halaman dibuka, bukan disimpan: jawabannya berubah
             // seiring hari berjalan meskipun tidak ada satu pun data yang disunting.
             'jendelaIzin' => $permits->bookingWindowFor($this->trip->trail, $this->trip->planned_date),
+            'ringkasanFit' => $ringkasanFit,
         ])->title($this->trip->name);
     }
 }

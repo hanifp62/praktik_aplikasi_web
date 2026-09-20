@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\HikingGoal;
 use App\Models\Mountain;
 use App\Models\Profile;
 use App\Models\Trail;
+use App\Models\TripPlan;
 use App\Models\User;
 use App\Models\UserExperience;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -144,5 +146,49 @@ class AmbientFitTest extends TestCase
             $banyak,
             "Beban tumbuh ketika kecocokan dinilai: {$sedikit} lalu {$banyak}. Ada N+1 di jalur fit."
         );
+    }
+
+    /**
+     * Lapisan "Mengapa" (§89) benar-benar terlihat pendaki, bukan cuma ada di kode.
+     *
+     * Diperiksa lewat permintaan HTTP sungguhan, bukan grep isi berkas: grep hanya
+     * membuktikan sebuah string ada di suatu tempat, tidak pernah membuktikan pendaki
+     * sungguh melihat sesuatu. Faktor pengalaman dipilih sebagai buktinya karena
+     * CompatibilityScorer::score() selalu menghitungnya untuk setiap jalur, tidak
+     * bersyarat pada goal.
+     */
+    public function test_the_trail_detail_page_shows_the_explanation_layer(): void
+    {
+        $trail = $this->jalurTerbit();
+
+        $halaman = $this->actingAs($this->pendakiDenganProfil())->get(route('trails.show', $trail));
+
+        $halaman->assertOk();
+        $halaman->assertSee('Mengapa demikian');
+        $halaman->assertSee('Kesesuaian pengalaman');
+    }
+
+    /**
+     * Halaman trip menampilkan kecocokan yang tajam, bukan yang dasar.
+     *
+     * Trip selalu punya goal (relasi hiking_goal_id), jadi variannya wajib
+     * denganRencana: true, yaitu baris "untuk rencana ini" pada fit-line, bukan
+     * "Kecocokan dasar" yang dipakai halaman jelajah tanpa rencana.
+     */
+    public function test_the_trip_page_shows_the_plan_aware_fit_for_its_trail(): void
+    {
+        $user = $this->pendakiDenganProfil();
+        $trail = $this->jalurTerbit();
+        $goal = HikingGoal::factory()->for($user)->create();
+        $trip = TripPlan::factory()->for($user)->create([
+            'trail_id' => $trail->id,
+            'hiking_goal_id' => $goal->id,
+        ]);
+
+        $halaman = $this->actingAs($user)->get(route('trips.show', $trip));
+
+        $halaman->assertOk();
+        $halaman->assertSee('untuk rencana ini');
+        $halaman->assertSee('data-fit-reason', escape: false);
     }
 }

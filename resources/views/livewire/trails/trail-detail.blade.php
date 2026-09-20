@@ -10,6 +10,20 @@
                     <x-ui.fit-badge :label="$fit->label" />
                     <span class="text-sm text-secondary">{{ $fit->label?->description() }}</span>
                 </div>
+
+                {{--
+                    Lapisan "Mengapa" pada §89, yang selama ini hanya ada di hasil
+                    rekomendasi. Label tanpa penjelasan adalah vonis, dan §90 menuntut
+                    pembacanya memahami sebabnya tanpa membuka dokumentasi teknis.
+
+                    factorsToArray() dipakai, bukan factors mentah: komponen batang
+                    membaca kunci 'label' dan 'score', dan bentuk itulah yang dihasilkan
+                    FactorScore::toArray().
+                --}}
+                <div class="mt-4">
+                    <h3 class="text-sm font-semibold text-primary">Mengapa demikian</h3>
+                    <x-ui.factor-bars :factors="$fit->factorsToArray()" class="mt-2" />
+                </div>
             @endif
 
             {{--

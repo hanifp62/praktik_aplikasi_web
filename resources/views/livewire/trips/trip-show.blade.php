@@ -18,6 +18,10 @@
             </span>
         </x-ui.page-header>
 
+        @if ($ringkasanFit)
+            <x-ui.fit-line :summary="$ringkasanFit" class="mb-6" />
+        @endif
+
         @if (session('status'))
             <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
