@@ -28,6 +28,13 @@
         </include>
     </source>
     <php>
+        <!--
+            Suite ini berjalan dalam satu proses dan sudah melewati enam ratus test.
+            Batas bawaan 128 MB terlampaui saat deteksi MIME foto laporan, dan gejalanya
+            menyesatkan: PHPUnit melaporkannya sebagai test yang mati mendadak, bukan
+            sebagai kehabisan memori.
+        -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

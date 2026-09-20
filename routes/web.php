@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HikeTrackController;
 use App\Http\Controllers\ProgressiveWebAppController;
 use App\Http\Controllers\ReportPhotoController;
 use App\Livewire\Admin\AnalyticsDashboard;
@@ -57,6 +58,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('trips/{trip}/preparation', PreparationChecklist::class)->name('trips.preparation');
     Route::get('trips/{trip}/readiness', ReadinessDashboard::class)->name('trips.readiness');
     Route::get('trips/{trip}/hike', HikeMode::class)->name('trips.hike');
+
+    /*
+     * Jejak dikirim setelah pendaki turun dan mendapat sinyal, ketika halaman hike mode
+     * sudah lama ditutup. Karena itu lewat route tersendiri, bukan lewat komponennya.
+     */
+    Route::post('hike/{session}/track', [HikeTrackController::class, 'store'])->name('hike.track');
+    Route::delete('hike/{session}/track', [HikeTrackController::class, 'destroy'])->name('hike.track.destroy');
 
     Route::get('reports/create', ConditionReportForm::class)->name('reports.create');
     Route::get('reports/{report}/photo', ReportPhotoController::class)->name('reports.photo');

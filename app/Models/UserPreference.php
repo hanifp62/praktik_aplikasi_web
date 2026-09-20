@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'user_id', 'preferred_duration', 'preferred_trip_type', 'preferred_challenge',
-    'max_elevation_gain_preference_m', 'region_preference',
+    'max_elevation_gain_preference_m', 'region_preference', 'record_track',
 ])]
 class UserPreference extends Model
 {
@@ -24,6 +24,7 @@ class UserPreference extends Model
             'preferred_duration' => PreferredDuration::class,
             'preferred_trip_type' => TripType::class,
             'preferred_challenge' => PreferredChallenge::class,
+            'record_track' => 'boolean',
         ];
     }
 
