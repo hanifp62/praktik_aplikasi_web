@@ -28,6 +28,60 @@
             @endif
         </x-ui.card>
 
+        <x-ui.card class="mb-6" title="Cari di OpenStreetMap">
+            <p class="text-sm text-gray-700">
+                Mencari jalur kaki yang sudah terpetakan di sekitar
+                {{ $trail->mountain?->name ?? 'gunung ini' }}. Hasilnya adalah kandidat, bukan
+                jawaban: tidak ada cara aplikasi memastikan sebuah jalur di peta adalah
+                {{ $trail->name }} dan bukan jalan setapak di sebelahnya. Anda yang memilih.
+            </p>
+
+            <p class="mt-2 text-xs text-gray-600">
+                Data OpenStreetMap adalah data komunitas, bukan data resmi pengelola jalur.
+                Asalnya dicatat di jejak audit.
+            </p>
+
+            <div class="mt-4">
+                <x-ui.button variant="secondary" wire:click="cariDiOsm">Cari kandidat</x-ui.button>
+            </div>
+
+            @if ($kandidat !== [])
+                <div class="mt-4">
+                    <x-input-label for="saringan" value="Saring berdasarkan nama" />
+                    <input id="saringan" type="text" wire:model.live.debounce.300ms="saringan"
+                        placeholder="misalnya: Kledung"
+                        class="mt-1 block w-full max-w-sm rounded-md border-control text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600">
+
+                    <p class="mt-2 text-xs text-gray-600">
+                        {{ number_format(count($kandidat), 0, ',', '.') }} jalur kaki terpetakan di sekitar
+                        gunung ini. Menampilkan {{ count($tampil) }} terpanjang
+                        @if ($saringan !== '') yang cocok "{{ $saringan }}" @endif.
+                        Jalur pendakian hampir selalu lebih panjang daripada potongan jalan di sekitarnya.
+                    </p>
+                </div>
+
+                <ul class="mt-4 space-y-2">
+                    @foreach ($tampil as $calon)
+                        <li class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 p-3">
+                            <div class="text-sm">
+                                <p class="font-medium text-gray-900">{{ $calon['nama'] }}</p>
+                                <p class="text-gray-600">
+                                    {{ number_format($calon['panjang_km'], 2, ',', '.') }} km &middot;
+                                    {{ number_format($calon['titik'], 0, ',', '.') }} titik &middot;
+                                    OSM way {{ $calon['id'] }}
+                                </p>
+                            </div>
+
+                            <x-ui.button variant="secondary" size="sm"
+                                wire:click="pilihKandidat({{ $calon['id'] }})">
+                                Pratinjau
+                            </x-ui.button>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </x-ui.card>
+
         <x-ui.card class="mb-6" title="Unggah berkas GPX">
             <div class="space-y-4">
                 <div>
@@ -56,6 +110,10 @@
                 @if ($pratinjau !== [])
                     <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
                         <p class="font-medium text-gray-900">Jejak terbaca</p>
+
+                        @if ($asal)
+                            <p class="mt-1 text-xs text-gray-600">Asal: {{ $asal }}</p>
+                        @endif
 
                         <dl class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
                             <div>

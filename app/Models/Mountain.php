@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
     'name', 'slug', 'province', 'region', 'timezone', 'elevation_mdpl', 'description',
-    'data_source_id', 'archived_at',
+    'data_source_id', 'archived_at', 'latitude', 'longitude',
 ])]
 #[Hidden(['location'])]
 class Mountain extends Model
@@ -26,7 +26,30 @@ class Mountain extends Model
     {
         return [
             'archived_at' => 'datetime',
+            'latitude' => 'float',
+            'longitude' => 'float',
         ];
+    }
+
+    /**
+     * Menulis koordinat ke kolom biasa sekaligus ke kolom geografi, mengikuti pola yang
+     * sudah dipakai Checkpoint.
+     *
+     * Kolom geografi dipakai kueri spasial dan diam pada koneksi tanpa PostGIS; kolom
+     * biasa yang dibaca aplikasi, sehingga koordinat tetap tersedia di mana pun.
+     */
+    public function setCoordinates(?float $latitude, ?float $longitude): void
+    {
+        $this->forceFill(['latitude' => $latitude, 'longitude' => $longitude])->save();
+
+        if ($latitude !== null && $longitude !== null) {
+            $this->writePoint('location', $latitude, $longitude);
+        }
+    }
+
+    public function hasCoordinates(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
     }
 
     public function trails(): HasMany

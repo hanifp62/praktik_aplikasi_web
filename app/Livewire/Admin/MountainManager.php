@@ -79,9 +79,9 @@ class MountainManager extends Component
         $this->description = $mountain->description;
         $this->data_source_id = $mountain->data_source_id;
 
-        $point = $mountain->readGeoJson('location');
-        $this->longitude = $point['coordinates'][0] ?? null;
-        $this->latitude = $point['coordinates'][1] ?? null;
+        // Dibaca dari kolom biasa: kolom geografi kosong pada koneksi tanpa PostGIS.
+        $this->latitude = $mountain->latitude;
+        $this->longitude = $mountain->longitude;
 
         $this->showForm = true;
     }
@@ -113,9 +113,7 @@ class MountainManager extends Component
             $audit->record(auth()->user(), 'mountain.created', $mountain, null, $attributes);
         }
 
-        if ($this->latitude !== null && $this->longitude !== null) {
-            $mountain->writePoint('location', $this->latitude, $this->longitude);
-        }
+        $mountain->setCoordinates($this->latitude, $this->longitude);
 
         $this->showForm = false;
         session()->flash('status', 'Data gunung tersimpan.');

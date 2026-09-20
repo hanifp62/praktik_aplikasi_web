@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Livewire\Admin\TrailGeometryImport;
+use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -107,6 +109,80 @@ class TrailGeometryImportTest extends TestCase
             ->get('/admin/trails')
             ->assertOk()
             ->assertSee(route('admin.geometry', $trail), escape: false);
+    }
+
+    /**
+     * Kandidat dari OpenStreetMap masuk ke pratinjau yang sama dengan berkas GPX, jadi
+     * perbandingan panjang dan penjagaan PostGIS tetap berlaku untuk keduanya.
+     */
+    public function test_a_curator_can_search_openstreetmap_and_preview_a_candidate(): void
+    {
+        Http::fake(['*' => Http::response(['elements' => [[
+            'type' => 'way',
+            'id' => 555,
+            'tags' => ['highway' => 'path', 'name' => 'Jalur Pendakian Uji'],
+            'geometry' => $this->simpul(30),
+        ]]])]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test(TrailGeometryImport::class, ['trail' => $this->trailBerkoordinat()])
+            ->call('cariDiOsm');
+
+        $this->assertCount(1, $component->get('kandidat'));
+
+        $component->call('pilihKandidat', 555);
+
+        $this->assertCount(30, $component->get('pratinjau'));
+        $this->assertStringContainsString('OpenStreetMap way 555', (string) $component->get('asal'));
+    }
+
+    /**
+     * Tanpa koordinat gunung, pencarian tidak punya titik pusat. Menebaknya dari nama
+     * berbahaya: Nominatim mengembalikan bukit di Ponorogo untuk "Gunung Prau".
+     */
+    public function test_the_search_refuses_when_the_mountain_has_no_coordinates(): void
+    {
+        Livewire::actingAs($this->admin())
+            ->test(TrailGeometryImport::class, ['trail' => Trail::factory()->create()])
+            ->call('cariDiOsm')
+            ->assertSet('kandidat', [])
+            ->assertSee('belum dicatat');
+    }
+
+    /**
+     * §94: sumber luar yang mati tidak boleh menutup jalan. Unggah GPX tetap tersedia.
+     */
+    public function test_a_failing_search_points_at_the_other_way_in(): void
+    {
+        Http::fake(['*' => Http::response('gagal', 503)]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test(TrailGeometryImport::class, ['trail' => $this->trailBerkoordinat()])
+            ->call('cariDiOsm');
+
+        $this->assertStringContainsString('GPX', (string) $component->get('galat'));
+    }
+
+    /**
+     * @return array<int, array{lat: float, lon: float}>
+     */
+    private function simpul(int $jumlah): array
+    {
+        $titik = [];
+
+        for ($i = 0; $i < $jumlah; $i++) {
+            $titik[] = ['lat' => -7.45 - $i * 0.001, 'lon' => 110.44 + $i * 0.001];
+        }
+
+        return $titik;
+    }
+
+    private function trailBerkoordinat(): Trail
+    {
+        $mountain = Mountain::factory()->create();
+        $mountain->setCoordinates(-7.4549, 110.4406);
+
+        return Trail::factory()->for($mountain)->create();
     }
 
     private function gpx(): UploadedFile
