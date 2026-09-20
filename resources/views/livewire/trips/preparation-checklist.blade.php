@@ -14,10 +14,8 @@
                     <p class="text-2xl font-semibold text-gray-900">{{ $completion }}%</p>
                 </div>
                 <div class="flex gap-2">
-                    <button wire:click="regenerate"
-                        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        Perbarui daftar
-                    </button>
+                    <x-ui.button variant="secondary" size="sm" wire:click="regenerate">
+                        Perbarui daftar</x-ui.button>
                     <x-ui.button href="{{ route('trips.readiness', $trip) }}">Cek kesiapan</x-ui.button>
                 </div>
             </div>

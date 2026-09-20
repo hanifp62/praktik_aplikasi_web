@@ -130,8 +130,7 @@
                 @if ($permit->booking_url)
                     <x-ui.button variant="secondary" class="mt-4" :href="$permit->booking_url"
                         :navigate="false" target="_blank" rel="noopener noreferrer">
-                        Buka sistem pemesanan resmi
-                    </x-ui.button>
+                        Buka sistem pemesanan resmi</x-ui.button>
                 @endif
 
                 <x-ui.freshness :timestamp="$permit->verified_at?->toIso8601String()" prefix="Aturan diverifikasi"
@@ -300,10 +299,7 @@
 
         <div class="flex flex-wrap gap-3">
             <x-ui.button wire:click="createTrip">Buat rencana trip</x-ui.button>
-            <a href="{{ route('reports.create', ['trail' => $trail->id]) }}" wire:navigate
-                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                Laporkan kondisi jalur
-            </a>
+            <x-ui.button variant="secondary" href="{{ route('reports.create', ['trail' => $trail->id]) }}">Laporkan kondisi jalur</x-ui.button>
         </div>
     </div>
 </div>

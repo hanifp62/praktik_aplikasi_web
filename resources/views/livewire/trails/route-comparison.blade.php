@@ -7,10 +7,7 @@
         @if ($trails->isEmpty())
             <x-ui.card>
                 <p class="text-sm text-gray-600">Belum ada jalur yang dipilih untuk dibandingkan.</p>
-                <a href="{{ route('trails.index') }}" wire:navigate
-                    class="mt-3 inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    Jelajahi jalur
-                </a>
+                <x-ui.button variant="secondary" href="{{ route('trails.index') }}">Jelajahi jalur</x-ui.button>
             </x-ui.card>
         @else
             <div class="overflow-x-auto rounded-lg bg-white shadow-sm">

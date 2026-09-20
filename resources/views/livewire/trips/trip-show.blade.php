@@ -48,10 +48,8 @@
                     @else
                         <x-ui.button href="{{ route('trips.hike', $trip) }}">Buka hike mode</x-ui.button>
                     @endif
-                    <button wire:click="cancel"
-                        class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        Batalkan trip
-                    </button>
+                    <x-ui.button variant="secondary" size="sm" wire:click="cancel">
+                        Batalkan trip</x-ui.button>
                 </div>
             </x-ui.card>
 

@@ -41,10 +41,7 @@
 
                     <div class="flex gap-3">
                         <x-ui.button type="submit" target="save">Simpan</x-ui.button>
-                        <button type="button" wire:click="$set('showForm', false)"
-                            class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                            Batal
-                        </button>
+                        <x-ui.button variant="secondary" type="button" wire:click="$set('showForm', false)">Batal</x-ui.button>
                     </div>
                 </form>
             </x-ui.card>
@@ -77,8 +74,7 @@
                                     <x-ui.button variant="secondary" size="sm"
                                         wire:click="toggleArchive({{ $mountain->id }})"
                                         :confirm="$mountain->isArchived() ? null : 'Arsipkan gunung ini? Seluruh jalurnya ikut hilang dari pencarian pendaki.'">
-                                        {{ $mountain->isArchived() ? 'Aktifkan' : 'Arsipkan' }}
-                                    </x-ui.button>
+                                        {{ $mountain->isArchived() ? 'Aktifkan' : 'Arsipkan' }}</x-ui.button>
                                 </div>
                             </td>
                         </tr>

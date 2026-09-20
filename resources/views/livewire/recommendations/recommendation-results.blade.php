@@ -14,10 +14,7 @@
                     Tidak ada jalur yang memenuhi batasan rencana Anda saat ini. Anda dapat melonggarkan
                     target durasi atau batas elevation gain, atau menelusuri jalur secara manual.
                 </p>
-                <a href="{{ route('trails.index') }}" wire:navigate
-                    class="mt-3 inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    Telusuri jalur manual
-                </a>
+                <x-ui.button variant="secondary" href="{{ route('trails.index') }}">Telusuri jalur manual</x-ui.button>
             </x-ui.card>
         @endif
 
@@ -75,18 +72,13 @@
                         @endif
 
                         <div class="mt-4 flex flex-wrap gap-2">
-                            <button wire:click="toggleExplanation({{ $result->id }})"
-                                aria-expanded="{{ $expandedResultId === $result->id ? 'true' : 'false' }}"
-                                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                                Mengapa jalur ini?
-                            </button>
-                            <button wire:click="toggleComparison({{ $result->trail_id }})"
-                                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                                {{ in_array($result->trail_id, $comparison, true) ? 'Batal bandingkan' : 'Tambah ke perbandingan' }}
-                            </button>
+                            <x-ui.button variant="secondary" size="sm" wire:click="toggleExplanation({{ $result->id }})"
+                                aria-expanded="{{ $expandedResultId === $result->id ? 'true' : 'false' }}">
+                                Mengapa jalur ini?</x-ui.button>
+                            <x-ui.button variant="secondary" size="sm" wire:click="toggleComparison({{ $result->trail_id }})">
+                                {{ in_array($result->trail_id, $comparison, true) ? 'Batal bandingkan' : 'Tambah ke perbandingan' }}</x-ui.button>
                             <x-ui.button wire:click="selectTrail({{ $result->trail_id }})">
-                                Pilih jalur ini
-                            </x-ui.button>
+                                Pilih jalur ini</x-ui.button>
                         </div>
 
                         @if ($expandedResultId === $result->id)

@@ -86,10 +86,9 @@
             @endif
 
             <div class="flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
-                <button type="button" wire:click="previousStep" @disabled($step === 1)
-                    class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-40">
-                    Kembali
-                </button>
+                {{-- :disabled, bukan @disabled: direktif itu mengompilasi jadi PHP mentah
+                     di dalam tag komponen dan parser komponen Blade tidak dapat membacanya. --}}
+                <x-ui.button variant="secondary" type="button" wire:click="previousStep" :disabled="$step === 1">Kembali</x-ui.button>
 
                 @if ($step < 3)
                     <x-ui.button type="button" wire:click="nextStep">Lanjut</x-ui.button>

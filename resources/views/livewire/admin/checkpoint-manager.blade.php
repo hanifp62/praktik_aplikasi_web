@@ -62,9 +62,6 @@
             @endif
         </x-ui.card>
 
-        <a href="{{ route('admin.trails') }}" wire:navigate
-            class="mt-6 inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            Kembali ke daftar jalur
-        </a>
+        <x-ui.button variant="secondary" href="{{ route('admin.trails') }}">Kembali ke daftar jalur</x-ui.button>
     </div>
 </div>

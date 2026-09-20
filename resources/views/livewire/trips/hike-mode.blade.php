@@ -24,10 +24,8 @@
         <div class="rounded-lg bg-white p-4 shadow-sm">
             <div class="flex items-center justify-between">
                 <h2 class="text-sm font-medium text-gray-500">Posisi Anda</h2>
-                <button type="button" x-on:click="requestPosition()"
-                    class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    Perbarui posisi
-                </button>
+                <x-ui.button variant="secondary" size="sm" type="button" x-on:click="requestPosition()">
+                    Perbarui posisi</x-ui.button>
             </div>
             <p class="mt-2 text-sm text-gray-700" x-text="statusMessage"></p>
             @if ($latitude !== null)
@@ -66,10 +64,7 @@
             </ol>
         </div>
 
-        <a href="{{ route('trips.show', $trip) }}" wire:navigate
-            class="inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            Kembali ke detail trip
-        </a>
+        <x-ui.button variant="secondary" href="{{ route('trips.show', $trip) }}">Kembali ke detail trip</x-ui.button>
     </div>
 
     <p class="text-xs text-gray-500">
