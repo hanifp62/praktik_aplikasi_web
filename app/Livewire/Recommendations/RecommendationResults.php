@@ -99,7 +99,68 @@ class RecommendationResults extends Component
             'sisaEligible' => max(0, $eligible->count() - $this->ditampilkan),
             'excluded' => $results->where('eligible', false),
             'penyebabKosong' => $this->penyebabKosong($results),
+            'profilBerubah' => $this->profilBerubah(),
         ]);
+    }
+
+    /**
+     * Apakah profil pendaki sudah berbeda dari yang dipakai menilai run ini.
+     *
+     * Halaman ini ber-URL permanen dan onboarding merangkap penyunting profil, jadi
+     * pendaki dapat menaikkan tingkat pengalamannya lalu membuka kembali run kemarin.
+     * Label kecocokan di sana dihitung terhadap orang yang bukan dirinya lagi, di bawah
+     * kalimat yang menyebut "profil Anda" dalam bentuk kini.
+     *
+     * Run sengaja tidak dihitung ulang. Ia catatan tentang apa yang dinilai saat itu,
+     * dan menghitungnya ulang di tempat akan menghapus catatan tersebut sekaligus
+     * membuat tautan permanen berubah isi diam-diam.
+     */
+    private function profilBerubah(): bool
+    {
+        $snapshot = $this->run->input_snapshot;
+
+        if (! is_array($snapshot)) {
+            return false;
+        }
+
+        $user = auth()->user()->loadMissing('profile', 'experience');
+
+        return $this->sidikProfil($snapshot) !== $this->sidikProfil([
+            'experience_level' => $user->profile?->experience_level?->value,
+            'navigation_experience' => $user->experience?->navigation_experience?->value,
+            'terrain_experience' => $user->experience?->terrain_experience,
+            'completed_hikes_count' => $user->experience?->completed_hikes_count,
+            'highest_elevation_gain_m' => $user->experience?->highest_elevation_gain_m,
+        ]);
+    }
+
+    /**
+     * Bentuk baku kedua sisi perbandingan.
+     *
+     * Yang dibandingkan nilainya, bukan ada tidaknya penyuntingan: menyunting profil
+     * lalu mengembalikannya ke nilai semula bukan perubahan. Medan diurutkan karena
+     * urutan pilihan tidak bermakna, dan tanpa itu memilih ulang dua kotak yang sama
+     * dalam urutan berbeda akan terbaca sebagai profil yang berbeda.
+     *
+     * @param  array<string, mixed>  $sumber
+     * @return array<string, mixed>
+     */
+    private function sidikProfil(array $sumber): array
+    {
+        $medan = array_values(array_filter((array) ($sumber['terrain_experience'] ?? [])));
+        sort($medan);
+
+        return [
+            'experience_level' => $sumber['experience_level'] ?? null,
+            'navigation_experience' => $sumber['navigation_experience'] ?? null,
+            'terrain_experience' => $medan,
+            'completed_hikes_count' => isset($sumber['completed_hikes_count'])
+                ? (int) $sumber['completed_hikes_count']
+                : null,
+            'highest_elevation_gain_m' => isset($sumber['highest_elevation_gain_m'])
+                ? (int) $sumber['highest_elevation_gain_m']
+                : null,
+        ];
     }
 
     /**

@@ -8,6 +8,23 @@
             </p>
         </x-ui.page-header>
 
+        {{--
+            Diletakkan sebelum daftar, bukan sesudahnya: kalimat ini mengubah cara
+            seluruh label di bawahnya harus dibaca, jadi ia harus terbaca lebih dulu.
+        --}}
+        @if ($profilBerubah)
+            <div class="mb-6 rounded-md border border-warn-300 bg-warn-50 p-4">
+                <p class="text-sm font-medium text-warn-900">Profil Anda berubah sejak penilaian ini dibuat</p>
+                <p class="mt-1 text-sm text-warn-900">
+                    Label kecocokan di halaman ini dihitung terhadap profil Anda yang lama, dan
+                    sengaja dibiarkan apa adanya sebagai catatan. Buat rencana baru untuk dinilai
+                    dengan profil Anda sekarang.
+                </p>
+                <a href="{{ route('goals.create') }}" wire:navigate
+                    class="mt-2 inline-block text-sm font-medium text-brand-700 underline">Buat rencana baru</a>
+            </div>
+        @endif
+
         @if ($eligible->isEmpty())
             {{--
                 Tiga sebab, tiga saran. Menyuruh pendaki melonggarkan batas padahal tak
