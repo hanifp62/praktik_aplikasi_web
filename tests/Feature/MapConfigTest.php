@@ -51,7 +51,7 @@ class MapConfigTest extends TestCase
      */
     private function mapScript(): string
     {
-        preg_match('/const mapConfig = (.*?);/s', $this->renderHikeMode(), $matches);
+        preg_match('/const konfigurasi = (.*?);/s', $this->renderHikeMode(), $matches);
 
         return $matches[1] ?? '';
     }

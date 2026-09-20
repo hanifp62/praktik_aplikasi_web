@@ -194,13 +194,6 @@ class HikeMode extends Component
         return view('livewire.trips.hike-mode', [
             'checkpoints' => $this->checkpointCoordinates(),
             'geometry' => $this->trip->trail->readGeoJson('geometry'),
-            // PRD §55: peta online dengan sumber tile yang dapat diganti dari config.
-            'mapConfig' => [
-                'styleUrl' => config('hiking.map.style_url'),
-                'rasterTiles' => array_values(array_filter((array) config('hiking.map.raster_tiles'))),
-                'attribution' => config('hiking.map.attribution'),
-                'maxZoom' => (int) config('hiking.map.max_zoom'),
-            ],
         ]);
     }
 }

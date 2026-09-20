@@ -38,16 +38,14 @@
             </p>
         </div>
 
-        <div class="overflow-hidden rounded-lg bg-white shadow-sm">
-            {{--
-                Peta adalah wilayah interaktif, bukan gambar. role="img" menuntut teks
-                alternatif yang tidak mungkin diberikan untuk peta yang dapat digeser,
-                dan menyembunyikan isinya dari pembaca layar. Daftar checkpoint di
-                bawah adalah alternatif non-visualnya.
-            --}}
-            <div id="hike-map" class="h-80 w-full" role="region"
-                aria-label="Peta jalur {{ $trip->trail->name }} dan posisi checkpoint"></div>
-        </div>
+        {{-- Daftar checkpoint di bawah adalah padanan non-visual peta ini. --}}
+        <x-ui.map id="hike-map" :geometry="$geometry"
+            :markers="collect($checkpoints)
+                ->filter(fn ($c) => $c['lat'] !== null)
+                ->map(fn ($c) => ['lng' => $c['lng'], 'lat' => $c['lat'], 'label' => $c['sequence'].'. '.$c['name']])
+                ->values()
+                ->all()"
+            :label="'Peta jalur '.$trip->trail->name.' dan posisi checkpoint'" />
 
         <div class="rounded-lg bg-white p-4 shadow-sm">
             <h2 class="text-sm font-medium text-gray-500">Daftar checkpoint</h2>
@@ -67,17 +65,10 @@
         <x-ui.button variant="secondary" href="{{ route('trips.show', $trip) }}">Kembali ke detail trip</x-ui.button>
     </div>
 
-    <p class="text-xs text-gray-500">
-        Peta: {{ config('hiking.map.attribution') }}
-    </p>
-
     <script>
         function hikeMode() {
             return {
                 statusMessage: 'Izin lokasi belum diminta.',
-                init() {
-                    this.renderMap();
-                },
                 requestPosition() {
                     if (!navigator.geolocation) {
                         this.statusMessage = 'Browser Anda tidak mendukung layanan lokasi.';
@@ -96,80 +87,6 @@
                         },
                         { enableHighAccuracy: true, timeout: 15000 }
                     );
-                },
-                async renderMap() {
-                    const container = document.getElementById('hike-map');
-
-                    if (!container || typeof window.muatPeta !== 'function') {
-                        return;
-                    }
-
-                    const checkpoints = @json(collect($checkpoints)->filter(fn ($c) => $c['lat'] !== null)->values());
-                    const geometry = @json($geometry);
-
-                    if (checkpoints.length === 0 && !geometry) {
-                        container.innerHTML = '<p class="p-4 text-sm text-gray-600">Data peta jalur belum tersedia.</p>';
-                        return;
-                    }
-
-                    // Pustaka peta baru diunduh di sini, satu-satunya halaman yang memakainya.
-                    const maplibregl = await window.muatPeta().catch(() => null);
-
-                    if (!maplibregl) {
-                        container.innerHTML = '<p class="p-4 text-sm text-gray-600">Peta gagal dimuat. Data checkpoint di bawah tetap dapat dipakai.</p>';
-                        return;
-                    }
-
-                    const center = checkpoints.length
-                        ? [checkpoints[0].lng, checkpoints[0].lat]
-                        : geometry.coordinates[0];
-
-                    // Sumber tile dibaca dari config/hiking.php supaya tim dapat
-                    // berpindah penyedia tanpa menyentuh kode ini.
-                    const mapConfig = @json($mapConfig);
-
-                    const style = mapConfig.styleUrl || {
-                        version: 8,
-                        sources: {
-                            basemap: {
-                                type: 'raster',
-                                tiles: mapConfig.rasterTiles,
-                                tileSize: 256,
-                                maxzoom: mapConfig.maxZoom,
-                                attribution: mapConfig.attribution,
-                            },
-                        },
-                        layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
-                    };
-
-                    const map = new maplibregl.Map({
-                        container: 'hike-map',
-                        style: style,
-                        center: center,
-                        zoom: 13,
-                        maxZoom: mapConfig.maxZoom,
-                    });
-
-                    map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-                    map.on('load', () => {
-                        if (geometry) {
-                            map.addSource('trail', { type: 'geojson', data: { type: 'Feature', geometry: geometry } });
-                            map.addLayer({
-                                id: 'trail-line',
-                                type: 'line',
-                                source: 'trail',
-                                paint: { 'line-color': '#047857', 'line-width': 3 },
-                            });
-                        }
-
-                        checkpoints.forEach((checkpoint) => {
-                            new maplibregl.Marker()
-                                .setLngLat([checkpoint.lng, checkpoint.lat])
-                                .setPopup(new maplibregl.Popup().setText(checkpoint.sequence + '. ' + checkpoint.name))
-                                .addTo(map);
-                        });
-                    });
                 },
             };
         }
