@@ -109,6 +109,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $trail->id }})">Ubah</x-ui.button>
                                     <x-ui.button variant="secondary" size="sm" href="{{ route('admin.checkpoints', $trail) }}">Checkpoint</x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm" href="{{ route('admin.geometry', $trail) }}">Geometri</x-ui.button>
                                     <x-ui.button variant="secondary" size="sm" wire:click="togglePublish({{ $trail->id }})">{{ $trail->is_published ? 'Tarik dari publikasi' : 'Publikasikan' }}</x-ui.button>
                                     <x-ui.button variant="secondary" size="sm" wire:click="toggleArchive({{ $trail->id }})">{{ $trail->archived_at ? 'Aktifkan' : 'Arsipkan' }}</x-ui.button>
                                 </div>

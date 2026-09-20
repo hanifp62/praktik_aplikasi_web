@@ -121,6 +121,13 @@ return [
 
         // Foto dikecilkan sampai sisi terpanjang ini sekaligus dibersihkan EXIF-nya.
         'report_photo_max_dimension' => 2000,
+
+        'gpx_max_kb' => 8192,
+
+        // Jejak yang lebih rapat dari ini ditolak, bukan diencerkan: membuang titik
+        // berarti memotong tikungan pada fitur navigasi lapangan. Pada 5000 titik,
+        // GeoJSON yang dikirim ke ponsel masih di bawah 200 KB sebelum kompresi.
+        'gpx_max_points' => 5000,
     ],
 
     /*
