@@ -1,4 +1,4 @@
-@props(['trail'])
+@props(['trail', 'fit' => null])
 
 @php
     use App\Enums\WaterAvailability;
@@ -91,5 +91,9 @@
 
     @if ($kemudahan->isNotEmpty())
         <p class="mt-2 text-xs text-muted">{{ $kemudahan->implode(' · ') }}</p>
+    @endif
+
+    @if ($fit)
+        <x-ui.fit-line :summary="$fit" />
     @endif
 </article>

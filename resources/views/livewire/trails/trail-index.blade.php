@@ -4,6 +4,15 @@
             title="Jelajahi Jalur"
             description="Telusuri jalur secara manual. Gunakan ini jika Anda ingin membandingkan sendiri tanpa melalui rekomendasi." />
 
+        @if (! auth()->user()?->hasCompletedProfile())
+            {{-- Ditawarkan jalan keluarnya, bukan dinilai diam-diam. Kecocokan tanpa
+                 profil adalah label yang terlihat pasti dan berdasar ketiadaan. --}}
+            <x-ui.card class="mb-6" title="Lengkapi profil untuk melihat kecocokan"
+                subtitle="Tanpa data pengalaman Anda, daftar ini hanya katalog jalur. Dengan profil, tiap jalur menyebut cocok atau tidaknya untuk Anda beserta alasannya.">
+                <x-ui.button href="{{ route('onboarding') }}">Isi profil sekarang</x-ui.button>
+            </x-ui.card>
+        @endif
+
         <form class="mb-6 grid grid-cols-1 gap-4 rounded-lg bg-white p-4 sm:grid-cols-3"
             role="search" aria-label="Filter jalur">
             <div>
@@ -46,7 +55,7 @@
 
             <div class="border-t border-subtle">
                 @foreach ($trails as $trail)
-                    <x-ui.trail-row :trail="$trail" />
+                    <x-ui.trail-row :trail="$trail" :fit="$ringkasanFit[$trail->id] ?? null" />
                 @endforeach
             </div>
 

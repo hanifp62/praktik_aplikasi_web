@@ -4,6 +4,7 @@ namespace App\Livewire\Trails;
 
 use App\Enums\TechnicalDemand;
 use App\Models\Trail;
+use App\Services\TrailFitService;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -55,10 +56,18 @@ class TrailIndex extends Component
             ->orderBy('name')
             ->paginate(12);
 
+        // Kecocokan dinilai hanya untuk yang profilnya cukup. Menilai tanpa profil
+        // menghasilkan label yang terlihat pasti dan berdasar ketiadaan, dan itu persis
+        // yang dilarang §91.
+        $ringkasanFit = auth()->user()?->hasCompletedProfile()
+            ? app(TrailFitService::class)->forTrails(auth()->user(), $trails->getCollection())
+            : [];
+
         return view('livewire.trails.trail-index', [
             'trails' => $trails,
             'technicalLevels' => TechnicalDemand::cases(),
             'menunggu' => $this->jalurMenunggu(),
+            'ringkasanFit' => $ringkasanFit,
         ]);
     }
 
