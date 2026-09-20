@@ -15,7 +15,7 @@
             <table class="min-w-full text-sm">
                 <caption class="sr-only">Daftar audit log</caption>
                 <thead>
-                    <tr class="border-b border-gray-200 text-left text-gray-500">
+                    <tr class="border-b border-subtle text-left text-muted">
                         <th scope="col" class="p-4">Waktu</th>
                         <th scope="col" class="p-4">Aktor</th>
                         <th scope="col" class="p-4">Aksi</th>
@@ -25,21 +25,21 @@
                 </thead>
                 <tbody>
                     @foreach ($logs as $log)
-                        <tr class="border-b border-gray-100 align-top">
-                            <td class="p-4 text-gray-700">{{ \App\Support\Timezone::display($log->created_at, \App\Support\Timezone::DEFAULT) }}</td>
-                            <td class="p-4 text-gray-700">{{ $log->actor?->name ?? 'Sistem' }}</td>
-                            <td class="p-4 font-medium text-gray-900">{{ $log->action }}</td>
-                            <td class="p-4 text-gray-700">
+                        <tr class="border-b border-subtle align-top">
+                            <td class="p-4 text-secondary">{{ \App\Support\Timezone::display($log->created_at, \App\Support\Timezone::DEFAULT) }}</td>
+                            <td class="p-4 text-secondary">{{ $log->actor?->name ?? 'Sistem' }}</td>
+                            <td class="p-4 font-medium text-primary">{{ $log->action }}</td>
+                            <td class="p-4 text-secondary">
                                 {{ class_basename($log->entity_type ?? '-') }}
                                 @if ($log->entity_id)
                                     #{{ $log->entity_id }}
                                 @endif
                             </td>
-                            <td class="p-4 text-xs text-gray-600">
+                            <td class="p-4 text-xs text-secondary">
                                 @if ($log->after)
                                     <details>
                                         <summary class="cursor-pointer">Lihat detail</summary>
-                                        <pre class="mt-2 max-w-md overflow-x-auto rounded bg-gray-50 p-2">{{ json_encode(['before' => $log->before, 'after' => $log->after], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                        <pre class="mt-2 max-w-md overflow-x-auto rounded bg-surface-sunken p-2">{{ json_encode(['before' => $log->before, 'after' => $log->after], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                                     </details>
                                 @else
                                     -

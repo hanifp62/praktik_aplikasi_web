@@ -20,7 +20,7 @@
 
         @if ($reports->isEmpty())
             <x-ui.card>
-                <p class="text-sm text-gray-600">Tidak ada laporan pada filter ini.</p>
+                <p class="text-sm text-secondary">Tidak ada laporan pada filter ini.</p>
             </x-ui.card>
         @else
             <ul class="space-y-4">
@@ -29,20 +29,20 @@
                         <x-ui.card>
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <h2 class="text-base font-semibold text-gray-900">{{ $report->trail->name }}</h2>
-                                    <p class="text-sm text-gray-600">
+                                    <h2 class="text-base font-semibold text-primary">{{ $report->trail->name }}</h2>
+                                    <p class="text-sm text-secondary">
                                         {{ $report->trail->mountain->name }}
                                         @if ($report->segment)
                                             &middot; segmen {{ $report->segment->name }}
                                         @endif
                                     </p>
-                                    <p class="mt-1 text-xs text-gray-500">
+                                    <p class="mt-1 text-xs text-muted">
                                         Dilaporkan oleh {{ $report->authorLabel() }} &middot;
                                         pendakian {{ $report->hike_date->translatedFormat('d M Y') }} &middot;
                                         dikirim {{ $report->created_at->diffForHumans() }}
                                     </p>
                                 </div>
-                                <span class="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+                                <span class="rounded-md bg-surface-sunken px-2.5 py-1 text-xs font-medium text-secondary">
                                     {{ $report->moderation_status->label() }}
                                 </span>
                             </div>
@@ -54,7 +54,7 @@
                             </div>
 
                             @if ($report->note)
-                                <p class="mt-3 text-sm text-gray-700">{{ $report->note }}</p>
+                                <p class="mt-3 text-sm text-secondary">{{ $report->note }}</p>
                             @endif
 
                             {{-- PRD §67: moderasi foto hanya mungkin bila fotonya terlihat. --}}
@@ -63,22 +63,22 @@
                                     <img src="{{ route('reports.photo', $report) }}"
                                         alt="Foto kondisi jalur yang dilampirkan pada laporan tanggal {{ $report->hike_date->translatedFormat('d M Y') }}"
                                         loading="lazy"
-                                        class="max-h-64 rounded-md border border-gray-200">
-                                    <figcaption class="mt-1 text-xs text-gray-500">
+                                        class="max-h-64 rounded-md border border-subtle">
+                                    <figcaption class="mt-1 text-xs text-muted">
                                         Foto dari pelapor. Periksa sebelum menyetujui.
                                     </figcaption>
                                 </figure>
                             @endif
 
                             <div class="mt-4 space-y-2">
-                                <label class="block text-sm text-gray-700" for="reason-{{ $report->id }}">
+                                <label class="block text-sm text-secondary" for="reason-{{ $report->id }}">
                                     Alasan tindakan (opsional)
                                 </label>
                                 <input id="reason-{{ $report->id }}" type="text"
                                     wire:model="reasons.{{ $report->id }}"
                                     class="block w-full rounded-md border-control text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600">
 
-                                <p class="text-xs text-gray-600">
+                                <p class="text-xs text-secondary">
                                     Alasan pada penolakan dan penghapusan ditampilkan kepada pelapor di riwayatnya.
                                 </p>
 

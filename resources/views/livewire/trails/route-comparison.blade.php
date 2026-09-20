@@ -6,7 +6,7 @@
 
         @if ($trails->isEmpty())
             <x-ui.card>
-                <p class="text-sm text-gray-600">Belum ada jalur yang dipilih untuk dibandingkan.</p>
+                <p class="text-sm text-secondary">Belum ada jalur yang dipilih untuk dibandingkan.</p>
                 <x-ui.button variant="secondary" href="{{ route('trails.index') }}">Jelajahi jalur</x-ui.button>
             </x-ui.card>
         @else
@@ -14,14 +14,14 @@
                 <table class="min-w-full text-sm">
                     <caption class="sr-only">Perbandingan karakteristik jalur</caption>
                     <thead>
-                        <tr class="border-b border-gray-200 text-left">
-                            <th scope="col" class="p-4 text-gray-500">Aspek</th>
+                        <tr class="border-b border-subtle text-left">
+                            <th scope="col" class="p-4 text-muted">Aspek</th>
                             @foreach ($trails as $trail)
                                 <th scope="col" class="p-4">
-                                    <span class="block font-semibold text-gray-900">{{ $trail->name }}</span>
-                                    <span class="block text-xs font-normal text-gray-600">{{ $trail->mountain->name }}</span>
+                                    <span class="block font-semibold text-primary">{{ $trail->name }}</span>
+                                    <span class="block text-xs font-normal text-secondary">{{ $trail->mountain->name }}</span>
                                     <button wire:click="removeTrail({{ $trail->id }})"
-                                        class="mt-1 text-xs text-gray-500 underline focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                        class="mt-1 text-xs text-muted underline focus:outline-none focus:ring-2 focus:ring-brand-500">
                                         Hapus dari perbandingan
                                     </button>
                                 </th>
@@ -44,25 +44,25 @@
                         @endphp
 
                         @foreach ($rows as $label => $resolver)
-                            <tr class="border-b border-gray-100">
-                                <th scope="row" class="p-4 text-left font-medium text-gray-500">{{ $label }}</th>
+                            <tr class="border-b border-subtle">
+                                <th scope="row" class="p-4 text-left font-medium text-muted">{{ $label }}</th>
                                 @foreach ($trails as $trail)
-                                    <td class="p-4 text-gray-900">{{ $resolver($trail) }}</td>
+                                    <td class="p-4 text-primary">{{ $resolver($trail) }}</td>
                                 @endforeach
                             </tr>
                         @endforeach
 
-                        <tr class="border-b border-gray-100">
-                            <th scope="row" class="p-4 text-left font-medium text-gray-500">Medan</th>
+                        <tr class="border-b border-subtle">
+                            <th scope="row" class="p-4 text-left font-medium text-muted">Medan</th>
                             @foreach ($trails as $trail)
-                                <td class="p-4 text-gray-900">
+                                <td class="p-4 text-primary">
                                     {{ collect($trail->terrainTypes())->map->label()->join(', ') ?: '-' }}
                                 </td>
                             @endforeach
                         </tr>
 
                         <tr>
-                            <th scope="row" class="p-4 text-left font-medium text-gray-500">Status resmi</th>
+                            <th scope="row" class="p-4 text-left font-medium text-muted">Status resmi</th>
                             @foreach ($trails as $trail)
                                 <td class="p-4">
                                     <x-ui.status-badge :status="$statuses[$trail->id]" />

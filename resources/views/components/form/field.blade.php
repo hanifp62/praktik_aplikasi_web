@@ -29,7 +29,7 @@
         {{ $attributes }} />
 
     @if ($hint)
-        <p id="{{ $name }}-hint" class="mt-1 text-xs text-gray-500">{{ $hint }}</p>
+        <p id="{{ $name }}-hint" class="mt-1 text-xs text-muted">{{ $hint }}</p>
     @endif
 
     <x-input-error :messages="$galat" id="{{ $name }}-error" class="mt-2" />

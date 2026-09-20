@@ -24,19 +24,19 @@
                     ] as $kunci => [$judul, $penjelasan])
                         @if ($tinjau[$kunci]->isNotEmpty())
                             <div>
-                                <h3 class="text-sm font-semibold text-gray-900">
+                                <h3 class="text-sm font-semibold text-primary">
                                     {{ $judul }} ({{ $tinjau[$kunci]->count() }})
                                 </h3>
-                                <p class="mt-0.5 text-xs text-gray-600">{{ $penjelasan }}</p>
+                                <p class="mt-0.5 text-xs text-secondary">{{ $penjelasan }}</p>
 
                                 <ul class="mt-2 space-y-1 text-sm">
                                     @foreach ($tinjau[$kunci] as $item)
-                                        <li class="flex flex-wrap items-baseline gap-x-2 text-gray-700">
-                                            <span class="font-medium text-gray-900">
+                                        <li class="flex flex-wrap items-baseline gap-x-2 text-secondary">
+                                            <span class="font-medium text-primary">
                                                 {{ $item->statusable?->name ?? 'Objek terhapus' }}
                                             </span>
                                             <x-ui.status-badge :status="$item->status" />
-                                            <span class="text-xs text-gray-600">
+                                            <span class="text-xs text-secondary">
                                                 @if ($kunci === 'basi')
                                                     {{ $item->verified_at
                                                         ? 'terakhir diverifikasi '.$item->verified_at->translatedFormat('d M Y')
@@ -99,7 +99,7 @@
             <table class="min-w-full text-sm">
                 <caption class="sr-only">Riwayat status resmi</caption>
                 <thead>
-                    <tr class="border-b border-gray-200 text-left text-gray-500">
+                    <tr class="border-b border-subtle text-left text-muted">
                         <th scope="col" class="p-4">Objek</th>
                         <th scope="col" class="p-4">Cakupan</th>
                         <th scope="col" class="p-4">Status</th>
@@ -110,18 +110,18 @@
                 </thead>
                 <tbody>
                     @foreach ($records as $record)
-                        <tr class="border-b border-gray-100">
-                            <td class="p-4 font-medium text-gray-900">{{ $record->statusable?->name ?? '-' }}</td>
-                            <td class="p-4 text-gray-700">{{ $record->scope->label() }}</td>
+                        <tr class="border-b border-subtle">
+                            <td class="p-4 font-medium text-primary">{{ $record->statusable?->name ?? '-' }}</td>
+                            <td class="p-4 text-secondary">{{ $record->scope->label() }}</td>
                             <td class="p-4"><x-ui.status-badge :status="$record->status" /></td>
-                            <td class="p-4 text-gray-700">{{ $record->source ?? '-' }}</td>
-                            <td class="p-4 text-gray-700">
+                            <td class="p-4 text-secondary">{{ $record->source ?? '-' }}</td>
+                            <td class="p-4 text-secondary">
                                 {{ $record->effective_at?->translatedFormat('d M Y') ?? '-' }}
                                 @if ($record->expires_at)
                                     &ndash; {{ $record->expires_at->translatedFormat('d M Y') }}
                                 @endif
                             </td>
-                            <td class="p-4 text-gray-700">{{ $record->recordedBy?->name ?? 'Sistem' }}</td>
+                            <td class="p-4 text-secondary">{{ $record->recordedBy?->name ?? 'Sistem' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

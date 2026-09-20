@@ -30,32 +30,32 @@
 
         @if ($trails->isEmpty())
             <x-ui.card>
-                <p class="text-sm text-gray-600">Tidak ada jalur yang cocok dengan filter Anda.</p>
+                <p class="text-sm text-secondary">Tidak ada jalur yang cocok dengan filter Anda.</p>
             </x-ui.card>
         @else
             <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 @foreach ($trails as $trail)
                     <li>
                         <x-ui.card>
-                            <h2 class="text-base font-semibold text-gray-900">
+                            <h2 class="text-base font-semibold text-primary">
                                 <a href="{{ route('trails.show', $trail) }}" wire:navigate
                                     class="hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500">
                                     {{ $trail->name }}
                                 </a>
                             </h2>
-                            <p class="text-sm text-gray-600">{{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }}</p>
+                            <p class="text-sm text-secondary">{{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }}</p>
                             <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
                                 <div>
-                                    <dt class="text-gray-500">Jarak</dt>
-                                    <dd class="font-medium text-gray-900">{{ $trail->distance_km ?? '-' }} km</dd>
+                                    <dt class="text-muted">Jarak</dt>
+                                    <dd class="font-medium text-primary">{{ $trail->distance_km ?? '-' }} km</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-gray-500">Tanjakan</dt>
-                                    <dd class="font-medium text-gray-900">{{ $trail->elevation_gain_m ?? '-' }} m</dd>
+                                    <dt class="text-muted">Tanjakan</dt>
+                                    <dd class="font-medium text-primary">{{ $trail->elevation_gain_m ?? '-' }} m</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-gray-500">Teknis</dt>
-                                    <dd class="font-medium text-gray-900">{{ $trail->technical_demand->label() }}</dd>
+                                    <dt class="text-muted">Teknis</dt>
+                                    <dd class="font-medium text-primary">{{ $trail->technical_demand->label() }}</dd>
                                 </div>
                             </dl>
                         </x-ui.card>
@@ -74,9 +74,9 @@
             adalah keterangannya, dan itu keadaan yang berbeda.
         --}}
         @if ($menunggu->isNotEmpty())
-            <section class="mt-10 border-t border-gray-200 pt-6">
-                <h2 class="text-lg font-semibold text-gray-900">Jalur yang datanya belum tersedia</h2>
-                <p class="mt-1 text-sm text-gray-600">
+            <section class="mt-10 border-t border-subtle pt-6">
+                <h2 class="text-lg font-semibold text-primary">Jalur yang datanya belum tersedia</h2>
+                <p class="mt-1 text-sm text-secondary">
                     Jalur berikut sudah dikenali sistem, tetapi keterangannya belum dimasukkan
                     pihak yang berwenang. Belum dapat direncanakan dari sini.
                 </p>
@@ -85,10 +85,10 @@
                     @foreach ($menunggu as $jalur)
                         <li>
                             <a href="{{ route('trails.show', $jalur->slug) }}" wire:navigate
-                                class="block rounded-lg border border-gray-200 p-4 transition hover:bg-gray-50
+                                class="block rounded-lg border border-subtle p-4 transition hover:bg-surface-sunken
                                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
-                                <span class="block font-medium text-gray-900">{{ $jalur->name }}</span>
-                                <span class="mt-0.5 block text-sm text-gray-600">
+                                <span class="block font-medium text-primary">{{ $jalur->name }}</span>
+                                <span class="mt-0.5 block text-sm text-secondary">
                                     {{ $jalur->mountain->name }} &middot; {{ $jalur->mountain->province }}
                                 </span>
                                 <span class="mt-2 inline-block rounded-md bg-warn-100 px-2 py-0.5 text-xs font-medium text-warn-900">

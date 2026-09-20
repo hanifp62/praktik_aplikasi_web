@@ -26,7 +26,7 @@
                 'READY' => 'border-brand-300 bg-brand-50 text-brand-900',
                 'NEEDS_PREPARATION' => 'border-warn-300 bg-warn-50 text-warn-900',
                 'NOT_RECOMMENDED' => 'border-danger-300 bg-danger-50 text-danger-900',
-                default => 'border-gray-300 bg-gray-50 text-gray-900',
+                default => 'border-subtle bg-surface-sunken text-primary',
             };
         @endphp
 
@@ -45,14 +45,14 @@
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <x-ui.card title="Kecocokan jalur">
-                <p class="text-sm text-gray-900">
+                <p class="text-sm text-primary">
                     {{ \App\Enums\RouteFitLabel::tryFrom($check->route_fit_snapshot['label'] ?? '')?->label() ?? 'Tidak dinilai' }}
                 </p>
             </x-ui.card>
 
             <x-ui.card title="Persiapan">
-                <p class="text-sm text-gray-900">{{ $check->preparation_state['completion_percent'] ?? 0 }}% dikonfirmasi</p>
-                <p class="mt-1 text-xs text-gray-600">
+                <p class="text-sm text-primary">{{ $check->preparation_state['completion_percent'] ?? 0 }}% dikonfirmasi</p>
+                <p class="mt-1 text-xs text-secondary">
                     {{ count($check->preparation_state['critical_outstanding'] ?? []) }} item kritis belum dikonfirmasi
                 </p>
             </x-ui.card>
@@ -60,7 +60,7 @@
             <x-ui.card title="Status resmi">
                 <x-ui.status-badge
                     :status="\App\Enums\OfficialStatusValue::tryFrom($check->official_status_snapshot['status'] ?? 'UNKNOWN')" />
-                <p class="mt-2 text-xs text-gray-600">
+                <p class="mt-2 text-xs text-secondary">
                     Sumber: {{ $check->official_status_snapshot['source'] ?? 'Belum tercatat' }}
                 </p>
             </x-ui.card>
@@ -71,8 +71,8 @@
                 @php $lines = $check->explanation[$key] ?? []; @endphp
                 @if ($lines)
                     <div class="mb-3">
-                        <h3 class="text-sm font-semibold text-gray-900">{{ $heading }}</h3>
-                        <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                        <h3 class="text-sm font-semibold text-primary">{{ $heading }}</h3>
+                        <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-secondary">
                             @foreach ($lines as $line)
                                 <li>{{ $line }}</li>
                             @endforeach
@@ -85,11 +85,11 @@
         @php $weather = $check->condition_snapshot['weather'] ?? []; @endphp
         <x-ui.card title="Cuaca area sekitar jalur">
             @if ($weather['available'] ?? false)
-                <p class="text-sm text-gray-700">Area referensi: {{ $weather['reference_area'] ?? 'Tidak dicatat' }}</p>
-                <p class="mt-1 text-xs text-gray-500">Sumber: {{ $weather['source'] ?? 'BMKG' }}</p>
+                <p class="text-sm text-secondary">Area referensi: {{ $weather['reference_area'] ?? 'Tidak dicatat' }}</p>
+                <p class="mt-1 text-xs text-muted">Sumber: {{ $weather['source'] ?? 'BMKG' }}</p>
                 <x-ui.freshness :state="$weather['freshness'] ?? null" :timestamp="$weather['fetched_at'] ?? null" :timezone="$weather['timezone'] ?? null" />
             @else
-                <p class="text-sm text-gray-600">{{ $weather['message'] ?? 'Data cuaca tidak tersedia.' }}</p>
+                <p class="text-sm text-secondary">{{ $weather['message'] ?? 'Data cuaca tidak tersedia.' }}</p>
             @endif
         </x-ui.card>
 

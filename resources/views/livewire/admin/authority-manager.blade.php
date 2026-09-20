@@ -59,7 +59,7 @@
             <table class="min-w-full text-sm">
                 <caption class="sr-only">Daftar badan resmi</caption>
                 <thead>
-                    <tr class="border-b border-gray-200 text-left text-gray-500">
+                    <tr class="border-b border-subtle text-left text-muted">
                         <th scope="col" class="p-4">Nama</th>
                         <th scope="col" class="p-4">Jenis</th>
                         <th scope="col" class="p-4">Wilayah</th>
@@ -69,11 +69,11 @@
                 </thead>
                 <tbody>
                     @foreach ($badan as $b)
-                        <tr class="border-b border-gray-100">
-                            <td class="p-4 font-medium text-gray-900">{{ $b->displayName() }}</td>
-                            <td class="p-4 text-gray-700">{{ $b->type->label() }}</td>
-                            <td class="p-4 text-gray-700">{{ $b->jurisdiction ?? '-' }}</td>
-                            <td class="p-4 text-gray-700">
+                        <tr class="border-b border-subtle">
+                            <td class="p-4 font-medium text-primary">{{ $b->displayName() }}</td>
+                            <td class="p-4 text-secondary">{{ $b->type->label() }}</td>
+                            <td class="p-4 text-secondary">{{ $b->jurisdiction ?? '-' }}</td>
+                            <td class="p-4 text-secondary">
                                 {{ $b->mountains_count }}
                                 @if ($b->mountains_count === 0 && $b->type->mayDeclareTrailStatus())
                                     <span class="ml-1 text-xs text-warn-900">(belum dikaitkan)</span>

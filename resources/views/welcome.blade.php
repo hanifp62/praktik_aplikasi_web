@@ -12,7 +12,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="min-h-screen bg-white font-sans text-gray-800 antialiased">
+    <body class="min-h-screen bg-white font-sans text-primary antialiased">
         {{--
             Halaman ini sebelumnya adalah halaman bawaan Laravel, lengkap dengan tautan
             Laracasts dan gambar latar dari laravel.com. Ini juga halaman yang dituju
@@ -22,9 +22,9 @@
             kerjanya, dari mana datanya. Tiga langkah, bukan tujuh, supaya pengunjung
             tidak perlu menahan banyak hal di kepala sebelum memutuskan mendaftar.
         --}}
-        <header class="border-b border-gray-200">
+        <header class="border-b border-subtle">
             <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-                <span class="font-semibold text-gray-900">Rencana Pendakian</span>
+                <span class="font-semibold text-primary">Rencana Pendakian</span>
 
                 @auth
                     <x-ui.button size="sm" href="{{ route('dashboard') }}">Buka dasbor</x-ui.button>
@@ -36,11 +36,11 @@
 
         <main>
             <section class="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
-                <h1 class="max-w-2xl text-3xl font-semibold leading-tight text-gray-900 sm:text-4xl">
+                <h1 class="max-w-2xl text-3xl font-semibold leading-tight text-primary sm:text-4xl">
                     Cari tahu jalur mana yang sesuai kemampuan Anda, sebelum berangkat
                 </h1>
 
-                <p class="mt-4 max-w-2xl text-base text-gray-700 sm:text-lg">
+                <p class="mt-4 max-w-2xl text-base text-secondary sm:text-lg">
                     Informasi pendakian tersebar di banyak tempat: karakteristik jalur, prakiraan cuaca,
                     status resmi jalur, dan daftar persiapan. Aplikasi ini menyatukannya, lalu
                     mencocokkannya dengan pengalaman dan rencana Anda sendiri.
@@ -56,15 +56,15 @@
                     @endauth
                 </div>
 
-                <p class="mt-4 text-sm text-gray-600">
+                <p class="mt-4 text-sm text-secondary">
                     Membuat profil memakan waktu beberapa menit dan menentukan seluruh rekomendasi
                     berikutnya.
                 </p>
             </section>
 
-            <section class="border-t border-gray-200 bg-gray-50">
+            <section class="border-t border-subtle bg-surface-sunken">
                 <div class="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-                    <h2 class="text-xl font-semibold text-gray-900">Bagaimana cara kerjanya</h2>
+                    <h2 class="text-xl font-semibold text-primary">Bagaimana cara kerjanya</h2>
 
                     <ol class="mt-6 grid gap-6 sm:grid-cols-3">
                         @foreach ([
@@ -76,8 +76,8 @@
                                 <span class="inline-flex size-8 items-center justify-center rounded-full bg-brand-700 text-sm font-semibold text-white">
                                     {{ $nomor + 1 }}
                                 </span>
-                                <h3 class="mt-3 font-medium text-gray-900">{{ $judul }}</h3>
-                                <p class="mt-1 text-sm text-gray-700">{{ $penjelasan }}</p>
+                                <h3 class="mt-3 font-medium text-primary">{{ $judul }}</h3>
+                                <p class="mt-1 text-sm text-secondary">{{ $penjelasan }}</p>
                             </li>
                         @endforeach
                     </ol>
@@ -85,20 +85,20 @@
             </section>
 
             <section class="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-                <h2 class="text-xl font-semibold text-gray-900">Dari mana datanya</h2>
+                <h2 class="text-xl font-semibold text-primary">Dari mana datanya</h2>
 
                 <div class="mt-6 grid gap-6 sm:grid-cols-2">
                     <div>
-                        <h3 class="font-medium text-gray-900">Prakiraan cuaca BMKG</h3>
-                        <p class="mt-1 text-sm text-gray-700">
+                        <h3 class="font-medium text-primary">Prakiraan cuaca BMKG</h3>
+                        <p class="mt-1 text-sm text-secondary">
                             Prakiraan diambil untuk wilayah administrasi di sekitar jalur, bukan untuk
                             titik puncaknya. Cuaca gunung dapat berbeda jauh dari area di bawahnya.
                         </p>
                     </div>
 
                     <div>
-                        <h3 class="font-medium text-gray-900">Status resmi jalur</h3>
-                        <p class="mt-1 text-sm text-gray-700">
+                        <h3 class="font-medium text-primary">Status resmi jalur</h3>
+                        <p class="mt-1 text-sm text-secondary">
                             Status dicatat beserta sumber dan tanggalnya. Selama belum ada keterangan
                             resmi, status ditampilkan sebagai belum diketahui, bukan ditebak sebagai
                             terbuka.
@@ -113,8 +113,8 @@
             </section>
         </main>
 
-        <footer class="border-t border-gray-200">
-            <div class="mx-auto max-w-5xl px-4 py-6 text-sm text-gray-600 sm:px-6">
+        <footer class="border-t border-subtle">
+            <div class="mx-auto max-w-5xl px-4 py-6 text-sm text-secondary sm:px-6">
                 Sumber prakiraan cuaca: BMKG.
             </div>
         </footer>

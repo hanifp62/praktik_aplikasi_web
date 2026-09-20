@@ -12,14 +12,14 @@
         <x-ui.card :title="$editingId ? 'Ubah aturan perizinan' : 'Catat aturan perizinan'">
             <form wire:submit="save" class="space-y-4">
                 <fieldset>
-                    <legend class="block text-sm font-medium text-gray-700">Aturan berlaku untuk</legend>
+                    <legend class="block text-sm font-medium text-secondary">Aturan berlaku untuk</legend>
                     <div class="mt-2 flex flex-wrap gap-4">
-                        <label for="scope-mountain" class="flex items-center gap-2 text-sm text-gray-700">
+                        <label for="scope-mountain" class="flex items-center gap-2 text-sm text-secondary">
                             <input id="scope-mountain" type="radio" value="mountain" wire:model.live="scope"
                                 class="border-control text-brand-700 focus:ring-brand-600">
                             Seluruh gunung
                         </label>
-                        <label for="scope-trail" class="flex items-center gap-2 text-sm text-gray-700">
+                        <label for="scope-trail" class="flex items-center gap-2 text-sm text-secondary">
                             <input id="scope-trail" type="radio" value="trail" wire:model.live="scope"
                                 class="border-control text-brand-700 focus:ring-brand-600">
                             Satu jalur tertentu
@@ -90,7 +90,7 @@
                     </div>
                 </div>
 
-                <label for="guide_required" class="flex items-center gap-2 text-sm text-gray-700">
+                <label for="guide_required" class="flex items-center gap-2 text-sm text-secondary">
                     <input id="guide_required" type="checkbox" wire:model="guide_required"
                         class="rounded border-control text-brand-700 focus:ring-brand-600">
                     Wajib didampingi pemandu terdaftar
@@ -137,7 +137,7 @@
                     <table class="min-w-full text-sm">
                         <caption class="sr-only">Daftar aturan perizinan pendakian</caption>
                         <thead>
-                            <tr class="text-left text-gray-500">
+                            <tr class="text-left text-muted">
                                 <th scope="col" class="py-2 pr-4">Berlaku untuk</th>
                                 <th scope="col" class="py-2 pr-4">Penyelenggara</th>
                                 <th scope="col" class="py-2 pr-4">Ketentuan</th>
@@ -147,21 +147,21 @@
                         </thead>
                         <tbody>
                             @foreach ($rules as $rule)
-                                <tr class="border-t border-gray-100 align-top">
+                                <tr class="border-t border-subtle align-top">
                                     <td class="py-3 pr-4">
                                         @if ($rule->trail)
                                             {{ $rule->trail->name }}
-                                            <span class="block text-xs text-gray-500">{{ $rule->trail->mountain->name }}</span>
+                                            <span class="block text-xs text-muted">{{ $rule->trail->mountain->name }}</span>
                                         @else
                                             {{ $rule->mountain?->name ?? 'Tidak tertaut' }}
-                                            <span class="block text-xs text-gray-500">Seluruh jalur</span>
+                                            <span class="block text-xs text-muted">Seluruh jalur</span>
                                         @endif
                                     </td>
                                     <td class="py-3 pr-4">{{ $rule->authority }}</td>
-                                    <td class="py-3 pr-4 text-gray-700">{{ $rule->summary() }}</td>
-                                    <td class="py-3 pr-4 text-gray-600">
+                                    <td class="py-3 pr-4 text-secondary">{{ $rule->summary() }}</td>
+                                    <td class="py-3 pr-4 text-secondary">
                                         {{ $rule->verified_at?->translatedFormat('d M Y') ?? 'Belum' }}
-                                        <span class="block text-xs text-gray-500">{{ $rule->source ?? 'Sumber belum dicatat' }}</span>
+                                        <span class="block text-xs text-muted">{{ $rule->source ?? 'Sumber belum dicatat' }}</span>
                                     </td>
                                     <td class="py-3">
                                         <div class="flex flex-wrap gap-2">

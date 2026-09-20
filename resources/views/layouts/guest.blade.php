@@ -20,7 +20,7 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-gray-900 antialiased">
+    <body class="font-sans text-primary antialiased">
         {{-- WCAG 2.4.1: pengguna keyboard tidak perlu menekan Tab melewati seluruh
              navigasi di setiap halaman. Tersembunyi sampai difokuskan. --}}
         <a href="#konten"
@@ -30,10 +30,10 @@
             Lewati ke konten utama
         </a>
 
-        <main id="konten" tabindex="-1" class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
+        <main id="konten" tabindex="-1" class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-canvas">
             <div>
                 <a href="/" wire:navigate>
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                    <x-application-logo class="w-20 h-20 fill-current text-muted" />
                 </a>
             </div>
 

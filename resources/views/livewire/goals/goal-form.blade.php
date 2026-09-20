@@ -33,7 +33,7 @@
                 <x-input-error :messages="$errors->get('notes')" class="mt-2" />
             </div>
 
-            <div class="border-t border-gray-100 pt-4">
+            <div class="border-t border-subtle pt-4">
                 <x-ui.button type="submit" target="save">Cari jalur yang sesuai</x-ui.button>
             </div>
         </form>

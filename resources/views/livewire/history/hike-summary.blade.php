@@ -25,38 +25,38 @@
         --}}
         <x-ui.page-header :title="$jalur->name"
             :description="$jalur->mountain->name.' · '.$jalur->mountain->province">
-            <p class="mt-1 text-sm text-gray-600">
+            <p class="mt-1 text-sm text-secondary">
                 {{ $riwayat->completed_at->translatedFormat('l, d F Y') }}
             </p>
-            <span class="mt-2 inline-block rounded-md bg-gray-100 px-2.5 py-1 text-sm font-medium text-gray-700">
+            <span class="mt-2 inline-block rounded-md bg-surface-sunken px-2.5 py-1 text-sm font-medium text-secondary">
                 {{ $riwayat->completion_state->label() }}
             </span>
         </x-ui.page-header>
 
         {{-- Satu kelompok angka, bukan empat kartu setara yang tidak memilih apa pun. --}}
-        <dl class="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-gray-200 py-6 sm:grid-cols-4">
+        <dl class="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-subtle py-6 sm:grid-cols-4">
             <div>
-                <dt class="text-sm text-gray-500">Lama pendakian</dt>
+                <dt class="text-sm text-muted">Lama pendakian</dt>
                 {{-- Null bukan nol: hike mode tidak selalu dibuka, dan "0 jam" akan
                      menjadi pernyataan yang salah tentang pendakian yang nyata. --}}
-                <dd data-angka class="mt-1 text-xl font-semibold text-gray-900">{{ $durasi ?? 'tidak tercatat' }}</dd>
+                <dd data-angka class="mt-1 text-xl font-semibold text-primary">{{ $durasi ?? 'tidak tercatat' }}</dd>
             </div>
 
             <div>
-                <dt class="text-sm text-gray-500">Pos terjauh</dt>
-                <dd class="mt-1 text-xl font-semibold text-gray-900">{{ $pos?->name ?? 'tidak tercatat' }}</dd>
+                <dt class="text-sm text-muted">Pos terjauh</dt>
+                <dd class="mt-1 text-xl font-semibold text-primary">{{ $pos?->name ?? 'tidak tercatat' }}</dd>
             </div>
 
             <div>
-                <dt class="text-sm text-gray-500">Elevation gain jalur</dt>
-                <dd data-angka class="mt-1 text-xl font-semibold text-gray-900">
+                <dt class="text-sm text-muted">Elevation gain jalur</dt>
+                <dd data-angka class="mt-1 text-xl font-semibold text-primary">
                     {{ $jalur->elevation_gain_m ? number_format($jalur->elevation_gain_m, 0, ',', '.').' m' : 'belum ada' }}
                 </dd>
             </div>
 
             <div>
-                <dt class="text-sm text-gray-500">Persiapan terkonfirmasi</dt>
-                <dd data-angka class="mt-1 text-xl font-semibold text-gray-900">{{ $riwayat->preparation_completion_percent }}%</dd>
+                <dt class="text-sm text-muted">Persiapan terkonfirmasi</dt>
+                <dd data-angka class="mt-1 text-xl font-semibold text-primary">{{ $riwayat->preparation_completion_percent }}%</dd>
             </div>
         </dl>
 
@@ -115,7 +115,7 @@
 
         @if ($riwayat->personal_notes)
             <x-ui.card title="Catatan Anda">
-                <p class="text-sm text-gray-700">{{ $riwayat->personal_notes }}</p>
+                <p class="text-sm text-secondary">{{ $riwayat->personal_notes }}</p>
             </x-ui.card>
         @endif
 

@@ -11,14 +11,14 @@
             <ul class="space-y-2 text-sm">
                 @foreach ($kredensial as $k)
                     <li class="flex flex-wrap items-baseline gap-x-2">
-                        <span class="font-medium text-gray-900">{{ $k->level->label() }}</span>
-                        <span class="text-gray-600">
+                        <span class="font-medium text-primary">{{ $k->level->label() }}</span>
+                        <span class="text-secondary">
                             diterbitkan {{ $k->issuingAuthority->displayName() }}
                             @if ($k->expires_at)
                                 &middot; berlaku sampai {{ $k->expires_at->translatedFormat('d M Y') }}
                             @endif
                         </span>
-                        <span class="w-full text-xs text-gray-500">
+                        <span class="w-full text-xs text-muted">
                             Kawasan: {{ $k->mountains->pluck('name')->join(', ') }}
                         </span>
                     </li>
@@ -26,7 +26,7 @@
             </ul>
 
             {{-- Sertifikat BNSP berlaku tiga tahun, dan haknya berhenti bersamaan. --}}
-            <p class="mt-3 text-xs text-gray-600">
+            <p class="mt-3 text-xs text-secondary">
                 Hak menyunting berhenti sendiri ketika sertifikat Anda habis masa berlakunya.
             </p>
         </x-ui.card>
@@ -56,7 +56,7 @@
                     <x-form.checkbox-group name="terrain_character" label="Karakter medan"
                         :options="collect($terrainOptions)->mapWithKeys(fn ($t) => [$t->value => $t->label()])->all()" />
 
-                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <label class="flex items-center gap-2 text-sm text-secondary">
                         <input type="checkbox" wire:model="camping_available"
                             class="rounded border-control text-brand-700 focus:ring-brand-600">
                         Tersedia area camping
@@ -82,7 +82,7 @@
                             placeholder="Misalnya: hasil pengukuran sendiri Agustus 2026, atau data resmi basecamp Cemoro Sewu."
                             class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
                         <x-input-error :messages="$errors->get('catatan_sumber')" class="mt-2" />
-                        <p class="mt-1 text-xs text-gray-600">
+                        <p class="mt-1 text-xs text-secondary">
                             Tersimpan bersama data dan terbaca admin saat meninjau.
                         </p>
                     </div>
@@ -97,27 +97,27 @@
 
         <x-ui.card title="Jalur di kawasan Anda">
             @if ($trails->isEmpty())
-                <p class="text-sm text-gray-600">Belum ada jalur tercatat di kawasan yang disahkan untuk Anda.</p>
+                <p class="text-sm text-secondary">Belum ada jalur tercatat di kawasan yang disahkan untuk Anda.</p>
             @else
-                <ul class="divide-y divide-gray-100">
+                <ul class="divide-y divide-subtle">
                     @foreach ($trails as $trail)
                         @php($menunggu = $trail->awaitingData())
 
                         <li class="flex flex-wrap items-start justify-between gap-3 py-3">
                             <div>
-                                <p class="font-medium text-gray-900">{{ $trail->name }}</p>
-                                <p class="text-sm text-gray-600">{{ $trail->mountain->name }}</p>
+                                <p class="font-medium text-primary">{{ $trail->name }}</p>
+                                <p class="text-sm text-secondary">{{ $trail->mountain->name }}</p>
 
                                 @if ($menunggu !== [])
                                     <p class="mt-1 text-xs text-warn-900">
                                         Belum ada: {{ implode(', ', $menunggu) }}
                                     </p>
                                 @else
-                                    <p class="mt-1 text-xs text-gray-500">Data lengkap.</p>
+                                    <p class="mt-1 text-xs text-muted">Data lengkap.</p>
                                 @endif
 
                                 @if (! $trail->is_published)
-                                    <p class="mt-1 text-xs text-gray-500">Belum tayang untuk pendaki.</p>
+                                    <p class="mt-1 text-xs text-muted">Belum tayang untuk pendaki.</p>
                                 @endif
                             </div>
 

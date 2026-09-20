@@ -79,10 +79,10 @@
                 {{-- Garis penghubung: hiasan yang mengulang urutan yang sudah terbaca
                      dari nomor pos dan dari struktur daftarnya sendiri. --}}
                 <div class="flex w-7 justify-center">
-                    <span class="w-px bg-gray-300"></span>
+                    <span class="w-px bg-subtle"></span>
                 </div>
                 <div class="py-1 text-xs">
-                    <p class="text-gray-600">{{ $antara[$i] }}</p>
+                    <p class="text-secondary">{{ $antara[$i] }}</p>
 
                     {{--
                         Waktu tempuh dari rekaman pendaki, bukan dari rumus.
@@ -94,10 +94,10 @@
                         pada sampel sekecil ini.
                     --}}
                     @if ($t = $tempo->get($pos[$i - 1]->id.'-'.$pos[$i]->id))
-                        <p class="mt-0.5 text-gray-700">
+                        <p class="mt-0.5 text-secondary">
                             Biasanya {{ $sebagaiWaktu($t['median_menit']) }},
                             terentang {{ $sebagaiWaktu($t['min_menit']) }} sampai {{ $sebagaiWaktu($t['maks_menit']) }}
-                            <span class="text-gray-500">menurut {{ $t['rekaman'] }} rekaman pendaki</span>
+                            <span class="text-muted">menurut {{ $t['rekaman'] }} rekaman pendaki</span>
                         </p>
                     @endif
                 </div>
@@ -105,21 +105,21 @@
         @endif
 
         <li class="flex items-start gap-3">
-            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-700">
+            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-xs font-medium text-secondary">
                 {{ $titik->sequence }}
             </span>
 
             <div class="min-w-0 text-sm">
                 <p>
-                    <span class="font-medium text-gray-900">{{ $titik->name }}</span>
-                    <span class="text-gray-600">&middot; {{ $titik->checkpoint_type->label() }}</span>
+                    <span class="font-medium text-primary">{{ $titik->name }}</span>
+                    <span class="text-secondary">&middot; {{ $titik->checkpoint_type->label() }}</span>
                     @if ($titik->elevation_m)
-                        <span class="text-gray-600">&middot; {{ number_format($titik->elevation_m, 0, ',', '.') }} mdpl</span>
+                        <span class="text-secondary">&middot; {{ number_format($titik->elevation_m, 0, ',', '.') }} mdpl</span>
                     @endif
                 </p>
 
                 @if ($titik->notes)
-                    <p class="mt-0.5 text-gray-600">{{ $titik->notes }}</p>
+                    <p class="mt-0.5 text-secondary">{{ $titik->notes }}</p>
                 @endif
 
                 {{-- Padanan teks untuk pembaca layar, karena barisnya yang menyebut

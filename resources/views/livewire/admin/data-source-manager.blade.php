@@ -40,7 +40,7 @@
             <table class="min-w-full text-sm">
                 <caption class="sr-only">Daftar sumber data</caption>
                 <thead>
-                    <tr class="border-b border-gray-200 text-left text-gray-500">
+                    <tr class="border-b border-subtle text-left text-muted">
                         <th scope="col" class="p-4">Sumber</th>
                         <th scope="col" class="p-4">Tipe</th>
                         <th scope="col" class="p-4">Verifikasi</th>
@@ -50,17 +50,17 @@
                 </thead>
                 <tbody>
                     @foreach ($sources as $source)
-                        <tr class="border-b border-gray-100">
+                        <tr class="border-b border-subtle">
                             <td class="p-4">
-                                <span class="font-medium text-gray-900">{{ $source->source_name }}</span>
+                                <span class="font-medium text-primary">{{ $source->source_name }}</span>
                                 @if ($source->source_url)
                                     <a href="{{ $source->source_url }}" target="_blank" rel="noopener noreferrer"
                                         class="block text-xs text-brand-700 underline">{{ $source->source_url }}</a>
                                 @endif
                             </td>
-                            <td class="p-4 text-gray-700">{{ $source->source_type->label() }}</td>
-                            <td class="p-4 text-gray-700">{{ $source->verification_status->label() }}</td>
-                            <td class="p-4 text-gray-700">
+                            <td class="p-4 text-secondary">{{ $source->source_type->label() }}</td>
+                            <td class="p-4 text-secondary">{{ $source->verification_status->label() }}</td>
+                            <td class="p-4 text-secondary">
                                 {{ $source->verified_at?->translatedFormat('d M Y') ?? '-' }}
                             </td>
                             <td class="p-4">

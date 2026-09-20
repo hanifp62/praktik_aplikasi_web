@@ -14,7 +14,7 @@
         'warning' => 'border-warn-300 bg-warn-100 text-warn-900',
         'danger' => 'border-danger-300 bg-danger-100 text-danger-900',
         'success' => 'border-brand-300 bg-brand-100 text-brand-900',
-        default => 'border-gray-300 bg-gray-50 text-gray-800',
+        default => 'border-subtle bg-surface-sunken text-primary',
     };
 
     $symbol = match ($variant) {

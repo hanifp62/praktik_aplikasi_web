@@ -56,35 +56,35 @@
         @foreach ($baris as $f)
             <li>
                 <div class="flex flex-wrap items-baseline justify-between gap-2">
-                    <span class="text-sm font-medium text-gray-900">{{ $f['label'] }}</span>
+                    <span class="text-sm font-medium text-primary">{{ $f['label'] }}</span>
 
                     {{-- Warna tidak pernah menjadi satu-satunya pembawa arti (WCAG 1.4.1),
                          jadi katanya selalu tertulis di sebelah batangnya. --}}
                     <span @class([
                         'text-xs font-medium',
                         'text-brand-900' => $f['kategori'] === 'kuat',
-                        'text-gray-700' => $f['kategori'] === 'cukup',
+                        'text-secondary' => $f['kategori'] === 'cukup',
                         'text-warn-900' => $f['kategori'] === 'lemah',
-                        'text-gray-500' => $f['kategori'] === 'tak-diketahui',
+                        'text-muted' => $f['kategori'] === 'tak-diketahui',
                     ])>{{ $f['kata'] }}</span>
                 </div>
 
                 {{-- Batangnya disembunyikan dari pembaca layar: ia hanya mengulang kata
                      yang sudah terbaca di atasnya, dan membacakannya dua kali menambah
                      panjang tanpa menambah keterangan. --}}
-                <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-200" aria-hidden="true">
+                <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-subtle" aria-hidden="true">
                     <div @class([
                         'h-full rounded-full',
                         $f['lebar'],
                         'bg-brand-700' => $f['kategori'] === 'kuat',
-                        'bg-gray-400' => $f['kategori'] === 'cukup',
+                        'bg-muted' => $f['kategori'] === 'cukup',
                         'bg-warn-600' => $f['kategori'] === 'lemah',
-                        'bg-gray-200' => $f['kategori'] === 'tak-diketahui',
+                        'bg-subtle' => $f['kategori'] === 'tak-diketahui',
                     ])></div>
                 </div>
 
                 @if ($f['detail'])
-                    <p class="mt-1 text-xs text-gray-600">{{ $f['detail'] }}</p>
+                    <p class="mt-1 text-xs text-secondary">{{ $f['detail'] }}</p>
                 @endif
             </li>
         @endforeach

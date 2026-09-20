@@ -7,7 +7,7 @@
 
         @vite(['resources/css/app.css'])
     </head>
-    <body class="min-h-screen bg-white font-sans text-gray-800 antialiased">
+    <body class="min-h-screen bg-white font-sans text-primary antialiased">
         {{--
             Halaman ini muncul persis ketika pengguna paling mungkin berada di lapangan.
             Karena itu ia tidak menyebut satu pun kondisi jalur, cuaca, atau status resmi:
@@ -15,13 +15,13 @@
             sekarang, dan itu yang dilarang §94 dan §95.
         --}}
         <main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12 sm:px-6">
-            <p class="text-sm font-medium text-gray-500">Luring</p>
+            <p class="text-sm font-medium text-muted">Luring</p>
 
-            <h1 class="mt-2 text-2xl font-semibold text-gray-900 sm:text-3xl">
+            <h1 class="mt-2 text-2xl font-semibold text-primary sm:text-3xl">
                 Tidak ada koneksi saat ini
             </h1>
 
-            <div class="mt-4 space-y-3 text-base text-gray-700">
+            <div class="mt-4 space-y-3 text-base text-secondary">
                 <p>
                     Halaman ini tidak dapat dimuat karena perangkat Anda sedang tanpa jaringan.
                 </p>

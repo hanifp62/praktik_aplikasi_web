@@ -22,14 +22,14 @@
 
         @vite(['resources/css/app.css'])
     </head>
-    <body class="min-h-screen bg-white font-sans text-gray-800 antialiased">
+    <body class="min-h-screen bg-white font-sans text-primary antialiased">
         <main class="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
             <header>
-                <p class="text-sm font-medium text-gray-500">{{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }}</p>
-                <h1 class="mt-1 text-3xl font-semibold text-gray-900">{{ $trail->name }}</h1>
+                <p class="text-sm font-medium text-muted">{{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }}</p>
+                <h1 class="mt-1 text-3xl font-semibold text-primary">{{ $trail->name }}</h1>
 
                 @if ($trail->description)
-                    <p class="mt-3 text-base text-gray-700">{{ $trail->description }}</p>
+                    <p class="mt-3 text-base text-secondary">{{ $trail->description }}</p>
                 @endif
             </header>
 
@@ -40,50 +40,50 @@
                 pernyataan yang keliru tentang hari ini.
             --}}
             <section>
-                <h2 class="text-lg font-semibold text-gray-900">Karakteristik jalur</h2>
+                <h2 class="text-lg font-semibold text-primary">Karakteristik jalur</h2>
 
                 <dl class="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
                     <div>
-                        <dt class="text-gray-500">Jarak</dt>
-                        <dd class="font-medium text-gray-900">{{ $trail->distance_km ?? '-' }} km</dd>
+                        <dt class="text-muted">Jarak</dt>
+                        <dd class="font-medium text-primary">{{ $trail->distance_km ?? '-' }} km</dd>
                     </div>
                     <div>
-                        <dt class="text-gray-500">Elevation gain</dt>
-                        <dd class="font-medium text-gray-900">
+                        <dt class="text-muted">Elevation gain</dt>
+                        <dd class="font-medium text-primary">
                             {{ $trail->elevation_gain_m ? number_format($trail->elevation_gain_m, 0, ',', '.') : '-' }} m
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-gray-500">Estimasi durasi</dt>
-                        <dd class="font-medium text-gray-900">
+                        <dt class="text-muted">Estimasi durasi</dt>
+                        <dd class="font-medium text-primary">
                             {{ $trail->estimated_duration_minutes ? round($trail->estimated_duration_minutes / 60, 1).' jam' : '-' }}
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-gray-500">Tingkat teknis</dt>
-                        <dd class="font-medium text-gray-900">{{ $trail->technical_demand->label() }}</dd>
+                        <dt class="text-muted">Tingkat teknis</dt>
+                        <dd class="font-medium text-primary">{{ $trail->technical_demand->label() }}</dd>
                     </div>
                     <div>
-                        <dt class="text-gray-500">Navigasi</dt>
-                        <dd class="font-medium text-gray-900">{{ $trail->navigation_complexity->label() }}</dd>
+                        <dt class="text-muted">Navigasi</dt>
+                        <dd class="font-medium text-primary">{{ $trail->navigation_complexity->label() }}</dd>
                     </div>
                     <div>
-                        <dt class="text-gray-500">Ketinggian puncak</dt>
-                        <dd class="font-medium text-gray-900">{{ $trail->mountain->elevation_mdpl }} mdpl</dd>
+                        <dt class="text-muted">Ketinggian puncak</dt>
+                        <dd class="font-medium text-primary">{{ $trail->mountain->elevation_mdpl }} mdpl</dd>
                     </div>
                 </dl>
             </section>
 
             @if ($trail->elevation_profile)
                 <section>
-                    <h2 class="text-lg font-semibold text-gray-900">Profil elevasi</h2>
+                    <h2 class="text-lg font-semibold text-primary">Profil elevasi</h2>
                     <x-ui.elevation-profile :profile="$trail->elevation_profile" class="mt-3" />
                 </section>
             @endif
 
             @if ($trail->checkpoints->isNotEmpty())
                 <section>
-                    <h2 class="text-lg font-semibold text-gray-900">Pos</h2>
+                    <h2 class="text-lg font-semibold text-primary">Pos</h2>
                     <x-ui.checkpoint-journey :checkpoints="$trail->checkpoints" class="mt-4 space-y-1" />
                 </section>
             @endif

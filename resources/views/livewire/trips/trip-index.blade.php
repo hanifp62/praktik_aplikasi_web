@@ -5,7 +5,7 @@
 
         @if ($trips->isEmpty())
             <x-ui.card>
-                <p class="text-sm text-gray-600">Belum ada rencana trip.</p>
+                <p class="text-sm text-secondary">Belum ada rencana trip.</p>
                 <x-ui.button href="{{ route('goals.create') }}">Mulai dari rencana pendakian</x-ui.button>
             </x-ui.card>
         @else
@@ -15,21 +15,21 @@
                         <x-ui.card>
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <h2 class="text-base font-semibold text-gray-900">
+                                    <h2 class="text-base font-semibold text-primary">
                                         <a href="{{ route('trips.show', $trip) }}" wire:navigate
                                             class="hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500">
                                             {{ $trip->name }}
                                         </a>
                                     </h2>
-                                    <p class="text-sm text-gray-600">
+                                    <p class="text-sm text-secondary">
                                         {{ $trip->trail->name }} &middot; {{ $trip->trail->mountain->name }}
                                     </p>
-                                    <p class="mt-1 text-sm text-gray-500">
+                                    <p class="mt-1 text-sm text-muted">
                                         {{ $trip->planned_date->translatedFormat('d M Y') }} &middot; {{ $trip->trip_type->label() }}
                                     </p>
                                 </div>
                                 <div class="text-right">
-                                    <span class="inline-block rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+                                    <span class="inline-block rounded-md bg-surface-sunken px-2.5 py-1 text-xs font-medium text-secondary">
                                         {{ $trip->status->label() }}
                                     </span>
                                     @if ($trip->trailIsWithdrawn())
@@ -41,7 +41,7 @@
                                             Status jalur berubah, perlu dinilai ulang
                                         </p>
                                     @elseif ($trip->latestReadinessCheck)
-                                        <p class="mt-1 text-xs text-gray-600">
+                                        <p class="mt-1 text-xs text-secondary">
                                             Kesiapan: {{ $trip->latestReadinessCheck->computed_state->label() }}
                                         </p>
                                     @endif

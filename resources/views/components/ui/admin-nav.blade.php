@@ -27,7 +27,7 @@
     $perluDitinjau = app(App\Services\DataFreshnessService::class)->reviewCount();
 @endphp
 
-<nav aria-label="Navigasi admin" class="mb-6 border-b border-gray-200">
+<nav aria-label="Navigasi admin" class="mb-6 border-b border-subtle">
     <ul class="-mb-px flex flex-wrap gap-1">
         @foreach ($links as $route => $label)
             @php $active = request()->routeIs($route); @endphp
@@ -38,7 +38,7 @@
                         focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600
                         {{ $active
                             ? 'border-brand-600 text-brand-900'
-                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
+                            : 'border-transparent text-muted hover:border-control hover:text-secondary' }}">
                     {{ $label }}
 
                     @if ($route === 'admin.statuses' && $perluDitinjau > 0)

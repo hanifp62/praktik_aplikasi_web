@@ -2,7 +2,7 @@
     <div class="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
         <x-ui.page-header :title="$trip->name"
             :description="$trip->trail->name.' - '.$trip->trail->mountain->name">
-            <p class="mt-1 text-sm text-gray-600">
+            <p class="mt-1 text-sm text-secondary">
                 {{ $trip->planned_date->translatedFormat('d M Y') }}
                 @if ($trip->start_time)
                     {{-- Jam ini rencana pengguna, bukan instan UTC, jadi tidak dikonversi.
@@ -13,7 +13,7 @@
                 @endif
                 &middot; {{ $trip->trip_type->label() }}
             </p>
-            <span class="mt-2 inline-block rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+            <span class="mt-2 inline-block rounded-md bg-surface-sunken px-2.5 py-1 text-xs font-medium text-secondary">
                 {{ $trip->status->label() }}
             </span>
         </x-ui.page-header>
@@ -24,7 +24,7 @@
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <x-ui.card title="Persiapan">
-                <p class="text-2xl font-semibold text-gray-900">{{ $trip->preparationCompletionPercent() }}%</p>
+                <p class="text-2xl font-semibold text-primary">{{ $trip->preparationCompletionPercent() }}%</p>
                 <a href="{{ route('trips.preparation', $trip) }}" wire:navigate
                     class="mt-2 inline-block text-sm text-brand-700 underline">Buka daftar persiapan</a>
             </x-ui.card>
@@ -38,17 +38,17 @@
                 --}}
                 @if ($trip->trailIsWithdrawn())
                     <p class="text-sm font-medium text-warn-900">Jalur ditarik dari katalog</p>
-                    <p class="mt-1 text-xs text-gray-600">
+                    <p class="mt-1 text-xs text-secondary">
                         Keterangan jalur ini tidak lagi diperbarui di sini. Tanyakan keadaannya
                         langsung kepada pengelola kawasan.
                     </p>
                 @elseif ($trip->readinessIsStale())
                     <p class="text-sm font-medium text-warn-900">Status jalur berubah, perlu dinilai ulang</p>
-                    <p class="mt-1 text-xs text-gray-600">
+                    <p class="mt-1 text-xs text-secondary">
                         Penilaian terakhir dibuat ketika status resminya masih berbeda.
                     </p>
                 @else
-                    <p class="text-sm text-gray-900">
+                    <p class="text-sm text-primary">
                         {{ $trip->latestReadinessCheck?->computed_state->label() ?? 'Belum dinilai' }}
                     </p>
                 @endif
@@ -68,7 +68,7 @@
                 <p @class([
                     'text-sm',
                     'font-medium text-warn-900' => $jendelaIzin['state'] === \App\Services\PermitService::BOOKING_DITUTUP,
-                    'text-gray-700' => $jendelaIzin['state'] !== \App\Services\PermitService::BOOKING_DITUTUP,
+                    'text-secondary' => $jendelaIzin['state'] !== \App\Services\PermitService::BOOKING_DITUTUP,
                 ])>{{ $jendelaIzin['message'] }}</p>
 
                 @if ($jendelaIzin['requirement']->booking_url)
@@ -80,7 +80,7 @@
 
         @if ($trip->notes)
             <x-ui.card title="Catatan">
-                <p class="text-sm text-gray-700">{{ $trip->notes }}</p>
+                <p class="text-sm text-secondary">{{ $trip->notes }}</p>
             </x-ui.card>
         @endif
 

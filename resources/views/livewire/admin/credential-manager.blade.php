@@ -22,7 +22,7 @@
 
         @if ($kredensial->isEmpty())
             <x-ui.card>
-                <p class="text-sm text-gray-600">Tidak ada kredensial pada filter ini.</p>
+                <p class="text-sm text-secondary">Tidak ada kredensial pada filter ini.</p>
             </x-ui.card>
         @else
             <ul class="space-y-4">
@@ -31,15 +31,15 @@
                         <x-ui.card>
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <h2 class="text-base font-semibold text-gray-900">{{ $k->user->name }}</h2>
-                                    <p class="text-sm text-gray-600">{{ $k->level->label() }}</p>
-                                    <p class="mt-1 text-xs text-gray-500">
+                                    <h2 class="text-base font-semibold text-primary">{{ $k->user->name }}</h2>
+                                    <p class="text-sm text-secondary">{{ $k->level->label() }}</p>
+                                    <p class="mt-1 text-xs text-muted">
                                         {{ $k->scheme }} &middot; nomor {{ $k->certificate_number ?? 'tidak dicantumkan' }}
                                     </p>
                                 </div>
 
                                 <div class="text-right text-xs">
-                                    <span class="rounded-md bg-gray-100 px-2.5 py-1 font-medium text-gray-700">
+                                    <span class="rounded-md bg-surface-sunken px-2.5 py-1 font-medium text-secondary">
                                         {{ $k->verification_status->label() }}
                                     </span>
 
@@ -53,16 +53,16 @@
 
                             <dl class="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                                 <div>
-                                    <dt class="text-xs text-gray-500">Diterbitkan oleh</dt>
-                                    <dd class="text-gray-900">{{ $k->issuingAuthority->displayName() }}</dd>
+                                    <dt class="text-xs text-muted">Diterbitkan oleh</dt>
+                                    <dd class="text-primary">{{ $k->issuingAuthority->displayName() }}</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-xs text-gray-500">Disahkan untuk kawasan oleh</dt>
-                                    <dd class="text-gray-900">{{ $k->endorsingAuthority?->displayName() ?? 'Belum disahkan balai mana pun' }}</dd>
+                                    <dt class="text-xs text-muted">Disahkan untuk kawasan oleh</dt>
+                                    <dd class="text-primary">{{ $k->endorsingAuthority?->displayName() ?? 'Belum disahkan balai mana pun' }}</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-xs text-gray-500">Berlaku</dt>
-                                    <dd class="text-gray-900">
+                                    <dt class="text-xs text-muted">Berlaku</dt>
+                                    <dd class="text-primary">
                                         {{ $k->issued_at->translatedFormat('d M Y') }}
                                         @if ($k->expires_at)
                                             &ndash; {{ $k->expires_at->translatedFormat('d M Y') }}
@@ -72,21 +72,21 @@
                                     </dd>
                                 </div>
                                 <div>
-                                    <dt class="text-xs text-gray-500">Kawasan</dt>
-                                    <dd class="text-gray-900">
+                                    <dt class="text-xs text-muted">Kawasan</dt>
+                                    <dd class="text-primary">
                                         {{ $k->mountains->pluck('name')->join(', ') ?: 'Belum ditetapkan' }}
                                     </dd>
                                 </div>
                             </dl>
 
                             <div class="mt-4 space-y-2">
-                                <label class="block text-sm text-gray-700" for="catatan-{{ $k->id }}">
+                                <label class="block text-sm text-secondary" for="catatan-{{ $k->id }}">
                                     Catatan pemeriksaan (opsional)
                                 </label>
                                 <input id="catatan-{{ $k->id }}" type="text" wire:model="catatan.{{ $k->id }}"
                                     class="block w-full rounded-md border-control text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600">
 
-                                <p class="text-xs text-gray-600">
+                                <p class="text-xs text-secondary">
                                     Verifikasi memberi pemegangnya hak menyunting data jalur di kawasan
                                     yang tercantum. Setiap perubahan tercatat di jejak audit.
                                 </p>

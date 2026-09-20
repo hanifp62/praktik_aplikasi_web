@@ -38,16 +38,16 @@
 
         <x-ui.card title="Daftar checkpoint">
             @if ($checkpoints->isEmpty())
-                <p class="text-sm text-gray-600">Belum ada checkpoint.</p>
+                <p class="text-sm text-secondary">Belum ada checkpoint.</p>
             @else
                 <ol class="space-y-2">
                     @foreach ($checkpoints as $checkpoint)
-                        <li class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-gray-100 px-3 py-2 text-sm">
+                        <li class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-subtle px-3 py-2 text-sm">
                             <span>
-                                <span class="font-medium text-gray-900">{{ $checkpoint->sequence }}. {{ $checkpoint->name }}</span>
-                                <span class="text-gray-600">&middot; {{ $checkpoint->checkpoint_type->label() }}</span>
+                                <span class="font-medium text-primary">{{ $checkpoint->sequence }}. {{ $checkpoint->name }}</span>
+                                <span class="text-secondary">&middot; {{ $checkpoint->checkpoint_type->label() }}</span>
                                 @if ($checkpoint->elevation_m)
-                                    <span class="text-gray-600">&middot; {{ $checkpoint->elevation_m }} mdpl</span>
+                                    <span class="text-secondary">&middot; {{ $checkpoint->elevation_m }} mdpl</span>
                                 @endif
                             </span>
                             <span class="flex gap-2">

@@ -11,7 +11,7 @@
                         <span @class([
                             'block rounded-md border px-3 py-2 text-center',
                             'border-brand-600 bg-brand-50 font-medium text-brand-900' => $step === $index + 1,
-                            'border-gray-200 text-gray-600' => $step !== $index + 1,
+                            'border-subtle text-secondary' => $step !== $index + 1,
                         ]) @if ($step === $index + 1) aria-current="step" @endif>
                             {{ $index + 1 }}. {{ $stepLabel }}
                         </span>
@@ -23,7 +23,7 @@
         <form wire:submit="save" class="space-y-6 rounded-lg bg-white p-6 shadow-sm">
             @if ($step === 1)
                 <fieldset class="space-y-4">
-                    <legend class="text-base font-medium text-gray-900">Tingkat pengalaman</legend>
+                    <legend class="text-base font-medium text-primary">Tingkat pengalaman</legend>
 
                     <x-form.select name="experience_level" label="Tingkat pengalaman" required
                         placeholder="Pilih tingkat pengalaman"
@@ -41,8 +41,8 @@
                 </fieldset>
             @elseif ($step === 2)
                 <fieldset class="space-y-4">
-                    <legend class="text-base font-medium text-gray-900">Rekam jejak pendakian</legend>
-                    <p class="text-sm text-gray-600">
+                    <legend class="text-base font-medium text-primary">Rekam jejak pendakian</legend>
+                    <p class="text-sm text-secondary">
                         Riwayat pendakian menjadi konteks tambahan. Menyelesaikan satu jalur sulit tidak
                         otomatis menaikkan tingkat pengalaman Anda.
                     </p>
@@ -66,7 +66,7 @@
                 </fieldset>
             @else
                 <fieldset class="space-y-4">
-                    <legend class="text-base font-medium text-gray-900">Preferensi perjalanan</legend>
+                    <legend class="text-base font-medium text-primary">Preferensi perjalanan</legend>
 
                     <x-form.select name="preferred_duration" label="Durasi yang Anda sukai" required
                         placeholder="Pilih durasi"
@@ -85,7 +85,7 @@
                 </fieldset>
             @endif
 
-            <div class="flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
+            <div class="flex items-center justify-between gap-3 border-t border-subtle pt-4">
                 {{-- :disabled, bukan @disabled: direktif itu mengompilasi jadi PHP mentah
                      di dalam tag komponen dan parser komponen Blade tidak dapat membacanya. --}}
                 <x-ui.button variant="secondary" type="button" wire:click="previousStep" :disabled="$step === 1">Kembali</x-ui.button>

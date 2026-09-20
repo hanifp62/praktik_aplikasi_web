@@ -5,7 +5,7 @@
         'COCOK' => 'bg-brand-100 text-brand-900 border-brand-300',
         'PERLU_PERSIAPAN' => 'bg-warn-100 text-warn-900 border-warn-300',
         'KURANG_COCOK' => 'bg-danger-100 text-danger-900 border-danger-300',
-        default => 'bg-gray-100 text-gray-700 border-gray-300',
+        default => 'bg-surface-sunken text-secondary border-subtle',
     };
     $symbol = match ($label?->value) {
         'COCOK' => '✓',

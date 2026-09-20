@@ -9,7 +9,7 @@
 
         @if ($entries->isEmpty())
             <x-ui.card>
-                <p class="text-sm text-gray-600">Belum ada pendakian yang tercatat selesai.</p>
+                <p class="text-sm text-secondary">Belum ada pendakian yang tercatat selesai.</p>
             </x-ui.card>
         @else
             <ul class="space-y-3">
@@ -18,34 +18,34 @@
                         <x-ui.card>
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <h2 class="text-base font-semibold text-gray-900">
+                                    <h2 class="text-base font-semibold text-primary">
                                         <a href="{{ route('history.summary', $entry->trip_plan_id) }}" wire:navigate
                                             class="hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
                                             {{ $entry->trail->name }}
                                         </a>
                                     </h2>
-                                    <p class="text-sm text-gray-600">{{ $entry->trail->mountain->name }}</p>
-                                    <p class="mt-1 text-sm text-gray-500">
+                                    <p class="text-sm text-secondary">{{ $entry->trail->mountain->name }}</p>
+                                    <p class="mt-1 text-sm text-muted">
                                         {{ $entry->completed_at->translatedFormat('d M Y') }} &middot;
                                         {{ $entry->trip_type->label() }} &middot;
                                         {{ $entry->completion_state->label() }}
                                     </p>
                                 </div>
                                 <div class="text-right text-sm">
-                                    <p class="text-gray-500">Persiapan saat itu</p>
-                                    <p class="font-semibold text-gray-900">{{ $entry->preparation_completion_percent }}%</p>
+                                    <p class="text-muted">Persiapan saat itu</p>
+                                    <p class="font-semibold text-primary">{{ $entry->preparation_completion_percent }}%</p>
                                 </div>
                             </div>
 
                             @if ($entry->personal_notes)
-                                <p class="mt-3 text-sm text-gray-700">{{ $entry->personal_notes }}</p>
+                                <p class="mt-3 text-sm text-secondary">{{ $entry->personal_notes }}</p>
                             @endif
 
                             <div class="mt-3 flex flex-wrap gap-3 text-sm">
                                 <a href="{{ route('trips.show', $entry->trip_plan_id) }}" wire:navigate
                                     class="text-brand-700 underline">Lihat trip</a>
                                 @if ($entry->conditionReport)
-                                    <span class="text-gray-600">
+                                    <span class="text-secondary">
                                         Laporan kondisi: {{ $entry->conditionReport->moderation_status->label() }}
                                     </span>
                                 @else

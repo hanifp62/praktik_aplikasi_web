@@ -2,16 +2,16 @@
     <div class="mx-auto max-w-3xl space-y-4 px-4 sm:px-6 lg:px-8">
         {{-- Hike mode shows the minimum needed while moving (PRD §54). --}}
         <div class="rounded-lg bg-white p-4 shadow-sm">
-            <h1 class="text-lg font-semibold text-gray-900">{{ $trip->trail->name }}</h1>
-            <p class="text-sm text-gray-600">{{ $trip->trail->mountain->name }}</p>
+            <h1 class="text-lg font-semibold text-primary">{{ $trip->trail->name }}</h1>
+            <p class="text-sm text-secondary">{{ $trip->trail->mountain->name }}</p>
         </div>
 
         <div class="rounded-lg bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-medium text-gray-500">Checkpoint berikutnya</h2>
-            <p class="mt-1 text-2xl font-semibold text-gray-900">
+            <h2 class="text-sm font-medium text-muted">Checkpoint berikutnya</h2>
+            <p class="mt-1 text-2xl font-semibold text-primary">
                 {{ $nextCheckpoint['name'] ?? 'Belum ditentukan' }}
             </p>
-            <p class="mt-1 text-sm text-gray-700">
+            <p class="mt-1 text-sm text-secondary">
                 @if ($distanceToNextMeters !== null)
                     Sekitar {{ $distanceToNextMeters >= 1000 ? round($distanceToNextMeters / 1000, 2).' km' : $distanceToNextMeters.' m' }}
                     dari posisi Anda
@@ -23,17 +23,17 @@
 
         <div class="rounded-lg bg-white p-4 shadow-sm">
             <div class="flex items-center justify-between">
-                <h2 class="text-sm font-medium text-gray-500">Posisi Anda</h2>
+                <h2 class="text-sm font-medium text-muted">Posisi Anda</h2>
                 <x-ui.button variant="secondary" size="sm" type="button" x-on:click="requestPosition()">
                     Perbarui posisi</x-ui.button>
             </div>
-            <p class="mt-2 text-sm text-gray-700" x-text="statusMessage"></p>
+            <p class="mt-2 text-sm text-secondary" x-text="statusMessage"></p>
             @if ($latitude !== null)
-                <p class="mt-1 text-xs text-gray-500">
+                <p class="mt-1 text-xs text-muted">
                     {{ number_format($latitude, 5) }}, {{ number_format($longitude, 5) }}
                 </p>
             @endif
-            <p class="mt-2 text-xs text-gray-500">
+            <p class="mt-2 text-xs text-muted">
                 Lokasi Anda hanya dipakai di halaman ini dan tidak dibagikan ke pengguna lain.
             </p>
         </div>
@@ -48,13 +48,13 @@
             :label="'Peta jalur '.$trip->trail->name.' dan posisi checkpoint'" />
 
         <div class="rounded-lg bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-medium text-gray-500">Daftar checkpoint</h2>
+            <h2 class="text-sm font-medium text-muted">Daftar checkpoint</h2>
             <ol class="mt-2 space-y-1 text-sm">
                 @foreach ($checkpoints as $checkpoint)
                     <li @class([
                         'rounded px-2 py-1',
                         'bg-brand-50 font-medium text-brand-900' => ($nextCheckpoint['id'] ?? null) === $checkpoint['id'],
-                        'text-gray-700' => ($nextCheckpoint['id'] ?? null) !== $checkpoint['id'],
+                        'text-secondary' => ($nextCheckpoint['id'] ?? null) !== $checkpoint['id'],
                     ])>
                         {{ $checkpoint['sequence'] }}. {{ $checkpoint['name'] }}
                     </li>

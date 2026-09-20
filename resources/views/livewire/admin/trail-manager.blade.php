@@ -41,7 +41,7 @@
                     <x-form.checkbox-group name="terrain_character" label="Karakter medan"
                         :options="collect($terrainOptions)->mapWithKeys(fn ($terrain) => [$terrain->value => $terrain->label()])->all()" />
 
-                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <label class="flex items-center gap-2 text-sm text-secondary">
                         <input type="checkbox" wire:model="camping_available"
                             class="rounded border-control text-brand-700 focus:ring-brand-600">
                         Tersedia area camping
@@ -77,7 +77,7 @@
             <table class="min-w-full text-sm">
                 <caption class="sr-only">Daftar jalur</caption>
                 <thead>
-                    <tr class="border-b border-gray-200 text-left text-gray-500">
+                    <tr class="border-b border-subtle text-left text-muted">
                         <th scope="col" class="p-4">Jalur</th>
                         <th scope="col" class="p-4">Gunung</th>
                         <th scope="col" class="p-4">Checkpoint</th>
@@ -87,16 +87,16 @@
                 </thead>
                 <tbody>
                     @foreach ($trails as $trail)
-                        <tr class="border-b border-gray-100">
-                            <td class="p-4 font-medium text-gray-900">{{ $trail->name }}</td>
-                            <td class="p-4 text-gray-700">{{ $trail->mountain->name }}</td>
-                            <td class="p-4 text-gray-700">{{ $trail->checkpoints_count }}</td>
+                        <tr class="border-b border-subtle">
+                            <td class="p-4 font-medium text-primary">{{ $trail->name }}</td>
+                            <td class="p-4 text-secondary">{{ $trail->mountain->name }}</td>
+                            <td class="p-4 text-secondary">{{ $trail->checkpoints_count }}</td>
                             @php($missing = $trail->publishabilityReport())
 
-                            <td class="p-4 text-gray-700">
+                            <td class="p-4 text-secondary">
                                 {{ $trail->is_published ? 'Tayang' : 'Draft' }}
                                 @if ($trail->archived_at)
-                                    <span class="ml-1 text-xs text-gray-500">(diarsipkan)</span>
+                                    <span class="ml-1 text-xs text-muted">(diarsipkan)</span>
                                 @endif
                                 @if ($trail->is_published && $missing !== [])
                                     <span class="ml-1 text-xs font-medium text-warn-900">(syarat belum lengkap)</span>

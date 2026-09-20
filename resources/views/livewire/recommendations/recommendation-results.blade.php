@@ -3,7 +3,7 @@
         <x-ui.page-header
             title="Rekomendasi Jalur"
             description="Label kecocokan menjelaskan hubungan antara profil Anda, rencana perjalanan, dan karakteristik jalur. Label ini bukan penilaian keselamatan.">
-            <p class="mt-2 text-xs text-gray-500">
+            <p class="mt-2 text-xs text-muted">
                 Dihasilkan {{ \App\Support\Timezone::display($run->generated_at, \App\Support\Timezone::DEFAULT) }}
             </p>
         </x-ui.page-header>
@@ -34,13 +34,13 @@
             --}}
             <x-ui.card title="Belum ada jalur yang sesuai">
                 @if ($penyebabKosong === 'katalog')
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-secondary">
                         Belum ada satu pun jalur berdata di sistem ini. Keterangan jalur belum dimasukkan
                         pengelola kawasan maupun pemandu bersertifikat yang disahkan untuk kawasannya.
                         Batasan rencana Anda tidak ada hubungannya dengan layar ini.
                     </p>
                 @elseif ($penyebabKosong === 'wilayah')
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-secondary">
                         Belum ada jalur berdata di {{ $run->hikingGoal?->region }}. Jalur di wilayah itu
                         mungkin sudah dikenali sistem, tetapi keterangannya belum dimasukkan pihak yang
                         berwenang, jadi tidak ada yang dapat diuji terhadap rencana Anda. Mengubah durasi
@@ -48,7 +48,7 @@
                         melihat jalur di daerah lain.
                     </p>
                 @else
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-secondary">
                         Tidak ada jalur yang memenuhi batasan rencana Anda saat ini. Anda dapat melonggarkan
                         target durasi atau batas elevation gain, atau menelusuri jalur secara manual.
                     </p>
@@ -77,7 +77,7 @@
                                     adalah catatan tentang apa yang dinilai saat itu, tetapi
                                     tautannya dicabut: halaman jalur terarsip menjawab 404.
                                 --}}
-                                <h2 class="text-lg font-semibold text-gray-900">
+                                <h2 class="text-lg font-semibold text-primary">
                                     @if ($result->trail->archived_at)
                                         {{ $result->trail->name }}
                                     @else
@@ -87,7 +87,7 @@
                                         </a>
                                     @endif
                                 </h2>
-                                <p class="text-sm text-gray-600">{{ $result->trail->mountain->name }}</p>
+                                <p class="text-sm text-secondary">{{ $result->trail->mountain->name }}</p>
                                 @if ($result->trail->archived_at)
                                     <p class="mt-1 text-sm font-medium text-warn-900">
                                         Jalur ini ditarik dari katalog setelah penilaian ini dibuat.
@@ -106,22 +106,22 @@
                         @php($angka = $result->trailFigures())
                         <dl class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                             <div>
-                                <dt class="text-gray-500">Jarak</dt>
-                                <dd class="font-medium text-gray-900">{{ $angka['distance_km'] ?? '-' }} km</dd>
+                                <dt class="text-muted">Jarak</dt>
+                                <dd class="font-medium text-primary">{{ $angka['distance_km'] ?? '-' }} km</dd>
                             </div>
                             <div>
-                                <dt class="text-gray-500">Elevation gain</dt>
-                                <dd class="font-medium text-gray-900">{{ $angka['elevation_gain_m'] ?? '-' }} m</dd>
+                                <dt class="text-muted">Elevation gain</dt>
+                                <dd class="font-medium text-primary">{{ $angka['elevation_gain_m'] ?? '-' }} m</dd>
                             </div>
                             <div>
-                                <dt class="text-gray-500">Estimasi durasi</dt>
-                                <dd class="font-medium text-gray-900">
+                                <dt class="text-muted">Estimasi durasi</dt>
+                                <dd class="font-medium text-primary">
                                     {{ $angka['estimated_duration_minutes'] ? round($angka['estimated_duration_minutes'] / 60, 1).' jam' : '-' }}
                                 </dd>
                             </div>
                             <div>
-                                <dt class="text-gray-500">Tingkat teknis</dt>
-                                <dd class="font-medium text-gray-900">
+                                <dt class="text-muted">Tingkat teknis</dt>
+                                <dd class="font-medium text-primary">
                                     {{ $angka['technical_demand']
                                         ? \App\Enums\TechnicalDemand::from($angka['technical_demand'])->label()
                                         : '-' }}
@@ -157,7 +157,7 @@
                         </div>
 
                         @if ($expandedResultId === $result->id)
-                            <div class="mt-4 space-y-3 border-t border-gray-100 pt-4">
+                            <div class="mt-4 space-y-3 border-t border-subtle pt-4">
                                 {{--
                                     Batang faktor didahulukan di atas prosanya. Mesin ini
                                     menimbang delapan faktor, dan pertanyaan pertama pendaki
@@ -170,7 +170,7 @@
                                 --}}
                                 @if ($result->matched_factors)
                                     <div>
-                                        <h3 class="text-sm font-semibold text-gray-900">Penilaian per faktor</h3>
+                                        <h3 class="text-sm font-semibold text-primary">Penilaian per faktor</h3>
                                         <x-ui.factor-bars :factors="$result->matched_factors" class="mt-2" />
                                     </div>
                                 @endif
@@ -184,12 +184,12 @@
                                     'preparation_gap' => 'Persiapan yang belum selesai',
                                 ] as $key => $heading)
                                     <div>
-                                        <h3 class="text-sm font-semibold text-gray-900">{{ $heading }}</h3>
-                                        <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                                        <h3 class="text-sm font-semibold text-primary">{{ $heading }}</h3>
+                                        <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-secondary">
                                             @forelse ($result->explanation[$key] ?? [] as $line)
                                                 <li>{{ $line }}</li>
                                             @empty
-                                                <li class="list-none text-gray-500">Tidak ada catatan.</li>
+                                                <li class="list-none text-muted">Tidak ada catatan.</li>
                                             @endforelse
                                         </ul>
                                     </div>
@@ -214,17 +214,17 @@
 
         @if ($excluded->isNotEmpty())
             <section class="mt-8">
-                <h2 class="text-base font-semibold text-gray-900">Tidak masuk rekomendasi</h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <h2 class="text-base font-semibold text-primary">Tidak masuk rekomendasi</h2>
+                <p class="mt-1 text-sm text-secondary">
                     Jalur berikut dikecualikan oleh batasan yang bersifat pasti, misalnya status resmi tutup
                     atau durasi yang tidak sesuai rencana.
                 </p>
                 <ul class="mt-3 space-y-2">
                     @foreach ($excluded as $result)
-                        <li class="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
-                            <span class="font-medium text-gray-900">{{ $result->trail->name }}</span>
-                            <span class="text-gray-600">&middot; {{ $result->trail->mountain->name }}</span>
-                            <ul class="mt-1 list-disc pl-5 text-gray-600">
+                        <li class="rounded-md border border-subtle bg-surface-sunken px-4 py-3 text-sm">
+                            <span class="font-medium text-primary">{{ $result->trail->name }}</span>
+                            <span class="text-secondary">&middot; {{ $result->trail->mountain->name }}</span>
+                            <ul class="mt-1 list-disc pl-5 text-secondary">
                                 @foreach ($result->failed_rules ?? [] as $rule)
                                     <li>{{ __('recommendation.'.$rule) }}</li>
                                 @endforeach

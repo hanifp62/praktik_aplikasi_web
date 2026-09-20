@@ -30,7 +30,7 @@
             Lewati ke konten utama
         </a>
 
-        <div class="min-h-screen bg-gray-100">
+        <div class="min-h-screen bg-canvas">
             <livewire:layout.navigation />
 
             <!-- Page Heading -->

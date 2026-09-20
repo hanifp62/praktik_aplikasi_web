@@ -7,7 +7,7 @@
 
         <x-ui.card class="mb-6" title="North star metric"
             subtitle="Persentase pemilihan jalur yang berlanjut sampai pre-departure check.">
-            <p class="text-3xl font-semibold text-gray-900">
+            <p class="text-3xl font-semibold text-primary">
                 {{ $northStar !== null ? $northStar.'%' : 'Belum ada data' }}
             </p>
         </x-ui.card>
@@ -16,9 +16,9 @@
             <ol class="space-y-2">
                 @foreach ($funnel as $event => $count)
                     @php $enum = \App\Enums\AnalyticsEvent::tryFrom($event); @endphp
-                    <li class="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2 text-sm">
-                        <span class="text-gray-700">{{ $enum?->label() ?? $event }}</span>
-                        <span class="font-semibold text-gray-900">{{ $count }}</span>
+                    <li class="flex items-center justify-between rounded-md border border-subtle px-3 py-2 text-sm">
+                        <span class="text-secondary">{{ $enum?->label() ?? $event }}</span>
+                        <span class="font-semibold text-primary">{{ $count }}</span>
                     </li>
                 @endforeach
             </ol>

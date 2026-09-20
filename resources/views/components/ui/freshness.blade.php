@@ -11,13 +11,13 @@
         : null;
 @endphp
 
-<p class="text-xs text-gray-500">
+<p class="text-xs text-muted">
     @if ($rendered)
         {{ $prefix }} {{ $rendered }}
     @else
         Waktu pembaruan tidak tersedia
     @endif
     @if ($stateLabel)
-        <span class="ml-1 rounded bg-gray-100 px-1.5 py-0.5">{{ $stateLabel }}</span>
+        <span class="ml-1 rounded bg-surface-sunken px-1.5 py-0.5">{{ $stateLabel }}</span>
     @endif
 </p>

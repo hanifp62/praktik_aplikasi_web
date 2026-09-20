@@ -31,19 +31,19 @@
 
 @if ($adaIsi)
     <div {{ $attributes->merge(['class' => 'space-y-1']) }}>
-        <div class="overflow-hidden rounded-lg border border-gray-200">
+        <div class="overflow-hidden rounded-lg border border-subtle">
             {{--
                 Peta adalah wilayah interaktif, bukan gambar. role="img" menuntut teks
                 alternatif yang tidak mungkin diberikan untuk peta yang dapat digeser,
                 dan menyembunyikan isinya dari pembaca layar. Padanan non-visualnya
                 adalah daftar pos yang selalu menyertai peta ini di setiap halaman.
             --}}
-            <div id="{{ $id }}" class="{{ $height }} w-full bg-gray-100" role="region"
+            <div id="{{ $id }}" class="{{ $height }} w-full bg-surface-sunken" role="region"
                 aria-label="{{ $label }}"></div>
         </div>
 
         {{-- Atribusi bukan hiasan: syarat pemakaian sumber tile-nya. --}}
-        <p class="text-xs text-gray-500">Peta: {{ $konfigurasi['attribution'] }}</p>
+        <p class="text-xs text-muted">Peta: {{ $konfigurasi['attribution'] }}</p>
 
         <script>
             (() => {
@@ -63,7 +63,7 @@
                 // dapat dipakai mengubah kebuntuan menjadi keterangan.
                 const gagal = () => {
                     wadah.innerHTML =
-                        '<p class="p-4 text-sm text-gray-700">Peta gagal dimuat. '
+                        '<p class="p-4 text-sm text-secondary">Peta gagal dimuat. '
                         + 'Keterangan jalur dan daftar pos di bawah tetap dapat dipakai.</p>';
                 };
 

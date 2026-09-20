@@ -41,7 +41,7 @@
                 stroke-width="3" vector-effect="non-scaling-stroke" />
         </svg>
 
-        <figcaption class="mt-2 flex flex-wrap justify-between gap-2 text-xs text-gray-600">
+        <figcaption class="mt-2 flex flex-wrap justify-between gap-2 text-xs text-secondary">
             <span>{{ number_format($mMin, 0, ',', '.') }} mdpl terendah</span>
             <span>{{ number_format($mMax, 0, ',', '.') }} mdpl tertinggi</span>
             <span>{{ number_format($kmMax, 1, ',', '.') }} km</span>

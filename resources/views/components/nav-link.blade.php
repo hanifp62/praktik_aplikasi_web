@@ -15,8 +15,8 @@
 $fokus = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 rounded-sm';
 
 $classes = ($active ?? false)
-            ? 'inline-flex items-center px-1 pt-1 border-b-2 border-brand-600 text-sm font-medium leading-5 text-gray-900 transition duration-150 ease-in-out '.$fokus
-            : 'inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition duration-150 ease-in-out '.$fokus;
+            ? 'inline-flex items-center px-1 pt-1 border-b-2 border-brand-600 text-sm font-medium leading-5 text-primary transition duration-150 ease-in-out '.$fokus
+            : 'inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-muted hover:text-secondary hover:border-control transition duration-150 ease-in-out '.$fokus;
 @endphp
 
 <a {{ $attributes->merge(['class' => $classes]) }}>

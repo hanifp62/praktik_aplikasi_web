@@ -10,17 +10,17 @@
             ditunggu mengubah layar kosong menjadi keterangan.
         --}}
         <x-ui.page-header :title="$trail->name">
-            <p class="mt-1 text-sm text-gray-600">
+            <p class="mt-1 text-sm text-secondary">
                 {{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }} &middot;
                 {{ $trail->mountain->elevation_mdpl }} mdpl
             </p>
         </x-ui.page-header>
 
         <x-ui.card title="Data jalur ini belum tersedia">
-            <p class="text-sm text-gray-700">
+            <p class="text-sm text-secondary">
                 Jalur ini sudah dikenali sistem, tetapi keterangannya belum dimasukkan
                 @if ($badan)
-                    <span class="font-medium text-gray-900">{{ $badan->displayName() }}</span>
+                    <span class="font-medium text-primary">{{ $badan->displayName() }}</span>
                     atau pemandu bersertifikat yang disahkan untuk kawasan ini.
                 @else
                     pihak yang berwenang atas kawasan ini.
@@ -29,8 +29,8 @@
 
             @if ($menunggu !== [])
                 <div class="mt-4">
-                    <p class="text-sm font-medium text-gray-900">Yang belum tersedia:</p>
-                    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                    <p class="text-sm font-medium text-primary">Yang belum tersedia:</p>
+                    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-secondary">
                         @foreach ($menunggu as $butir)
                             <li>{{ $butir }}</li>
                         @endforeach
@@ -51,7 +51,7 @@
         </x-ui.card>
 
         <x-ui.card title="Mengapa halaman ini ada">
-            <p class="text-sm text-gray-700">
+            <p class="text-sm text-secondary">
                 Sistem ini menampilkan jalur yang datanya belum lengkap alih-alih
                 menyembunyikannya, supaya terlihat apa yang memang belum diketahui. Jalur
                 akan tampil utuh setelah sumber data, karakteristik, daftar pos, status
@@ -59,7 +59,7 @@
             </p>
 
             @if ($badan?->website)
-                <p class="mt-3 text-sm text-gray-700">
+                <p class="mt-3 text-sm text-secondary">
                     Kanal resmi pengelola:
                     <a href="{{ $badan->website }}" rel="noopener noreferrer" target="_blank"
                         class="text-brand-700 underline">{{ $badan->website }}</a>

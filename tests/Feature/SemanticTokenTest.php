@@ -46,4 +46,27 @@ class SemanticTokenTest extends TestCase
             $this->assertStringContainsString($nama, $config, "Tailwind belum memetakan {$nama}.");
         }
     }
+
+    /**
+     * Abu mentah Tailwind tidak boleh dipakai langsung lagi.
+     *
+     * Selama ia boleh, layar berikutnya yang ditulis siapa pun akan mengarang abunya
+     * sendiri, dan lapisan semantik menjadi lapisan yang dilewati.
+     */
+    public function test_no_view_reaches_past_the_semantic_layer(): void
+    {
+        $pelanggar = [];
+
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            // Komentar Blade dilewati: nama kelas lama sering disebut di sana justru
+            // untuk menjelaskan mengapa ia diganti.
+            $isi = preg_replace('/\{\{--.*?--\}\}/s', ' ', $berkas->getContents());
+
+            if (preg_match('/\b(?:text|bg|border)-gray-\d{2,3}\b/', $isi)) {
+                $pelanggar[] = $berkas->getRelativePathname();
+            }
+        }
+
+        $this->assertSame([], $pelanggar, 'Abu mentah masih dipakai di: '.implode(', ', $pelanggar));
+    }
 }

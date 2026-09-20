@@ -10,7 +10,7 @@
                 memberi tahu gunung mana yang ingin ia dengar kabarnya.
             --}}
             <x-ui.card title="Belum ada gunung yang Anda ikuti">
-                <p class="text-sm text-gray-700">
+                <p class="text-sm text-secondary">
                     Ikuti gunung dari halaman jalurnya, lalu perubahan status resmi dan laporan
                     kondisi dari kawasan itu muncul di sini. Berguna justru ketika Anda sedang
                     tidak merencanakan apa pun: penutupan jalur diumumkan tanpa aba-aba.
@@ -20,13 +20,13 @@
                 </x-ui.button>
             </x-ui.card>
         @else
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-secondary">
                 Mengikuti {{ $gunung->pluck('name')->join(', ', ' dan ') }}.
             </p>
 
             @if ($kabar->isEmpty())
                 <x-ui.card>
-                    <p class="text-sm text-gray-700">
+                    <p class="text-sm text-secondary">
                         Belum ada kabar dari gunung yang Anda ikuti. Tidak adanya kabar bukan
                         pernyataan bahwa jalurnya terbuka; periksa halaman jalurnya untuk status
                         resmi terkini.
@@ -44,13 +44,13 @@
                                         <x-ui.status-badge :status="$butir['status']" :scope="$butir['model']->scope?->value" />
                                     </div>
 
-                                    <p class="mt-2 text-sm font-medium text-gray-900">{{ $butir['judul'] }}</p>
+                                    <p class="mt-2 text-sm font-medium text-primary">{{ $butir['judul'] }}</p>
 
                                     @if ($butir['alasan'])
-                                        <p class="mt-1 text-sm text-gray-700">{{ $butir['alasan'] }}</p>
+                                        <p class="mt-1 text-sm text-secondary">{{ $butir['alasan'] }}</p>
                                     @endif
 
-                                    <p class="mt-2 text-xs text-gray-500">
+                                    <p class="mt-2 text-xs text-muted">
                                         Sumber: {{ $butir['sumber'] ?? 'belum tercatat' }} &middot;
                                         <time datetime="{{ $butir['waktu']->toIso8601String() }}">
                                             {{ $butir['waktu']->diffForHumans() }}
@@ -62,7 +62,7 @@
                                 <x-ui.card class="border-l-4 border-l-community-500">
                                     <span class="text-xs font-medium uppercase tracking-wide text-community-900">Laporan komunitas</span>
 
-                                    <p class="mt-2 text-sm font-medium text-gray-900">{{ $butir['judul'] }}</p>
+                                    <p class="mt-2 text-sm font-medium text-primary">{{ $butir['judul'] }}</p>
 
                                     <div class="mt-2 flex flex-wrap gap-2">
                                         @foreach ($butir['model']->tags() as $tag)
@@ -71,12 +71,12 @@
                                     </div>
 
                                     @if ($butir['model']->note)
-                                        <p class="mt-2 text-sm text-gray-700">{{ $butir['model']->note }}</p>
+                                        <p class="mt-2 text-sm text-secondary">{{ $butir['model']->note }}</p>
                                     @endif
 
-                                    <p class="mt-2 text-xs text-gray-500">
+                                    <p class="mt-2 text-xs text-muted">
                                         Dilaporkan
-                                        <span class="font-medium text-gray-700">{{ $butir['model']->user?->name ?? 'pendaki yang akunnya sudah dihapus' }}</span>
+                                        <span class="font-medium text-secondary">{{ $butir['model']->user?->name ?? 'pendaki yang akunnya sudah dihapus' }}</span>
                                         &middot;
                                         <time datetime="{{ $butir['waktu']->toIso8601String() }}">
                                             {{ $butir['waktu']->diffForHumans() }}

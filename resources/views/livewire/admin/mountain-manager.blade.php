@@ -51,7 +51,7 @@
             <table class="min-w-full text-sm">
                 <caption class="sr-only">Daftar gunung</caption>
                 <thead>
-                    <tr class="border-b border-gray-200 text-left text-gray-500">
+                    <tr class="border-b border-subtle text-left text-muted">
                         <th scope="col" class="p-4">Nama</th>
                         <th scope="col" class="p-4">Provinsi</th>
                         <th scope="col" class="p-4">Ketinggian</th>
@@ -62,12 +62,12 @@
                 </thead>
                 <tbody>
                     @foreach ($mountains as $mountain)
-                        <tr class="border-b border-gray-100">
-                            <td class="p-4 font-medium text-gray-900">{{ $mountain->name }}</td>
-                            <td class="p-4 text-gray-700">{{ $mountain->province ?? '-' }}</td>
-                            <td class="p-4 text-gray-700">{{ $mountain->elevation_mdpl ?? '-' }} mdpl</td>
-                            <td class="p-4 text-gray-700">{{ $mountain->trails_count }}</td>
-                            <td class="p-4 text-gray-700">{{ $mountain->isArchived() ? 'Diarsipkan' : 'Aktif' }}</td>
+                        <tr class="border-b border-subtle">
+                            <td class="p-4 font-medium text-primary">{{ $mountain->name }}</td>
+                            <td class="p-4 text-secondary">{{ $mountain->province ?? '-' }}</td>
+                            <td class="p-4 text-secondary">{{ $mountain->elevation_mdpl ?? '-' }} mdpl</td>
+                            <td class="p-4 text-secondary">{{ $mountain->trails_count }}</td>
+                            <td class="p-4 text-secondary">{{ $mountain->isArchived() ? 'Diarsipkan' : 'Aktif' }}</td>
                             <td class="p-4">
                                 <div class="flex gap-2">
                                     <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $mountain->id }})">Ubah</x-ui.button>

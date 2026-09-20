@@ -16,7 +16,7 @@
             </x-ui.card>
         @elseif ($sedangBerjalan)
             <x-ui.card title="Pendakian sedang berlangsung" :subtitle="$trip->name">
-                <p class="mb-4 text-sm text-gray-700">
+                <p class="mb-4 text-sm text-secondary">
                     {{ $trip->trail?->name }}@if ($trip->trail?->mountain), {{ $trip->trail->mountain->name }}@endif
                 </p>
 
@@ -27,7 +27,7 @@
             </x-ui.card>
         @elseif ($trip)
             <x-ui.card :title="$hitungMundur" :subtitle="$trip->name">
-                <p class="text-sm text-gray-700">
+                <p class="text-sm text-secondary">
                     {{ $trip->trail?->name }}@if ($trip->trail?->mountain), {{ $trip->trail->mountain->name }}@endif
                     &middot; {{ $trip->planned_date->translatedFormat('l, d F Y') }}
                 </p>
@@ -41,12 +41,12 @@
                         Status jalur berubah, perlu dinilai ulang
                     </p>
                 @elseif ($trip->latestReadinessCheck)
-                    <p class="mt-2 text-sm text-gray-700">
+                    <p class="mt-2 text-sm text-secondary">
                         Pemeriksaan terakhir:
                         <span class="font-medium">{{ $trip->latestReadinessCheck->computed_state->label() }}</span>
                     </p>
                 @else
-                    <p class="mt-2 text-sm text-gray-700">
+                    <p class="mt-2 text-sm text-secondary">
                         Kesiapan trip ini belum pernah diperiksa.
                     </p>
                 @endif
@@ -82,7 +82,7 @@
         </div>
 
         <x-ui.card>
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-secondary">
                 Sistem ini membantu pengambilan keputusan pendakian. Sistem tidak menyatakan bahwa suatu
                 gunung atau jalur aman, dan tidak menggantikan informasi resmi dari pengelola.
             </p>
