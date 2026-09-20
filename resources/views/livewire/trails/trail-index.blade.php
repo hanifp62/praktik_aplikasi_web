@@ -4,7 +4,7 @@
             title="Jelajahi Jalur"
             description="Telusuri jalur secara manual. Gunakan ini jika Anda ingin membandingkan sendiri tanpa melalui rekomendasi." />
 
-        <form class="mb-6 grid grid-cols-1 gap-4 rounded-lg bg-white p-4 shadow-sm sm:grid-cols-3"
+        <form class="mb-6 grid grid-cols-1 gap-4 rounded-lg bg-white p-4 sm:grid-cols-3"
             role="search" aria-label="Filter jalur">
             <div>
                 <x-input-label for="search" value="Cari jalur atau gunung" />
@@ -14,7 +14,7 @@
             <div>
                 <x-input-label for="technical" value="Tingkat teknis" />
                 <select id="technical" wire:model.live="technical"
-                    class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600">
+                    class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600">
                     <option value="">Semua</option>
                     @foreach ($technicalLevels as $level)
                         <option value="{{ $level->value }}">{{ $level->label() }}</option>

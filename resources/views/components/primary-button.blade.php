@@ -1,3 +1,10 @@
-<button {{ $attributes->merge(['type' => 'submit', 'class' => 'inline-flex items-center px-4 py-2 bg-primary border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-secondary focus:bg-secondary active:bg-primary focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 transition ease-in-out duration-150']) }}>
-    {{ $slot }}
-</button>
+{{--
+    Tombol utama halaman auth dan profil, diteruskan ke tombol produk.
+
+    Delapan halaman warisan Breeze memakai tombol netral gelap sementara seluruh
+    aplikasi memakai tombol merek, jadi layar pertama yang dilihat orang membawa tombol
+    yang berbeda dari produknya. Berkas ini dipertahankan alih-alih dihapus supaya
+    delapan halaman itu tidak perlu disunting satu per satu, dan supaya bentuk tombol
+    tetap punya satu definisi.
+--}}
+<x-ui.button type="submit" {{ $attributes }}>{{ $slot }}</x-ui.button>

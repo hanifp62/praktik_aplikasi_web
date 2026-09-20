@@ -4,7 +4,7 @@
             title="Rencana Pendakian"
             description="Isi rencana perjalanan Anda. Sistem memakai rencana ini bersama profil Anda untuk menilai kecocokan jalur." />
 
-        <form wire:submit="save" class="space-y-5 rounded-lg bg-white p-6 shadow-sm">
+        <form wire:submit="save" class="space-y-5 rounded-lg bg-white p-6">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <x-form.field name="target_date" type="date" label="Target tanggal (opsional)"
                     hint="Diisi agar jendela pemesanan izin dan status jalur diperiksa untuk tanggal itu." />
@@ -29,7 +29,7 @@
             <div>
                 <x-input-label for="notes" value="Catatan rencana (opsional)" />
                 <textarea id="notes" wire:model="notes" rows="3"
-                    class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
+                    class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                 <x-input-error :messages="$errors->get('notes')" class="mt-2" />
             </div>
 

@@ -42,6 +42,22 @@ class ColourContrastTest extends TestCase
             ['warn-900', 'warn-50', 'blok peringatan'],
             ['danger-900', 'danger-100', 'badge KURANG COCOK dan alert bahaya'],
             ['danger-900', 'danger-50', 'blok bahaya'],
+            // Pasangan semantik. Sampai lapisan ini ada, yang dihitung hanya pasangan
+            // warna merek, dan warna yang membawa hampir seluruh teks aplikasi tidak
+            // pernah diperiksa sama sekali.
+            //
+            // Ketiganya dihitung terhadap tiga permukaan, bukan terhadap putih saja:
+            // nilai muted yang dirancang spec lolos di atas kanvas dan gagal di atas
+            // sumur, dan kegagalan itu hanya terlihat ketika pasangannya disebut.
+            ['text-primary', 'canvas', 'judul di atas latar halaman'],
+            ['text-primary', 'surface', 'judul di atas kartu'],
+            ['text-secondary', 'canvas', 'badan teks di atas latar halaman'],
+            ['text-secondary', 'surface', 'badan teks di atas kartu'],
+            ['text-secondary', 'surface-sunken', 'badan teks di atas sumur'],
+            ['text-muted', 'canvas', 'metadata di atas latar halaman'],
+            ['text-muted', 'surface', 'metadata di atas kartu'],
+            ['text-muted', 'surface-sunken', 'metadata di atas sumur'],
+            ['text-muted', 'white', 'metadata di atas putih murni'],
         ];
     }
 

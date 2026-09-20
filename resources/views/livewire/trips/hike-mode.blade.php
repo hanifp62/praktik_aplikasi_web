@@ -1,12 +1,12 @@
 <div class="py-6" x-data="hikeMode()" x-init="init()">
     <div class="mx-auto max-w-3xl space-y-4 px-4 sm:px-6 lg:px-8">
         {{-- Hike mode shows the minimum needed while moving (PRD §54). --}}
-        <div class="rounded-lg bg-white p-4 shadow-sm">
+        <div class="rounded-lg bg-white p-4">
             <h1 class="text-lg font-semibold text-primary">{{ $trip->trail->name }}</h1>
             <p class="text-sm text-secondary">{{ $trip->trail->mountain->name }}</p>
         </div>
 
-        <div class="rounded-lg bg-white p-4 shadow-sm">
+        <div class="rounded-lg bg-white p-4">
             <h2 class="text-sm font-medium text-muted">Checkpoint berikutnya</h2>
             <p class="mt-1 text-2xl font-semibold text-primary">
                 {{ $nextCheckpoint['name'] ?? 'Belum ditentukan' }}
@@ -21,7 +21,7 @@
             </p>
         </div>
 
-        <div class="rounded-lg bg-white p-4 shadow-sm">
+        <div class="rounded-lg bg-white p-4">
             <div class="flex items-center justify-between">
                 <h2 class="text-sm font-medium text-muted">Posisi Anda</h2>
                 <x-ui.button variant="secondary" size="sm" type="button" x-on:click="requestPosition()">
@@ -47,7 +47,7 @@
                 ->all()"
             :label="'Peta jalur '.$trip->trail->name.' dan posisi checkpoint'" />
 
-        <div class="rounded-lg bg-white p-4 shadow-sm">
+        <div class="rounded-lg bg-white p-4">
             <h2 class="text-sm font-medium text-muted">Daftar checkpoint</h2>
             <ol class="mt-2 space-y-1 text-sm">
                 @foreach ($checkpoints as $checkpoint)

@@ -20,7 +20,7 @@
             </ol>
         </nav>
 
-        <form wire:submit="save" class="space-y-6 rounded-lg bg-white p-6 shadow-sm">
+        <form wire:submit="save" class="space-y-6 rounded-lg bg-white p-6">
             @if ($step === 1)
                 <fieldset class="space-y-4">
                     <legend class="text-base font-medium text-primary">Tingkat pengalaman</legend>
@@ -35,7 +35,7 @@
                     <div>
                         <x-input-label for="bio" value="Catatan singkat (opsional)" />
                         <textarea id="bio" wire:model="bio" rows="3"
-                            class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
+                            class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                         <x-input-error :messages="$errors->get('bio')" class="mt-2" />
                     </div>
                 </fieldset>

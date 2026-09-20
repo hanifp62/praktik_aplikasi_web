@@ -4,7 +4,7 @@
             title="Laporan Kondisi Jalur"
             description="Laporan Anda menjadi informasi tambahan bagi pendaki berikutnya. Laporan komunitas tidak mengubah status resmi jalur." />
 
-        <form wire:submit="save" class="space-y-5 rounded-lg bg-white p-6 shadow-sm">
+        <form wire:submit="save" class="space-y-5 rounded-lg bg-white p-6">
             <x-form.select name="trail_id" label="Jalur" required placeholder="Pilih jalur" live
                 :options="$trails->mapWithKeys(fn ($trail) => [$trail->id => $trail->name.' - '.$trail->mountain->name])->all()" />
 
@@ -22,7 +22,7 @@
             <div>
                 <x-input-label for="note" value="Catatan (opsional)" />
                 <textarea id="note" wire:model="note" rows="3"
-                    class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
+                    class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                 <x-input-error :messages="$errors->get('note')" class="mt-2" />
             </div>
 

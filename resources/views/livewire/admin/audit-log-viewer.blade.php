@@ -11,7 +11,7 @@
                 placeholder="trail.published" />
         </div>
 
-        <div class="overflow-x-auto rounded-lg bg-white shadow-sm">
+        <div class="overflow-x-auto rounded-lg bg-white">
             <table class="min-w-full text-sm">
                 <caption class="sr-only">Daftar audit log</caption>
                 <thead>

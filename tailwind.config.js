@@ -97,6 +97,18 @@ export default {
                 },
             },
 
+
+            /*
+             * Satu elevasi, untuk lapisan yang benar-benar melayang di atas halaman.
+             *
+             * Tailwind menyediakan lima tingkat dan setiap pemakaian memilih sendiri;
+             * hasilnya tiga tingkat berbeda untuk tiga lapisan yang perannya sama.
+             * Bayangannya berwarna netral hangat, bukan hitam murni: bayangan hitam di
+             * atas kanvas hangat terbaca kelabu dan bukan seperti bayangan.
+             */
+            boxShadow: {
+                overlay: '0 12px 32px -8px rgb(28 25 23 / 0.18)',
+            },
             borderRadius: {
                 control: 'var(--radius-control)',
             },

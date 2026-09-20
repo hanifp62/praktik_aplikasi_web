@@ -10,7 +10,7 @@
                 <x-ui.button variant="secondary" href="{{ route('trails.index') }}">Jelajahi jalur</x-ui.button>
             </x-ui.card>
         @else
-            <div class="overflow-x-auto rounded-lg bg-white shadow-sm">
+            <div class="overflow-x-auto rounded-lg bg-white">
                 <table class="min-w-full text-sm">
                     <caption class="sr-only">Perbandingan karakteristik jalur</caption>
                     <thead>

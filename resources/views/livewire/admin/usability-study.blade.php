@@ -121,7 +121,7 @@
                                 <div>
                                     <label for="outcome-{{ $kode }}" class="block text-xs font-medium text-secondary">Hasil</label>
                                     <select id="outcome-{{ $kode }}" wire:model="tasks.{{ $kode }}.outcome"
-                                        class="mt-1 block w-full rounded-control border-control text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600">
+                                        class="mt-1 block w-full rounded-control border-control text-sm focus:border-brand-600 focus:ring-brand-600">
                                         <option value="">Tidak dijalankan</option>
                                         @foreach ($hasilTugas as $hasil)
                                             <option value="{{ $hasil->value }}">{{ $hasil->label() }}</option>
@@ -132,12 +132,12 @@
                                     <label for="seconds-{{ $kode }}" class="block text-xs font-medium text-secondary">Waktu (detik)</label>
                                     <input id="seconds-{{ $kode }}" type="number" min="0"
                                         wire:model="tasks.{{ $kode }}.seconds"
-                                        class="mt-1 block w-full rounded-control border-control text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600">
+                                        class="mt-1 block w-full rounded-control border-control text-sm focus:border-brand-600 focus:ring-brand-600">
                                 </div>
                                 <div>
                                     <label for="note-{{ $kode }}" class="block text-xs font-medium text-secondary">Kutipan atau masalah</label>
                                     <input id="note-{{ $kode }}" type="text" wire:model="tasks.{{ $kode }}.note"
-                                        class="mt-1 block w-full rounded-control border-control text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600">
+                                        class="mt-1 block w-full rounded-control border-control text-sm focus:border-brand-600 focus:ring-brand-600">
                                 </div>
                             </div>
                         </div>
@@ -155,7 +155,7 @@
                         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-subtle pb-2">
                             <label for="sus-{{ $nomor }}" class="text-sm text-primary">{{ $nomor }}. {{ $pernyataan }}</label>
                             <select id="sus-{{ $nomor }}" wire:model="sus.{{ $nomor }}"
-                                class="rounded-control border-control text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600">
+                                class="rounded-control border-control text-sm focus:border-brand-600 focus:ring-brand-600">
                                 <option value="">-</option>
                                 @foreach (range(1, 5) as $nilai)
                                     <option value="{{ $nilai }}">{{ $nilai }}</option>
@@ -168,7 +168,7 @@
                 <div>
                     <x-input-label for="notes" value="Catatan sesi (opsional)" />
                     <textarea id="notes" wire:model="notes" rows="3"
-                        class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
+                        class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                     <x-input-error :messages="$errors->get('notes')" class="mt-2" />
                 </div>
 

@@ -50,7 +50,7 @@
                     <x-input-label for="saringan" value="Saring berdasarkan nama" />
                     <input id="saringan" type="text" wire:model.live.debounce.300ms="saringan"
                         placeholder="misalnya: Kledung"
-                        class="mt-1 block w-full max-w-sm rounded-md border-control text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600">
+                        class="mt-1 block w-full max-w-sm rounded-md border-control text-sm focus:border-brand-600 focus:ring-brand-600">
 
                     <p class="mt-2 text-xs text-secondary">
                         {{ number_format(count($kandidat), 0, ',', '.') }} jalur kaki terpetakan di sekitar

@@ -4,7 +4,7 @@
             title="Buat Rencana Trip"
             description="Rencana trip menghubungkan jalur yang Anda pilih dengan daftar persiapan dan pemeriksaan kondisi." />
 
-        <form wire:submit="save" class="space-y-5 rounded-lg bg-white p-6 shadow-sm">
+        <form wire:submit="save" class="space-y-5 rounded-lg bg-white p-6">
             <x-form.select name="trail_id" label="Jalur" required placeholder="Pilih jalur"
                 :options="$trails->mapWithKeys(fn ($trail) => [$trail->id => $trail->name.' - '.$trail->mountain->name])->all()" />
 
@@ -21,7 +21,7 @@
             <div>
                 <x-input-label for="notes" value="Catatan (opsional)" />
                 <textarea id="notes" wire:model="notes" rows="3"
-                    class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
+                    class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                 <x-input-error :messages="$errors->get('notes')" class="mt-2" />
             </div>
 

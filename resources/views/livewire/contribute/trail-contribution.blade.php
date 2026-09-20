@@ -67,7 +67,7 @@
                     <div>
                         <x-input-label for="description" value="Deskripsi jalur" />
                         <textarea id="description" wire:model="description" rows="3"
-                            class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
+                            class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                         <x-input-error :messages="$errors->get('description')" class="mt-2" />
                     </div>
 
@@ -80,7 +80,7 @@
                         <x-input-label for="catatan_sumber" value="Dari mana data ini Anda ketahui" />
                         <textarea id="catatan_sumber" wire:model="catatan_sumber" rows="2"
                             placeholder="Misalnya: hasil pengukuran sendiri Agustus 2026, atau data resmi basecamp Cemoro Sewu."
-                            class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
+                            class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600"></textarea>
                         <x-input-error :messages="$errors->get('catatan_sumber')" class="mt-2" />
                         <p class="mt-1 text-xs text-secondary">
                             Tersimpan bersama data dan terbaca admin saat meninjau.

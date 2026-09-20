@@ -78,23 +78,28 @@
          * lapisan ini ada, view memakai empat abu Tailwind bergantian untuk peran yang
          * sama, dan tidak ada aturan mana berarti apa.
          *
-         * Nilai awalnya sengaja identik dengan abu yang digantikan, sehingga penambahan
-         * ini tidak mengubah satu piksel pun. Rupa baru berubah setelah seluruh view
-         * memakainya.
+         * Netral hangat, bukan abu Tailwind yang bersemu biru. Kanvas editorial bernuansa
+         * hangat, dan permukaan hangat dengan teks dingin adalah ciri tema yang ditempel
+         * di atas default.
          *
-         *   text-primary   di atas canvas   16.97:1
-         *   text-secondary di atas canvas    9.86:1
-         *   text-muted     di atas canvas    4.63:1   margin 0.13 dari ambang
+         * Rasio di bawah dihitung terhadap tiga permukaan, bukan terhadap putih saja.
+         * Nilai muted yang dirancang spec berhenti di 4.40:1 ketika label duduk di atas
+         * sumur — gagal AA di permukaan yang tidak ikut dihitung — jadi ia digelapkan
+         * satu tingkat. ColourContrastTest yang menguncinya.
+         *
+         *   text-primary   di atas canvas   16.73:1   sumur 16.02:1
+         *   text-secondary di atas canvas    9.83:1   sumur  9.41:1
+         *   text-muted     di atas canvas    5.11:1   sumur  4.89:1
          */
-        --text-primary: 17 24 39;
-        --text-secondary: 55 65 81;
-        --text-muted: 107 114 128;
+        --text-primary: 28 25 23;
+        --text-secondary: 68 64 60;
+        --text-muted: 112 106 100;
 
-        --canvas: 243 244 246;
+        --canvas: 250 250 248;
         --surface: 255 255 255;
-        --surface-sunken: 249 250 251;
+        --surface-sunken: 245 245 243;
 
-        --border-subtle: 229 231 235;
+        --border-subtle: 233 232 228;
     }
 
     /*
