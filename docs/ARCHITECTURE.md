@@ -95,6 +95,12 @@ Dicatat terbuka supaya tidak terlupakan:
 - **Kurasi data lapangan.** Per 20 September 2026: 7 jalur, semuanya tayang, **0 punya geometri**; 34 checkpoint, **0 punya koordinat**; 7 status resmi tercatat, semuanya `UNKNOWN`. Artinya peta tidak dapat menggambar jalur, mode pendakian tidak dapat mengenali checkpoint terdekat, dan ketujuh jalur yang tayang tidak lolos gerbang §110. Koordinat gunung sungguhan tidak boleh dikarang: angka yang salah pada fitur navigasi lapangan lebih berbahaya daripada tidak ada angka. Ini pekerjaan kurator, bukan pekerjaan kode.
 - **Pengambilan sumber resmi otomatis.** §98 menyebutnya pekerjaan background. Belum ada, dan memang belum ada API resmi yang dapat dipanggil; status tetap dicatat manual oleh kurator. Pemeriksaan data basi sendiri sudah ada (`data:freshness-check` dan panel "Perlu ditinjau"), sehingga status yang kedaluwarsa tidak lagi mundur ke `UNKNOWN` tanpa suara.
 
+## Jalur kegagalan
+
+Halaman galat ada di `resources/views/errors/`, berbahasa Indonesia, dan **tidak menyentuh basis data, sesi, maupun Livewire**: ia dirender justru ketika sesuatu sedang rusak. Font dari luar juga tidak dimuat, karena kalau jaringannya yang bermasalah, menunggunya hanya menunda pengguna membaca apa yang terjadi. Halaman 500 dan 503 mengarahkan pendaki yang sedang bersiap berangkat untuk memastikan status jalur langsung ke pengelola, bukan menunggu aplikasi pulih.
+
+**Menghapus jalur akan ikut menghapus laporan komunitasnya.** Seluruh foreign key ke `trails` memakai `CASCADE`. Saat ini tidak ada cara menghapus jalur dari antarmuka, hanya mengarsipkan, jadi risikonya belum terjangkau. Kalau suatu saat fitur hapus jalur ditambahkan, intel lapangan ikut hilang, dan itu bertentangan dengan keputusan pada penghapusan akun yang justru mempertahankan laporan tanpa nama pemiliknya.
+
 ## Catatan operasional
 
 **PHP di Windows butuh CA bundle.** Tanpa `curl.cainfo` dan `openssl.cafile` di `php.ini`, setiap panggilan HTTPS dari PHP gagal dengan cURL error 60, termasuk pengambilan prakiraan BMKG. `curl.exe` tetap berhasil karena membawa bundle sendiri, sehingga gejalanya mudah salah dibaca sebagai masalah API. Arahkan keduanya ke sebuah `ca-bundle.crt`; Git for Windows sudah menyertakan satu.
