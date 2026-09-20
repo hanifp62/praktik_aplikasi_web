@@ -97,26 +97,44 @@
                             <x-ui.fit-badge :label="$result->label" />
                         </div>
 
+                        {{--
+                            Angkanya diambil dari snapshot, yaitu jalur sebagaimana dipakai
+                            menilai, bukan dari tabel jalur sekarang. Menampilkan angka
+                            terkini di sebelah label historis membuat pendaki menyimpulkan
+                            label itu dihitung dari angka yang sedang ia baca.
+                        --}}
+                        @php($angka = $result->trailFigures())
                         <dl class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                             <div>
                                 <dt class="text-gray-500">Jarak</dt>
-                                <dd class="font-medium text-gray-900">{{ $result->trail->distance_km ?? '-' }} km</dd>
+                                <dd class="font-medium text-gray-900">{{ $angka['distance_km'] ?? '-' }} km</dd>
                             </div>
                             <div>
                                 <dt class="text-gray-500">Elevation gain</dt>
-                                <dd class="font-medium text-gray-900">{{ $result->trail->elevation_gain_m ?? '-' }} m</dd>
+                                <dd class="font-medium text-gray-900">{{ $angka['elevation_gain_m'] ?? '-' }} m</dd>
                             </div>
                             <div>
                                 <dt class="text-gray-500">Estimasi durasi</dt>
                                 <dd class="font-medium text-gray-900">
-                                    {{ $result->trail->estimated_duration_minutes ? round($result->trail->estimated_duration_minutes / 60, 1).' jam' : '-' }}
+                                    {{ $angka['estimated_duration_minutes'] ? round($angka['estimated_duration_minutes'] / 60, 1).' jam' : '-' }}
                                 </dd>
                             </div>
                             <div>
                                 <dt class="text-gray-500">Tingkat teknis</dt>
-                                <dd class="font-medium text-gray-900">{{ $result->trail->technical_demand->label() }}</dd>
+                                <dd class="font-medium text-gray-900">
+                                    {{ $angka['technical_demand']
+                                        ? \App\Enums\TechnicalDemand::from($angka['technical_demand'])->label()
+                                        : '-' }}
+                                </dd>
                             </div>
                         </dl>
+
+                        @if ($result->trailHasChangedSinceRun())
+                            <p class="mt-3 rounded-md border border-warn-300 bg-warn-50 px-3 py-2 text-sm text-warn-900">
+                                Data jalur ini berubah setelah penilaian dibuat. Angka di atas adalah
+                                yang dipakai menilai; buka halaman jalur untuk keterangan terkini.
+                            </p>
+                        @endif
 
                         @if ($result->warnings)
                             <ul class="mt-3 space-y-1 text-sm text-warn-900">

@@ -333,6 +333,7 @@ class RouteFitService
                 $rows[] = [
                     'recommendation_run_id' => $run->id,
                     'trail_id' => $result->trail->id,
+                    'trail_snapshot' => json_encode(RecommendationResult::snapshotOf($result->trail)),
                     'eligible' => $result->eligible,
                     'label' => $result->label?->value,
                     'internal_score' => $result->internalScore,
