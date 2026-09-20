@@ -57,7 +57,15 @@ class OfficialStatusManager extends Component
     {
         return [
             'scope' => ['required', new Enum(StatusScope::class)],
-            'statusable_id' => ['required', 'integer'],
+            // Terikat pada tabel yang ditunjuk scope, bukan sekadar bilangan bulat.
+            // Tanpa ini satu-satunya pemeriksa keberadaannya adalah findOrFail di
+            // save(), yang membalas salah ketik satu angka dengan halaman 404 dan
+            // membuang seluruh isian form (WCAG 3.3.1).
+            'statusable_id' => [
+                'required',
+                'integer',
+                Rule::exists(app($this->modelClassForScope())->getTable(), 'id'),
+            ],
             'status' => ['required', new Enum(OfficialStatusValue::class)],
             'data_source_id' => ['nullable', Rule::exists('data_sources', 'id')],
             'source' => ['nullable', 'string', 'max:160'],
@@ -75,7 +83,10 @@ class OfficialStatusManager extends Component
      */
     private function modelClassForScope(): string
     {
-        return match (StatusScope::from($this->scope)) {
+        // tryFrom, bukan from: rules() memanggil ini sebelum scope sendiri tervalidasi,
+        // dan scope yang tidak dikenal harus dilaporkan sebagai galat isian, bukan
+        // meledak sebagai ValueError.
+        return match (StatusScope::tryFrom((string) $this->scope)) {
             StatusScope::MOUNTAIN => Mountain::class,
             StatusScope::SEGMENT => TrailSegment::class,
             default => Trail::class,
