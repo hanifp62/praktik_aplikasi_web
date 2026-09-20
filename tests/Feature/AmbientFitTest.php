@@ -169,6 +169,44 @@ class AmbientFitTest extends TestCase
     }
 
     /**
+     * Item D tinjauan akhir: jalur yang sama bisa terbaca "Cocok" di baris daftar
+     * (yang menilai tanpa goal) dan "Perlu persiapan" di halaman detailnya (yang menilai
+     * dengan rencana terbaru pengguna kalau ada), dan sebelum diperbaiki tidak ada
+     * penanda di mana pun yang menyebut sebabnya -- terlihat seperti dua mesin yang tidak
+     * sepakat, padahal dua pertanyaan yang berbeda. Pengguna di sini sengaja tidak punya
+     * hiking goal, jadi halaman detail juga menilai tanpa goal dan wajib mengaku begitu
+     * dengan kalimat yang sama seperti baris daftar.
+     */
+    public function test_the_trail_detail_page_states_it_is_showing_the_ambient_fit_without_a_goal(): void
+    {
+        $trail = $this->jalurTerbit();
+
+        $halaman = $this->actingAs($this->pendakiDenganProfil())->get(route('trails.show', $trail));
+
+        $halaman->assertOk();
+        $halaman->assertSee('Kecocokan dasar');
+    }
+
+    /**
+     * Item D, sisi lainnya: pengguna yang punya hiking goal melihat halaman detail
+     * menilai DENGAN rencananya, dan halaman itu wajib menyebutnya -- kalimat yang sama
+     * persis dengan yang dipakai halaman trip ("untuk rencana ini") supaya pembaca yang
+     * pernah melihatnya di sana mengenalinya di sini.
+     */
+    public function test_the_trail_detail_page_states_it_is_showing_the_plan_aware_fit_with_a_goal(): void
+    {
+        $user = $this->pendakiDenganProfil();
+        $trail = $this->jalurTerbit();
+        HikingGoal::factory()->for($user)->create();
+
+        $halaman = $this->actingAs($user)->get(route('trails.show', $trail));
+
+        $halaman->assertOk();
+        $halaman->assertSee('untuk rencana ini');
+        $halaman->assertDontSee('Kecocokan dasar');
+    }
+
+    /**
      * Halaman trip menampilkan kecocokan yang tajam, bukan yang dasar.
      *
      * Trip selalu punya goal (relasi hiking_goal_id), jadi variannya wajib
@@ -216,6 +254,27 @@ class AmbientFitTest extends TestCase
         $halaman->assertOk();
         $halaman->assertSee('data-fit-reason', escape: false);
         $halaman->assertSee('Kecocokan dasar');
+    }
+
+    /**
+     * Item G tinjauan akhir: <x-ui.fit-line> tidak memakai $attributes->merge(), jadi
+     * class="mb-6" yang dipasang trip-show.blade.php di sekelilingnya dibuang diam-diam
+     * -- ruang antara ringkasan kecocokan dan kartu di bawahnya hilang tanpa siapa pun
+     * memberi tahu.
+     */
+    public function test_the_trip_pages_fit_line_keeps_its_wrapper_class(): void
+    {
+        $user = $this->pendakiDenganProfil();
+        $trail = $this->jalurTerbit();
+        $trip = TripPlan::factory()->for($user)->create(['trail_id' => $trail->id]);
+
+        $isi = $this->actingAs($user)->get(route('trips.show', $trip))->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/class="[^"]*\bmb-6\b[^"]*"[^>]*>\s*<span[^>]*data-fit-label/s',
+            $isi,
+            'class="mb-6" dari trip-show.blade.php dibuang oleh fit-line yang tidak memakai $attributes->merge().'
+        );
     }
 
     /**

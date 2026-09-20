@@ -1,6 +1,11 @@
 @php
+    // distance_km di-cast 'decimal:2', jadi nilai mentahnya string ("0.00"), dan
+    // (bool) "0.00" adalah true di PHP -- hanya "" dan "0" yang falsy. Truthiness mentah
+    // di sini berarti jalur berjarak nol tetap menulis "Jarak 0.00 km" di ringkasan
+    // publik, seolah itu ukuran sungguhan. Dicast ke float dulu, baru diuji, sama seperti
+    // pola yang dipakai trail-row.blade.php dan route-comparison.blade.php.
     $ringkas = $trail->name.' di '.$trail->mountain->name.', '.$trail->mountain->province.'. '
-        .($trail->distance_km ? 'Jarak '.$trail->distance_km.' km. ' : '')
+        .((float) $trail->distance_km ? 'Jarak '.$trail->distance_km.' km. ' : '')
         .($trail->elevation_gain_m ? 'Elevation gain '.number_format($trail->elevation_gain_m, 0, ',', '.').' m. ' : '')
         .'Karakteristik jalur, daftar pos, dan profil elevasi.';
 @endphp

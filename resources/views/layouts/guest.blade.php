@@ -37,7 +37,10 @@
 
         <main id="konten" tabindex="-1" class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-canvas">
             <div>
-                <a href="/" wire:navigate>
+                {{-- Logonya sendiri 80x80, jauh di atas 44px; min-h-11 dinyatakan di sini
+                     supaya penjaga target sentuh membaca ukuran sungguhannya, bukan
+                     menyimpulkannya dari ukuran gambar di dalamnya. --}}
+                <a href="/" wire:navigate class="inline-flex min-h-11 items-center">
                     <x-application-logo class="w-20 h-20 fill-current text-muted" />
                 </a>
             </div>

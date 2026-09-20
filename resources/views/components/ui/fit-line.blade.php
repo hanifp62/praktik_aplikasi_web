@@ -10,7 +10,7 @@
 
     Label tidak pernah berdiri sendiri. Label tanpa alasan adalah vonis.
 --}}
-<div class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
+<div {{ $attributes->merge(['class' => 'mt-3 flex flex-wrap items-center gap-x-2 gap-y-1']) }}>
     <span data-fit-label class="shrink-0">
         <x-ui.fit-badge :label="$summary->label" />
     </span>

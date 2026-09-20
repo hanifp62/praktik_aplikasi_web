@@ -50,12 +50,22 @@ class TrailIndex extends Component
      */
     public function timbang(int $trailId, ConsiderationService $consideration): void
     {
-        $trail = Trail::active()->findOrFail($trailId);
+        // published(), bukan active() saja: halaman perbandingan memfilter published()
+        // (lihat RouteComparison), jadi jalur yang belum terbit tapi masih active() bisa
+        // masuk timbangan dari sini lalu lenyap tanpa kabar begitu pembaca membandingkan.
+        $trail = Trail::published()->findOrFail($trailId);
 
         $hasil = $consideration->toggle(auth()->user(), $trail);
 
         if ($hasil === ConsiderationOutcome::DITOLAK) {
-            session()->flash('timbangan-penuh', 'Timbangan sudah berisi '.ConsiderationService::BATAS.' jalur. Keluarkan satu dulu sebelum menambah.');
+            // label() dipakai di sini, bukan ditulis ulang: sebelumnya method ini punya
+            // kalimatnya sendiri sementara ConsiderationOutcome::label() tidak pernah
+            // dipanggil siapa pun -- dua kalimat untuk satu keadaan, tanpa jaminan tetap
+            // sinkron.
+            session()->flash(
+                'timbangan-penuh',
+                ConsiderationOutcome::DITOLAK->label().' ('.ConsiderationService::BATAS.' jalur). Keluarkan satu dulu sebelum menambah.'
+            );
         }
     }
 

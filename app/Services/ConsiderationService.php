@@ -49,10 +49,20 @@ class ConsiderationService
 
             // Yang keenam ditolak, bukan menggeser yang tertua keluar. Menggeser diam-diam
             // menghilangkan jalur yang sedang ditimbang tepat ketika ia sedang ditimbang.
-            // Dihitung langsung dari tabel penghubung -- bukan lewat forUser()->count(),
-            // yang harus memuat model Trail lengkap beserta relasi mountain-nya hanya
-            // untuk dibuang jadi sebuah integer.
-            if (TrailConsideration::where('user_id', $user->id)->count() >= self::BATAS) {
+            //
+            // Dihitung dengan whereHas ke jalur yang masih active(), bukan seluruh baris
+            // tabel penghubung mentah: jalur yang sudah diarsipkan tidak pernah lagi
+            // terlihat forUser() (lihat method itu), jadi menghitungnya di sini membuat
+            // batas dan tampilan tidak sepakat -- pendaki yang lima jalurnya berisi dua
+            // arsip melihat "3/5" tetapi tetap ditolak menambah yang keenam, timbangan
+            // yang macet permanen tanpa jalan keluar yang terlihat. whereHas dipilih atas
+            // forUser()->count() karena yang terakhir memuat model Trail lengkap beserta
+            // relasi mountain-nya hanya untuk dibuang jadi sebuah integer.
+            $jumlahAktif = TrailConsideration::where('user_id', $user->id)
+                ->whereHas('trail', fn ($query) => $query->active())
+                ->count();
+
+            if ($jumlahAktif >= self::BATAS) {
                 return ConsiderationOutcome::DITOLAK;
             }
 

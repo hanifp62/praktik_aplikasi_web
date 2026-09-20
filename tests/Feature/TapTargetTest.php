@@ -18,6 +18,22 @@ use Tests\TestCase;
  * bersembunyi: justru menu hamburger, yang merupakan kontrol paling sering disentuh di
  * telepon, dan tombol status daftar persiapan, yang komentarnya sendiri menyebutnya
  * "interaksi yang paling sering diulang".
+ *
+ * Sapuan ini juga hanya memeriksa <button>, sehingga seluruh <a> tidak terlihat --
+ * padahal responsive-nav-link dan dropdown-link, satu-satunya jalan ke empat dari lima
+ * permukaan menu di ponsel (§88, Tugas 7), adalah tautan, bukan tombol. Diperluas ke
+ * <a> yang memakai wire:navigate: atribut itu menandai tautan yang sungguh berpindah
+ * halaman di dalam aplikasi (kontrol navigasi), berbeda dari tautan konten biasa yang
+ * tidak diklaim standar 44px ini. Tautan prosa tetap dikecualikan lewat 'underline',
+ * persis seperti sebelumnya.
+ *
+ * wire:navigate pada komponen tautan yang dapat dipakai ulang (nav-link,
+ * responsive-nav-link, dropdown-link) tidak pernah tertulis di berkas komponennya
+ * sendiri -- ia diteruskan pemanggil lewat $attributes->merge(), jadi tidak terlihat
+ * dari baris manapun di berkas itu. Berkas yang tag <a>-nya sendiri memakai
+ * $attributes->merge() diperlakukan sebagai kontrol navigasi tanpa syarat wire:navigate:
+ * di seluruh resources/views/components, pola itu hanya dipakai oleh komponen tautan
+ * navigasi, tidak pernah oleh tautan konten sebaris.
  */
 class TapTargetTest extends TestCase
 {
@@ -26,8 +42,13 @@ class TapTargetTest extends TestCase
      *
      * Tombol yang tingginya datang dari padding anaknya berubah ukuran ketika anaknya
      * berubah, dan tidak ada yang memberi tahu.
+     *
+     * p-3/p-4 (padding empat sisi) ikut dihitung di samping py-3/py-4: pada elemen satu
+     * baris teks (~20px tinggi baris), p-4 menghasilkan sekitar 16+16+20=52px dan p-3
+     * sekitar 12+12+20=44px, keduanya menyentuh atau melewati standarnya lewat aritmetika
+     * yang sama dengan py-*, bukan angka baru.
      */
-    private const PENANDA = ['min-h-11', 'min-h-[44px]', 'py-3', 'py-4'];
+    private const PENANDA = ['min-h-11', 'min-h-[44px]', 'py-3', 'py-4', 'p-3', 'p-4'];
 
     public function test_every_standalone_button_can_be_hit_by_a_thumb(): void
     {
@@ -38,14 +59,33 @@ class TapTargetTest extends TestCase
             $baris = explode("\n", $isi);
 
             foreach ($baris as $nomor => $satu) {
-                if (! str_contains($satu, '<button')) {
+                $adalahTombol = str_contains($satu, '<button');
+                $adalahTautanNavigasi = preg_match('/<a[\s>]/', $satu) === 1;
+
+                if (! $adalahTombol && ! $adalahTautanNavigasi) {
                     continue;
                 }
+
+                $penutup = $adalahTombol ? '</button>' : '</a>';
 
                 // Atribut kelas kerap dipecah beberapa baris, dan @class([...]) menaruh
                 // kelasnya sampai selusin baris di bawah tag pembukanya.
                 $jendela = implode(' ', array_slice($baris, $nomor, 16));
-                $jendela = substr($jendela, 0, strpos($jendela, '</button>') ?: strlen($jendela));
+                $jendela = substr($jendela, 0, strpos($jendela, $penutup) ?: strlen($jendela));
+
+                // Komponen tautan yang dapat dipakai ulang meneruskan wire:navigate
+                // lewat $attributes->merge() milik pemanggil -- tidak pernah tertulis di
+                // berkas komponennya sendiri. Pola $attributes->merge() pada tag <a> di
+                // resources/views/components hanya dipakai komponen tautan navigasi,
+                // jadi diperlakukan sebagai kontrol navigasi tanpa syarat wire:navigate.
+                $adalahKomponenTautan = str_contains($jendela, '$attributes->merge');
+
+                // Tautan yang bukan kontrol navigasi (tidak berpindah halaman di dalam
+                // aplikasi lewat wire:navigate) di luar cakupan standar ini -- termasuk
+                // tautan eksternal, mailto, dan pemicu non-navigasi lainnya.
+                if ($adalahTautanNavigasi && ! $adalahKomponenTautan && ! str_contains($jendela, 'wire:navigate')) {
+                    continue;
+                }
 
                 // Kelas yang dihitung di blok @php di atas tagnya tidak terlihat dari
                 // jendela ini. Yang diperiksa lalu seluruh berkasnya, karena variabelnya

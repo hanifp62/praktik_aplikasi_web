@@ -181,4 +181,26 @@ class PublicTrailPageTest extends TestCase
         $halaman->assertSee('<title>Jalur Selo', escape: false);
         $halaman->assertSee('<meta name="description"', escape: false);
     }
+
+    /**
+     * Item G tinjauan akhir: distance_km di-cast 'decimal:2', jadi nilai mentahnya
+     * string ("0.00"), dan (bool) "0.00" bernilai true di PHP -- hanya "" dan "0" yang
+     * falsy. Ringkasan halaman publik sebelumnya menjaga dengan truthiness mentah,
+     * sehingga jalur berjarak nol menulis "Jarak 0.00 km" di meta description, seolah
+     * itu ukuran sungguhan, alih-alih menyembunyikannya sama seperti elevation gain nol.
+     */
+    public function test_the_summary_omits_zero_distance_instead_of_printing_it(): void
+    {
+        $gunung = Mountain::factory()->create(['name' => 'Merbabu', 'province' => 'Jawa Tengah']);
+        $trail = Trail::factory()->easy()->for($gunung)->create([
+            'name' => 'Jalur Selo',
+            'is_published' => true,
+            'distance_km' => 0,
+        ]);
+
+        $halaman = $this->get(route('public.trail', $trail));
+
+        $halaman->assertDontSee('Jarak 0');
+        $halaman->assertDontSee('Jarak 0,00', escape: false);
+    }
 }

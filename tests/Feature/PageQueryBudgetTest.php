@@ -116,6 +116,45 @@ class PageQueryBudgetTest extends TestCase
         $this->assertSame($sedikit, $banyak, "Beban tumbuh: {$sedikit} lalu {$banyak}.");
     }
 
+    /**
+     * Halaman perbandingan memanggil TrailFitService::forTrails() (yang membatch status
+     * resmi secara internal) DAN, sebelum diperbaiki, menghitung ulang status resmi yang
+     * sama per jalur lewat effectiveStatusForTrail() di dalam loop -- pekerjaan berulang
+     * yang tumbuh linear terhadap jumlah jalur, sekitar sepuluh query tambahan pada batas
+     * lima jalur. Anggaran ini menjaga supaya beban tidak tumbuh lagi seiring jalur
+     * bertambah, bukan angka mutlaknya.
+     */
+    public function test_the_route_comparison_page_does_not_grow_with_the_number_of_trails(): void
+    {
+        $user = $this->pendakiBerprofil();
+        $trails = $this->seedTrails(5);
+
+        $this->actingAs($user);
+        $duaJalur = $trails->take(2)->pluck('id')->implode(',');
+        $this->get('/trails/compare?trails='.$duaJalur)->assertOk();
+        $sedikit = $this->countQueries('/trails/compare?trails='.$duaJalur);
+
+        $limaJalur = $trails->pluck('id')->implode(',');
+        $banyak = $this->countQueries('/trails/compare?trails='.$limaJalur);
+
+        $this->assertSame(
+            $sedikit,
+            $banyak,
+            "Beban tumbuh: {$sedikit} query untuk 2 jalur, {$banyak} untuk 5 jalur."
+        );
+    }
+
+    private function pendakiBerprofil(): User
+    {
+        $user = User::factory()->create();
+        $user->profile()->create([
+            'experience_level' => ExperienceLevel::INTERMEDIATE->value,
+            'completed_at' => now(),
+        ]);
+
+        return $user;
+    }
+
     private function trip(): TripPlan
     {
         $this->seed(PreparationTemplateSeeder::class);

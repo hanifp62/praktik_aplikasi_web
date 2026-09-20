@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Enums\ConsiderationOutcome;
+use App\Livewire\Trails\TrailIndex;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\TrailConsideration;
 use App\Models\User;
 use App\Services\ConsiderationService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -144,5 +147,80 @@ class ConsiderationTest extends TestCase
         $trail->update(['archived_at' => now()]);
 
         $this->assertCount(0, $service->forUser($user));
+    }
+
+    /**
+     * Batas dan tampilan harus sepakat.
+     *
+     * Sebelum diperbaiki, batas dihitung dari seluruh baris trail_considerations
+     * termasuk yang jalurnya sudah diarsipkan, sementara forUser() menyembunyikan jalur
+     * arsip itu. Pendaki dengan lima baris tersimpan tetapi dua di antaranya arsip
+     * melihat "3/5" di baki -- karena forUser() hanya menampilkan tiga -- tetapi
+     * ditolak menambah jalur keempat: timbangan macet permanen tanpa jalan keluar yang
+     * terlihat, karena dua jalur yang mengunci sisa kuota tidak tampak di permukaan
+     * mana pun.
+     */
+    public function test_the_cap_reflects_what_the_hiker_can_actually_see(): void
+    {
+        $user = User::factory()->create();
+        $service = app(ConsiderationService::class);
+
+        $tigaAktif = collect(range(1, 3))->map(fn () => $this->jalur());
+        $duaArsip = collect(range(1, 2))->map(fn () => $this->jalur());
+
+        $tigaAktif->each(fn (Trail $t) => $service->toggle($user, $t));
+        $duaArsip->each(function (Trail $t) use ($user, $service) {
+            $service->toggle($user, $t);
+            $t->update(['archived_at' => now()]);
+        });
+
+        // Lima baris tersimpan, tetapi hanya tiga yang terlihat.
+        $this->assertCount(3, $service->forUser($user));
+
+        // Kuotanya masih tersisa dua, mengikuti yang terlihat, bukan tertutup oleh arsip.
+        $keempat = $this->jalur();
+        $kelima = $this->jalur();
+
+        $this->assertSame(ConsiderationOutcome::DITAMBAHKAN, $service->toggle($user, $keempat));
+        $this->assertSame(ConsiderationOutcome::DITAMBAHKAN, $service->toggle($user, $kelima));
+
+        $keenam = $this->jalur();
+        $this->assertSame(ConsiderationOutcome::DITOLAK, $service->toggle($user, $keenam));
+    }
+
+    /**
+     * Item G tinjauan akhir: timbang() sebelumnya resolve dengan active() saja, bukan
+     * published(). Halaman perbandingan memfilter published() (lihat RouteComparison),
+     * jadi jalur yang belum terbit bisa masuk timbangan dari sini lalu lenyap tanpa kabar
+     * begitu pembaca membuka halaman Pertimbangkan.
+     */
+    public function test_timbang_refuses_an_unpublished_trail(): void
+    {
+        $user = User::factory()->create();
+        $draft = Trail::factory()->for(Mountain::factory()->create())->unpublished()->create();
+
+        $this->expectException(ModelNotFoundException::class);
+
+        Livewire::actingAs($user)->test(TrailIndex::class)->call('timbang', $draft->id);
+    }
+
+    /**
+     * Item G tinjauan akhir: ConsiderationOutcome::label() tidak pernah dipanggil siapa
+     * pun, sementara TrailIndex::timbang() menulis kalimat penolakannya sendiri --
+     * dua kalimat untuk satu keadaan, tanpa jaminan tetap sinkron.
+     */
+    public function test_the_full_shortlist_flash_uses_the_outcome_label(): void
+    {
+        $user = User::factory()->create();
+        $service = app(ConsiderationService::class);
+
+        collect(range(1, 5))->each(fn () => $service->toggle($user, $this->jalur()));
+
+        $keenam = $this->jalur();
+
+        Livewire::actingAs($user)
+            ->test(TrailIndex::class)
+            ->call('timbang', $keenam->id)
+            ->assertSee(ConsiderationOutcome::DITOLAK->label().' (5 jalur). Keluarkan satu dulu sebelum menambah.');
     }
 }

@@ -23,7 +23,11 @@ new class extends Component
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" wire:navigate>
+                    {{-- Logonya sendiri hanya h-9 (36px): tanpa min-h-11 di tautannya,
+                         target sentuhnya di bawah standar 44px milik proyek ini, dan ini
+                         satu-satunya jalan pulang ke dasbor yang tampil di setiap halaman,
+                         termasuk di ponsel. --}}
+                    <a href="{{ route('dashboard') }}" wire:navigate class="flex min-h-11 items-center">
                         <x-application-logo class="block h-9 w-auto fill-current text-primary" />
                     </a>
                 </div>
@@ -37,7 +41,10 @@ new class extends Component
                     pindah ke dropdown profil.
                 --}}
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*') || request()->routeIs('goals.*')" wire:navigate>
+                    {{-- trails.compare dikecualikan: routeIs('trails.*') juga mencakupnya,
+                         padahal ia sudah punya tab sendiri (Pertimbangkan) di bawah. Tanpa
+                         pengecualian ini, kedua tab menyala bersamaan di halaman itu. --}}
+                    <x-nav-link :href="route('trails.index')" :active="(request()->routeIs('trails.*') && ! request()->routeIs('trails.compare')) || request()->routeIs('goals.*')" wire:navigate>
                         Jelajah
                     </x-nav-link>
                     <x-nav-link :href="route('trails.compare')" :active="request()->routeIs('trails.compare')" wire:navigate>
@@ -117,7 +124,9 @@ new class extends Component
             aplikasi tidak terjangkau justru di tempat ia paling sering dipakai.
         --}}
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*') || request()->routeIs('goals.*')" wire:navigate>
+            {{-- trails.compare dikecualikan, sama seperti menu desktop di atas: ia sudah
+                 punya tab sendiri (Pertimbangkan) tepat di bawah ini. --}}
+            <x-responsive-nav-link :href="route('trails.index')" :active="(request()->routeIs('trails.*') && ! request()->routeIs('trails.compare')) || request()->routeIs('goals.*')" wire:navigate>
                 Jelajah
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('trails.compare')" :active="request()->routeIs('trails.compare')" wire:navigate>

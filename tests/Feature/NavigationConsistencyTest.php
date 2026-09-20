@@ -61,6 +61,27 @@ class NavigationConsistencyTest extends TestCase
         );
     }
 
+    /**
+     * Item G tinjauan akhir: Jelajah dijaga routeIs('trails.*'), yang juga mencocokkan
+     * trails.compare -- jadi di halaman Pertimbangkan, KEDUA tab menyala bersamaan, dan
+     * pembaca tidak tahu tab mana yang sesungguhnya sedang ia buka.
+     */
+    public function test_jelajah_is_not_active_on_the_compare_page(): void
+    {
+        $isi = $this->actingAs(User::factory()->create())
+            ->get(route('trails.compare'))
+            ->getContent();
+
+        preg_match('/<a class="([^"]*)"[^>]*>\s*Jelajah/s', $isi, $jelajah);
+        preg_match('/<a class="([^"]*)"[^>]*>\s*Pertimbangkan/s', $isi, $pertimbangkan);
+
+        $this->assertNotEmpty($jelajah, 'Tautan Jelajah tidak ditemukan di halaman perbandingan.');
+        $this->assertNotEmpty($pertimbangkan, 'Tautan Pertimbangkan tidak ditemukan di halaman perbandingan.');
+
+        $this->assertStringNotContainsString('border-brand-600', $jelajah[1], 'Jelajah ikut menyala padahal pembaca sedang di halaman Pertimbangkan.');
+        $this->assertStringContainsString('border-brand-600', $pertimbangkan[1], 'Pertimbangkan seharusnya menyala di halamannya sendiri.');
+    }
+
     public function test_a_hiker_never_sees_the_admin_entry(): void
     {
         $this->actingAs(User::factory()->create())
@@ -76,6 +97,12 @@ class NavigationConsistencyTest extends TestCase
      * satu loop delapan tahap. AllTrails memakai lima tab, Strava lima, Traveloka empat,
      * dan semuanya campuran satu permukaan temuan, satu milik-saya, satu tindakan, satu
      * identitas. Sembilan kata benda adalah struktur basis data yang bocor ke menu.
+     *
+     * Sebelum diperbaiki, test ini tidak pernah menghitung apa pun: assertStringContainsString
+     * lolos meski ada tautan keenam yang menyelip, dan test_the_order_follows_the_product_flow
+     * di atas juga tidak menangkapnya karena ia hanya menegaskan lima elemen PERTAMA lewat
+     * array_slice, bukan jumlah totalnya. "Lima permukaan" wajib berarti TEPAT lima, bukan
+     * "lima ini ada, mungkin ditemani yang lain".
      */
     public function test_the_main_menu_is_five_surfaces_not_nine_nouns(): void
     {
@@ -90,5 +117,17 @@ class NavigationConsistencyTest extends TestCase
         foreach (['Jelajah', 'Pertimbangkan', 'Perjalanan', 'Progres', 'Kabar'] as $permukaan) {
             $this->assertStringContainsString($permukaan, $isi, "Permukaan {$permukaan} hilang dari menu.");
         }
+
+        preg_match_all("/<x-nav-link :href=\"route\('([a-z.]+)'\)/", $isi, $desktop);
+        preg_match_all("/<x-responsive-nav-link :href=\"route\('([a-z.]+)'\)/", $isi, $ponsel);
+
+        $this->assertCount(5, $desktop[1], 'Menu desktop wajib berisi tepat lima permukaan, bukan lebih atau kurang.');
+
+        // Menu ponsel membawa satu entri tambahan sesudah lima permukaan utama (profil,
+        // lihat test_both_menus_... di atas). Posisi "profile" wajib tepat di indeks ke-5:
+        // kalau bukan, ada permukaan keenam yang menyelip di antara lima utama dan profil.
+        $posisiProfil = array_search('profile', $ponsel[1], true);
+        $this->assertNotFalse($posisiProfil, 'Profil harus terjangkau dari menu ponsel.');
+        $this->assertSame(5, $posisiProfil, 'Menu ponsel wajib berisi tepat lima permukaan utama sebelum Profil.');
     }
 }

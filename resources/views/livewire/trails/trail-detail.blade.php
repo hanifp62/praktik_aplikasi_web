@@ -12,6 +12,18 @@
                 </div>
 
                 {{--
+                    Baris daftar menilai tanpa goal dan berlabel "Kecocokan dasar" (lihat
+                    x-ui.fit-line); halaman ini menilai dengan rencana terbaru kalau ada.
+                    Jalur yang sama bisa terbaca berbeda di dua tempat, dan tanpa penanda
+                    ini perbedaannya terlihat seperti dua mesin yang tidak sepakat alih-alih
+                    dua pertanyaan yang berbeda. Kalimatnya sama persis dengan fit-line
+                    supaya pembaca yang pindah dari daftar mengenalinya.
+                --}}
+                <p class="mt-1 text-xs text-muted">
+                    {{ $denganRencana ? 'untuk rencana ini' : 'Kecocokan dasar' }}
+                </p>
+
+                {{--
                     Lapisan "Mengapa" pada §89, yang selama ini hanya ada di hasil
                     rekomendasi. Label tanpa penjelasan adalah vonis, dan §90 menuntut
                     pembacanya memahami sebabnya tanpa membuka dokumentasi teknis.

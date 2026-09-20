@@ -117,8 +117,18 @@ class TrailDetail extends Component
         }
 
         $user = auth()->user();
+        // Disimpan, bukan dipanggil dua kali: dipakai lagi di bawah untuk memberi tahu
+        // pembaca jenis penilaian mana yang sedang ia lihat (lihat komentar $fit).
+        $goal = $user?->hasCompletedProfile() ? $user->hikingGoals()->latest()->first() : null;
+
+        // Berbeda dari baris daftar (yang menilai tanpa goal dan berlabel "Kecocokan
+        // dasar"), halaman ini menilai dengan rencana terbaru pengguna kalau ada. Jalur
+        // yang sama bisa jadi terbaca "Cocok" di daftar tetapi "Perlu persiapan" di sini,
+        // dan tanpa penanda apa pun itu terlihat seperti dua mesin yang tidak sepakat.
+        // 'denganRencana' di bawah memberi tahu pembaca jenis penilaian mana yang sedang
+        // ia lihat -- kalimat yang sama persis dipakai <x-ui.fit-line> di baris daftar.
         $fit = $user?->hasCompletedProfile()
-            ? $routeFit->evaluate($user, $user->hikingGoals()->latest()->first(), $this->trail)
+            ? $routeFit->evaluate($user, $goal, $this->trail)
             : null;
 
         $kondisi = $conditions->forTrail($this->trail);
@@ -131,6 +141,7 @@ class TrailDetail extends Component
         return view('livewire.trails.trail-detail', [
             'conditions' => $kondisi,
             'fit' => $fit,
+            'denganRencana' => $goal !== null,
             'tangga' => $tangga,
             'geometry' => $this->trail->readGeoJson('geometry'),
             'permit' => app(PermitService::class)->requirementFor($this->trail),

@@ -92,37 +92,79 @@ class TimestampZoneTest extends TestCase
     /**
      * Sapuan lain: now(), today(), atau Carbon::now() mentah membaca "hari ini"
      * menurut zona aplikasi (UTC, config/app.php), dan tidak ada pengguna yang hidup
-     * di UTC. Dipakai langsung berdampingan dengan diffInDays()/whereDate() pada
-     * kolom tanggal, ia salah selama tujuh sampai sembilan jam setiap hari (lihat
-     * docblock App\Support\Timezone).
+     * di UTC. Dipakai untuk aritmetika hari lewat diffInDays()/whereDate(), ia salah
+     * selama tujuh sampai sembilan jam setiap hari (lihat docblock App\Support\Timezone).
      *
      * Menggrep "Asia/Jakarta" ke seluruh app/ pernah dicoba dan terlalu berisik:
      * string itu juga muncul sebagai data domain (zona gunung tersimpan, seeder).
-     * Sapuan ini dipersempit ke pola yang sungguh berbahaya, pemanggilan now()/today()
-     * pada baris yang sama dengan diffInDays()/whereDate(), yang selalu berarti "hari
-     * ini" sedang dipakai untuk aritmetika hari, bukan disebut sebagai data.
+     *
+     * Sapuan ini melacak PROPERTI-nya (variabel yang isinya berasal dari now()/today()
+     * mentah), bukan hanya kejadian sebaris. Perbaikan zona waktu di kelas cacat ini
+     * sendiri mengadopsi bentuk dua baris -- `$today = Carbon::parse(...)` lalu
+     * `->diffInDays(...)` di baris lain -- dan bentuk itu lolos begitu saja dari
+     * pemeriksaan sebaris yang lama: penjaga yang menangkap ejaan cacat kemarin, bukan
+     * bentuknya besok. Variabel yang diisi dari now()/today()/Carbon::now() TANPA
+     * menyebut Timezone:: pada baris yang sama ditandai mentah; ditandai bersih lagi
+     * begitu ditulis ulang lewat Timezone:: (mengikuti pola perbaikan yang sudah ada);
+     * dan pemakaian ->diffInDays()/whereDate() pada variabel yang masih bertanda mentah
+     * di baris manapun pada berkas yang sama tertangkap.
+     *
+     * Keterbatasan yang diketahui, bukan disembunyikan: pelacakannya linear per
+     * berkas, bukan sadar cabang/method. Nama variabel yang dipakai ulang untuk dua
+     * hal berbeda di method lain pada berkas yang sama, salah satunya mentah, bisa
+     * memicu tangkapan yang keliru. Nilai tukarnya diterima: linear-per-berkas ini
+     * sudah menutup lubang nyata (bentuk dua baris) tanpa memerlukan penebak AST penuh.
      */
     public function test_no_day_level_date_comparison_calls_now_or_today_directly(): void
     {
         $pelanggar = [];
 
         foreach (File::allFiles(app_path()) as $berkas) {
-            foreach (file($berkas->getPathname()) as $nomor => $baris) {
-                if (! preg_match('/\b(?:diffInDays|whereDate)\s*\(/', $baris)) {
-                    continue;
+            $baris = file($berkas->getPathname());
+            $variabelMentah = [];
+
+            foreach ($baris as $nomor => $satu) {
+                if (preg_match('/\b(?:diffInDays|whereDate)\s*\(/', $satu)
+                    && preg_match('/\b(?:now|today)\s*\(\)|Carbon::now\s*\(\)/', $satu)
+                    && ! str_contains($satu, 'Timezone::')) {
+                    $pelanggar[] = $berkas->getRelativePathname().':'.($nomor + 1);
                 }
 
-                if (preg_match('/\b(?:now|today)\s*\(\)|Carbon::now\s*\(\)/', $baris)
-                    && ! str_contains($baris, 'Timezone::')) {
-                    $pelanggar[] = $berkas->getRelativePathname().':'.($nomor + 1);
+                // Ditandai mentah: variabel diisi now()/today()/Carbon::now() tanpa
+                // Timezone:: pada baris yang sama.
+                if (preg_match('/\$(\w+)\s*=.*(?:\bnow\s*\(\)|\btoday\s*\(\)|Carbon::now\s*\(\))/', $satu, $cocok)
+                    && ! str_contains($satu, 'Timezone::')) {
+                    $variabelMentah[$cocok[1]] = true;
+                }
+
+                // Ditandai bersih lagi: variabel yang sama ditulis ulang lewat
+                // Timezone::, mengikuti pola perbaikan yang sudah dipakai di kode ini.
+                if (preg_match('/\$(\w+)\s*=.*Timezone::/', $satu, $cocok)) {
+                    unset($variabelMentah[$cocok[1]]);
+                }
+            }
+
+            if ($variabelMentah === []) {
+                continue;
+            }
+
+            foreach ($baris as $nomor => $satu) {
+                foreach (array_keys($variabelMentah) as $nama) {
+                    $pola = '/\$'.preg_quote($nama, '/').'\s*->\s*diffInDays\s*\(|whereDate\s*\([^)]*\$'.preg_quote($nama, '/').'\b/';
+
+                    if (preg_match($pola, $satu)) {
+                        $pelanggar[] = $berkas->getRelativePathname().':'.($nomor + 1);
+                    }
                 }
             }
         }
 
+        $pelanggar = array_values(array_unique($pelanggar));
+
         $this->assertSame(
             [],
             $pelanggar,
-            'diffInDays()/whereDate() memakai now()/today() mentah, bukan App\Support\Timezone, di: '.implode(', ', $pelanggar)
+            'diffInDays()/whereDate() memakai now()/today() mentah (langsung atau lewat variabel), bukan App\Support\Timezone, di: '.implode(', ', $pelanggar)
         );
     }
 
