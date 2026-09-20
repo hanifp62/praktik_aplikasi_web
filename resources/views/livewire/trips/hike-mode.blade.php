@@ -50,7 +50,7 @@
         <div class="rounded-lg bg-white p-4">
             <h2 class="text-sm font-medium text-muted">Daftar checkpoint</h2>
             <ol class="mt-2 space-y-1 text-sm">
-                @foreach ($checkpoints as $checkpoint)
+                @forelse ($checkpoints as $checkpoint)
                     <li @class([
                         'rounded px-2 py-1',
                         'bg-brand-50 font-medium text-brand-900' => ($nextCheckpoint['id'] ?? null) === $checkpoint['id'],
@@ -58,7 +58,12 @@
                     ])>
                         {{ $checkpoint['sequence'] }}. {{ $checkpoint['name'] }}
                     </li>
-                @endforeach
+                @empty
+                    <li>
+                        <p class="font-medium text-primary">Jalur ini belum punya checkpoint tercatat</p>
+                        <p class="mt-1 max-w-prose text-secondary">Mode pendakian tetap berjalan tanpa checkpoint, hanya tanpa penanda posisi antarpos. Data pos berasal dari pengelola jalur, bukan dari perangkat Anda.</p>
+                    </li>
+                @endforelse
             </ol>
         </div>
 

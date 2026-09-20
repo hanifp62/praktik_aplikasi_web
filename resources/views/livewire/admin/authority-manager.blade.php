@@ -68,7 +68,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($badan as $b)
+                    @forelse ($badan as $b)
                         <tr class="border-b border-subtle">
                             <td class="p-4 font-medium text-primary">{{ $b->displayName() }}</td>
                             <td class="p-4 text-secondary">{{ $b->type->label() }}</td>
@@ -83,7 +83,14 @@
                                 <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $b->id }})">Ubah</x-ui.button>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="6" class="p-4">
+                                <p class="font-medium text-primary">Belum ada badan otoritas tercatat</p>
+                                <p class="mt-1 max-w-prose text-secondary">Tanpa badan otoritas, tidak ada status resmi yang dapat diterbitkan, dan seluruh keterangan jalur akan bersumber dari komunitas saja.</p>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

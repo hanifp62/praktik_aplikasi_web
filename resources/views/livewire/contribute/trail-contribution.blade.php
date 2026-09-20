@@ -9,7 +9,7 @@
 
         <x-ui.card class="mb-6" title="Kredensial Anda">
             <ul class="space-y-2 text-sm">
-                @foreach ($kredensial as $k)
+                @forelse ($kredensial as $k)
                     <li class="flex flex-wrap items-baseline gap-x-2">
                         <span class="font-medium text-primary">{{ $k->level->label() }}</span>
                         <span class="text-secondary">
@@ -22,7 +22,12 @@
                             Kawasan: {{ $k->mountains->pluck('name')->join(', ') }}
                         </span>
                     </li>
-                @endforeach
+                @empty
+                    <li>
+                        <p class="font-medium text-primary">Anda belum punya kredensial terverifikasi</p>
+                        <p class="mt-1 max-w-prose text-secondary">Kontribusi Anda tetap diterima dan ditandai sebagai masukan komunitas. Kredensial hanya mengubah bagaimana keterangan Anda ditampilkan, bukan apakah ia diterima.</p>
+                    </li>
+                @endforelse
             </ul>
 
             {{-- Sertifikat BNSP berlaku tiga tahun, dan haknya berhenti bersamaan. --}}

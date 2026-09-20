@@ -61,7 +61,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($mountains as $mountain)
+                    @forelse ($mountains as $mountain)
                         <tr class="border-b border-subtle">
                             <td class="p-4 font-medium text-primary">{{ $mountain->name }}</td>
                             <td class="p-4 text-secondary">{{ $mountain->province ?? '-' }}</td>
@@ -78,7 +78,14 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="7" class="p-4">
+                                <p class="font-medium text-primary">Belum ada gunung terdaftar</p>
+                                <p class="mt-1 max-w-prose text-secondary">Gunung adalah induk dari jalur, trip, dan status resmi. Selama daftar ini kosong, tidak ada yang dapat dibuat di atasnya.</p>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

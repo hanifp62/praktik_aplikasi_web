@@ -24,7 +24,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($logs as $log)
+                    @forelse ($logs as $log)
                         <tr class="border-b border-subtle align-top">
                             <td class="p-4 text-secondary">{{ \App\Support\Timezone::display($log->created_at, \App\Support\Timezone::DEFAULT) }}</td>
                             <td class="p-4 text-secondary">{{ $log->actor?->name ?? 'Sistem' }}</td>
@@ -46,7 +46,14 @@
                                 @endif
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="6" class="p-4">
+                                <p class="font-medium text-primary">Belum ada jejak audit yang cocok</p>
+                                <p class="mt-1 max-w-prose text-secondary">Saringan yang dipasang tidak menemukan apa pun. Jejak audit tidak pernah dihapus, jadi daftar yang kosong berarti belum ada tindakan yang tercatat pada rentang ini, bukan ada yang hilang.</p>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

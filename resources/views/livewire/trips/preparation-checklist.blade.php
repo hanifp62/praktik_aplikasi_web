@@ -31,6 +31,7 @@
         </x-ui.card>
 
         <div class="space-y-6">
+            {{-- daftar tetap: pilihan yang ditetapkan di kode, tidak pernah kosong. --}}
             @foreach ($categories as $category)
                 @php $items = $grouped[$category->value] ?? collect(); @endphp
 

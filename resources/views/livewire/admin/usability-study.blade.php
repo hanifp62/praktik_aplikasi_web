@@ -110,6 +110,7 @@
                 <fieldset class="space-y-4">
                     <legend class="text-sm font-medium text-primary">Hasil tugas</legend>
 
+                    {{-- daftar tetap: pilihan yang ditetapkan di kode, tidak pernah kosong. --}}
                     @foreach ($daftarTugas as $kode => $tugas)
                         <div class="rounded-md border border-subtle p-3">
                             <p class="text-sm font-medium text-primary">{{ $kode }}. {{ $tugas['judul'] }}</p>

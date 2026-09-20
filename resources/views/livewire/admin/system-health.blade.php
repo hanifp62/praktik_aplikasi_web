@@ -13,7 +13,7 @@
         @endif
 
         <div class="space-y-4">
-            @foreach ($tugas as $baris)
+            @forelse ($tugas as $baris)
                 <x-ui.card>
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -73,7 +73,10 @@
                         tanpa ada yang rusak.
                     </p>
                 </x-ui.card>
-            @endforeach
+            @empty
+                <x-ui.empty-state title="Tidak ada tugas terjadwal yang terdaftar"
+                    description="Daftar yang kosong di halaman ini bukan kabar baik. Selama tidak ada tugas terdaftar, prakiraan cuaca tidak pernah diperbarui dan status resmi yang kedaluwarsa tidak pernah diperiksa, dan tidak ada yang akan memberi tahu." />
+            @endforelse
         </div>
 
         <x-ui.card title="Dua puluh jalan terakhir">

@@ -49,7 +49,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($sources as $source)
+                    @forelse ($sources as $source)
                         <tr class="border-b border-subtle">
                             <td class="p-4">
                                 <span class="font-medium text-primary">{{ $source->source_name }}</span>
@@ -71,7 +71,14 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="6" class="p-4">
+                                <p class="font-medium text-primary">Belum ada sumber data terdaftar</p>
+                                <p class="mt-1 max-w-prose text-secondary">Sumber data menentukan asal setiap angka yang ditampilkan. Tanpa satu pun, keterangan yang terbit tidak dapat ditelusuri asalnya.</p>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

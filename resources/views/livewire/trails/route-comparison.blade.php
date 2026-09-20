@@ -43,6 +43,7 @@
                             ];
                         @endphp
 
+                        {{-- daftar tetap: pilihan yang ditetapkan di kode, tidak pernah kosong. --}}
                         @foreach ($rows as $label => $resolver)
                             <tr class="border-b border-subtle">
                                 <th scope="row" class="p-4 text-left font-medium text-muted">{{ $label }}</th>

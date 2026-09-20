@@ -12,6 +12,7 @@
             <select id="filter" wire:model.live="filter"
                 class="mt-1 block w-full rounded-md border-control focus:border-brand-600 focus:ring-brand-600">
                 <option value="">Semua</option>
+                {{-- daftar tetap: pilihan yang ditetapkan di kode, tidak pernah kosong. --}}
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}">{{ $status->label() }}</option>
                 @endforeach

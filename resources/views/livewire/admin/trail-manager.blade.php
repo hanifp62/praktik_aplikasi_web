@@ -86,7 +86,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($trails as $trail)
+                    @forelse ($trails as $trail)
                         <tr class="border-b border-subtle">
                             <td class="p-4 font-medium text-primary">{{ $trail->name }}</td>
                             <td class="p-4 text-secondary">{{ $trail->mountain->name }}</td>
@@ -142,7 +142,14 @@
                                 @endif
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="6" class="p-4">
+                                <p class="font-medium text-primary">Tidak ada jalur yang cocok dengan saringan</p>
+                                <p class="mt-1 max-w-prose text-secondary">Kosongnya daftar ini bergantung pada saringan yang sedang aktif, bukan pada jumlah jalur di basis data.</p>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

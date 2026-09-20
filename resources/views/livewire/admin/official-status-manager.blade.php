@@ -109,7 +109,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($records as $record)
+                    @forelse ($records as $record)
                         <tr class="border-b border-subtle">
                             <td class="p-4 font-medium text-primary">{{ $record->statusable?->name ?? '-' }}</td>
                             <td class="p-4 text-secondary">{{ $record->scope->label() }}</td>
@@ -123,7 +123,14 @@
                             </td>
                             <td class="p-4 text-secondary">{{ $record->recordedBy?->name ?? 'Sistem' }}</td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="7" class="p-4">
+                                <p class="font-medium text-primary">Belum ada status resmi tercatat</p>
+                                <p class="mt-1 max-w-prose text-secondary">Jalur tanpa status resmi bukan berarti jalur terbuka. Sistem menampilkannya sebagai belum diketahui, dan itu memang keadaan yang sebenarnya.</p>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

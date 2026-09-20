@@ -61,7 +61,7 @@
                 </div>
 
                 <ul class="mt-4 space-y-2">
-                    @foreach ($tampil as $calon)
+                    @forelse ($tampil as $calon)
                         <li class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-subtle p-3">
                             <div class="text-sm">
                                 <p class="font-medium text-primary">{{ $calon['nama'] }}</p>
@@ -77,7 +77,12 @@
                                 Pratinjau
                             </x-ui.button>
                         </li>
-                    @endforeach
+                    @empty
+                        <li>
+                            <p class="font-medium text-primary">Tidak ada calon geometri yang cocok</p>
+                            <p class="mt-1 max-w-prose text-secondary">Pencarian tidak menemukan jalur yang mendekati. Menaikkan radius atau memeriksa koordinat gunungnya lebih mungkin menolong daripada mengulang pencarian yang sama.</p>
+                        </li>
+                    @endforelse
                 </ul>
             @endif
         </x-ui.card>
