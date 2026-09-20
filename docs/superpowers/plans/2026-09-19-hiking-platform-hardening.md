@@ -54,7 +54,7 @@
 **Interfaces:**
 - Produces: `config('hiking.route_fit.label_threshold_fit')`, `config('hiking.route_fit.label_threshold_prepare')`, `config('hiking.route_fit.critical_factor_floor')`, `config('hiking.route_fit.strong_factor_threshold')`, `config('hiking.route_fit.elevation_reference')`, `config('hiking.hike_mode.checkpoint_arrival_radius_m')`, `config('hiking.cache.public_ttl_seconds')`, `config('hiking.map.*')`.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 // tests/Unit/HikingConfigTest.php
@@ -71,12 +71,12 @@ public function test_route_fit_thresholds_come_from_config(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_route_fit_thresholds_come_from_config`
 Expected: FAIL — ambang masih konstanta kelas, hasilnya `COCOK`.
 
-- [ ] **Step 3: Buat `config/hiking.php`**
+- [x] **Step 3: Buat `config/hiking.php`**
 
 ```php
 <?php
@@ -122,16 +122,16 @@ return [
 ];
 ```
 
-- [ ] **Step 4: Ganti konstanta menjadi pembacaan config**
+- [x] **Step 4: Ganti konstanta menjadi pembacaan config**
 
 Di `RouteFitService`: hapus `LABEL_THRESHOLD_FIT`, `LABEL_THRESHOLD_PREPARE`, ganti `0.34` — semuanya baca `config('hiking.route_fit.*')`. Di `FactorScore::isWeak()`/`isStrong()` dan enam titik `0.75` pada `CompatibilityScorer` serta satu di `RecommendationExplanationService`, baca `config('hiking.route_fit.strong_factor_threshold')`. Pindahkan `ELEVATION_REFERENCE` ke config.
 
-- [ ] **Step 5: Jalankan seluruh suite**
+- [x] **Step 5: Jalankan seluruh suite**
 
 Run: `php artisan test`
 Expected: 87 lolos.
 
-- [ ] **Step 6: Pint dan commit**
+- [x] **Step 6: Pint dan commit**
 
 ```bash
 vendor/bin/pint && git add -A && git commit -m "refactor: pusatkan nilai domain ke config/hiking.php"
@@ -147,7 +147,7 @@ vendor/bin/pint && git add -A && git commit -m "refactor: pusatkan nilai domain 
 **Interfaces:**
 - Produces: `<x-ui.button variant="primary|secondary|danger" :href="..." type="submit">`, `<x-ui.alert variant="info|warning|danger">`, `<x-ui.empty-state title="..." description="...">`.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 // tests/Feature/DesignSystemTest.php
@@ -167,12 +167,12 @@ public function test_brand_colour_is_not_hardcoded_in_views(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_brand_colour_is_not_hardcoded_in_views`
 Expected: FAIL — mendaftar belasan view.
 
-- [ ] **Step 3: Tulis token di `resources/css/app.css`**
+- [x] **Step 3: Tulis token di `resources/css/app.css`**
 
 ```css
 @tailwind base;
@@ -197,7 +197,7 @@ Expected: FAIL — mendaftar belasan view.
 
 Di `tailwind.config.js`, daftarkan `brand`, `warn`, `danger` sebagai warna yang membaca custom property tersebut lewat `rgb(var(--brand-600) / <alpha-value>)`.
 
-- [ ] **Step 4: Buat komponen tombol**
+- [x] **Step 4: Buat komponen tombol**
 
 ```blade
 {{-- resources/views/components/ui/button.blade.php --}}
@@ -222,16 +222,16 @@ Di `tailwind.config.js`, daftarkan `brand`, `warn`, `danger` sebagai warna yang 
 
 `min-h-11` memenuhi ukuran target sentuh WCAG 2.2 (PRD §87); `focus-visible:ring` memenuhi focus visibility.
 
-- [ ] **Step 5: Buat `alert.blade.php` dan `empty-state.blade.php`, lalu ganti seluruh pemakaian di view**
+- [x] **Step 5: Buat `alert.blade.php` dan `empty-state.blade.php`, lalu ganti seluruh pemakaian di view**
 
 Sapu seluruh `resources/views`, ganti tombol manual menjadi `<x-ui.button>`, blok pesan menjadi `<x-ui.alert>`, dan blok "belum ada data" menjadi `<x-ui.empty-state>`.
 
-- [ ] **Step 6: Jalankan test dan build aset**
+- [x] **Step 6: Jalankan test dan build aset**
 
 Run: `php artisan test --filter=DesignSystemTest` lalu `npm run build`
 Expected: PASS, build sukses.
 
-- [ ] **Step 7: Pint dan commit**
+- [x] **Step 7: Pint dan commit**
 
 ```bash
 vendor/bin/pint && git add -A && git commit -m "refactor: design token dan komponen ui terpusat"
@@ -243,15 +243,15 @@ vendor/bin/pint && git add -A && git commit -m "refactor: design token dan kompo
 - Create: `docs/ARCHITECTURE.md`, `docs/CONTRIBUTING.md`
 - Modify: `CLAUDE.md`
 
-- [ ] **Step 1: Tulis `docs/ARCHITECTURE.md`**
+- [x] **Step 1: Tulis `docs/ARCHITECTURE.md`**
 
 Isi wajib: diagram alur `Profile → Goal → RouteFit → Trip → Preparation → Readiness → Hike → Report → History`; tabel "mau ubah apa, sentuh file mana" (ubah ambang label → `config/hiking.php`; ubah bobot faktor → tabel `recommendation_rules` lewat `/admin`; ubah warna/tombol → `resources/views/components/ui`; tambah faktor kompatibilitas → `App\Enums\CompatibilityFactor` + `CompatibilityScorer`); daftar service dan tanggung jawab tunggalnya; aturan otoritas data PRD §43.
 
-- [ ] **Step 2: Tulis `docs/CONTRIBUTING.md`**
+- [x] **Step 2: Tulis `docs/CONTRIBUTING.md`**
 
 Isi wajib: alur TDD yang dipakai proyek; perintah `php artisan test`, `vendor/bin/pint`; aturan bahwa nilai domain baru masuk `config/hiking.php`, bukan konstanta kelas; aturan bahwa view tidak menyebut warna merek langsung; cara menjalankan suite PostGIS.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/ CLAUDE.md && git commit -m "docs: peta arsitektur dan panduan kontribusi"
@@ -270,7 +270,7 @@ git add docs/ CLAUDE.md && git commit -m "docs: peta arsitektur dan panduan kont
 **Interfaces:**
 - Produces: `FactorScore::$isUnknown` (bool, default false), konstruktor menerima argumen bernama `isUnknown:`; `RouteFitResult::hasUnknownFactors(): bool`.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_a_trail_without_characteristics_is_never_labelled_cocok(): void
@@ -288,12 +288,12 @@ public function test_a_trail_without_characteristics_is_never_labelled_cocok(): 
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_a_trail_without_characteristics_is_never_labelled_cocok`
 Expected: FAIL — label sekarang `COCOK`.
 
-- [ ] **Step 3: Tambah penanda unknown pada `FactorScore` dan `RouteFitResult`**
+- [x] **Step 3: Tambah penanda unknown pada `FactorScore` dan `RouteFitResult`**
 
 Pada `FactorScore`, tambah `public readonly bool $isUnknown = false` sebagai parameter konstruktor terakhir agar pemanggil lama tetap jalan.
 
@@ -314,13 +314,13 @@ public function hasUnknownFactors(): bool
 
 `factorsToArray()` ikut menyertakan `is_unknown` supaya jejak audit pada `recommendation_results.matched_factors` merekam data mana yang belum ada saat run itu dijalankan (PRD §31).
 
-- [ ] **Step 4: Tandai faktor tanpa data di `CompatibilityScorer`**
+- [x] **Step 4: Tandai faktor tanpa data di `CompatibilityScorer`**
 
 `physicalDemandRank()` diganti `physicalDemand(): array{rank:int, known:bool}` — `known` bernilai false bila `distance_km`, `elevation_gain_m`, dan `estimated_duration_minutes` seluruhnya null. `experienceMatch()` meneruskan `isUnknown: ! $known` dan detailnya berbunyi "Karakteristik fisik jalur ini belum tersedia, sehingga kecocokan belum dapat dinilai."
 
 Titik lain yang sudah memakai skor netral `0.6` — `durationMatch`, `elevationGainMatch`, `tripPreference` — ikut diberi `isUnknown: true`. `terrainMatch` ditandai unknown bila `terrain_character` null.
 
-- [ ] **Step 5: Turunkan label bila ada unknown**
+- [x] **Step 5: Turunkan label bila ada unknown**
 
 Di `RouteFitService::label()`, sebelum pencocokan ambang:
 
@@ -339,16 +339,16 @@ $hasUnknown = array_filter($factors, fn (FactorScore $f) => $f->isUnknown) !== [
 
 lalu setelah label dihitung, bila `$hasUnknown` dan label `COCOK`, turunkan ke `PERLU_PERSIAPAN`.
 
-- [ ] **Step 6: Tambahkan data yang hilang ke penjelasan**
+- [x] **Step 6: Tambahkan data yang hilang ke penjelasan**
 
 Di `RecommendationExplanationService`, faktor unknown masuk ke bagian "What to Watch" dengan kalimat yang menyebut data mana yang belum ada — bukan disembunyikan (PRD §30, §91).
 
-- [ ] **Step 7: Jalankan suite**
+- [x] **Step 7: Jalankan suite**
 
 Run: `php artisan test`
 Expected: hijau. Test lama `test_beginner_on_easy_route_is_labelled_cocok` memakai factory berdata lengkap sehingga tetap lolos; bila gagal, periksa factory-nya mengisi ketiga kolom fisik.
 
-- [ ] **Step 8: Pint dan commit**
+- [x] **Step 8: Pint dan commit**
 
 ```bash
 vendor/bin/pint && git add -A && git commit -m "fix: data jalur yang hilang menurunkan label, bukan menaikkannya (F-01)"
@@ -363,7 +363,7 @@ vendor/bin/pint && git add -A && git commit -m "fix: data jalur yang hilang menu
 **Interfaces:**
 - Produces: `Trail::publishabilityReport(): array<int, string>` — daftar syarat yang belum terpenuhi; kosong berarti boleh dipublikasi.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_a_trail_without_required_data_cannot_be_published(): void
@@ -383,12 +383,12 @@ public function test_a_trail_without_required_data_cannot_be_published(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_a_trail_without_required_data_cannot_be_published`
 Expected: FAIL — method belum ada.
 
-- [ ] **Step 3: Implementasi `publishabilityReport()`**
+- [x] **Step 3: Implementasi `publishabilityReport()`**
 
 ```php
 /**
@@ -420,15 +420,15 @@ public function publishabilityReport(): array
 }
 ```
 
-- [ ] **Step 4: Tegakkan di `TrailManager::save()`**
+- [x] **Step 4: Tegakkan di `TrailManager::save()`**
 
 Sebelum menyimpan, bila `$this->is_published` true dan report tidak kosong, panggil `addError('is_published', 'Jalur belum dapat dipublikasikan: '.implode(' ', $report))` lalu `return`.
 
-- [ ] **Step 5: Tampilkan daftar kekurangan di view admin**
+- [x] **Step 5: Tampilkan daftar kekurangan di view admin**
 
 `trail-manager.blade.php` menampilkan `publishabilityReport()` tiap baris sebagai daftar, sehingga kurator tahu persis apa yang harus dilengkapi.
 
-- [ ] **Step 6: Jalankan suite, Pint, commit**
+- [x] **Step 6: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: gerbang publikasi kualitas data jalur (F-02)"
@@ -443,7 +443,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: gerban
 **Interfaces:**
 - Produces: `OfficialStatusService::segmentRestrictionsForTrail(Trail $trail): array<int, array{segment: string, status: OfficialStatusValue, reason: ?string}>`; `Trail::intersectingRestrictedAreas(): Collection`.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_a_closed_segment_warns_and_caps_the_label(): void
@@ -466,20 +466,20 @@ public function test_a_closed_segment_warns_and_caps_the_label(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_a_closed_segment_warns_and_caps_the_label`
 Expected: FAIL — tidak ada peringatan segmen.
 
-- [ ] **Step 3: Implementasi `segmentRestrictionsForTrail()`**
+- [x] **Step 3: Implementasi `segmentRestrictionsForTrail()`**
 
 Satu query: ambil id seluruh segmen jalur, lalu `OfficialStatus::whereIn('statusable_id', $ids)->where('statusable_type', TrailSegment::class)->currentlyEffective()` diurutkan, dikelompokkan per segmen, ambil yang terbaru per segmen, saring yang `CLOSED` atau `RESTRICTED`.
 
-- [ ] **Step 4: Sambungkan ke `RouteFitService`**
+- [x] **Step 4: Sambungkan ke `RouteFitService`**
 
 `warningsFor()` menerima daftar pembatasan segmen dan menghasilkan kalimat per segmen: `sprintf('Segmen %s berstatus %s. %s', $nama, $label, $alasan)`. `label()` membatasi hasil maksimal `PERLU_PERSIAPAN` bila daftar tidak kosong.
 
-- [ ] **Step 5: Implementasi `Trail::intersectingRestrictedAreas()`**
+- [x] **Step 5: Implementasi `Trail::intersectingRestrictedAreas()`**
 
 ```php
 public function intersectingRestrictedAreas(): Collection
@@ -495,11 +495,11 @@ public function intersectingRestrictedAreas(): Collection
 }
 ```
 
-- [ ] **Step 6: Tampilkan pada Trail Detail dan agregator kondisi**
+- [x] **Step 6: Tampilkan pada Trail Detail dan agregator kondisi**
 
 `ConditionAggregatorService::warnings()` menambahkan peringatan area terbatas; `trail-detail.blade.php` mendapat bagian "Pembatasan pada jalur ini" memakai `<x-ui.alert variant="warning">`.
 
-- [ ] **Step 7: Jalankan suite, Pint, commit**
+- [x] **Step 7: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: status segmen dan restricted area masuk mesin route fit (F-03, F-04)"
@@ -515,7 +515,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: status
 - Modify: `app/Livewire/Trails/TrailIndex.php:43-45`
 - Test: `tests/Feature/TrailIndexTest.php`
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_search_never_exposes_unpublished_trails(): void
@@ -531,12 +531,12 @@ public function test_search_never_exposes_unpublished_trails(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_search_never_exposes_unpublished_trails`
 Expected: FAIL — jalur draft tampil.
 
-- [ ] **Step 3: Kurung kondisi pencarian**
+- [x] **Step 3: Kurung kondisi pencarian**
 
 ```php
 ->when($this->search, fn ($query, $search) => $query->where(
@@ -545,7 +545,7 @@ Expected: FAIL — jalur draft tampil.
 ))
 ```
 
-- [ ] **Step 4: Jalankan test, Pint, commit**
+- [x] **Step 4: Jalankan test, Pint, commit**
 
 ```bash
 php artisan test --filter=TrailIndexTest && vendor/bin/pint && git add -A && git commit -m "fix: pencarian jalur tidak lagi menembus filter published (F-05)"
@@ -561,7 +561,7 @@ php artisan test --filter=TrailIndexTest && vendor/bin/pint && git add -A && git
 **Interfaces:**
 - Produces: kolom `weather_snapshots.forecast_at` (UTC), `mountains.timezone` (string); `Mountain::$timezone`; `Timezone::forTrail(Trail $trail): string`.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_forecast_instants_are_stored_in_utc(): void
@@ -583,20 +583,20 @@ public function test_forecast_instants_are_stored_in_utc(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_forecast_instants_are_stored_in_utc`
 Expected: FAIL — kolom belum ada.
 
-- [ ] **Step 3: Migrasi**
+- [x] **Step 3: Migrasi**
 
 Tambah `forecast_at` (timestamp, index) pada `weather_snapshots`; backfill `forecast_at = local_datetime - interval '7 hours'` untuk baris lama; ganti unique menjadi `(adm4_code, forecast_at)`. Tambah `timezone` (string, default `Asia/Jakarta`) pada `mountains`.
 
-- [ ] **Step 4: Ubah `WeatherService::normalize()`**
+- [x] **Step 4: Ubah `WeatherService::normalize()`**
 
 Ambil `forecast_at` dari `Carbon::parse($entry['utc_datetime'], 'UTC')`; `local_datetime` tetap disimpan apa adanya sebagai nilai tampilan asal BMKG. `updateOrCreate` berkunci `(adm4_code, forecast_at)`. `forecastForTrail()` dan `freshness()` memakai `forecast_at`.
 
-- [ ] **Step 5: Buat `app/Support/Timezone.php`**
+- [x] **Step 5: Buat `app/Support/Timezone.php`**
 
 ```php
 class Timezone
@@ -615,11 +615,11 @@ class Timezone
 }
 ```
 
-- [ ] **Step 6: Tampilkan waktu dalam zona gunung**
+- [x] **Step 6: Tampilkan waktu dalam zona gunung**
 
 Setiap tampilan waktu cuaca memakai `->setTimezone(Timezone::forTrail($trail))` dan diberi sufiks `Timezone::label(...)`, misalnya `19 Sep 2026 22:00 WIB`. Atribusi BMKG wajib tampil di dekatnya.
 
-- [ ] **Step 7: Jalankan suite, Pint, commit**
+- [x] **Step 7: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: prakiraan cuaca disimpan UTC dan ditampilkan per zona gunung (F-06)"
@@ -634,7 +634,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: prakira
 **Interfaces:**
 - Produces: `ReadinessService::compute(TripPlan $trip): ReadinessAssessment` (objek nilai, tanpa efek samping); `ReadinessService::record(TripPlan $trip, ReadinessAssessment $assessment): ReadinessCheck`; `ReadinessService::evaluate()` tetap ada sebagai `record(compute())` untuk pemanggil lama.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_viewing_readiness_does_not_write_rows(): void
@@ -661,24 +661,24 @@ public function test_pre_departure_confirmation_survives_a_reload(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=ReadinessDashboardTest`
 Expected: FAIL — 3 baris tertulis; konfirmasi hilang.
 
-- [ ] **Step 3: Pecah `ReadinessService`**
+- [x] **Step 3: Pecah `ReadinessService`**
 
 Buat `App\Services\Readiness\ReadinessAssessment` (readonly: `state`, `routeFitSnapshot`, `preparationState`, `conditions`, `explanation`). `compute()` mengembalikan objek ini tanpa menyentuh database tulis. `record()` yang membuat baris `ReadinessCheck`.
 
-- [ ] **Step 4: Ubah `ReadinessDashboard`**
+- [x] **Step 4: Ubah `ReadinessDashboard`**
 
 `mount()` memanggil `compute()` dan membaca `ReadinessCheck::where('trip_plan_id', ...)->latest('id')->first()` untuk `pre_departure_confirmed`, lalu mengisi properti publik `preDepartureConfirmed`. `recompute()` memanggil `record()`. `confirmPreDeparture()` memanggil `record()` lebih dulu bila belum ada baris, menandainya, lalu men-set `preDepartureConfirmed = true`.
 
-- [ ] **Step 5: Tampilkan statusnya di view**
+- [x] **Step 5: Tampilkan statusnya di view**
 
 Tambahkan penanda "Pre-departure check sudah dikonfirmasi pada ..." memakai `<x-ui.alert variant="info">` ketika `preDepartureConfirmed` true, supaya pengguna melihat konfirmasinya.
 
-- [ ] **Step 6: Jalankan suite, Pint, commit**
+- [x] **Step 6: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: halaman readiness idempoten dan konfirmasi pre-departure bertahan (F-07, F-08)"
@@ -693,7 +693,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: halaman
 **Interfaces:**
 - Produces: kolom `hiking_sessions.reached_checkpoint_sequence` (unsigned int, nullable).
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_next_checkpoint_is_the_one_being_approached(): void
@@ -713,12 +713,12 @@ public function test_position_outside_valid_range_is_rejected(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=HikeModeCheckpointTest`
 Expected: FAIL — mengembalikan sequence 4; posisi tak valid diterima.
 
-- [ ] **Step 3: Validasi rentang posisi**
+- [x] **Step 3: Validasi rentang posisi**
 
 Di awal `updatePosition()`:
 
@@ -733,7 +733,7 @@ $this->validate(
 
 Gunakan `Validator::make(compact('latitude', 'longitude'), $rules)->validate()` bila bentuk di atas tidak cocok dengan versi Livewire.
 
-- [ ] **Step 4: Ganti logika pemilihan checkpoint**
+- [x] **Step 4: Ganti logika pemilihan checkpoint**
 
 ```php
 $radius = (int) config('hiking.hike_mode.checkpoint_arrival_radius_m');
@@ -759,7 +759,7 @@ $next = collect($checkpoints)->firstWhere(fn ($c) => $c['sequence'] > $reached)
     ?? collect($checkpoints)->last();
 ```
 
-- [ ] **Step 5: Jalankan suite, Pint, commit**
+- [x] **Step 5: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: checkpoint berikutnya memakai radius kedatangan dan urutan (F-09, F-17)"
@@ -771,7 +771,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: checkpo
 - Modify: `resources/views/layouts/app.blade.php:8`, `resources/views/layouts/guest.blade.php:8`, `.env`, `.env.example`, `routes/web.php`
 - Test: `tests/Feature/PageTitleTest.php`
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_each_page_has_its_own_title(): void
@@ -782,16 +782,16 @@ public function test_each_page_has_its_own_title(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_each_page_has_its_own_title`
 Expected: FAIL — judulnya `Laravel`.
 
-- [ ] **Step 3: Alirkan `$title`**
+- [x] **Step 3: Alirkan `$title`**
 
 Kedua layout: `<title>{{ $title ?? config('app.name') }}</title>`. Set `APP_NAME` pada `.env` dan `.env.example` ke nama aplikasi sebenarnya. Halaman `Route::view` diberi judul lewat argumen data ketiga: `Route::view('dashboard', 'dashboard', ['title' => 'Dasbor'])`.
 
-- [ ] **Step 4: Jalankan suite, Pint, commit**
+- [x] **Step 4: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: judul halaman per komponen kini benar-benar dipakai (F-10)"
@@ -806,7 +806,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: judul h
 **Interfaces:**
 - Produces: `TripStatus::canTransitionTo(TripStatus $target): bool`.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_a_trip_cannot_be_created_on_an_unpublished_trail(): void
@@ -832,12 +832,12 @@ public function test_a_cancelled_trip_cannot_be_started(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=TripLifecycleTest`
 Expected: FAIL pada keduanya.
 
-- [ ] **Step 3: Perketat validasi jalur**
+- [x] **Step 3: Perketat validasi jalur**
 
 ```php
 'trail_id' => ['required', Rule::exists('trails', 'id')->where(
@@ -845,7 +845,7 @@ Expected: FAIL pada keduanya.
 )],
 ```
 
-- [ ] **Step 4: Tambah `canTransitionTo()` pada `TripStatus`**
+- [x] **Step 4: Tambah `canTransitionTo()` pada `TripStatus`**
 
 ```php
 public function canTransitionTo(self $target): bool
@@ -860,15 +860,15 @@ public function canTransitionTo(self $target): bool
 }
 ```
 
-- [ ] **Step 5: Tegakkan di `TripShow` dan `ReadinessDashboard`**
+- [x] **Step 5: Tegakkan di `TripShow` dan `ReadinessDashboard`**
 
 `startHike()`, `complete()`, `cancel()`, dan `confirmPreDeparture()` memeriksa `canTransitionTo()` lebih dulu; bila tidak sah, `session()->flash('status', 'Status trip tidak memungkinkan tindakan ini.')` lalu `return`.
 
-- [ ] **Step 6: Validasi `completion_state` dengan enum**
+- [x] **Step 6: Validasi `completion_state` dengan enum**
 
 `'completion_state' => ['required', new Enum(CompletionState::class)]`.
 
-- [ ] **Step 7: Jalankan suite, Pint, commit**
+- [x] **Step 7: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: validasi jalur terpublikasi dan penjaga transisi status trip (F-11, F-12, F-13)"
@@ -888,7 +888,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: validas
 **Interfaces:**
 - Produces: route bernama `reports.photo` (`GET /reports/{report}/photo`); kemampuan policy `viewPhoto`.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_a_pending_report_photo_is_not_public(): void
@@ -912,16 +912,16 @@ public function test_a_moderator_can_see_the_photo_to_moderate_it(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=ReportPhotoAccessTest`
 Expected: FAIL — route belum ada.
 
-- [ ] **Step 3: Ganti disk default menjadi privat**
+- [x] **Step 3: Ganti disk default menjadi privat**
 
 `config/filesystems.php`: `'report_photos_disk' => env('REPORT_PHOTOS_DISK', 'local')`.
 
-- [ ] **Step 4: Tambah kemampuan policy**
+- [x] **Step 4: Tambah kemampuan policy**
 
 ```php
 public function viewPhoto(User $user, TrailConditionReport $report): bool
@@ -932,7 +932,7 @@ public function viewPhoto(User $user, TrailConditionReport $report): bool
 }
 ```
 
-- [ ] **Step 5: Buat controller penyaji**
+- [x] **Step 5: Buat controller penyaji**
 
 ```php
 public function __invoke(TrailConditionReport $report): StreamedResponse
@@ -949,11 +949,11 @@ public function __invoke(TrailConditionReport $report): StreamedResponse
 
 Daftarkan di dalam grup `auth`: `Route::get('reports/{report}/photo', ReportPhotoController::class)->name('reports.photo')`.
 
-- [ ] **Step 6: Tampilkan fotonya**
+- [x] **Step 6: Tampilkan fotonya**
 
 Antrean moderasi mengganti teks "Laporan menyertakan foto." dengan `<img src="{{ route('reports.photo', $report) }}" alt="Foto kondisi jalur dari laporan {{ $report->id }}" class="mt-2 max-h-64 rounded-md">`. Trail Detail menampilkan foto laporan yang sudah `APPROVED` dengan `alt` yang deskriptif.
 
-- [ ] **Step 7: Jalankan suite, Pint, commit**
+- [x] **Step 7: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: foto laporan privat, ber-otorisasi, dan dapat dimoderasi (F-14, F-15)"
@@ -969,7 +969,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: foto la
 **Interfaces:**
 - Produces: `ImageSanitizer::sanitize(string $absolutePath, int $maxDimension): void` — menulis ulang berkas tanpa metadata.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_exif_gps_is_removed_from_uploaded_photos(): void
@@ -984,20 +984,20 @@ public function test_exif_gps_is_removed_from_uploaded_photos(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=ImageSanitizerTest`
 Expected: FAIL — kelas belum ada.
 
-- [ ] **Step 3: Implementasi dengan GD**
+- [x] **Step 3: Implementasi dengan GD**
 
 Baca dengan `imagecreatefromstring(file_get_contents($path))`, hitung ulang dimensi bila melebihi `$maxDimension` dengan menjaga rasio, `imagescale()`, lalu tulis ulang `imagejpeg()`/`imagepng()`/`imagewebp()` sesuai tipe asli. Re-encode GD tidak membawa segmen EXIF, sehingga GPS hilang. Lepaskan sumber daya dengan `imagedestroy()`.
 
-- [ ] **Step 4: Panggil setelah unggahan tersimpan**
+- [x] **Step 4: Panggil setelah unggahan tersimpan**
 
 Di `ConditionReportForm::save()`, setelah `store()`, panggil `ImageSanitizer::sanitize($disk->path($photoPath), config('hiking.uploads.report_photo_max_dimension'))`. Bungkus dengan try/catch yang mencatat log dan tetap meneruskan — foto rusak tidak boleh menggagalkan laporan.
 
-- [ ] **Step 5: Jalankan suite, Pint, commit**
+- [x] **Step 5: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: bersihkan EXIF pada foto laporan (F-16)"
@@ -1009,7 +1009,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: bersih
 - Modify: `app/Livewire/Reports/ConditionReportForm.php`, `app/Livewire/Goals/GoalForm.php`
 - Test: `tests/Feature/RateLimitTest.php`
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_report_submission_is_rate_limited(): void
@@ -1028,12 +1028,12 @@ public function test_report_submission_is_rate_limited(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=RateLimitTest`
 Expected: FAIL — 6 laporan tersimpan.
 
-- [ ] **Step 3: Pasang penghitung**
+- [x] **Step 3: Pasang penghitung**
 
 Di awal `save()`:
 
@@ -1054,7 +1054,7 @@ RateLimiter::hit($key, 3600);
 
 Pola yang sama untuk `GoalForm::save()` dengan kunci `recommendation-run:` dan batas 20 per jam — mesin rekomendasi mahal.
 
-- [ ] **Step 4: Jalankan suite, Pint, commit**
+- [x] **Step 4: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: rate limit pada submit laporan dan run rekomendasi (F-18)"
@@ -1070,7 +1070,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: rate l
 **Interfaces:**
 - Produces: `TrailConditionReport::authorLabel(): string` — nama penulis atau "Pendaki terdahulu".
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_deleting_an_account_anonymises_approved_reports(): void
@@ -1094,16 +1094,16 @@ public function test_deleting_an_account_removes_orphaned_photo_files(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=AccountDeletionRetentionTest`
 Expected: FAIL — laporan ikut terhapus oleh cascade.
 
-- [ ] **Step 3: Migrasi foreign key**
+- [x] **Step 3: Migrasi foreign key**
 
 Drop constraint lama pada `trail_condition_reports.user_id`, jadikan kolom nullable, pasang ulang dengan `nullOnDelete()`.
 
-- [ ] **Step 4: Implementasi `authorLabel()` dan pembersih berkas**
+- [x] **Step 4: Implementasi `authorLabel()` dan pembersih berkas**
 
 ```php
 public function authorLabel(): string
@@ -1114,9 +1114,9 @@ public function authorLabel(): string
 
 Di `TrailConditionReport::booted()`, pada event `deleting`, hapus berkas foto dari disk bila ada.
 
-- [ ] **Step 5: Ganti seluruh pemakaian `$report->user->name` di view menjadi `$report->authorLabel()`**
+- [x] **Step 5: Ganti seluruh pemakaian `$report->user->name` di view menjadi `$report->authorLabel()`**
 
-- [ ] **Step 6: Jalankan suite, Pint, commit**
+- [x] **Step 6: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: anonimisasi laporan komunitas saat akun dihapus (F-19)"
@@ -1136,7 +1136,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: anonim
 **Interfaces:**
 - Produces: `RouteFitService::evaluate(User $user, ?HikingGoal $goal, Trail $trail, ?array $weights = null, ?OfficialStatusValue $status = null)`; `OfficialStatusService::effectiveStatusesForTrails(Collection $trails): array<int, OfficialStatusValue>` berkunci `trail_id`.
 
-- [ ] **Step 1: Tulis test anggaran query yang gagal**
+- [x] **Step 1: Tulis test anggaran query yang gagal**
 
 ```php
 public function test_recommendation_stays_within_the_query_budget(): void
@@ -1154,28 +1154,28 @@ public function test_recommendation_stays_within_the_query_budget(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_recommendation_stays_within_the_query_budget`
 Expected: FAIL — sekitar 58 query.
 
-- [ ] **Step 3: Hitung bobot sekali per run**
+- [x] **Step 3: Hitung bobot sekali per run**
 
 `recommend()` memanggil `weights()` sekali, mengopernya ke tiap `evaluate()` dan memakai nilai yang sama untuk `rules_evaluated`.
 
-- [ ] **Step 4: Preload status resmi**
+- [x] **Step 4: Preload status resmi**
 
 `effectiveStatusesForTrails()` mengambil seluruh status trail dalam satu query dan seluruh status mountain dalam satu query, lalu menerapkan aturan kaskade §42 di memori. `recommend()` memanggilnya sekali dan mengoper hasilnya per jalur.
 
-- [ ] **Step 5: Bulk insert hasil**
+- [x] **Step 5: Bulk insert hasil**
 
 Ganti perulangan `RecommendationResult::create()` dengan satu `RecommendationResult::insert($rows)`, menyertakan `created_at`/`updated_at` manual.
 
-- [ ] **Step 6: Lepas `weather_snapshots.trail_id`**
+- [x] **Step 6: Lepas `weather_snapshots.trail_id`**
 
 Migrasi menghapus foreign key dan kolomnya; `WeatherService::normalize()` berhenti menuliskannya.
 
-- [ ] **Step 7: Jalankan suite, Pint, commit**
+- [x] **Step 7: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "perf: mesin rekomendasi di bawah 10 query dan snapshot cuaca lepas dari trail (F-20, F-23)"
@@ -1187,7 +1187,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "perf: mesin 
 - Modify: `app/Services/ConditionAggregatorService.php:26-36,108-120`, `app/Console/Commands/RefreshWeatherSnapshots.php`, `app/Services/OfficialStatusService.php`
 - Test: `tests/Feature/WeatherRefreshTest.php`
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_one_api_call_per_reference_area(): void
@@ -1204,24 +1204,24 @@ public function test_one_api_call_per_reference_area(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_one_api_call_per_reference_area`
 Expected: FAIL — 5 panggilan.
 
-- [ ] **Step 3: Kelompokkan refresh per `adm4`**
+- [x] **Step 3: Kelompokkan refresh per `adm4`**
 
 Perintah mengambil `Trail::published()->whereNotNull('weather_adm4_code')->get()->unique('weather_adm4_code')` lalu memanggil `refreshForTrail()` sekali per area, dan melaporkan jumlah area, bukan jumlah jalur.
 
-- [ ] **Step 4: Hitung konteks cuaca sekali**
+- [x] **Step 4: Hitung konteks cuaca sekali**
 
 `forTrail()` menghitung `$weather = $this->weather->contextForTrail($trail)` satu kali, memakainya untuk `weather_context`, dan mengopernya ke `warnings($trail, $reports, $weather)`.
 
-- [ ] **Step 5: Cache data publik**
+- [x] **Step 5: Cache data publik**
 
 `OfficialStatusService::snapshotForTrail()` dan `WeatherService::contextForTrail()` dibungkus `Cache::remember("trail:{$trail->id}:status"...)` dengan TTL `config('hiking.cache.public_ttl_seconds')`. Tambahkan komentar bahwa hanya data publik yang boleh masuk cache bersama (PRD §97). Batalkan cache saat status resmi diubah dari admin.
 
-- [ ] **Step 6: Jalankan suite, Pint, commit**
+- [x] **Step 6: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "perf: satu panggilan BMKG per area, konteks cuaca sekali hitung, cache data publik (F-21, F-22, F-24)"
@@ -1233,7 +1233,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "perf: satu p
 - Modify: `app/Services/ReadinessService.php`
 - Test: `tests/Unit/ReadinessServiceTest.php`
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_stale_weather_prevents_ready(): void
@@ -1250,16 +1250,16 @@ public function test_stale_weather_prevents_ready(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=test_stale_weather_prevents_ready`
 Expected: FAIL — hasilnya `READY`.
 
-- [ ] **Step 3: Baca dimensi ketiga di `determineState()`**
+- [x] **Step 3: Baca dimensi ketiga di `determineState()`**
 
 Sebelum mengembalikan `READY`, periksa: `official_status` bernilai UNKNOWN, konteks cuaca `available === false` atau `freshness === STALE`, adanya peringatan komunitas ber-tag caution, dan adanya pembatasan segmen. Bila salah satu benar, kembalikan `NEEDS_PREPARATION` dan tambahkan alasannya ke `explain()` dengan kalimat yang menyebut penyebabnya.
 
-- [ ] **Step 4: Jalankan suite, Pint, commit**
+- [x] **Step 4: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: kondisi terkini ikut menentukan state readiness (F-25)"
@@ -1275,7 +1275,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: kondis
 - Modify: `package.json`, `resources/js/app.js`, `resources/views/livewire/trips/hike-mode.blade.php`, `resources/views/livewire/trails/trail-detail.blade.php`
 - Test: `tests/Feature/MapConfigTest.php`
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_hike_mode_does_not_load_maps_from_a_cdn(): void
@@ -1287,12 +1287,12 @@ public function test_hike_mode_does_not_load_maps_from_a_cdn(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=MapConfigTest`
 Expected: FAIL — masih memuat dari cdnjs, atribusi belum ada.
 
-- [ ] **Step 3: Pasang MapLibre lewat npm**
+- [x] **Step 3: Pasang MapLibre lewat npm**
 
 ```bash
 npm install maplibre-gl@^4.7.1
@@ -1300,15 +1300,15 @@ npm install maplibre-gl@^4.7.1
 
 Impor di `resources/js/app.js` dan ekspos sebagai `window.maplibregl`; impor CSS-nya di `resources/css/app.css`.
 
-- [ ] **Step 4: Bangun style dari config**
+- [x] **Step 4: Bangun style dari config**
 
 Kirim `config('hiking.map')` ke view; bila `style_url` kosong, rakit style raster dari `raster_tiles`, `attribution`, dan `max_zoom`. Hapus kedua tag CDN.
 
-- [ ] **Step 5: Perbaiki semantik aksesibilitas peta**
+- [x] **Step 5: Perbaiki semantik aksesibilitas peta**
 
 Ganti `role="img"` pada kontainer peta dengan `role="region"` plus `aria-label="Peta jalur dan checkpoint"`, dan sediakan daftar checkpoint berbentuk teks di sebelahnya sebagai alternatif non-visual.
 
-- [ ] **Step 6: Jalankan suite, build, Pint, commit**
+- [x] **Step 6: Jalankan suite, build, Pint, commit**
 
 ```bash
 php artisan test && npm run build && vendor/bin/pint && git add -A && git commit -m "feat: peta topografi di-bundle dengan atribusi dan sumber tile dari config (F-26, F-27)"
@@ -1324,7 +1324,7 @@ php artisan test && npm run build && vendor/bin/pint && git add -A && git commit
 **Interfaces:**
 - Produces: `PermitService::bookingWarningFor(Trail $trail, ?CarbonInterface $targetDate): ?string`.
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_a_target_date_inside_the_closing_window_produces_a_warning(): void
@@ -1348,32 +1348,32 @@ public function test_no_permit_data_produces_no_false_warning(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal**
+- [x] **Step 2: Jalankan, pastikan gagal**
 
 Run: `php artisan test --filter=PermitServiceTest`
 Expected: FAIL — tabel dan service belum ada.
 
-- [ ] **Step 3: Migrasi**
+- [x] **Step 3: Migrasi**
 
 Kolom: `id`, `trail_id` nullable constrained cascade, `mountain_id` nullable constrained cascade, `authority`, `booking_url` nullable, `daily_quota` unsigned nullable, `booking_opens_days_before` unsigned nullable, `booking_closes_days_before` unsigned nullable, `guide_required` boolean default false, `max_duration_days` unsigned nullable, `notes` text nullable, `source` nullable, `source_url` nullable, `verified_at` nullable, timestamps. Index `(trail_id)` dan `(mountain_id)`.
 
-- [ ] **Step 4: Implementasi `PermitService::bookingWarningFor()`**
+- [x] **Step 4: Implementasi `PermitService::bookingWarningFor()`**
 
 Ambil aturan jalur, jatuh ke aturan gunung bila tidak ada. Bila tidak ada keduanya, kembalikan null — jangan mengarang peringatan (PRD §95 berlaku dua arah: tidak tahu bukan berarti bermasalah). Bila `booking_closes_days_before` terisi dan `targetDate` kurang dari itu dari hari ini, kembalikan kalimat yang menyebut penyelenggara, batas H-berapa, dan URL booking.
 
-- [ ] **Step 5: Sambungkan sebagai peringatan, bukan pengecualian**
+- [x] **Step 5: Sambungkan sebagai peringatan, bukan pengecualian**
 
 `RouteFitService::warningsFor()` menambahkan hasilnya bila ada. Jangan masukkan ke `hardConstraintFailures()` — aturan izin bisa berubah dan data kita bisa basi.
 
-- [ ] **Step 6: Hasilkan item persiapan yang menautkan URL resmi**
+- [x] **Step 6: Hasilkan item persiapan yang menautkan URL resmi**
 
 `PreparationService::generateFor()` menambahkan satu item kategori `LOGISTICS` berlabel "Booking izin pendakian (SIMAKSI)" dengan `description` berisi penyelenggara dan URL, ditandai `is_critical = true` bila aturannya ada.
 
-- [ ] **Step 7: Bagian Perizinan di Trail Detail dan CRUD admin**
+- [x] **Step 7: Bagian Perizinan di Trail Detail dan CRUD admin**
 
 Tampilkan penyelenggara, kuota harian, jendela booking, kewajiban pemandu, catatan, serta sumber dan tanggal verifikasi mengikuti PRD §60.
 
-- [ ] **Step 8: Jalankan suite, Pint, commit**
+- [x] **Step 8: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: model perizinan pendakian dengan peringatan jendela booking (F-28)"
@@ -1388,15 +1388,15 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "feat: model 
 **Files:**
 - Create: `tests/Feature/CoreJourneyTest.php`
 
-- [ ] **Step 1: Tulis test perjalanan penuh**
+- [x] **Step 1: Tulis test perjalanan penuh**
 
 Satu test yang berjalan berurutan: register → isi profil lewat `ProfileSetup` → buat goal lewat `GoalForm` → buka `RecommendationResults` dan pastikan ada kandidat dengan label dan penjelasan → buat trip lewat `TripForm` → konfirmasi seluruh item kritis lewat `PreparationChecklist` → buka `ReadinessDashboard` dan panggil `confirmPreDeparture` → pastikan status trip menjadi `READY_FOR_DEPARTURE` dan event analitik `pre_departure_check_completed` tercatat.
 
-- [ ] **Step 2: Jalankan sampai hijau**
+- [x] **Step 2: Jalankan sampai hijau**
 
 Run: `php artisan test --filter=CoreJourneyTest`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 vendor/bin/pint && git add -A && git commit -m "test: E2E core journey PRD §100 (F-30)"
@@ -1408,19 +1408,19 @@ vendor/bin/pint && git add -A && git commit -m "test: E2E core journey PRD §100
 - Create: `tests/Spatial/SpatialTestCase.php`, `tests/Spatial/TrailGeometryTest.php`
 - Modify: `phpunit.xml`
 
-- [ ] **Step 1: Tambah testsuite `Spatial` pada `phpunit.xml`**
+- [x] **Step 1: Tambah testsuite `Spatial` pada `phpunit.xml`**
 
 Diarahkan ke `tests/Spatial`, tidak ikut dalam suite default.
 
-- [ ] **Step 2: Buat `SpatialTestCase`**
+- [x] **Step 2: Buat `SpatialTestCase`**
 
 Pada `setUp()`, bila `env('SPATIAL_TEST_DSN')` kosong atau koneksi gagal, panggil `$this->markTestSkipped('Postgres + PostGIS tidak tersedia.')`. Bila tersedia, arahkan koneksi ke DSN tersebut dan jalankan migrasi.
 
-- [ ] **Step 3: Tulis test geometri**
+- [x] **Step 3: Tulis test geometri**
 
 Tulis LINESTRING ke jalur, baca kembali sebagai GeoJSON, pastikan koordinatnya cocok; pastikan `scopeNearby()` benar-benar menyaring; pastikan `intersectingRestrictedAreas()` menemukan poligon yang memotong dan mengabaikan yang tidak.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 vendor/bin/pint && git add -A && git commit -m "test: suite PostGIS terpisah untuk kode spasial (F-29)"
@@ -1432,17 +1432,17 @@ vendor/bin/pint && git add -A && git commit -m "test: suite PostGIS terpisah unt
 - Modify: `.github/workflows/ci.yml`, `.env.example`, `routes/web.php`
 - Delete: `resources/views/awal.blade.php`
 
-- [ ] **Step 1: Samakan versi PHP dan tambah job PostGIS**
+- [x] **Step 1: Samakan versi PHP dan tambah job PostGIS**
 
 `php-version: '8.5'`. Tambah service `postgis/postgis:16-3.4` pada job, jalankan `php artisan test --testsuite=Spatial` dengan `SPATIAL_TEST_DSN` terisi.
 
-- [ ] **Step 2: Rapikan `.env.example`**
+- [x] **Step 2: Rapikan `.env.example`**
 
 Isi blok DB dengan konfigurasi `pgsql` yang sebenarnya dipakai proyek, tanpa kredensial nyata. Tambah `REPORT_PHOTOS_DISK=local`, `MAP_TILE_URL`, `MAP_ATTRIBUTION`, dan `APP_NAME` yang benar.
 
-- [ ] **Step 3: Hapus route dan view `/awal`**
+- [x] **Step 3: Hapus route dan view `/awal`**
 
-- [ ] **Step 4: Jalankan suite, Pint, commit**
+- [x] **Step 4: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "chore: CI selaras, env example benar, scaffolding dibersihkan (F-31, F-32, F-33)"
@@ -1454,7 +1454,7 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "chore: CI se
 - Modify: view pada alur inti — `onboarding`, `goals`, `recommendations`, `trips`, `reports`
 - Test: `tests/Feature/AccessibilityTest.php`
 
-- [ ] **Step 1: Tulis test yang gagal**
+- [x] **Step 1: Tulis test yang gagal**
 
 ```php
 public function test_every_form_control_on_the_core_flow_has_a_label(): void
@@ -1474,13 +1474,13 @@ public function test_every_form_control_on_the_core_flow_has_a_label(): void
 }
 ```
 
-- [ ] **Step 2: Jalankan, pastikan gagal, lalu perbaiki tiap kontrol yang disebut**
+- [x] **Step 2: Jalankan, pastikan gagal, lalu perbaiki tiap kontrol yang disebut**
 
-- [ ] **Step 3: Periksa manual sisa kriteria**
+- [x] **Step 3: Periksa manual sisa kriteria**
 
 Pesan error form memakai `aria-describedby` yang menunjuk pesan; seluruh tombol memakai `<x-ui.button>` sehingga target sentuh dan focus ring konsisten; status tidak pernah hanya berbeda warna — sudah dipenuhi `fit-badge` dan `status-badge`.
 
-- [ ] **Step 4: Jalankan suite, Pint, commit**
+- [x] **Step 4: Jalankan suite, Pint, commit**
 
 ```bash
 php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: label, focus, dan target sentuh pada alur inti (F-34)"
@@ -1490,10 +1490,26 @@ php artisan test && vendor/bin/pint && git add -A && git commit -m "fix: label, 
 
 ## Verifikasi akhir
 
-- [ ] `php artisan test` hijau seluruhnya
-- [ ] `php artisan test --testsuite=Spatial` hijau pada mesin dengan PostGIS
-- [ ] `vendor/bin/pint --test` bersih
-- [ ] `npm run build` sukses
-- [ ] Anggaran query rekomendasi di bawah 10 untuk 12 jalur
-- [ ] Seluruh F-01 sampai F-34 punya test yang menutupnya
-- [ ] `docs/ARCHITECTURE.md` mencerminkan struktur akhir
+- [x] `php artisan test` hijau seluruhnya
+- [x] `php artisan test --testsuite=Spatial` hijau pada mesin dengan PostGIS
+- [x] `vendor/bin/pint --test` bersih
+- [x] `npm run build` sukses
+- [x] Anggaran query rekomendasi di bawah 10 untuk 12 jalur
+- [x] Seluruh F-01 sampai F-34 punya test yang menutupnya
+- [x] `docs/ARCHITECTURE.md` mencerminkan struktur akhir
+
+---
+
+## Hasil
+
+Selesai, dan diverifikasi pada 20 September 2026.
+
+Kotak centang di atas ditandai belakangan, bukan sambil jalan. Cara memastikannya
+dinyatakan apa adanya supaya tidak dikira lebih kuat daripada yang sebenarnya:
+deliverable tiap tugas dicari di kode dan ditemukan, lalu seluruh suite dijalankan dan
+lulus. Setiap langkah tidak ditelusuri ulang satu per satu.
+
+Satu kesalahan terjadi saat verifikasi ini dan dicatat supaya tidak diulang: model
+ucapan terima kasih sempat dilaporkan hilang karena dicari dengan nama `ReportThanks`,
+sedangkan namanya `ReportThank`. Nama jamak yang dikira benar adalah cara yang sama
+persis dengan kekeliruan `forgetCachedSnapshot` sebelumnya.

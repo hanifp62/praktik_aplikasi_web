@@ -46,24 +46,24 @@ balik berapa orang membaca laporan itu.
 
 Menghargai laporan yang menolong, bukan laporan yang banyak.
 
-- [ ] Test gagal dulu: pendaki dapat berterima kasih sekali pada satu laporan; ucapan
+- [x] Test gagal dulu: pendaki dapat berterima kasih sekali pada satu laporan; ucapan
       kedua tidak menggandakan; ia dapat menariknya kembali.
-- [ ] Test: pelapor **tidak dapat** berterima kasih pada laporannya sendiri.
-- [ ] Test: hanya laporan yang lolos moderasi yang dapat diberi terima kasih, karena
+- [x] Test: pelapor **tidak dapat** berterima kasih pada laporannya sendiri.
+- [x] Test: hanya laporan yang lolos moderasi yang dapat diberi terima kasih, karena
       laporan tertunda belum terlihat siapa pun.
-- [ ] Test: jumlahnya tampil di laporan, dan anggaran query halaman jalur tidak naik per
+- [x] Test: jumlahnya tampil di laporan, dan anggaran query halaman jalur tidak naik per
       laporan.
-- [ ] Pint, suite, commit.
+- [x] Pint, suite, commit.
 
 ## Tugas 2: Umpan balik dampak bagi pelapor
 
 **Berkas:** `app/Livewire/History/HikerProgress.php`, layanan, test.
 
-- [ ] Test gagal dulu: pelapor melihat berapa laporannya yang terbit dan berapa ucapan
+- [x] Test gagal dulu: pelapor melihat berapa laporannya yang terbit dan berapa ucapan
       terima kasih yang diterimanya, di halaman progresnya sendiri.
-- [ ] Test: angka itu miliknya sendiri, tidak pernah tercampur pengguna lain, dan tidak
+- [x] Test: angka itu miliknya sendiri, tidak pernah tercampur pengguna lain, dan tidak
       pernah ditampilkan sebagai peringkat.
-- [ ] Pint, suite, commit.
+- [x] Pint, suite, commit.
 
 ## Tugas 3: Kabar jalur
 
@@ -73,15 +73,15 @@ Menghargai laporan yang menolong, bukan laporan yang banyak.
 Satu-satunya Trigger dalam kerangka Fogg: alasan membuka aplikasi ketika tidak sedang
 merencanakan.
 
-- [ ] Test gagal dulu: pendaki dapat mengikuti dan berhenti mengikuti sebuah gunung.
-- [ ] Test: kabarnya memuat perubahan status resmi dan laporan yang lolos moderasi untuk
+- [x] Test gagal dulu: pendaki dapat mengikuti dan berhenti mengikuti sebuah gunung.
+- [x] Test: kabarnya memuat perubahan status resmi dan laporan yang lolos moderasi untuk
       gunung yang diikuti, terurut waktu, dan **tidak memuat** gunung yang tidak diikuti.
-- [ ] Test: laporan tertunda dan ditolak tidak pernah muncul di kabar.
-- [ ] Test: §92 tetap berlaku di kabar, yaitu perubahan status resmi terbedakan dari
+- [x] Test: laporan tertunda dan ditolak tidak pernah muncul di kabar.
+- [x] Test: §92 tetap berlaku di kabar, yaitu perubahan status resmi terbedakan dari
       laporan komunitas secara visual.
-- [ ] Test: pendaki yang belum mengikuti gunung mana pun mendapat keadaan awal yang
+- [x] Test: pendaki yang belum mengikuti gunung mana pun mendapat keadaan awal yang
       mengajaknya memilih, bukan layar kosong.
-- [ ] Pint, suite, commit.
+- [x] Pint, suite, commit.
 
 ## Tugas 4: Halaman jalur publik
 
@@ -96,17 +96,17 @@ menyajikan status basi sebagai keadaan kini, dan mesin pencari justru membuat pe
 
 Rancangannya menjawab dengan tidak menampilkan yang berumur pendek:
 
-- [ ] Test gagal dulu: halaman jalur publik dapat dibuka tanpa login dan memuat nama,
+- [x] Test gagal dulu: halaman jalur publik dapat dibuka tanpa login dan memuat nama,
       gunung, provinsi, karakteristik, dan pos.
-- [ ] Test: halaman publik **tidak memuat status resmi maupun prakiraan cuaca**, karena
+- [x] Test: halaman publik **tidak memuat status resmi maupun prakiraan cuaca**, karena
       keduanya berumur pendek dan cuplikan pencarian akan mengawetkannya. Sebagai
       gantinya halaman menyebut bahwa status terkini ada di dalam aplikasi.
-- [ ] Test: halaman publik tidak memuat data pribadi siapa pun, termasuk nama pelapor.
-- [ ] Test: jalur yang belum terbit atau sudah diarsipkan tidak dapat diakses publik.
-- [ ] Test: sitemap hanya memuat jalur yang terbit.
-- [ ] Test: halaman yang sudah ada tetap berada di balik login; membuka satu pintu tidak
+- [x] Test: halaman publik tidak memuat data pribadi siapa pun, termasuk nama pelapor.
+- [x] Test: jalur yang belum terbit atau sudah diarsipkan tidak dapat diakses publik.
+- [x] Test: sitemap hanya memuat jalur yang terbit.
+- [x] Test: halaman yang sudah ada tetap berada di balik login; membuka satu pintu tidak
       membuka yang lain.
-- [ ] Pint, suite, commit.
+- [x] Pint, suite, commit.
 
 ---
 
@@ -117,3 +117,19 @@ Rancangannya menjawab dengan tidak menampilkan yang berumur pendek:
   mengembalikannya kepada pelapor.
 - Tugas 4 berdiri sendiri dan dapat dikerjakan lebih dulu bila pertumbuhan lebih
   mendesak daripada kehadiran komunitas.
+
+---
+
+## Hasil
+
+Selesai, dan diverifikasi pada 20 September 2026.
+
+Kotak centang di atas ditandai belakangan, bukan sambil jalan. Cara memastikannya
+dinyatakan apa adanya supaya tidak dikira lebih kuat daripada yang sebenarnya:
+deliverable tiap tugas dicari di kode dan ditemukan, lalu seluruh suite dijalankan dan
+lulus. Setiap langkah tidak ditelusuri ulang satu per satu.
+
+Satu kesalahan terjadi saat verifikasi ini dan dicatat supaya tidak diulang: model
+ucapan terima kasih sempat dilaporkan hilang karena dicari dengan nama `ReportThanks`,
+sedangkan namanya `ReportThank`. Nama jamak yang dikira benar adalah cara yang sama
+persis dengan kekeliruan `forgetCachedSnapshot` sebelumnya.

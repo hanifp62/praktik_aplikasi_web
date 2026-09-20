@@ -47,15 +47,15 @@ sekarang juga; Tugas 3 dan 4 menunggu satu keputusan rancangan yang diminta di b
 
 Seluruhnya dari data yang sudah ada.
 
-- [ ] Test gagal dulu: pemilik trip melihat ringkasan berisi nama jalur dan gunung,
+- [x] Test gagal dulu: pemilik trip melihat ringkasan berisi nama jalur dan gunung,
       tanggal, durasi dari `started_at` ke `ended_at`, pos terjauh yang dicapai, persen
       persiapan, hasil pendakian, dan catatan pribadinya.
-- [ ] Test: pendaki lain mendapat 403; trip yang belum selesai belum punya ringkasan.
-- [ ] Test: trip tanpa sesi pendakian, yaitu yang tidak pernah memakai hike mode, tetap
+- [x] Test: pendaki lain mendapat 403; trip yang belum selesai belum punya ringkasan.
+- [x] Test: trip tanpa sesi pendakian, yaitu yang tidak pernah memakai hike mode, tetap
       menampilkan ringkasan tanpa durasi, bukan halaman galat. Ini keadaan yang umum.
-- [ ] Bangun halamannya memakai `<x-ui.map>` dan `<x-ui.elevation-profile>` dari Fase 1.
-- [ ] Tautkan dari halaman riwayat dan dari halaman trip yang sudah selesai.
-- [ ] Pint, suite, commit.
+- [x] Bangun halamannya memakai `<x-ui.map>` dan `<x-ui.elevation-profile>` dari Fase 1.
+- [x] Tautkan dari halaman riwayat dan dari halaman trip yang sudah selesai.
+- [x] Pint, suite, commit.
 
 ## Tugas 2: Progres pribadi
 
@@ -66,17 +66,17 @@ Seluruhnya dari data yang sudah ada.
 
 Seluruhnya turunan dari `hiking_histories` dan `trails`.
 
-- [ ] Test gagal dulu terhadap angka yang dihitung tangan: jumlah pendakian selesai,
+- [x] Test gagal dulu terhadap angka yang dihitung tangan: jumlah pendakian selesai,
       gunung berbeda yang sudah didaki, akumulasi elevation gain, pendakian terpanjang.
-- [ ] Test: pendakian yang **tidak** selesai tidak ikut dihitung sebagai puncak, tetapi
+- [x] Test: pendakian yang **tidak** selesai tidak ikut dihitung sebagai puncak, tetapi
       tetap terhitung sebagai pendakian. Membatalkan pendakian karena cuaca adalah
       keputusan yang benar, dan menghapusnya dari riwayat menghukum keputusan itu.
-- [ ] Test: jalur tanpa `elevation_gain_m` tidak menaikkan akumulasi dan tidak dihitung
+- [x] Test: jalur tanpa `elevation_gain_m` tidak menaikkan akumulasi dan tidak dihitung
       sebagai nol; yang belum diketahui disebut, bukan dianggap nol (§95).
-- [ ] Test: angkanya milik pengguna itu sendiri, tidak pernah tercampur pengguna lain.
-- [ ] Peta gunung yang sudah didaki memakai `<x-ui.map>` dengan koordinat gunung yang
+- [x] Test: angkanya milik pengguna itu sendiri, tidak pernah tercampur pengguna lain.
+- [x] Peta gunung yang sudah didaki memakai `<x-ui.map>` dengan koordinat gunung yang
       sudah ada.
-- [ ] Pint, suite, commit.
+- [x] Pint, suite, commit.
 
 ---
 
@@ -113,3 +113,19 @@ Setelah keputusan itu diambil, Tugas 3 dan 4 disusun rinci:
 - **Tugas 4:** waktu tempuh khas antarpos dari data komunitas, diturunkan dari kedatangan
   pos yang ikut terekam. Ditampilkan sebagai rentang khas, bukan peringkat, dan hanya
   setelah cukup banyak pendakian tercatat agar angkanya tidak dibentuk satu orang.
+
+---
+
+## Hasil
+
+Selesai, dan diverifikasi pada 20 September 2026.
+
+Kotak centang di atas ditandai belakangan, bukan sambil jalan. Cara memastikannya
+dinyatakan apa adanya supaya tidak dikira lebih kuat daripada yang sebenarnya:
+deliverable tiap tugas dicari di kode dan ditemukan, lalu seluruh suite dijalankan dan
+lulus. Setiap langkah tidak ditelusuri ulang satu per satu.
+
+Satu kesalahan terjadi saat verifikasi ini dan dicatat supaya tidak diulang: model
+ucapan terima kasih sempat dilaporkan hilang karena dicari dengan nama `ReportThanks`,
+sedangkan namanya `ReportThank`. Nama jamak yang dikira benar adalah cara yang sama
+persis dengan kekeliruan `forgetCachedSnapshot` sebelumnya.

@@ -83,7 +83,7 @@ perlu diulang:
 dipakai puluhan ribu dasbor. Kanvas hangat mendekati kertas membuat permukaan putih di
 atasnya terbaca sebagai lembaran, bukan sebagai kotak di atas abu.
 
-- [ ] **Langkah 1: Tulis test yang gagal**
+- [~] **Langkah 1: Tulis test yang gagal**
 
 Buat `tests/Feature/SurfaceSystemTest.php`:
 
@@ -136,12 +136,12 @@ class SurfaceSystemTest extends TestCase
 }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [~] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/SurfaceSystemTest.php`
 Harapkan: GAGAL, tiga test, dengan pesan token tidak ditemukan.
 
-- [ ] **Langkah 3: Tambahkan token**
+- [~] **Langkah 3: Tambahkan token**
 
 Di `resources/css/app.css`, tepat sesudah baris `--radius-control: 0.375rem;`:
 
@@ -162,7 +162,7 @@ Di `resources/css/app.css`, tepat sesudah baris `--radius-control: 0.375rem;`:
         --hairline: 233 232 228;
 ```
 
-- [ ] **Langkah 4: Petakan ke Tailwind**
+- [~] **Langkah 4: Petakan ke Tailwind**
 
 Di `tailwind.config.js`, di dalam `colors`, tepat sesudah baris `control: token('control-border'),`:
 
@@ -172,7 +172,7 @@ Di `tailwind.config.js`, di dalam `colors`, tepat sesudah baris `control: token(
                 hairline: token('hairline'),
 ```
 
-- [ ] **Langkah 5: Pakai di layout**
+- [~] **Langkah 5: Pakai di layout**
 
 Di `resources/views/layouts/app.blade.php` baris 33, ganti:
 
@@ -186,12 +186,12 @@ menjadi:
         <div class="min-h-screen bg-canvas">
 ```
 
-- [ ] **Langkah 6: Jalankan dan pastikan lulus**
+- [~] **Langkah 6: Jalankan dan pastikan lulus**
 
 Jalankan: `php artisan test tests/Feature/SurfaceSystemTest.php`
 Harapkan: LULUS, tiga test.
 
-- [ ] **Langkah 7: Suite penuh, Pint, build**
+- [~] **Langkah 7: Suite penuh, Pint, build**
 
 ```bash
 ./vendor/bin/pint
@@ -201,7 +201,7 @@ npm run build
 
 Harapkan: 749 test hijau, Pint bersih, build selesai.
 
-- [ ] **Langkah 8: Commit**
+- [~] **Langkah 8: Commit**
 
 ```bash
 git add resources/css/app.css tailwind.config.js resources/views/layouts/app.blade.php tests/Feature/SurfaceSystemTest.php
@@ -223,7 +223,7 @@ git commit -m "feat: kanvas hangat dan token permukaan"
 halaman yang seluruh isinya melayang tidak punya bidang dasar. Satu garis rambut memisah
 dengan tegas tanpa menyatakan ketinggian yang tidak ada artinya.
 
-- [ ] **Langkah 1: Tulis test yang gagal**
+- [~] **Langkah 1: Tulis test yang gagal**
 
 Tambahkan ke `tests/Feature/SurfaceSystemTest.php`:
 
@@ -248,12 +248,12 @@ Tambahkan ke `tests/Feature/SurfaceSystemTest.php`:
     }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [~] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/SurfaceSystemTest.php --filter=drop_shadow`
 Harapkan: GAGAL, menyebut 26 berkas.
 
-- [ ] **Langkah 3: Ubah komponen kartu**
+- [~] **Langkah 3: Ubah komponen kartu**
 
 Di `resources/views/components/ui/card.blade.php` baris 3, ganti:
 
@@ -274,7 +274,7 @@ menjadi:
 <section {{ $attributes->merge(['class' => 'rounded-lg border border-hairline bg-surface p-6']) }}>
 ```
 
-- [ ] **Langkah 4: Cabut bayangan dari 26 berkas**
+- [~] **Langkah 4: Cabut bayangan dari 26 berkas**
 
 Jalankan penggantian mekanis, lalu periksa hasilnya:
 
@@ -287,7 +287,7 @@ grep -rn 'shadow-' resources/views --include=*.blade.php
 Harapkan pada perintah kedua: hanya `shadow-xl` pada `components/dropdown.blade.php` dan
 `shadow-md` bila ada. Keduanya ikut dicabut pada langkah berikutnya.
 
-- [ ] **Langkah 5: Ganti bayangan dropdown dengan hairline**
+- [~] **Langkah 5: Ganti bayangan dropdown dengan hairline**
 
 Dropdown melayang di atas isi halaman dan memang butuh pemisah lebih kuat daripada kartu.
 Di `resources/views/components/dropdown.blade.php`, ganti `shadow-xl` menjadi:
@@ -296,12 +296,12 @@ Di `resources/views/components/dropdown.blade.php`, ganti `shadow-xl` menjadi:
 ring-1 ring-black/5
 ```
 
-- [ ] **Langkah 6: Jalankan dan pastikan lulus**
+- [~] **Langkah 6: Jalankan dan pastikan lulus**
 
 Jalankan: `php artisan test tests/Feature/SurfaceSystemTest.php`
 Harapkan: LULUS, empat test.
 
-- [ ] **Langkah 7: Suite penuh, Pint, build**
+- [~] **Langkah 7: Suite penuh, Pint, build**
 
 ```bash
 ./vendor/bin/pint
@@ -314,7 +314,7 @@ terhadap surface; itu bukan pelanggaran karena garis dekoratif tidak diatur 1.4.
 testnya memang tidak memeriksanya. Kegagalan lain berarti ada kelas lain yang ikut
 tercabut `sed`, dan harus dikembalikan satu per satu.
 
-- [ ] **Langkah 8: Commit**
+- [~] **Langkah 8: Commit**
 
 ```bash
 git add resources/views tests/Feature/SurfaceSystemTest.php
@@ -337,7 +337,7 @@ git commit -m "feat: bayangan diganti garis rambut"
 halaman tidak punya titik masuk. Deskripsi `text-sm` memaksa kalimat penjelas dibaca pada
 ukuran terkecil, padahal justru kalimat itu yang menentukan apakah pembaca meneruskan.
 
-- [ ] **Langkah 1: Tulis test yang gagal**
+- [~] **Langkah 1: Tulis test yang gagal**
 
 Buat `tests/Feature/TypeScaleTest.php`:
 
@@ -402,12 +402,12 @@ class TypeScaleTest extends TestCase
 }
 ```
 
-- [ ] **Langkah 2: Jalankan dan pastikan gagal**
+- [~] **Langkah 2: Jalankan dan pastikan gagal**
 
 Jalankan: `php artisan test tests/Feature/TypeScaleTest.php`
 Harapkan: GAGAL, empat test.
 
-- [ ] **Langkah 3: Naikkan skala judul halaman**
+- [~] **Langkah 3: Naikkan skala judul halaman**
 
 Ganti seluruh isi `resources/views/components/ui/page-header.blade.php`:
 
@@ -434,7 +434,7 @@ Ganti seluruh isi `resources/views/components/ui/page-header.blade.php`:
 </div>
 ```
 
-- [ ] **Langkah 4: Naikkan judul kartu**
+- [~] **Langkah 4: Naikkan judul kartu**
 
 Di `resources/views/components/ui/card.blade.php`, ganti baris judul dan subjudul:
 
@@ -447,17 +447,17 @@ Di `resources/views/components/ui/card.blade.php`, ganti baris judul dan subjudu
     @endif
 ```
 
-- [ ] **Langkah 5: Naikkan deskripsi keadaan kosong**
+- [~] **Langkah 5: Naikkan deskripsi keadaan kosong**
 
 Di `resources/views/components/ui/empty-state.blade.php` baris 16, ganti `text-sm`
 menjadi `text-base`.
 
-- [ ] **Langkah 6: Jalankan dan pastikan lulus**
+- [~] **Langkah 6: Jalankan dan pastikan lulus**
 
 Jalankan: `php artisan test tests/Feature/TypeScaleTest.php`
 Harapkan: LULUS, empat test.
 
-- [ ] **Langkah 7: Suite penuh, Pint, build**
+- [~] **Langkah 7: Suite penuh, Pint, build**
 
 ```bash
 ./vendor/bin/pint
@@ -468,7 +468,7 @@ npm run build
 Harapkan: seluruh test hijau. `LandingPageTest` dan test yang mengasersi teks judul tetap
 lulus karena yang berubah ukurannya, bukan isinya.
 
-- [ ] **Langkah 8: Commit**
+- [~] **Langkah 8: Commit**
 
 ```bash
 git add resources/views/components/ui tests/Feature/TypeScaleTest.php
@@ -497,3 +497,13 @@ ketiganya ditolak di sini: skill itu menyasar mode Persuade, yaitu halaman yang 
 membujuk, sedangkan seluruh aplikasi ini mode Operate. Pada mode Operate, kemudahan
 memindai dan ekspektasi native mengalahkan ekspresi, dan animasi masuk pada halaman
 perencanaan keselamatan menunda isi demi hiasan.
+
+---
+
+## Hasil
+
+**Rencana ini tidak dijalankan.** Isinya diserap
+`docs/superpowers/plans/2026-09-20-sistem-desain.md`, yang menggantikannya seluruhnya.
+
+Kotak centangnya ditandai `[~]`, bukan `[x]`: langkahnya memang tidak pernah dikerjakan
+dalam bentuk ini, dan menandainya selesai akan menyatakan sesuatu yang tidak terjadi.

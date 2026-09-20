@@ -63,13 +63,13 @@ Berlaku untuk setiap tugas di bawah, tanpa perlu diulang:
 />
 ```
 
-- [ ] Test gagal dulu: komponen merender wadah dengan `role="region"`, `aria-label`
+- [x] Test gagal dulu: komponen merender wadah dengan `role="region"`, `aria-label`
       terisi, dan atribusi peta; tanpa geometri maupun penanda ia tidak merender apa pun.
-- [ ] Bangun komponennya dengan mencabut kode dari hike-mode, bukan menulis ulang.
+- [x] Bangun komponennya dengan mencabut kode dari hike-mode, bukan menulis ulang.
       Konfigurasi dibaca di dalam komponen dari `config('hiking.map')`.
-- [ ] Ganti hike-mode agar memakainya; `HikeModeTest` yang sudah ada harus tetap hijau
+- [x] Ganti hike-mode agar memakainya; `HikeModeTest` yang sudah ada harus tetap hijau
       tanpa diubah, itu buktinya perilakunya tidak bergeser.
-- [ ] Pint, suite penuh, commit.
+- [x] Pint, suite penuh, commit.
 
 ## Tugas 2: Halaman jalur menggambar geometrinya
 
@@ -78,11 +78,11 @@ Berlaku untuk setiap tugas di bawah, tanpa perlu diulang:
 
 Variabel `$geometry` sudah dioper ke view dan tidak pernah dipakai.
 
-- [ ] Test gagal dulu: jalur bergeometri menampilkan peta; jalur tanpa geometri tidak
+- [x] Test gagal dulu: jalur bergeometri menampilkan peta; jalur tanpa geometri tidak
       menampilkan wadah peta kosong, melainkan menyebut bahwa garis jalurnya belum ada
       dan siapa yang ditunggu (nada §92 dan halaman awaiting yang sudah ada).
-- [ ] Pasang `<x-ui.map>` dengan penanda pos.
-- [ ] Pint, suite, commit.
+- [x] Pasang `<x-ui.map>` dengan penanda pos.
+- [x] Pint, suite, commit.
 
 ## Tugas 3: Foto komunitas dikembalikan kepada pendaki
 
@@ -92,13 +92,13 @@ Variabel `$geometry` sudah dioper ke view dan tidak pernah dipakai.
 
 Foto hanya tampil di antrean moderasi.
 
-- [ ] Test gagal dulu: foto laporan **yang lolos moderasi** tampil di halaman jalur;
+- [x] Test gagal dulu: foto laporan **yang lolos moderasi** tampil di halaman jalur;
       laporan tertunda dan ditolak tidak; foto jalur lain tidak; setiap foto membawa
       pelapor dan tanggal pendakiannya; blok fotonya ditandai sebagai masukan komunitas,
       bukan keterangan resmi (§92).
-- [ ] Muat foto lewat relasi yang sudah ada dengan `visibleToPublic()`, tanpa menambah
+- [x] Muat foto lewat relasi yang sudah ada dengan `visibleToPublic()`, tanpa menambah
       query per foto.
-- [ ] Pint, suite, commit.
+- [x] Pint, suite, commit.
 
 ## Tugas 4: Penalaran Route Fit menjadi batang
 
@@ -108,23 +108,23 @@ Foto hanya tampil di antrean moderasi.
 
 `matched_factors` sudah tersimpan per baris hasil berisi skor dan bobot tiap faktor.
 
-- [ ] Test gagal dulu: tiap faktor tampil dengan namanya dan kekuatannya; **skor
+- [x] Test gagal dulu: tiap faktor tampil dengan namanya dan kekuatannya; **skor
       internal tidak pernah muncul** dalam teks, atribut, maupun nilai lebar yang dapat
       dibaca balik (BR-09); padanan teksnya ada untuk pembaca layar.
-- [ ] Bangun komponennya. Lebar batang memakai kategori kasar, bukan persentase skor.
-- [ ] Anggaran 120 kB harus tetap lolos; kalau terlampaui, batangnya dirender hanya pada
+- [x] Bangun komponennya. Lebar batang memakai kategori kasar, bukan persentase skor.
+- [x] Anggaran 120 kB harus tetap lolos; kalau terlampaui, batangnya dirender hanya pada
       kartu yang penjelasannya sedang dibuka.
-- [ ] Pint, suite, commit.
+- [x] Pint, suite, commit.
 
 ## Tugas 5: Pos sebagai perjalanan, bukan tabel
 
 **Berkas:** `resources/views/livewire/trails/trail-detail.blade.php`,
 `tests/Feature/CheckpointJourneyTest.php`
 
-- [ ] Test gagal dulu: pos tampil berurutan dengan jarak dan ketinggian masing-masing,
+- [x] Test gagal dulu: pos tampil berurutan dengan jarak dan ketinggian masing-masing,
       dan urutannya mengikuti `sequence`, bukan urutan penyisipan.
-- [ ] Bangun tampilannya sebagai garis waktu vertikal.
-- [ ] Pint, suite, commit.
+- [x] Bangun tampilannya sebagai garis waktu vertikal.
+- [x] Pint, suite, commit.
 
 ---
 
@@ -134,3 +134,19 @@ Foto hanya tampil di antrean moderasi.
   setengah jadi yang menunggu tugas lain.
 - Tidak ada tugas yang menambah tabel, kolom, atau konsep domain.
 - Ketergantungannya satu arah: Tugas 1 dipakai Tugas 2; sisanya saling bebas.
+
+---
+
+## Hasil
+
+Selesai, dan diverifikasi pada 20 September 2026.
+
+Kotak centang di atas ditandai belakangan, bukan sambil jalan. Cara memastikannya
+dinyatakan apa adanya supaya tidak dikira lebih kuat daripada yang sebenarnya:
+deliverable tiap tugas dicari di kode dan ditemukan, lalu seluruh suite dijalankan dan
+lulus. Setiap langkah tidak ditelusuri ulang satu per satu.
+
+Satu kesalahan terjadi saat verifikasi ini dan dicatat supaya tidak diulang: model
+ucapan terima kasih sempat dilaporkan hilang karena dicari dengan nama `ReportThanks`,
+sedangkan namanya `ReportThank`. Nama jamak yang dikira benar adalah cara yang sama
+persis dengan kekeliruan `forgetCachedSnapshot` sebelumnya.
