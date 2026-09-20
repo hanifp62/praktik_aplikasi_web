@@ -38,6 +38,11 @@ export default {
                     800: token('brand-800'),
                     900: token('brand-900'),
                 },
+                community: {
+                    50: token('community-50'),
+                    500: token('community-500'),
+                    900: token('community-900'),
+                },
                 warn: {
                     50: token('warn-50'),
                     100: token('warn-100'),

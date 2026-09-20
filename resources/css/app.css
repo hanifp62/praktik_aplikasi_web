@@ -46,6 +46,11 @@
         --warn-600: 217 119 6;
         --warn-900: 120 53 15;
 
+        /* Komunitas - membedakan masukan pendaki lain dari keterangan resmi (§92). */
+        --community-50: 240 249 255;
+        --community-500: 14 165 233;
+        --community-900: 12 74 110;
+
         /* Bahaya — penutupan resmi, tindakan merusak. */
         --danger-50: 255 241 242;
         --danger-100: 255 228 230;

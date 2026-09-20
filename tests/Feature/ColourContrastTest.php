@@ -111,6 +111,46 @@ class ColourContrastTest extends TestCase
         $this->assertStringContainsString('brand-', $input);
     }
 
+    /**
+     * Sisa Breeze memakai hover yang MENERANG: bg-red-600 menjadi bg-red-500. Putih di
+     * atas red-500 hanya 3.76:1, jadi tombol hapus paling sulit dibaca tepat saat jari
+     * menunjuknya. Token danger menggelap saat hover.
+     */
+    public function test_the_danger_button_darkens_on_hover_instead_of_lightening(): void
+    {
+        $isi = File::get(resource_path('views/components/danger-button.blade.php'));
+
+        $this->assertStringContainsString('hover:bg-danger-700', $isi);
+
+        $normal = $this->ratio($this->token('danger-600'), $this->token('white'));
+        $hover = $this->ratio($this->token('danger-700'), $this->token('white'));
+
+        $this->assertGreaterThanOrEqual(self::NORMAL_TEXT, $normal);
+        $this->assertGreaterThan($normal, $hover, 'Hover harus menggelap, bukan menerang.');
+    }
+
+    /**
+     * Palet mentah Tailwind tidak boleh masuk view: warnanya tidak pernah dihitung
+     * kontrasnya dan tidak ikut berubah ketika palet aplikasi disesuaikan. Abu dibiarkan
+     * karena memang palet netral yang tidak ditokenkan.
+     */
+    public function test_no_view_uses_a_raw_semantic_colour(): void
+    {
+        $pelanggar = [];
+
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            // Komentar Blade dilewati: nama warna lama sering disebut di sana justru
+            // untuk menjelaskan mengapa ia diganti.
+            $isi = preg_replace('/\{\{--.*?--\}\}/s', ' ', $berkas->getContents());
+
+            if (preg_match('/\b(?:text|bg|border|ring)-(?:red|rose|emerald|green|amber|yellow|indigo|blue|sky)-\d{2,3}\b/', $isi)) {
+                $pelanggar[] = $berkas->getRelativePathname();
+            }
+        }
+
+        $this->assertSame([], $pelanggar, 'Warna mentah di: '.implode(', ', $pelanggar));
+    }
+
     public function test_the_focus_ring_is_distinguishable_from_the_page(): void
     {
         // Focus ring adalah komponen non-teks, jadi ambangnya 3:1 (WCAG 1.4.11).

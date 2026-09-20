@@ -49,7 +49,7 @@
 
                             <div class="mt-3 flex flex-wrap gap-2">
                                 @foreach ($report->tags() as $tag)
-                                    <span class="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs text-sky-900">{{ $tag->label() }}</span>
+                                    <span class="rounded-full bg-community-50 px-2.5 py-0.5 text-xs text-community-900">{{ $tag->label() }}</span>
                                 @endforeach
                             </div>
 

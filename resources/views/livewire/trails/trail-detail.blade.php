@@ -238,7 +238,7 @@
         @endif
 
         {{-- COMMUNITY: supplementary field intelligence, never official status (PRD §49). --}}
-        <x-ui.card class="border-l-4 border-l-sky-500" title="Laporan kondisi dari komunitas"
+        <x-ui.card class="border-l-4 border-l-community-500" title="Laporan kondisi dari komunitas"
             subtitle="Laporan pendaki lain bersifat informasi tambahan dan tidak mengubah status resmi.">
             @if ($conditions['community_context']['available'])
                 <ul class="space-y-3">
@@ -246,7 +246,7 @@
                         <li class="rounded-md border border-gray-100 px-3 py-2 text-sm">
                             <div class="flex flex-wrap gap-2">
                                 @foreach ($report->tags() as $tag)
-                                    <span class="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs text-sky-900">{{ $tag->label() }}</span>
+                                    <span class="rounded-full bg-community-50 px-2.5 py-0.5 text-xs text-community-900">{{ $tag->label() }}</span>
                                 @endforeach
                             </div>
                             @if ($report->note)

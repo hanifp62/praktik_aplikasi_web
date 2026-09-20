@@ -18,6 +18,15 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
+        {{-- WCAG 2.4.1: pengguna keyboard tidak perlu menekan Tab melewati seluruh
+             navigasi di setiap halaman. Tersembunyi sampai difokuskan. --}}
+        <a href="#konten"
+            class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50
+                focus:rounded-control focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-sm
+                focus:font-medium focus:text-white">
+            Lewati ke konten utama
+        </a>
+
         <div class="min-h-screen bg-gray-100">
             <livewire:layout.navigation />
 
@@ -31,7 +40,7 @@
             @endif
 
             <!-- Page Content -->
-            <main>
+            <main id="konten" tabindex="-1">
                 {{ $slot }}
             </main>
         </div>
