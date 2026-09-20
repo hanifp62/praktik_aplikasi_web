@@ -8,6 +8,7 @@ use App\Enums\TripType;
 use App\Models\HikingGoal;
 use App\Services\AnalyticsRecorder;
 use App\Services\RouteFitService;
+use App\Support\Timezone;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Layout;
@@ -52,7 +53,7 @@ class GoalForm extends Component
     protected function rules(): array
     {
         return [
-            'target_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'target_date' => ['nullable', 'date', 'after_or_equal:'.Timezone::earliestDateInIndonesia()],
             'region' => ['nullable', 'string', 'max:100'],
             'trip_type' => ['required', new Enum(TripType::class)],
             'expected_duration_minutes' => ['nullable', 'integer', 'min:60', 'max:20160'],

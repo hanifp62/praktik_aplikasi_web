@@ -9,6 +9,7 @@ use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Services\AnalyticsRecorder;
 use App\Services\PreparationService;
+use App\Support\Timezone;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Layout;
@@ -74,7 +75,7 @@ class TripForm extends Component
             )],
             'hiking_goal_id' => ['nullable', 'exists:hiking_goals,id'],
             'name' => ['required', 'string', 'max:120'],
-            'planned_date' => ['required', 'date', 'after_or_equal:today'],
+            'planned_date' => ['required', 'date', 'after_or_equal:'.Timezone::earliestDateInIndonesia()],
             'start_time' => ['nullable', 'date_format:H:i'],
             'trip_type' => ['required', new Enum(TripType::class)],
             'notes' => ['nullable', 'string', 'max:1000'],

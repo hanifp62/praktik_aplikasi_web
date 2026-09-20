@@ -25,6 +25,37 @@ class Timezone
 
     public const DEFAULT = 'Asia/Jakarta';
 
+    /**
+     * Lantai untuk tanggal yang harus berada di masa depan, seperti tanggal rencana.
+     *
+     * Aturan bawaan Laravel memakai "today" yang diselesaikan menurut zona aplikasi,
+     * dan zona itu UTC. Tidak ada pengguna sistem ini yang hidup di UTC: selama tujuh
+     * jam setiap hari tanggal UTC masih tanggal kemarin bagi WIB, sembilan jam bagi WIT,
+     * dan di jendela itu rencana untuk hari yang sudah lewat lolos validasi.
+     *
+     * WIB adalah zona Indonesia yang paling akhir berganti hari, jadi tanggalnya selalu
+     * yang terkecil di antara ketiganya. Memakainya sebagai lantai membuat aturan ini
+     * tidak pernah menolak rencana sah dari zona mana pun, sekaligus menutup jendela
+     * tujuh jam tadi.
+     */
+    public static function earliestDateInIndonesia(): string
+    {
+        return Carbon::now('Asia/Jakarta')->toDateString();
+    }
+
+    /**
+     * Langit-langit untuk tanggal yang harus sudah lewat, seperti tanggal pendakian
+     * pada laporan kondisi.
+     *
+     * Kebalikannya: WIT paling dahulu berganti hari, jadi tanggalnya selalu yang
+     * terbesar. Tanpa ini, pendaki yang turun dini hari lalu melaporkan kondisi jalur
+     * hari itu juga ditolak karena bagi UTC tanggalnya masih besok.
+     */
+    public static function latestDateInIndonesia(): string
+    {
+        return Carbon::now('Asia/Jayapura')->toDateString();
+    }
+
     public static function forTrail(Trail $trail): string
     {
         $timezone = $trail->relationLoaded('mountain')

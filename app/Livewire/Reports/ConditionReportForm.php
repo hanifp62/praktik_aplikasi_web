@@ -10,6 +10,7 @@ use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Services\AnalyticsRecorder;
 use App\Support\ImageSanitizer;
+use App\Support\Timezone;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -58,7 +59,7 @@ class ConditionReportForm extends Component
         return [
             'trail_id' => ['required', 'exists:trails,id'],
             'trail_segment_id' => ['nullable', Rule::exists('trail_segments', 'id')->where('trail_id', $this->trail_id)],
-            'hike_date' => ['required', 'date', 'before_or_equal:today'],
+            'hike_date' => ['required', 'date', 'before_or_equal:'.Timezone::latestDateInIndonesia()],
             'condition_tags' => ['required', 'array', 'min:1'],
             'condition_tags.*' => [Rule::enum(ConditionTag::class)],
             'note' => ['nullable', 'string', 'max:1000'],
