@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -65,6 +66,62 @@ class KeyboardAndScreenReaderTest extends TestCase
     public function test_every_page_has_a_main_landmark(string $url): void
     {
         $this->assertStringContainsString('<main', $this->berkas($url));
+    }
+
+    /**
+     * Sapuan, bukan dua halaman yang disebut namanya.
+     *
+     * Dua test di atas memeriksa daftar yang ditulis tangan, dan daftar yang ditulis
+     * tangan berhenti lengkap pada hari ia ditulis: empat halaman yang dibuat sesudahnya
+     * tidak pernah ikut diperiksa. Kelas cacat yang sama sudah muncul pada test kontras
+     * dan pada anggaran query halaman.
+     *
+     * Yang disapu rute GET tanpa parameter, karena rute berparameter butuh data contoh
+     * yang berbeda-beda dan lebih tepat diuji di test fiturnya masing-masing.
+     */
+    public function test_every_parameterless_page_carries_the_skip_link_and_main_landmark(): void
+    {
+        $user = User::factory()->create();
+        $user->profile()->create(['experience_level' => 'INTERMEDIATE', 'completed_at' => now()]);
+
+        $tanpaLandmark = [];
+        $tanpaLewati = [];
+
+        foreach (Route::getRoutes() as $rute) {
+            if (! in_array('GET', $rute->methods(), true) || str_contains($rute->uri(), '{')) {
+                continue;
+            }
+
+            // Hanya halaman aplikasi. Manifest, service worker, sitemap, dan endpoint
+            // kesehatan bukan halaman dan tidak punya navigasi untuk dilewati.
+            if (! in_array('web', $rute->gatherMiddleware(), true)
+                || preg_match('/^(sitemap\.xml|sw\.js|manifest|up$|logout)/', $rute->uri())) {
+                continue;
+            }
+
+            $respons = $this->actingAs($user)->get('/'.ltrim($rute->uri(), '/'));
+
+            if ($respons->getStatusCode() !== 200) {
+                continue;
+            }
+
+            $isi = $respons->getContent();
+
+            if (! str_contains($isi, '<main')) {
+                $tanpaLandmark[] = $rute->uri();
+            }
+
+            // Tautan lewati hanya dituntut ketika ada yang perlu dilewati. WCAG 2.4.1
+            // mengatur melewati blok berulang, dan halaman tanpa navigasi seperti
+            // halaman depan dan halaman luring tidak punya blok berulang sama sekali.
+            // Menuntutnya di sana menambah satu tautan yang tidak menuju ke mana-mana.
+            if (str_contains($isi, '<nav') && ! str_contains($isi, 'href="#konten"')) {
+                $tanpaLewati[] = $rute->uri();
+            }
+        }
+
+        $this->assertSame([], $tanpaLandmark, 'Tanpa landmark utama: '.implode(', ', $tanpaLandmark));
+        $this->assertSame([], $tanpaLewati, 'Tanpa tautan lewati navigasi: '.implode(', ', $tanpaLewati));
     }
 
     /**
