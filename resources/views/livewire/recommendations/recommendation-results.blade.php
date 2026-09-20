@@ -206,6 +206,11 @@
             tidak boleh berarti menyembunyikan jalur yang lolos penilaian. Jumlahnya
             disebut supaya pendaki tahu persis berapa yang belum dilihatnya.
         --}}
+        {{-- Bentuk yang sudah terlihat memberi tahu apa yang sedang ditunggu. Empat baris
+             karena itu kira-kira tinggi satu kartu jalur, jadi daftarnya tidak melompat
+             ketika isinya tiba. --}}
+        <x-ui.skeleton :rows="4" wire:loading wire:target="tampilkanLagi" class="mt-4" />
+
         @if ($sisaEligible > 0)
             <div class="mt-4">
                 <x-ui.button variant="secondary" wire:click="tampilkanLagi">Tampilkan {{ $sisaEligible }} jalur lainnya</x-ui.button>
