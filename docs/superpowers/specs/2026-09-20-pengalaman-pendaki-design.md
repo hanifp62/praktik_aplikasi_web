@@ -75,17 +75,38 @@ komunitas (§92).**
 Segmen dan papan peringkat Strava lahir dari bersepeda jalan raya. Di gunung, mengejar
 waktu tercepat membunuh orang.
 
-Tetapi mekanismenya tidak dibuang, **metriknya yang diganti**. Papan peringkat tetap ada
-dan tetap kompetitif, hanya yang diperingkat bukan kecepatan melainkan:
+~~Tetapi mekanismenya tidak dibuang, metriknya yang diganti: papan peringkat tetap ada
+dan tetap kompetitif, hanya yang diperingkat jumlah puncak, jalur yang dilengkapi, dan
+laporan yang lolos moderasi.~~
 
-- jumlah puncak yang didaki
-- jalur yang datanya dilengkapi
-- laporan kondisi yang disumbangkan dan lolos moderasi
+**Direvisi 20 September 2026, setelah riset yang semestinya dilakukan sebelum aturan ini
+ditulis.**
 
-Ini bukan kompromi, melainkan keuntungan ganda. Aplikasi ini punya 29 jalur yang
-datanya kosong; memberi penghargaan pada kontribusi menyelesaikan masalah dingin-mula
-datanya sekaligus. Energi yang di Strava mendorong orang mengambil risiko, di sini
-mendorong orang mengisi data yang memang dibutuhkan.
+Bukti terhadap papan peringkat ternyata kuat dan langsung mengenai produk ini. Pemetaan
+sistematis atas efek negatif gamifikasi menemukan **kehilangan performa sebagai efek
+yang paling sering muncul, dengan papan peringkat sebagai elemen yang paling sering
+disebut**, dan mencatat bahwa peringkat di lingkungan kooperatif dapat memicu pelecehan.
+Penelitian pada Stack Overflow menemukan kebutuhan memenangkan reputasi memengaruhi
+kualitas jawaban. Satu kasus nyata: papan peringkat real-time pada pekerja kebersihan
+hotel merusak kualitas lingkungan kerja, menambah stres, dan menaikkan angka cedera.
+
+Akibatnya untuk produk ini spesifik dan berat. Memberi peringkat berdasarkan **jumlah**
+laporan menghasilkan laporan bervolume tinggi bermutu rendah, dan itu menyerang §60,
+yaitu model kepercayaan data yang menjadi seluruh nilai produk ini. Mengalihkan energi
+kompetitif dari kecepatan ke kontribusi ternyata memindahkan bahayanya, bukan
+menghilangkannya: yang tadinya membahayakan pendakinya sendiri kini membahayakan
+keandalan data yang dipakai pendaki lain.
+
+**Yang dipakai sebagai gantinya: pengakuan atas kegunaan, bukan peringkat atas jumlah.**
+
+- Nama pelapor tercantum pada laporannya (sudah berjalan).
+- Ucapan terima kasih dari pendaki lain, yang menghargai laporan yang **menolong**,
+  bukan laporan yang **banyak**.
+- Umpan balik dampak: berapa pendaki membaca laporan Anda.
+- Progres pribadi yang tidak dibandingkan dengan siapa pun (sudah berjalan).
+
+Ketiganya memberi competence dan relatedness yang dicari SDT tanpa satu pun mekanisme
+yang memberi hadiah pada volume.
 
 ### Aturan 2: kudos diarahkan ke perilaku yang memang dibutuhkan produk
 
