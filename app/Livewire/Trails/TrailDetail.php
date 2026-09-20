@@ -3,6 +3,7 @@
 namespace App\Livewire\Trails;
 
 use App\Models\Trail;
+use App\Services\CheckpointPaceService;
 use App\Services\ConditionAggregatorService;
 use App\Services\PermitService;
 use App\Services\RouteFitService;
@@ -52,6 +53,9 @@ class TrailDetail extends Component
             'fit' => $fit,
             'geometry' => $this->trail->readGeoJson('geometry'),
             'permit' => app(PermitService::class)->requirementFor($this->trail),
+            // Waktu tempuh antarpos dari rekaman pendaki. Hasilnya di-cache mengikuti
+            // TTL publik, jadi halaman ini tidak menghitung ulang tiap kali dibuka.
+            'tempoPos' => app(CheckpointPaceService::class)->forTrail($this->trail),
         ])->title($this->trail->name.' - '.$this->trail->mountain->name);
     }
 }

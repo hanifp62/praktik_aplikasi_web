@@ -1,9 +1,28 @@
-@props(['checkpoints'])
+@props(['checkpoints', 'paces' => []])
 
 @php
     use App\Support\GpxTrack;
 
     $pos = collect($checkpoints)->sortBy('sequence')->values();
+
+    $tempo = collect($paces)->keyBy(fn ($t) => $t['dari'].'-'.$t['ke']);
+
+    /*
+     * Ditulis sebagai cabang eksplisit, bukan rtrim.
+     *
+     * rtrim memperlakukan argumen keduanya sebagai himpunan karakter, bukan akhiran,
+     * sehingga "1 jam 0 menit" terkikis menjadi "1 ja".
+     */
+    $sebagaiWaktu = function (int $menit) {
+        if ($menit < 60) {
+            return $menit.' menit';
+        }
+
+        $jam = intdiv($menit, 60);
+        $sisa = $menit % 60;
+
+        return $sisa === 0 ? $jam.' jam' : $jam.' jam '.$sisa.' menit';
+    };
 
     /*
      * Yang dihitung di sini adalah apa yang terjadi di ANTARA dua pos, karena di situlah
@@ -62,7 +81,26 @@
                 <div class="flex w-7 justify-center">
                     <span class="w-px bg-gray-300"></span>
                 </div>
-                <p class="py-1 text-xs text-gray-600">{{ $antara[$i] }}</p>
+                <div class="py-1 text-xs">
+                    <p class="text-gray-600">{{ $antara[$i] }}</p>
+
+                    {{--
+                        Waktu tempuh dari rekaman pendaki, bukan dari rumus.
+
+                        Yang disebut mediannya beserta rentang teramati, dan jumlah
+                        rekamannya ikut ditulis supaya pembaca dapat menimbang sendiri
+                        seberapa jauh angka itu dipercaya. Rentangnya ditampilkan karena
+                        justru rentang itulah yang cakupannya dapat dipertanggungjawabkan
+                        pada sampel sekecil ini.
+                    --}}
+                    @if ($t = $tempo->get($pos[$i - 1]->id.'-'.$pos[$i]->id))
+                        <p class="mt-0.5 text-gray-700">
+                            Biasanya {{ $sebagaiWaktu($t['median_menit']) }},
+                            terentang {{ $sebagaiWaktu($t['min_menit']) }} sampai {{ $sebagaiWaktu($t['maks_menit']) }}
+                            <span class="text-gray-500">menurut {{ $t['rekaman'] }} rekaman pendaki</span>
+                        </p>
+                    @endif
+                </div>
             </li>
         @endif
 

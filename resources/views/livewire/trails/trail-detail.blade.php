@@ -259,7 +259,7 @@
                 @if ($trail->checkpoints->isEmpty())
                     <p class="text-sm text-gray-600">Daftar pos jalur ini belum dimasukkan.</p>
                 @else
-                    <x-ui.checkpoint-journey :checkpoints="$trail->checkpoints" class="space-y-1" />
+                    <x-ui.checkpoint-journey :checkpoints="$trail->checkpoints" :paces="$tempoPos" class="space-y-1" />
                 @endif
             </div>
         </section>
