@@ -16,6 +16,11 @@
         'admin.audit' => 'Jejak Audit',
         'admin.analytics' => 'Analitik',
     ];
+
+    // Satu query agregat. Angkanya sengaja dibawa ke setiap halaman admin: status yang
+    // kedaluwarsa membuat jalur kehilangan status resmi tanpa suara (§95), jadi admin
+    // harus melihatnya tanpa perlu membuka halaman status lebih dulu.
+    $perluDitinjau = app(App\Services\DataFreshnessService::class)->reviewCount();
 @endphp
 
 <nav aria-label="Navigasi admin" class="mb-6 border-b border-gray-200">
@@ -31,6 +36,13 @@
                             ? 'border-brand-600 text-brand-900'
                             : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
                     {{ $label }}
+
+                    @if ($route === 'admin.statuses' && $perluDitinjau > 0)
+                        <span class="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-warn-100 px-1.5 py-0.5 text-xs font-semibold text-warn-900">
+                            {{ $perluDitinjau }}
+                            <span class="sr-only">status perlu ditinjau</span>
+                        </span>
+                    @endif
                 </a>
             </li>
         @endforeach

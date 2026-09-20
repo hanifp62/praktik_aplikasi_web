@@ -116,6 +116,20 @@ return [
     | Unggahan (PRD §81)
     |--------------------------------------------------------------------------
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Kesegaran data resmi (PRD §93, §98)
+    |--------------------------------------------------------------------------
+    */
+    'freshness' => [
+        // Status yang tidak diverifikasi ulang selama ini dianggap perlu ditinjau.
+        'status_review_days' => 90,
+
+        // Peringatan sebelum masa berlaku habis, agar sempat diperpanjang sebelum
+        // jalurnya kehilangan status resmi.
+        'status_expiry_warning_days' => 14,
+    ],
+
     'uploads' => [
         'report_photo_max_kb' => 4096,
 

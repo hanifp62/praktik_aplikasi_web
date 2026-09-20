@@ -9,6 +9,52 @@
             <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
 
+        {{--
+            Panel ini diletakkan sebelum formulir karena mendesak: status yang kedaluwarsa
+            membuat jalurnya berjalan tanpa status resmi, dan §95 membuat kemundurannya
+            senyap. Admin harus melihat apa yang perlu ditindak sebelum menambah yang baru.
+        --}}
+        @if ($tinjau['kedaluwarsa']->isNotEmpty() || $tinjau['segera']->isNotEmpty() || $tinjau['basi']->isNotEmpty())
+            <x-ui.card class="mb-6" title="Perlu ditinjau">
+                <div class="space-y-5">
+                    @foreach ([
+                        'kedaluwarsa' => ['Sudah kedaluwarsa', 'Jalur ini sekarang berjalan tanpa status resmi dan ditampilkan sebagai belum diketahui.'],
+                        'segera' => ['Akan segera kedaluwarsa', 'Masih sempat diperpanjang sebelum statusnya hilang.'],
+                        'basi' => ['Lama tidak diverifikasi', 'Catatannya masih berlaku, tetapi belum dipastikan ulang ke pengelola.'],
+                    ] as $kunci => [$judul, $penjelasan])
+                        @if ($tinjau[$kunci]->isNotEmpty())
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">
+                                    {{ $judul }} ({{ $tinjau[$kunci]->count() }})
+                                </h3>
+                                <p class="mt-0.5 text-xs text-gray-600">{{ $penjelasan }}</p>
+
+                                <ul class="mt-2 space-y-1 text-sm">
+                                    @foreach ($tinjau[$kunci] as $item)
+                                        <li class="flex flex-wrap items-baseline gap-x-2 text-gray-700">
+                                            <span class="font-medium text-gray-900">
+                                                {{ $item->statusable?->name ?? 'Objek terhapus' }}
+                                            </span>
+                                            <x-ui.status-badge :status="$item->status" />
+                                            <span class="text-xs text-gray-600">
+                                                @if ($kunci === 'basi')
+                                                    {{ $item->verified_at
+                                                        ? 'terakhir diverifikasi '.$item->verified_at->translatedFormat('d M Y')
+                                                        : 'belum pernah diverifikasi' }}
+                                                @else
+                                                    berlaku sampai {{ $item->expires_at->translatedFormat('d M Y') }}
+                                                @endif
+                                            </span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            </x-ui.card>
+        @endif
+
         <x-ui.card class="mb-6" title="Catat status resmi">
             <form wire:submit="save" class="space-y-4">
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

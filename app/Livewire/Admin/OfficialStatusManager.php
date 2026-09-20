@@ -10,6 +10,7 @@ use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\TrailSegment;
 use App\Services\AuditLogService;
+use App\Services\DataFreshnessService;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Layout;
@@ -131,6 +132,7 @@ class OfficialStatusManager extends Component
             'sources' => DataSource::orderBy('source_name')->get(),
             'records' => OfficialStatus::query()->with('statusable', 'recordedBy')
                 ->orderByDesc('created_at')->paginate(10),
+            'tinjau' => app(DataFreshnessService::class)->review(),
         ]);
     }
 }
