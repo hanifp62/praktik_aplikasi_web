@@ -34,6 +34,12 @@ class DatabaseSeeder extends Seeder
             RecommendationRuleSeeder::class,
             PreparationTemplateSeeder::class,
             MvpDatasetSeeder::class,
+
+            // Urutannya penting: status melekat pada gunung, jadi gunungnya harus ada
+            // lebih dulu. MvpDatasetSeeder dibiarkan di depan karena jalur-jalurnya
+            // menempel pada gunung yang sama dan diperbarui, bukan digandakan.
+            MountainSeeder::class,
+            OfficialStatusSeeder::class,
         ]);
     }
 }
