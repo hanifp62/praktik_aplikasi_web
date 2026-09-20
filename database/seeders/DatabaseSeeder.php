@@ -41,6 +41,8 @@ class DatabaseSeeder extends Seeder
             MountainSeeder::class,
             OfficialStatusSeeder::class,
             PermitRequirementSeeder::class,
+            AuthoritySeeder::class,
+            AwaitingTrailSeeder::class,
         ]);
     }
 }

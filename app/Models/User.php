@@ -28,6 +28,27 @@ class User extends Authenticatable
         ];
     }
 
+    public function expertCredentials(): HasMany
+    {
+        return $this->hasMany(ExpertCredential::class);
+    }
+
+    /**
+     * Kredensial yang benar-benar memberi hak menyumbang data jalur untuk satu gunung.
+     *
+     * Mengembalikan kredensialnya, bukan sekadar benar atau salah, supaya pemanggil dapat
+     * mencatat sertifikat mana yang dipakai. Siapa menyumbang atas dasar apa adalah fakta
+     * yang harus tersimpan, bukan disimpulkan belakangan.
+     */
+    public function usableTrailCredentialFor(int $mountainId): ?ExpertCredential
+    {
+        return $this->expertCredentials()
+            ->usable()
+            ->with('mountains')
+            ->get()
+            ->first(fn (ExpertCredential $k) => $k->mayContributeTrailData() && $k->coversMountain($mountainId));
+    }
+
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
