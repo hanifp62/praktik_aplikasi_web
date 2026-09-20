@@ -44,7 +44,7 @@
                                 </a>
                             </h2>
                             <p class="text-sm text-secondary">{{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }}</p>
-                            <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
+                            <dl class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 text-sm">
                                 <div>
                                     <dt class="text-muted">Jarak</dt>
                                     <dd class="font-medium text-primary">{{ $trail->distance_km ?? '-' }} km</dd>

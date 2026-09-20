@@ -68,7 +68,7 @@ new class extends Component
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-muted bg-white hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 transition ease-in-out duration-150">
+                        <button class="inline-flex items-center min-h-11 px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-muted bg-white hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 transition ease-in-out duration-150">
                             <div x-data="{{ json_encode(['name' => auth()->user()->name]) }}" x-text="name" x-on:profile-updated.window="name = $event.detail.name"></div>
 
                             <div class="ms-1">
@@ -85,7 +85,7 @@ new class extends Component
                         </x-dropdown-link>
 
                         <!-- Authentication -->
-                        <button wire:click="logout" class="w-full text-start">
+                        <button wire:click="logout" class="flex min-h-11 w-full items-center text-start">
                             <x-dropdown-link>
                                 {{ __('Log Out') }}
                             </x-dropdown-link>
@@ -96,7 +96,7 @@ new class extends Component
 
             <!-- Hamburger -->
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-muted hover:text-muted hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:bg-surface-sunken focus-visible:text-muted transition duration-150 ease-in-out">
+                <button @click="open = ! open" class="inline-flex min-h-11 min-w-11 items-center justify-center p-2 rounded-md text-muted hover:text-muted hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:bg-surface-sunken focus-visible:text-muted transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -160,7 +160,7 @@ new class extends Component
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
-                <button wire:click="logout" class="w-full text-start">
+                <button wire:click="logout" class="flex min-h-11 w-full items-center text-start">
                     <x-responsive-nav-link>
                         {{ __('Log Out') }}
                     </x-responsive-nav-link>
