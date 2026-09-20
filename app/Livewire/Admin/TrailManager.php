@@ -201,7 +201,7 @@ class TrailManager extends Component
     public function render()
     {
         return view('livewire.admin.trail-manager', [
-            'trails' => Trail::query()->with('mountain')->withCount('checkpoints')->orderBy('name')->paginate(10),
+            'trails' => Trail::query()->with('mountain')->withCount(['checkpoints', 'officialStatuses'])->orderBy('name')->paginate(10),
             'mountains' => Mountain::active()->orderBy('name')->get(),
             'sources' => DataSource::orderBy('source_name')->get(),
             'technicalLevels' => TechnicalDemand::cases(),

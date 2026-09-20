@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'mountain_id', 'name', 'slug', 'description', 'distance_km', 'elevation_gain_m',
@@ -149,6 +150,23 @@ class Trail extends Model
     }
 
     /**
+     * Jumlah baris sebuah relasi, memakai hasil withCount() bila tersedia dan hanya
+     * menanyakan basis data ketika tidak.
+     */
+    private function countFor(string $relation): int
+    {
+        // withCount() menamai atributnya dari nama relasi apa adanya, tanpa
+        // di-singular-kan: officialStatuses menjadi official_statuses_count.
+        $attribute = Str::snake($relation).'_count';
+
+        if (array_key_exists($attribute, $this->attributes)) {
+            return (int) $this->attributes[$attribute];
+        }
+
+        return $this->{$relation}()->count();
+    }
+
+    /**
      * PRD §110: syarat minimum sebelum sebuah jalur boleh dipublikasikan.
      *
      * Mengembalikan daftar yang belum terpenuhi agar kurator tahu persis apa yang
@@ -169,11 +187,14 @@ class Trail extends Model
             $missing[] = 'Karakteristik dasar belum lengkap (jarak, elevation gain, estimasi durasi).';
         }
 
-        if (! $this->checkpoints()->exists()) {
+        // Memakai hasil withCount() bila pemanggil sudah memuatnya. Tanpa ini setiap
+        // baris pada daftar admin menambah dua query, dan bebannya tumbuh linear
+        // terhadap jumlah jalur.
+        if ($this->countFor('checkpoints') === 0) {
             $missing[] = 'Jalur belum memiliki checkpoint.';
         }
 
-        if (! $this->officialStatuses()->exists()) {
+        if ($this->countFor('officialStatuses') === 0) {
             $missing[] = 'Status resmi belum pernah dicatat.';
         }
 
