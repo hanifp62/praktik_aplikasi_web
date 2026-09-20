@@ -84,6 +84,14 @@
             </x-ui.card>
         @endif
 
+        {{-- Trip yang sudah selesai punya hasilnya sendiri, dan dari sinilah pendaki
+             paling mungkin mencarinya, bukan lewat daftar riwayat. --}}
+        @if ($trip->history)
+            <x-ui.card title="Pendakian ini sudah selesai">
+                <x-ui.button href="{{ route('history.summary', $trip) }}">Lihat hasil pendakian</x-ui.button>
+            </x-ui.card>
+        @endif
+
         @if ($trip->status->isActive())
             <x-ui.card title="Tindakan">
                 <div class="flex flex-wrap gap-3">

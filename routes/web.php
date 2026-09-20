@@ -18,6 +18,7 @@ use App\Livewire\Admin\UsabilityStudy;
 use App\Livewire\Contribute\TrailContribution;
 use App\Livewire\Dashboard;
 use App\Livewire\Goals\GoalForm;
+use App\Livewire\History\HikeSummary;
 use App\Livewire\History\HikingHistoryPage;
 use App\Livewire\Moderation\ModerationQueue;
 use App\Livewire\Onboarding\ProfileSetup;
@@ -59,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/create', ConditionReportForm::class)->name('reports.create');
     Route::get('reports/{report}/photo', ReportPhotoController::class)->name('reports.photo');
     Route::get('history', HikingHistoryPage::class)->name('history');
+    Route::get('history/{trip}', HikeSummary::class)->name('history.summary');
 
     // Terbuka untuk pemegang kredensial yang berlaku; komponennya menolak yang lain.
     Route::get('kontribusi', TrailContribution::class)->name('contribute');

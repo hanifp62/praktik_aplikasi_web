@@ -18,7 +18,12 @@
                         <x-ui.card>
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <h2 class="text-base font-semibold text-gray-900">{{ $entry->trail->name }}</h2>
+                                    <h2 class="text-base font-semibold text-gray-900">
+                                        <a href="{{ route('history.summary', $entry->trip_plan_id) }}" wire:navigate
+                                            class="hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                                            {{ $entry->trail->name }}
+                                        </a>
+                                    </h2>
                                     <p class="text-sm text-gray-600">{{ $entry->trail->mountain->name }}</p>
                                     <p class="mt-1 text-sm text-gray-500">
                                         {{ $entry->completed_at->translatedFormat('d M Y') }} &middot;
