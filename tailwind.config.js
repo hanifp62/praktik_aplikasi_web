@@ -49,6 +49,21 @@ export default {
                 // WCAG 1.4.11 hanya mengatur yang interaktif.
                 control: token('control-border'),
 
+                /*
+                 * Lapisan semantik. Namanya menyebut peran, bukan warna: text-primary
+                 * bukan text-gray-900. View tidak lagi memilih abu sendiri-sendiri, dan
+                 * mengubah rasa seluruh aplikasi cukup menyentuh nilainya di app.css.
+                 */
+                canvas: token('canvas'),
+                surface: {
+                    DEFAULT: token('surface'),
+                    sunken: token('surface-sunken'),
+                },
+                subtle: token('border-subtle'),
+                primary: token('text-primary'),
+                secondary: token('text-secondary'),
+                muted: token('text-muted'),
+
                 brand: {
                     50: token('brand-50'),
                     100: token('brand-100'),
