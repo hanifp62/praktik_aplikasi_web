@@ -102,10 +102,10 @@
                         { enableHighAccuracy: true, timeout: 15000 }
                     );
                 },
-                renderMap() {
+                async renderMap() {
                     const container = document.getElementById('hike-map');
 
-                    if (!container || typeof maplibregl === 'undefined') {
+                    if (!container || typeof window.muatPeta !== 'function') {
                         return;
                     }
 
@@ -114,6 +114,14 @@
 
                     if (checkpoints.length === 0 && !geometry) {
                         container.innerHTML = '<p class="p-4 text-sm text-gray-600">Data peta jalur belum tersedia.</p>';
+                        return;
+                    }
+
+                    // Pustaka peta baru diunduh di sini, satu-satunya halaman yang memakainya.
+                    const maplibregl = await window.muatPeta().catch(() => null);
+
+                    if (!maplibregl) {
+                        container.innerHTML = '<p class="p-4 text-sm text-gray-600">Peta gagal dimuat. Data checkpoint di bawah tetap dapat dipakai.</p>';
                         return;
                     }
 

@@ -99,6 +99,10 @@ Dicatat terbuka supaya tidak terlupakan:
 
 **PHP di Windows butuh CA bundle.** Tanpa `curl.cainfo` dan `openssl.cafile` di `php.ini`, setiap panggilan HTTPS dari PHP gagal dengan cURL error 60, termasuk pengambilan prakiraan BMKG. `curl.exe` tetap berhasil karena membawa bundle sendiri, sehingga gejalanya mudah salah dibaca sebagai masalah API. Arahkan keduanya ke sebuah `ca-bundle.crt`; Git for Windows sudah menyertakan satu.
 
+**RLS menyala tanpa satu pun policy, dan itu memang disengaja.** Supabase memberi peran `anon` dan `authenticated` hak penuh atas tabel di schema `public` lalu mengeksposnya lewat REST API dengan kunci yang memang dirancang untuk dipublikasikan. Aplikasi ini tidak pernah memakai PostgREST; ia terhubung langsung sebagai `postgres`, pemilik tabelnya, yang melewati RLS. Jadi RLS tanpa policy berarti "tolak semua" bagi REST API sekaligus "tidak berpengaruh" bagi Laravel. Advisor Supabase akan menandainya sebagai `rls_enabled_no_policy` level INFO; itu keadaan yang benar di sini, bukan pekerjaan yang belum selesai. Jangan menambahkan policy untuk meredakan advisor. Migrasinya juga mencabut GRANT, karena **TRUNCATE tidak tunduk pada RLS** dan tanpa pencabutan itu `audit_logs` masih dapat dikosongkan.
+
+**Pustaka peta dimuat sesuai kebutuhan.** `resources/js/app.js` hanya memuat sebuah fungsi `window.muatPeta()`; MapLibre yang 787 kB baru diunduh ketika mode pendakian benar-benar menggambar peta. Menambahkan `import 'maplibre-gl'` kembali ke `app.js` akan mengembalikan beban itu ke seluruh halaman.
+
 **Suite spasial menghapus isi basis data.** Ia memakai RefreshDatabase, jadi `SPATIAL_TEST_DSN` harus menunjuk Postgres lokal. Host yang tampak seperti basis data sungguhan ditolak oleh guard di `tests/Spatial/SpatialTestCase.php`, tetapi guard itu mengenali pola nama, bukan segalanya.
 
 **Prakiraan cuaca perlu dijadwalkan.** `weather:refresh` sudah terdaftar dua kali sehari di `routes/console.php`, tetapi scheduler Laravel hanya berjalan bila `php artisan schedule:work` atau cron memanggilnya. Tanpa itu kolom cuaca akan basi lalu kosong.
