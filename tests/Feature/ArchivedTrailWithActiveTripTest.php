@@ -36,6 +36,27 @@ class ArchivedTrailWithActiveTripTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Jangkar sama seperti StaleReadinessTest: planned_date di bawah dibangun dari
+     * Carbon::now('Asia/Jakarta'), dan tanpa jam yang dipatok, tanggalnya bisa
+     * bergeser satu hari tergantung kapan suite ini kebetulan berjalan.
+     */
+    private const HARI_DIUJI_UTC = '2026-09-10 08:00:00';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Carbon::setTestNow(Carbon::parse(self::HARI_DIUJI_UTC, 'UTC'));
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
     private function tripKeJalurTerbit(): TripPlan
     {
         $user = User::factory()->create();

@@ -39,6 +39,22 @@ class StaleReadinessTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Pukul 08:00 UTC, jauh dari 17:00 UTC tempat tanggal WIB sudah berganti hari
+     * sementara tanggal UTC belum. Tanpa jangkar ini, effective_at yang dibangun dari
+     * Carbon::now('Asia/Jakarta') bisa jatuh di sisi hari yang salah tergantung jam
+     * sungguhan saat suite berjalan, dan test ini pernah gagal karena itu, bukan
+     * karena kodenya berubah.
+     */
+    private const HARI_DIUJI_UTC = '2026-09-10 08:00:00';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Carbon::setTestNow(Carbon::parse(self::HARI_DIUJI_UTC, 'UTC'));
+    }
+
     private function tripYangDinilaiSiap(): TripPlan
     {
         $user = User::factory()->create();

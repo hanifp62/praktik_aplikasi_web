@@ -31,6 +31,22 @@ class TripPermitWindowTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Pukul 08:00 UTC, jauh dari 17:00 UTC tempat tanggal WIB sudah berganti hari
+     * sementara tanggal UTC belum. planned_date di bawah dibangun dari
+     * Carbon::now('Asia/Jakarta') lalu dibandingkan dengan now() biasa (UTC) di
+     * PermitService; tanpa jangkar ini keduanya bisa berselisih satu hari tergantung
+     * jam sungguhan saat suite berjalan.
+     */
+    private const HARI_DIUJI_UTC = '2026-09-10 08:00:00';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Carbon::setTestNow(Carbon::parse(self::HARI_DIUJI_UTC, 'UTC'));
+    }
+
     protected function tearDown(): void
     {
         Carbon::setTestNow();
