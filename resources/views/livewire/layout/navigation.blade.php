@@ -29,38 +29,29 @@ new class extends Component
                 </div>
 
                 <!-- Navigation Links -->
+                {{--
+                    Lima permukaan, bukan sembilan kata benda: satu temuan (Jelajah), satu
+                    pilihan (Pertimbangkan), satu tindakan (Perjalanan), dan dua permukaan
+                    kembali (Progres, Kabar). Dasbor dan peran (Moderasi, Admin) tidak lagi
+                    tautan di sini; dasbor tetap halaman mendarat lewat logo, dan peran
+                    pindah ke dropdown profil.
+                --}}
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
+                    <x-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*') || request()->routeIs('goals.*')" wire:navigate>
+                        Jelajah
                     </x-nav-link>
-                    <x-nav-link :href="route('goals.create')" :active="request()->routeIs('goals.*')" wire:navigate>
-                        Buat Rencana
-                    </x-nav-link>
-                    <x-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*')" wire:navigate>
-                        Jalur
+                    <x-nav-link :href="route('trails.compare')" :active="request()->routeIs('trails.compare')" wire:navigate>
+                        Pertimbangkan
                     </x-nav-link>
                     <x-nav-link :href="route('trips.index')" :active="request()->routeIs('trips.*')" wire:navigate>
-                        Trip
+                        Perjalanan
                     </x-nav-link>
-                    <x-nav-link :href="route('history')" :active="request()->routeIs('history')" wire:navigate>
-                        Riwayat
-                    </x-nav-link>
-                    <x-nav-link :href="route('progress')" :active="request()->routeIs('progress')" wire:navigate>
+                    <x-nav-link :href="route('progress')" :active="request()->routeIs('progress') || request()->routeIs('history')" wire:navigate>
                         Progres
                     </x-nav-link>
                     <x-nav-link :href="route('news')" :active="request()->routeIs('news')" wire:navigate>
                         Kabar
                     </x-nav-link>
-                    @if (auth()->user()?->isModerator())
-                        <x-nav-link :href="route('moderation.queue')" :active="request()->routeIs('moderation.*')" wire:navigate>
-                            Moderasi
-                        </x-nav-link>
-                    @endif
-                    @if (auth()->user()?->isAdmin())
-                        <x-nav-link :href="route('admin.trails')" :active="request()->routeIs('admin.*')" wire:navigate>
-                            Admin
-                        </x-nav-link>
-                    @endif
                 </div>
             </div>
 
@@ -83,6 +74,18 @@ new class extends Component
                         <x-dropdown-link :href="route('profile')" wire:navigate>
                             {{ __('Profile') }}
                         </x-dropdown-link>
+
+                        {{-- Peran, bukan tahap perjalanan: penjaganya ikut pindah ke sini, tidak dihapus. --}}
+                        @if (auth()->user()?->isModerator())
+                            <x-dropdown-link :href="route('moderation.queue')" wire:navigate>
+                                Moderasi
+                            </x-dropdown-link>
+                        @endif
+                        @if (auth()->user()?->isAdmin())
+                            <x-dropdown-link :href="route('admin.trails')" wire:navigate>
+                                Admin
+                            </x-dropdown-link>
+                        @endif
 
                         <!-- Authentication -->
                         <button wire:click="logout" class="flex min-h-11 w-full items-center text-start">
@@ -114,37 +117,21 @@ new class extends Component
             aplikasi tidak terjangkau justru di tempat ia paling sering dipakai.
         --}}
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                Dasbor
+            <x-responsive-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*') || request()->routeIs('goals.*')" wire:navigate>
+                Jelajah
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('goals.create')" :active="request()->routeIs('goals.*')" wire:navigate>
-                Buat Rencana
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*')" wire:navigate>
-                Jalur
+            <x-responsive-nav-link :href="route('trails.compare')" :active="request()->routeIs('trails.compare')" wire:navigate>
+                Pertimbangkan
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('trips.index')" :active="request()->routeIs('trips.*')" wire:navigate>
-                Trip
+                Perjalanan
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('history')" :active="request()->routeIs('history')" wire:navigate>
-                Riwayat
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('progress')" :active="request()->routeIs('progress')" wire:navigate>
+            <x-responsive-nav-link :href="route('progress')" :active="request()->routeIs('progress') || request()->routeIs('history')" wire:navigate>
                 Progres
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('news')" :active="request()->routeIs('news')" wire:navigate>
                 Kabar
             </x-responsive-nav-link>
-            @if (auth()->user()?->isModerator())
-                <x-responsive-nav-link :href="route('moderation.queue')" :active="request()->routeIs('moderation.*')" wire:navigate>
-                    Moderasi
-                </x-responsive-nav-link>
-            @endif
-            @if (auth()->user()?->isAdmin())
-                <x-responsive-nav-link :href="route('admin.trails')" :active="request()->routeIs('admin.*')" wire:navigate>
-                    Admin
-                </x-responsive-nav-link>
-            @endif
         </div>
 
         <!-- Responsive Settings Options -->
@@ -158,6 +145,18 @@ new class extends Component
                 <x-responsive-nav-link :href="route('profile')" wire:navigate>
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
+
+                {{-- Peran, bukan tahap perjalanan: penjaganya ikut pindah ke sini, tidak dihapus. --}}
+                @if (auth()->user()?->isModerator())
+                    <x-responsive-nav-link :href="route('moderation.queue')" wire:navigate>
+                        Moderasi
+                    </x-responsive-nav-link>
+                @endif
+                @if (auth()->user()?->isAdmin())
+                    <x-responsive-nav-link :href="route('admin.trails')" wire:navigate>
+                        Admin
+                    </x-responsive-nav-link>
+                @endif
 
                 <!-- Authentication -->
                 <button wire:click="logout" class="flex min-h-11 w-full items-center text-start">

@@ -40,7 +40,14 @@ class NavigationConsistencyTest extends TestCase
     }
 
     /**
-     * Alur produknya rencana dulu, baru menjelajah jalur. Urutan menunya mengikuti itu.
+     * Alur produknya menjelajah, menimbang, lalu berjalan. Urutan menunya mengikuti itu.
+     *
+     * Dua yang pertama adalah menemukan dan memilih, yang ketiga menjalankannya, dan dua
+     * yang terakhir permukaan kembali, yaitu alasan membuka aplikasi ketika alurnya sudah
+     * selesai. Keduanya berkelompok di ujung alih-alih menyela alurnya.
+     *
+     * Dua kali percobaan menempatkan permukaan kembali di tengah lolos ke dalam kode dan
+     * ditangkap test ini, jadi urutannya bukan kerapian belaka.
      */
     public function test_the_order_follows_the_product_flow(): void
     {
@@ -48,15 +55,9 @@ class NavigationConsistencyTest extends TestCase
 
         preg_match_all("/<x-nav-link :href=\"route\('([a-z.]+)'\)/", $isi, $cocok);
 
-        // Empat yang pertama adalah alur perencanaan. Tiga yang terakhir permukaan
-        // kembali, yaitu alasan membuka aplikasi ketika alurnya sudah selesai, dan
-        // ketiganya berkelompok di ujung alih-alih menyela alurnya.
-        //
-        // Dua kali percobaan menempatkannya di tengah lolos ke dalam kode dan ditangkap
-        // test ini: progres sebelum riwayat, lalu kabar tepat setelah dasbor.
         $this->assertSame(
-            ['dashboard', 'goals.create', 'trails.index', 'trips.index', 'history', 'progress', 'news'],
-            array_slice($cocok[1], 0, 7)
+            ['trails.index', 'trails.compare', 'trips.index', 'progress', 'news'],
+            array_slice($cocok[1], 0, 5)
         );
     }
 
@@ -66,5 +67,28 @@ class NavigationConsistencyTest extends TestCase
             ->get('/dashboard')
             ->assertOk()
             ->assertDontSee(route('admin.trails'), escape: false);
+    }
+
+    /**
+     * Menu adalah perjalanan, bukan daftar tabel.
+     *
+     * Diukur sebelum diubah: sembilan kata benda di menu utama, sementara §7 menetapkan
+     * satu loop delapan tahap. AllTrails memakai lima tab, Strava lima, Traveloka empat,
+     * dan semuanya campuran satu permukaan temuan, satu milik-saya, satu tindakan, satu
+     * identitas. Sembilan kata benda adalah struktur basis data yang bocor ke menu.
+     */
+    public function test_the_main_menu_is_five_surfaces_not_nine_nouns(): void
+    {
+        $isi = File::get(
+            resource_path('views/livewire/layout/navigation.blade.php')
+        );
+
+        // Peran, bukan tahap perjalanan: keduanya pindah ke menu profil.
+        $this->assertStringNotContainsString("routeIs('admin.*')", $isi);
+        $this->assertStringNotContainsString("routeIs('moderation.*')", $isi);
+
+        foreach (['Jelajah', 'Pertimbangkan', 'Perjalanan', 'Progres', 'Kabar'] as $permukaan) {
+            $this->assertStringContainsString($permukaan, $isi, "Permukaan {$permukaan} hilang dari menu.");
+        }
     }
 }
