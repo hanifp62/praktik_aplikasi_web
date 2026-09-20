@@ -70,11 +70,16 @@ class TypographySystemTest extends TestCase
      * Kontras tipografi butuh lebih dari satu suara. Satu keluarga huruf pada satu
      * ukuran tidak dapat membedakan judul dari keterangan selain lewat ketebalan, dan
      * ketebalan saja habis setelah dua tingkat.
+     *
+     * Yang dituntut keluarganya ada, bukan berupa unduhan. Versi pertama memeriksa
+     * "mono: [" dan menolak konfigurasi ketika mono beralih ke tumpukan sistem — padahal
+     * peralihan itu justru perbaikannya: huruf mono yang diunduh seluruh pengguna hanya
+     * dipakai dua baris di satu halaman admin.
      */
     public function test_there_is_a_display_face_and_a_measurement_face(): void
     {
         $this->assertMatchesRegularExpression('/serif:\s*\[/', $this->tailwind());
-        $this->assertMatchesRegularExpression('/mono:\s*\[/', $this->tailwind());
+        $this->assertMatchesRegularExpression('/mono:\s*(?:\[|defaultTheme)/', $this->tailwind());
     }
 
     /**
@@ -131,6 +136,44 @@ class TypographySystemTest extends TestCase
             '/body\s*\{[^}]*font-size/s',
             $css,
             'Ukuran baca dasar harus ditetapkan, bukan diwarisi dari peramban.'
+        );
+    }
+
+    /**
+     * Huruf yang dimuat setiap halaman benar-benar dipakai setiap halaman.
+     *
+     * Diukur dan ternyata tidak: JetBrains Mono dimuat di layout untuk seluruh pengguna,
+     * dua bobot sekaligus, dan dipakai di dua baris pada satu halaman admin. Alasan yang
+     * tertulis di tailwind.config.js menyebutnya "khusus pengukuran: jarak, elevation
+     * gain, durasi, dan koordinat", dan tidak satu pun pengukuran memakainya: semuanya
+     * memakai tabular-nums pada huruf sans.
+     *
+     * Alasan yang menggambarkan pemakaian yang tidak ada lebih buruk daripada tidak ada
+     * alasan sama sekali, karena ia menghentikan pertanyaan berikutnya.
+     */
+    public function test_no_webfont_is_loaded_for_a_handful_of_lines(): void
+    {
+        $layout = File::get(resource_path('views/layouts/app.blade.php'));
+
+        preg_match('/css\?family=([^"&]+)/', $layout, $m);
+
+        $dimuat = collect(explode('|', $m[1] ?? ''))
+            ->map(fn (string $satu) => explode(':', $satu)[0])
+            ->filter()
+            ->values();
+
+        $this->assertNotEmpty($dimuat, 'Layout tidak memuat huruf apa pun.');
+
+        $pemakaian = 0;
+
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            $pemakaian += substr_count($berkas->getContents(), 'font-mono');
+        }
+
+        $this->assertStringNotContainsString(
+            'jetbrains-mono',
+            $m[1] ?? '',
+            "JetBrains Mono dimuat setiap halaman dan dipakai {$pemakaian} kali, seluruhnya di halaman admin. Huruf mono sistem tidak menagih unduhan kepada siapa pun."
         );
     }
 }

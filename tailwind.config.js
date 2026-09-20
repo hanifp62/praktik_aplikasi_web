@@ -35,13 +35,24 @@ export default {
              * tidak dapat dicapai ketebalan huruf sans, dan membedakan judul dari
              * antarmuka tanpa membesarkannya sampai berteriak.
              *
-             * JetBrains Mono khusus pengukuran: jarak, elevation gain, durasi, dan
-             * koordinat. Angka adalah data, bukan prosa.
+             * Huruf mono memakai tumpukan sistem, tanpa unduhan.
+             *
+             * Komentar sebelumnya di sini menyebut JetBrains Mono "khusus pengukuran:
+             * jarak, elevation gain, durasi, dan koordinat". Ketika akhirnya diukur,
+             * tidak satu pun pengukuran memakainya: semuanya memakai tabular-nums pada
+             * huruf sans, dan font-mono muncul tepat dua kali, keduanya pada kunci tugas
+             * penjadwal di satu halaman admin.
+             *
+             * Jadi seluruh pengguna mengunduh dua bobot huruf untuk dua baris yang tidak
+             * pernah mereka lihat. Pertanyaan R-06 "mengapa huruf ini" ternyata punya
+             * jawaban yang lebih sederhana daripada mencari penggantinya: tidak perlu
+             * huruf mono sama sekali. Kunci penjadwal seperti weather:refresh justru
+             * persis yang pantas memakai huruf mono bawaan sistem.
              */
             fontFamily: {
                 sans: ['Plus Jakarta Sans', ...defaultTheme.fontFamily.sans],
                 serif: ['Newsreader', ...defaultTheme.fontFamily.serif],
-                mono: ['JetBrains Mono', ...defaultTheme.fontFamily.mono],
+                mono: defaultTheme.fontFamily.mono,
             },
 
             colors: {
