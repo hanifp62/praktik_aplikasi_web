@@ -4,6 +4,7 @@ namespace App\Livewire\Trails;
 
 use App\Models\Trail;
 use App\Services\OfficialStatusService;
+use App\Services\TrailFitService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -45,11 +46,19 @@ class RouteComparison extends Component
                 ->where('hike_date', '>=', now()->subDays(30)->toDateString())])
             ->get();
 
+        // Kecocokan dinilai hanya untuk yang profilnya cukup, sama seperti halaman
+        // jelajah: menilai tanpa profil menghasilkan label yang terlihat pasti dan
+        // berdasar ketiadaan, dan itu persis yang dilarang §91.
+        $ringkasanFit = auth()->user()?->hasCompletedProfile()
+            ? app(TrailFitService::class)->forTrails(auth()->user(), $trails)
+            : [];
+
         return view('livewire.trails.route-comparison', [
             'trails' => $trails,
             'statuses' => $trails->mapWithKeys(fn (Trail $trail) => [
                 $trail->id => $officialStatus->effectiveStatusForTrail($trail),
             ]),
+            'ringkasanFit' => $ringkasanFit,
         ]);
     }
 }

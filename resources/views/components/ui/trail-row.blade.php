@@ -1,4 +1,4 @@
-@props(['trail', 'fit' => null])
+@props(['trail', 'fit' => null, 'ditimbang' => false])
 
 @php
     use App\Enums\WaterAvailability;
@@ -96,4 +96,12 @@
     @if ($fit)
         <x-ui.fit-line :summary="$fit" />
     @endif
+
+    {{-- Di atas lapisan tautan baris lewat relative z-10: tanpa itu, after:inset-0
+         milik judul menutupi tombolnya dan menimbang jalur justru membuka jalurnya. --}}
+    <div class="relative z-10 mt-3">
+        <x-ui.button size="sm" variant="secondary" wire:click="timbang({{ $trail->id }})">
+            {{ $ditimbang ? 'Keluarkan dari timbangan' : 'Timbang jalur ini' }}
+        </x-ui.button>
+    </div>
 </article>

@@ -191,4 +191,73 @@ class AmbientFitTest extends TestCase
         $halaman->assertSee('untuk rencana ini');
         $halaman->assertSee('data-fit-reason', escape: false);
     }
+
+    /**
+     * Daftar trip membawa kecocokan dasar tanpa goal, sebentuk dengan halaman jelajah.
+     *
+     * Keputusan desainnya sudah diambil di Tugas 5: daftar trip adalah permukaan
+     * pemindaian, dan kecocokan tajam yang sadar-rencana sudah tinggal di halaman trip.
+     * Menyalakan kecocokan per-goal di sini berarti satu goal berbeda per baris, dan itu
+     * batching yang berbeda sama sekali tanpa imbalan sepadan -- karena itu baris ini
+     * tetap menampilkan "Kecocokan dasar" meski trip-nya sendiri punya goal.
+     */
+    public function test_the_trip_list_shows_the_ambient_fit_for_each_trip(): void
+    {
+        $user = $this->pendakiDenganProfil();
+        $trail = $this->jalurTerbit();
+        $goal = HikingGoal::factory()->for($user)->create();
+        TripPlan::factory()->for($user)->create([
+            'trail_id' => $trail->id,
+            'hiking_goal_id' => $goal->id,
+        ]);
+
+        $halaman = $this->actingAs($user)->get(route('trips.index'));
+
+        $halaman->assertOk();
+        $halaman->assertSee('data-fit-reason', escape: false);
+        $halaman->assertSee('Kecocokan dasar');
+    }
+
+    /**
+     * Anggaran query daftar trip tidak tumbuh mengikuti jumlah trip.
+     *
+     * Pola pengukurannya sama dengan test_the_fit_path_does_not_grow_with_the_number_of_trails:
+     * sedikit lawan banyak sesudah pemanasan, bukan angka mutlak, karena angka mutlak
+     * bergantung pada middleware dan konfigurasi test yang bisa berubah tanpa
+     * berhubungan dengan N+1 di jalur ini.
+     */
+    public function test_the_trip_list_fit_path_does_not_grow_with_the_number_of_trips(): void
+    {
+        $user = $this->pendakiDenganProfil();
+
+        TripPlan::factory()->for($user)->count(2)->create([
+            'trail_id' => fn () => $this->jalurTerbit()->id,
+        ]);
+
+        $this->actingAs($user);
+
+        // Pemanasan: pengukuran pertama menghitung cache yang terisi, bukan pertumbuhan.
+        $this->get(route('trips.index'));
+
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $this->get(route('trips.index'));
+        $sedikit = count(DB::getQueryLog());
+
+        TripPlan::factory()->for($user)->count(15)->create([
+            'trail_id' => fn () => $this->jalurTerbit()->id,
+        ]);
+
+        DB::flushQueryLog();
+        $this->get(route('trips.index'));
+        $banyak = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertGreaterThan(0, $sedikit, 'Tidak ada query sama sekali; pengukurannya tidak mengukur apa pun.');
+        $this->assertLessThanOrEqual(
+            $sedikit,
+            $banyak,
+            "Beban tumbuh ketika kecocokan dinilai: {$sedikit} lalu {$banyak}. Ada N+1 di jalur fit."
+        );
+    }
 }

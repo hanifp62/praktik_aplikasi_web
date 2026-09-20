@@ -55,7 +55,9 @@
 
             <div class="border-t border-subtle">
                 @foreach ($trails as $trail)
-                    <x-ui.trail-row :trail="$trail" :fit="$ringkasanFit[$trail->id] ?? null" />
+                    <x-ui.trail-row :trail="$trail"
+                        :fit="$ringkasanFit[$trail->id] ?? null"
+                        :ditimbang="$ditimbang->contains('id', $trail->id)" />
                 @endforeach
             </div>
 
@@ -96,5 +98,11 @@
                 </ul>
             </section>
         @endif
+
+        @if (session('timbangan-penuh'))
+            <x-ui.alert variant="warning" class="mt-4">{{ session('timbangan-penuh') }}</x-ui.alert>
+        @endif
+
+        <x-ui.consideration-tray :trails="$ditimbang" />
     </div>
 </div>

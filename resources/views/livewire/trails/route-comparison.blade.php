@@ -29,19 +29,41 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {{--
+                            Barisnya dimensi ongkos, bukan daftar kolom basis data.
+
+                            Tujuan pengguna yang sebenarnya, menurut riset AllTrails, adalah
+                            memperkirakan berapa waktu dan tenaga yang harus ia keluarkan.
+                            Urutannya mengikuti itu: yang paling menentukan keputusan lebih
+                            dulu.
+                        --}}
                         @php
                             $rows = [
-                                'Jarak' => fn ($trail) => ($trail->distance_km ?? '-').' km',
-                                'Elevation gain' => fn ($trail) => ($trail->elevation_gain_m ?? '-').' m',
-                                'Estimasi durasi' => fn ($trail) => $trail->estimated_duration_minutes
-                                    ? round($trail->estimated_duration_minutes / 60, 1).' jam' : '-',
-                                'Tingkat teknis' => fn ($trail) => $trail->technical_demand->label(),
-                                'Navigasi' => fn ($trail) => $trail->navigation_complexity->label(),
-                                'Sumber air' => fn ($trail) => $trail->water_availability->label(),
-                                'Camping' => fn ($trail) => $trail->camping_available ? 'Tersedia' : 'Tidak tersedia',
-                                'Laporan komunitas (30 hari)' => fn ($trail) => $trail->condition_reports_count.' laporan',
+                                'Waktu' => fn ($t) => \App\Support\Durasi::panjang($t->estimated_duration_minutes),
+                                'Jarak' => fn ($t) => $t->distance_km !== null ? number_format((float) $t->distance_km, 1, ',', '.').' km' : '-',
+                                'Tanjakan' => fn ($t) => $t->elevation_gain_m !== null ? number_format($t->elevation_gain_m, 0, ',', '.').' m' : '-',
+                                'Kecuraman' => fn ($t) => ($t->distance_km && $t->elevation_gain_m)
+                                    ? number_format(round($t->elevation_gain_m / (float) $t->distance_km), 0, ',', '.').' m/km'
+                                    : '-',
+                                'Tuntutan teknis' => fn ($t) => $t->technical_demand->label(),
+                                'Kerumitan navigasi' => fn ($t) => $t->navigation_complexity->label(),
+                                'Air' => fn ($t) => $t->water_availability->label(),
+                                'Berkemah' => fn ($t) => $t->camping_available ? 'Bisa' : 'Tidak',
                             ];
                         @endphp
+
+                        <tr class="border-b border-subtle">
+                            <th scope="row" class="py-3 pr-4 text-left font-medium text-secondary">Kecocokan untuk Anda</th>
+                            @foreach ($trails as $trail)
+                                <td class="py-3 pr-4">
+                                    @if (isset($ringkasanFit[$trail->id]))
+                                        <x-ui.fit-line :summary="$ringkasanFit[$trail->id]" />
+                                    @else
+                                        <span class="text-sm text-muted">Belum dinilai</span>
+                                    @endif
+                                </td>
+                            @endforeach
+                        </tr>
 
                         {{-- daftar tetap: pilihan yang ditetapkan di kode, tidak pernah kosong. --}}
                         @foreach ($rows as $label => $resolver)

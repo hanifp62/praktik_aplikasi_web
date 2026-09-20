@@ -27,6 +27,10 @@
                                     <p class="mt-1 text-sm text-muted">
                                         {{ $trip->planned_date->translatedFormat('d M Y') }} &middot; {{ $trip->trip_type->label() }}
                                     </p>
+
+                                    @if (isset($ringkasanFit[$trip->trail_id]))
+                                        <x-ui.fit-line :summary="$ringkasanFit[$trip->trail_id]" />
+                                    @endif
                                 </div>
                                 <div class="text-right">
                                     <span class="inline-block rounded-control bg-surface-sunken px-2.5 py-1 text-xs font-medium text-secondary">
