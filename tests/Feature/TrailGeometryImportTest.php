@@ -29,7 +29,7 @@ class TrailGeometryImportTest extends TestCase
         $trail = Trail::factory()->create();
 
         $this->actingAs($this->admin())
-            ->get(route('admin.geometry', $trail))
+            ->get(route('trails.geometry', $trail))
             ->assertOk()
             ->assertSee('Impor Geometri Jalur');
     }
@@ -39,7 +39,7 @@ class TrailGeometryImportTest extends TestCase
         $trail = Trail::factory()->create();
 
         $this->actingAs(User::factory()->create())
-            ->get(route('admin.geometry', $trail))
+            ->get(route('trails.geometry', $trail))
             ->assertForbidden();
     }
 
@@ -108,7 +108,7 @@ class TrailGeometryImportTest extends TestCase
         $this->actingAs($this->admin())
             ->get('/admin/trails')
             ->assertOk()
-            ->assertSee(route('admin.geometry', $trail), escape: false);
+            ->assertSee(route('trails.geometry', $trail), escape: false);
     }
 
     /**

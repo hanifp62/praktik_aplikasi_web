@@ -105,8 +105,8 @@
                             <td class="p-4">
                                 <div class="flex flex-wrap gap-2">
                                     <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $trail->id }})">Ubah</x-ui.button>
-                                    <x-ui.button variant="secondary" size="sm" href="{{ route('admin.checkpoints', $trail) }}">Checkpoint</x-ui.button>
-                                    <x-ui.button variant="secondary" size="sm" href="{{ route('admin.geometry', $trail) }}">Geometri</x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm" href="{{ route('trails.checkpoints', $trail) }}">Checkpoint</x-ui.button>
+                                    <x-ui.button variant="secondary" size="sm" href="{{ route('trails.geometry', $trail) }}">Geometri</x-ui.button>
                                     {{--
                                         Konfirmasi hanya pada arah yang menghilangkan jalur dari
                                         hadapan pendaki. Menerbitkan atau mengaktifkan kembali tidak

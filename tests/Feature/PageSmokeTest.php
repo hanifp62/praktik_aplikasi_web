@@ -77,7 +77,7 @@ class PageSmokeTest extends TestCase
         $pages = [
             route('admin.mountains'),
             route('admin.trails'),
-            route('admin.checkpoints', $trail),
+            route('trails.checkpoints', $trail),
             route('admin.sources'),
             route('admin.statuses'),
             route('admin.audit'),

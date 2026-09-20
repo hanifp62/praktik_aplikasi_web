@@ -62,6 +62,20 @@ Route::middleware(['auth'])->group(function () {
 
     // Terbuka untuk pemegang kredensial yang berlaku; komponennya menolak yang lain.
     Route::get('kontribusi', TrailContribution::class)->name('contribute');
+
+    /*
+     * Geometri jalur dan koordinat pos dahulu terkunci di grup admin, padahal kedua
+     * komponennya sudah menjaga diri dengan authorize('update', $trail) dan
+     * TrailPolicy::update() sudah mengizinkan pemegang kredensial Ahli untuk kawasannya
+     * (§43). Izin yang sudah diberikan karena itu tidak pernah dapat dipakai.
+     *
+     * Ini justru data yang paling mungkin dimiliki pemandu bersertifikat: merekalah yang
+     * berjalan di jalurnya sambil membawa GPS. Penjagaannya tetap pada policy, bukan
+     * pada middleware, sehingga batas per-kawasan dan masa berlaku sertifikat tetap
+     * berlaku utuh.
+     */
+    Route::get('jalur/{trail}/geometri', TrailGeometryImport::class)->name('trails.geometry');
+    Route::get('jalur/{trail}/pos', CheckpointManager::class)->name('trails.checkpoints');
 });
 
 Route::middleware(['auth', 'role:moderator'])->prefix('moderation')->name('moderation.')->group(function () {
@@ -71,8 +85,6 @@ Route::middleware(['auth', 'role:moderator'])->prefix('moderation')->name('moder
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('mountains', MountainManager::class)->name('mountains');
     Route::get('trails', TrailManager::class)->name('trails');
-    Route::get('trails/{trail}/checkpoints', CheckpointManager::class)->name('checkpoints');
-    Route::get('trails/{trail}/geometry', TrailGeometryImport::class)->name('geometry');
     Route::get('sources', DataSourceManager::class)->name('sources');
     Route::get('official-statuses', OfficialStatusManager::class)->name('statuses');
     Route::get('permits', PermitManager::class)->name('permits');

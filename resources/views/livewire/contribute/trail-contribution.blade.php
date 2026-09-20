@@ -121,9 +121,21 @@
                                 @endif
                             </div>
 
-                            <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $trail->id }})">
-                                Isi data
-                            </x-ui.button>
+                            {{--
+                                Geometri dan koordinat pos adalah data yang justru paling
+                                mungkin dimiliki pemandu bersertifikat, karena merekalah yang
+                                berjalan di jalurnya sambil membawa GPS. Pintunya dibuka di
+                                sini karena halaman ini satu-satunya tempat mereka berada.
+                            --}}
+                            <div class="flex flex-wrap gap-2">
+                                <x-ui.button variant="secondary" size="sm" wire:click="edit({{ $trail->id }})">
+                                    Isi data
+                                </x-ui.button>
+                                <x-ui.button variant="secondary" size="sm"
+                                    href="{{ route('trails.geometry', $trail) }}">Garis jalur</x-ui.button>
+                                <x-ui.button variant="secondary" size="sm"
+                                    href="{{ route('trails.checkpoints', $trail) }}">Pos</x-ui.button>
+                            </div>
                         </li>
                     @endforeach
                 </ul>

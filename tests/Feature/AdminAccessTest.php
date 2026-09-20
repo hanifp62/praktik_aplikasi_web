@@ -67,7 +67,7 @@ class AdminAccessTest extends TestCase
         $trail = Trail::factory()->create();
 
         $this->actingAs(User::factory()->create())
-            ->get(route('admin.checkpoints', $trail))
+            ->get(route('trails.checkpoints', $trail))
             ->assertForbidden();
     }
 }
