@@ -4,6 +4,7 @@ use App\Http\Controllers\ProgressiveWebAppController;
 use App\Http\Controllers\ReportPhotoController;
 use App\Livewire\Admin\AnalyticsDashboard;
 use App\Livewire\Admin\AuditLogViewer;
+use App\Livewire\Admin\AuthorityManager;
 use App\Livewire\Admin\CheckpointManager;
 use App\Livewire\Admin\CredentialManager;
 use App\Livewire\Admin\DataSourceManager;
@@ -12,6 +13,7 @@ use App\Livewire\Admin\OfficialStatusManager;
 use App\Livewire\Admin\PermitManager;
 use App\Livewire\Admin\TrailGeometryImport;
 use App\Livewire\Admin\TrailManager;
+use App\Livewire\Contribute\TrailContribution;
 use App\Livewire\Dashboard;
 use App\Livewire\Goals\GoalForm;
 use App\Livewire\History\HikingHistoryPage;
@@ -55,6 +57,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/create', ConditionReportForm::class)->name('reports.create');
     Route::get('reports/{report}/photo', ReportPhotoController::class)->name('reports.photo');
     Route::get('history', HikingHistoryPage::class)->name('history');
+
+    // Terbuka untuk pemegang kredensial yang berlaku; komponennya menolak yang lain.
+    Route::get('kontribusi', TrailContribution::class)->name('contribute');
 });
 
 Route::middleware(['auth', 'role:moderator'])->prefix('moderation')->name('moderation.')->group(function () {
@@ -69,6 +74,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('sources', DataSourceManager::class)->name('sources');
     Route::get('official-statuses', OfficialStatusManager::class)->name('statuses');
     Route::get('permits', PermitManager::class)->name('permits');
+    Route::get('authorities', AuthorityManager::class)->name('authorities');
     Route::get('credentials', CredentialManager::class)->name('credentials');
     Route::get('audit-logs', AuditLogViewer::class)->name('audit');
     Route::get('analytics', AnalyticsDashboard::class)->name('analytics');

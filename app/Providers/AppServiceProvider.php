@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\AuditLog;
+use App\Models\Authority;
 use App\Models\DataSource;
 use App\Models\ExpertCredential;
 use App\Models\HikingGoal;
@@ -13,6 +14,7 @@ use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\TripPlan;
 use App\Policies\AuditLogPolicy;
+use App\Policies\AuthorityPolicy;
 use App\Policies\DataSourcePolicy;
 use App\Policies\ExpertCredentialPolicy;
 use App\Policies\HikingGoalPolicy;
@@ -45,5 +47,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(PermitRequirement::class, PermitRequirementPolicy::class);
         Gate::policy(ExpertCredential::class, ExpertCredentialPolicy::class);
+        Gate::policy(Authority::class, AuthorityPolicy::class);
     }
 }
