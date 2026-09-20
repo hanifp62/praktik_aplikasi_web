@@ -23,6 +23,20 @@
                 <div class="mt-4">
                     <h3 class="text-sm font-semibold text-primary">Mengapa demikian</h3>
                     <x-ui.factor-bars :factors="$fit->factorsToArray()" class="mt-2" />
+
+                    @if ($tangga)
+                        {{--
+                            Acuannya diri sendiri, bukan pendaki lain. Mekanik Strava
+                            adalah perbandingan yang dipersempit sampai menang terasa
+                            mungkin; papan peringkatnya tidak ikut, karena memberi
+                            hadiah pada jumlah merusak kepercayaan data (§60).
+
+                            Kecil dan sekunder, di bawah batang faktor: ini konteks
+                            tambahan pada "Mengapa", bukan bagian dari label kecocokan
+                            itu sendiri, jadi tidak boleh bersaing dengannya.
+                        --}}
+                        <p class="mt-2 text-xs text-muted">{{ $tangga }}</p>
+                    @endif
                 </div>
             @endif
 

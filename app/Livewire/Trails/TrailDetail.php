@@ -8,6 +8,7 @@ use App\Models\Trail;
 use App\Services\CheckpointPaceService;
 use App\Services\ConditionAggregatorService;
 use App\Services\PermitService;
+use App\Services\ProgressLadderService;
 use App\Services\RouteFitService;
 use App\Services\TrailNewsService;
 use Livewire\Attributes\Layout;
@@ -103,7 +104,7 @@ class TrailDetail extends Component
         $this->redirectRoute('trips.create', ['trail' => $this->trail->id], navigate: true);
     }
 
-    public function render(ConditionAggregatorService $conditions, RouteFitService $routeFit)
+    public function render(ConditionAggregatorService $conditions, RouteFitService $routeFit, ProgressLadderService $progressLadder)
     {
         // Jalur yang belum terbit tidak punya cukup data untuk dinilai maupun
         // direncanakan. Halamannya tetap dapat dibuka, tetapi yang ditampilkan adalah
@@ -122,9 +123,15 @@ class TrailDetail extends Component
 
         $kondisi = $conditions->forTrail($this->trail);
 
+        // Tangga kemajuan dihitung sebelahan blok "Mengapa demikian", yang hanya
+        // tampil ketika $fit ada -- jadi query-nya tidak dibayar untuk tamu maupun
+        // pendaki yang profilnya belum lengkap, yang toh tidak akan melihat blok itu.
+        $tangga = $fit ? $progressLadder->bandingkanDenganRiwayat($user, $this->trail) : null;
+
         return view('livewire.trails.trail-detail', [
             'conditions' => $kondisi,
             'fit' => $fit,
+            'tangga' => $tangga,
             'geometry' => $this->trail->readGeoJson('geometry'),
             'permit' => app(PermitService::class)->requirementFor($this->trail),
             // Waktu tempuh antarpos dari rekaman pendaki. Hasilnya di-cache mengikuti
