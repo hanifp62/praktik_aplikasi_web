@@ -142,6 +142,15 @@ return [
         // berarti memotong tikungan pada fitur navigasi lapangan. Pada 5000 titik,
         // GeoJSON yang dikirim ke ponsel masih di bawah 200 KB sebelum kompresi.
         'gpx_max_points' => 5000,
+
+        // Ambang histeresis untuk menjumlahkan tanjakan dari ketinggian GPS.
+        //
+        // Ketinggian GPS berderau beberapa meter meskipun perangkatnya diam, sehingga
+        // penjumlahan tanpa ambang mengubah derau menjadi tanjakan: jalur datar dapat
+        // melaporkan ratusan meter elevation gain yang tidak pernah didaki siapa pun.
+        // Lima meter adalah nilai yang lazim dipakai perkakas GPS; menaikkannya membuat
+        // undakan kecil hilang, menurunkannya memasukkan derau kembali.
+        'gpx_elevation_threshold_m' => 5,
     ],
 
     /*

@@ -24,6 +24,26 @@ class GpxTrack
      */
     public static function fromXml(string $xml, ?int $maxPoints = null): array
     {
+        return static::trackFromXml($xml, $maxPoints)['coordinates'];
+    }
+
+    /**
+     * Jejak lengkap: koordinat beserta ketinggian tiap titik bila berkasnya membawanya.
+     *
+     * Ketinggian dahulu dibuang tepat di titik ia masuk, padahal hampir setiap berkas
+     * GPX dari perangkat GPS membawanya dan pendaki yang berjalan di jalur itulah yang
+     * paling mungkin mengunggahnya. Elevation gain karena itu hanya bisa diketik tangan,
+     * sementara angkanya sudah ada di dalam berkas yang sedang diunggah.
+     *
+     * Ketinggian dapat berisi null: sebagian perkakas menulis trkpt tanpa ele, dan titik
+     * tanpa ketinggian tidak boleh menggugurkan garis jalurnya.
+     *
+     * @return array{coordinates: array<int, array{0: float, 1: float}>, elevations: array<int, float|null>}
+     *
+     * @throws RuntimeException bila berkas tidak dapat dibaca sebagai jejak jalur
+     */
+    public static function trackFromXml(string $xml, ?int $maxPoints = null): array
+    {
         $maxPoints ??= (int) config('hiking.uploads.gpx_max_points', 5000);
 
         $dokumen = static::parse($xml);
@@ -58,7 +78,102 @@ class GpxTrack
             throw new RuntimeException('Garis jalur butuh minimal dua titik.');
         }
 
-        return $koordinat;
+        return [
+            'coordinates' => $koordinat,
+            'elevations' => array_map(static::ketinggian(...), $titik),
+        ];
+    }
+
+    /**
+     * Total tanjakan dan turunan dari deret ketinggian.
+     *
+     * Menjumlahkan setiap selisih positif adalah cara yang salah, dan salahnya besar.
+     * Ketinggian GPS berderau beberapa meter meskipun perangkatnya diam di satu tempat,
+     * sehingga penjumlahan naif mengubah derau menjadi tanjakan: jalur datar sepanjang
+     * beberapa jam dapat melaporkan ratusan meter elevation gain yang tidak pernah
+     * didaki siapa pun.
+     *
+     * Karena itu dipakai ambang histeresis. Satu titik acuan disimpan, dan perubahan
+     * baru dihitung ketika selisihnya terhadap acuan melewati ambang; acuannya lalu
+     * berpindah ke titik itu. Naik-turun yang lebih kecil dari ambang diabaikan
+     * seluruhnya, bukan diratakan.
+     *
+     * Hasilnya taksiran, dan ia bergantung pada ambangnya. Itu sebabnya angkanya
+     * ditawarkan kepada kurator untuk disetujui, bukan ditulis diam-diam ke jalur.
+     *
+     * @param  array<int, float|null>  $ketinggian
+     * @return array{gain: int, loss: int}|null null bila berkasnya tidak membawa ketinggian
+     */
+    public static function gainLoss(array $ketinggian, ?float $ambangMeter = null): ?array
+    {
+        $ambangMeter ??= (float) config('hiking.uploads.gpx_elevation_threshold_m', 5);
+        $terpakai = array_values(array_filter($ketinggian, fn ($nilai) => $nilai !== null));
+
+        if (count($terpakai) < 2) {
+            return null;
+        }
+
+        $acuan = $terpakai[0];
+        $naik = 0.0;
+        $turun = 0.0;
+
+        foreach ($terpakai as $nilai) {
+            $selisih = $nilai - $acuan;
+
+            if (abs($selisih) < $ambangMeter) {
+                continue;
+            }
+
+            $selisih > 0 ? $naik += $selisih : $turun += abs($selisih);
+            $acuan = $nilai;
+        }
+
+        return ['gain' => (int) round($naik), 'loss' => (int) round($turun)];
+    }
+
+    /**
+     * Profil elevasi untuk digambar: jarak tempuh terhadap ketinggian.
+     *
+     * Diencerkan sampai sejumlah titik, dan pengenceran di sini sah justru karena
+     * gunanya berbeda dari garis jalur. Garis jalur dipakai bernavigasi di lapangan
+     * sehingga tikungannya tidak boleh dipotong; profil dipakai membaca bentuk
+     * tanjakan, dan seratus titik sudah menggambarkan bentuk yang sama dengan lima ribu.
+     *
+     * @param  array<int, array{0: float, 1: float}>  $koordinat
+     * @param  array<int, float|null>  $ketinggian
+     * @return array<int, array{km: float, m: int}>
+     */
+    public static function profile(array $koordinat, array $ketinggian, int $maxTitik = 120): array
+    {
+        $jarak = 0.0;
+        $mentah = [];
+
+        foreach ($koordinat as $i => $titik) {
+            if ($i > 0) {
+                $jarak += static::lengthKm([$koordinat[$i - 1], $titik]);
+            }
+
+            if (($ketinggian[$i] ?? null) === null) {
+                continue;
+            }
+
+            $mentah[] = ['km' => round($jarak, 3), 'm' => (int) round($ketinggian[$i])];
+        }
+
+        if (count($mentah) <= $maxTitik) {
+            return $mentah;
+        }
+
+        // Titik pertama dan terakhir selalu ikut: ujung profil yang terpotong mengubah
+        // ketinggian awal dan puncaknya, dua angka yang justru paling dibaca.
+        $langkah = (count($mentah) - 1) / ($maxTitik - 1);
+        $hasil = [];
+
+        for ($i = 0; $i < $maxTitik; $i++) {
+            $hasil[] = $mentah[(int) round($i * $langkah)];
+        }
+
+        return $hasil;
     }
 
     /**
@@ -133,5 +248,27 @@ class GpxTrack
         }
 
         return [$bujur, $lintang];
+    }
+
+    /**
+     * Ketinggian satu titik dalam meter, atau null bila titiknya tidak membawanya.
+     *
+     * Ketinggian yang tidak masuk akal diperlakukan sebagai tidak ada, bukan sebagai
+     * galat yang menggugurkan seluruh berkas: satu titik rusak di tengah jejak tidak
+     * boleh membuang garis jalur yang selebihnya baik. Batasnya diambil longgar, dari
+     * dasar Laut Mati sampai jauh di atas puncak tertinggi dunia.
+     */
+    private static function ketinggian(SimpleXMLElement $titik): ?float
+    {
+        $anak = $titik->xpath('./*[local-name()="ele"]');
+        $nilai = $anak === [] || $anak === false ? null : trim((string) $anak[0]);
+
+        if ($nilai === null || $nilai === '' || ! is_numeric($nilai)) {
+            return null;
+        }
+
+        $nilai = (float) $nilai;
+
+        return $nilai < -500 || $nilai > 9000 ? null : $nilai;
     }
 }

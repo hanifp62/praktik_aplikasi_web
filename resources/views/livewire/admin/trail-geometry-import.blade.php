@@ -148,6 +148,59 @@
                         @endif
                     </div>
 
+                    {{--
+                        Ketinggian berasal dari berkas yang sama dan sebelumnya dibuang tepat
+                        di titik ia masuk. Angkanya ditawarkan, tidak ditulis diam-diam:
+                        ia taksiran yang bergantung pada ambang derau, dan jalur yang sudah
+                        punya angka dari pengelola tidak boleh tertimpa hitungan satu berkas.
+                    --}}
+                    @if ($tanjakan)
+                        <div class="rounded-md border border-gray-200 p-3">
+                            <p class="text-sm font-medium text-gray-900">Ketinggian terbaca dari berkas ini</p>
+
+                            <dl class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <div>
+                                    <dt class="text-xs text-gray-500">Taksiran elevation gain</dt>
+                                    <dd class="text-gray-900">
+                                        {{ number_format($tanjakan['gain'], 0, ',', '.') }} m
+                                        <span class="text-gray-600">(tercatat:
+                                            {{ $trail->elevation_gain_m !== null
+                                                ? number_format($trail->elevation_gain_m, 0, ',', '.').' m'
+                                                : 'belum diisi' }})</span>
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500">Taksiran elevation loss</dt>
+                                    <dd class="text-gray-900">
+                                        {{ number_format($tanjakan['loss'], 0, ',', '.') }} m
+                                        <span class="text-gray-600">(tercatat:
+                                            {{ $trail->elevation_loss_m !== null
+                                                ? number_format($trail->elevation_loss_m, 0, ',', '.').' m'
+                                                : 'belum diisi' }})</span>
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            <p class="mt-2 text-xs text-gray-500">
+                                Taksiran dari ketinggian GPS dengan ambang
+                                {{ config('hiking.uploads.gpx_elevation_threshold_m') }} meter, dipakai agar
+                                derau perangkat tidak terhitung sebagai tanjakan. Angka resmi dari pengelola
+                                kawasan lebih dapat dipercaya daripada ini.
+                            </p>
+
+                            <x-ui.button variant="secondary" size="sm" class="mt-3"
+                                wire:click="terapkanTanjakan"
+                                confirm="Ganti elevation gain dan loss jalur ini dengan taksiran dari berkas GPX?">
+                                Terapkan ke jalur
+                            </x-ui.button>
+                        </div>
+                    @elseif ($pratinjau !== [])
+                        <p class="text-sm text-gray-600">
+                            Berkas ini tidak membawa data ketinggian, jadi profil elevasi dan taksiran
+                            elevation gain tidak dapat dihitung darinya.
+                        </p>
+                    @endif
+
                     <x-ui.button wire:click="simpan">Simpan geometri</x-ui.button>
                 @endif
             </div>

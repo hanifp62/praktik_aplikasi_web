@@ -56,6 +56,18 @@
                 </div>
             </dl>
 
+            {{--
+                Profil elevasi menjawab pertanyaan yang tidak dijawab satu angka elevation
+                gain: apakah tanjakannya merata atau menumpuk di satu bagian. Dua jalur
+                dengan gain yang sama dapat terasa sangat berbeda karenanya.
+            --}}
+            @if ($trail->elevation_profile)
+                <div class="mt-6">
+                    <h3 class="text-sm font-medium text-gray-700">Profil elevasi</h3>
+                    <x-ui.elevation-profile :profile="$trail->elevation_profile" class="mt-2" />
+                </div>
+            @endif
+
             @if ($trail->terrainTypes())
                 <div class="mt-4">
                     <h3 class="text-sm font-medium text-gray-700">Karakter medan</h3>

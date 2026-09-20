@@ -34,6 +34,12 @@ class TrailGeometryImport extends Component
 
     public ?float $panjangKm = null;
 
+    /** @var array<int, array{km: float, m: int}> */
+    public array $profil = [];
+
+    /** @var array{gain: int, loss: int}|null */
+    public ?array $tanjakan = null;
+
     public ?string $galat = null;
 
     /** @var array<int, array<string, mixed>> */
@@ -139,15 +145,54 @@ class TrailGeometryImport extends Component
      */
     public function updatedBerkas(): void
     {
-        $this->reset(['pratinjau', 'panjangKm', 'galat']);
+        $this->reset(['pratinjau', 'panjangKm', 'galat', 'profil', 'tanjakan']);
         $this->validate();
 
         try {
-            $this->pratinjau = GpxTrack::fromXml(file_get_contents($this->berkas->getRealPath()));
+            $jejak = GpxTrack::trackFromXml(file_get_contents($this->berkas->getRealPath()));
+
+            $this->pratinjau = $jejak['coordinates'];
             $this->panjangKm = round(GpxTrack::lengthKm($this->pratinjau), 2);
+
+            // Ketinggian ikut terbaca dari berkas yang sama. Sebelumnya dibuang tepat di
+            // titik ia masuk, sehingga elevation gain hanya bisa diketik tangan padahal
+            // angkanya sudah ada di dalam berkas yang sedang diunggah.
+            $this->profil = GpxTrack::profile($this->pratinjau, $jejak['elevations']);
+            $this->tanjakan = GpxTrack::gainLoss($jejak['elevations']);
         } catch (RuntimeException $e) {
             $this->galat = $e->getMessage();
         }
+    }
+
+    /**
+     * Menerapkan taksiran tanjakan ke jalur, atas persetujuan kurator.
+     *
+     * Tidak pernah ditulis diam-diam saat menyimpan geometri. Angkanya taksiran yang
+     * bergantung pada ambang derau, dan jalur yang sudah punya angka resmi dari
+     * pengelola tidak boleh tertimpa oleh hitungan dari satu berkas GPX.
+     */
+    public function terapkanTanjakan(AuditLogService $audit): void
+    {
+        $this->authorize('update', $this->trail);
+
+        if ($this->tanjakan === null) {
+            return;
+        }
+
+        $sebelum = $this->trail->only(['elevation_gain_m', 'elevation_loss_m']);
+
+        $this->trail->update([
+            'elevation_gain_m' => $this->tanjakan['gain'],
+            'elevation_loss_m' => $this->tanjakan['loss'],
+        ]);
+
+        $audit->record(auth()->user(), 'trail.elevation_applied', $this->trail, $sebelum, [
+            'elevation_gain_m' => $this->tanjakan['gain'],
+            'elevation_loss_m' => $this->tanjakan['loss'],
+            'sumber' => 'taksiran dari berkas GPX',
+        ]);
+
+        session()->flash('status', 'Elevation gain dan loss diperbarui dari berkas GPX.');
     }
 
     public function simpan(AuditLogService $audit): void
@@ -170,6 +215,13 @@ class TrailGeometryImport extends Component
 
         $this->trail->writeLineString('geometry', $this->pratinjau);
 
+        // Profil ikut tersimpan karena ia berasal dari berkas yang sama dan tidak dapat
+        // diturunkan kembali dari geometrinya: LineString yang dipakai di sini dua
+        // dimensi, dan ketinggiannya tidak ikut masuk ke sana.
+        if ($this->profil !== []) {
+            $this->trail->update(['elevation_profile' => $this->profil]);
+        }
+
         // Asalnya dicatat apa adanya. Geometri dari OSM adalah data komunitas, bukan data
         // resmi pengelola, dan §60 menuntut bedanya tetap terbaca di jejak audit.
         $audit->record(auth()->user(), 'trail.geometry_imported', $this->trail, null, [
@@ -178,7 +230,7 @@ class TrailGeometryImport extends Component
             'asal' => $this->asal ?? $this->berkas?->getClientOriginalName() ?? 'tidak tercatat',
         ]);
 
-        $this->reset(['berkas', 'pratinjau', 'panjangKm', 'kandidat', 'asal']);
+        $this->reset(['berkas', 'pratinjau', 'panjangKm', 'kandidat', 'asal', 'profil', 'tanjakan']);
 
         session()->flash('status', 'Geometri jalur tersimpan.');
     }

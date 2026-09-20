@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
 
 #[Fillable([
     'mountain_id', 'name', 'slug', 'description', 'distance_km', 'elevation_gain_m',
-    'elevation_loss_m', 'estimated_duration_minutes', 'technical_demand', 'terrain_character',
+    'elevation_loss_m', 'elevation_profile', 'estimated_duration_minutes', 'technical_demand', 'terrain_character',
     'navigation_complexity', 'water_availability', 'camping_available', 'starting_point',
     'weather_adm4_code', 'weather_reference_area', 'data_source_id', 'is_published', 'archived_at',
 ])]
@@ -38,6 +38,7 @@ class Trail extends Model
             'navigation_complexity' => NavigationComplexity::class,
             'water_availability' => WaterAvailability::class,
             'terrain_character' => 'array',
+            'elevation_profile' => 'array',
             'camping_available' => 'boolean',
             'is_published' => 'boolean',
             'archived_at' => 'datetime',
