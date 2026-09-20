@@ -42,8 +42,6 @@ class RouteComparison extends Component
             ->published()
             ->whereIn('id', $this->trailIds())
             ->with('mountain')
-            ->withCount(['conditionReports' => fn ($query) => $query->visibleToPublic()
-                ->where('hike_date', '>=', now()->subDays(30)->toDateString())])
             ->get();
 
         // Kecocokan dinilai hanya untuk yang profilnya cukup, sama seperti halaman

@@ -104,4 +104,28 @@ class ComparisonAsCostTest extends TestCase
             ->get(route('trails.compare', ['trails' => $a->id.','.$b->id]))
             ->assertSee('data-fit-label', escape: false);
     }
+
+    /**
+     * Jalur berjarak nol tidak menjatuhkan halaman perbandingan.
+     *
+     * distance_km di-cast 'decimal:2' pada model Trail, sehingga nilai mentahnya adalah
+     * string seperti "0.00". (bool) "0.00" bernilai true di PHP -- hanya "" dan "0" yang
+     * falsy -- jadi guard yang menguji nilai mentah sebelum dicast ke float meloloskan
+     * jalur berjarak nol, lalu membagi dengan 0.0. Itu DivisionByZeroError yang tidak
+     * tertangkap, dan pendaki yang menimbangnya tidak dapat memulihkan diri karena
+     * baki timbangannya tidak terlihat dari halaman yang sudah rusak.
+     */
+    public function test_a_zero_distance_trail_does_not_fatal_the_comparison_page(): void
+    {
+        $user = $this->pendaki();
+        $a = Trail::factory()->for(Mountain::factory()->create())
+            ->create(['is_published' => true, 'distance_km' => 0, 'elevation_gain_m' => 500]);
+        $b = $this->jalur();
+
+        $halaman = $this->actingAs($user)
+            ->get(route('trails.compare', ['trails' => $a->id.','.$b->id]));
+
+        $halaman->assertOk();
+        $halaman->assertSee('Kecuraman');
+    }
 }

@@ -42,9 +42,19 @@
                                 'Waktu' => fn ($t) => \App\Support\Durasi::panjang($t->estimated_duration_minutes),
                                 'Jarak' => fn ($t) => $t->distance_km !== null ? number_format((float) $t->distance_km, 1, ',', '.').' km' : '-',
                                 'Tanjakan' => fn ($t) => $t->elevation_gain_m !== null ? number_format($t->elevation_gain_m, 0, ',', '.').' m' : '-',
-                                'Kecuraman' => fn ($t) => ($t->distance_km && $t->elevation_gain_m)
-                                    ? number_format(round($t->elevation_gain_m / (float) $t->distance_km), 0, ',', '.').' m/km'
-                                    : '-',
+                                // distance_km di-cast 'decimal:2', jadi nilai mentahnya string ("0.00"),
+                                // dan (bool) "0.00" adalah true di PHP -- hanya "" dan "0" yang falsy.
+                                // Jalur berjarak nol lolos guard truthy-mentah dan membagi dengan 0.0,
+                                // DivisionByZeroError yang tidak tertangkap. Dicast ke float dulu, baru
+                                // diuji, seperti pola yang sudah benar di trail-row.blade.php.
+                                'Kecuraman' => function ($t) {
+                                    $jarak = $t->distance_km !== null ? (float) $t->distance_km : null;
+                                    $naik = $t->elevation_gain_m;
+
+                                    return ($jarak && $naik)
+                                        ? number_format(round($naik / $jarak), 0, ',', '.').' m/km'
+                                        : '-';
+                                },
                                 'Tuntutan teknis' => fn ($t) => $t->technical_demand->label(),
                                 'Kerumitan navigasi' => fn ($t) => $t->navigation_complexity->label(),
                                 'Air' => fn ($t) => $t->water_availability->label(),
