@@ -30,6 +30,15 @@ class ReadinessDashboard extends Component
 
     public bool $preDepartureConfirmed = false;
 
+    /**
+     * Penolakan dipisahkan dari flash 'status'.
+     *
+     * Tampilan merender flash sebagai alert hijau, sehingga "belum dapat dikonfirmasi"
+     * muncul dalam kotak yang terbaca seperti berhasil. Flash juga alat untuk redirect,
+     * sementara di sini tidak ada redirect.
+     */
+    public ?string $penolakan = null;
+
     public function mount(TripPlan $trip, ReadinessService $readiness): void
     {
         $this->authorize('view', $trip);
@@ -51,16 +60,30 @@ class ReadinessDashboard extends Component
     {
         $this->authorize('update', $this->trip);
 
+        $this->penolakan = null;
+
         $assessment = $readiness->compute($this->trip);
 
+        // Alasannya sudah dihitung, jadi sebutkan. Penolakan yang tidak memberi tahu apa
+        // yang menahannya hanya memindahkan kebuntuan dari sistem ke pendaki, dan ini
+        // terjadi persis pada saat ia hendak memastikan dirinya layak berangkat.
         if ($assessment->state === ReadinessState::NOT_RECOMMENDED) {
-            session()->flash('status', 'Pre-departure check tidak dapat dikonfirmasi selama status jalur tidak memungkinkan.');
+            $alasan = $assessment->explanation['reasons'] ?? [];
+
+            $this->penolakan = $alasan === []
+                ? 'Pre-departure check belum dapat dikonfirmasi. Periksa rincian kesiapan di bawah.'
+                : 'Pre-departure check belum dapat dikonfirmasi. '.implode(' ', array_unique($alasan));
 
             return;
         }
 
         if (! $this->trip->status->canTransitionTo(TripStatus::READY_FOR_DEPARTURE)) {
-            session()->flash('status', 'Status trip saat ini tidak memungkinkan tindakan ini.');
+            // Menyebut status yang sekarang lebih berguna daripada mengatakan tindakannya
+            // tidak mungkin: pendaki tidak melihat nilai status itu di layar mana pun.
+            $this->penolakan = sprintf(
+                'Trip ini berstatus %s, sehingga tidak dapat ditandai siap berangkat.',
+                $this->trip->status->label()
+            );
 
             return;
         }

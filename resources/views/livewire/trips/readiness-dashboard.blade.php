@@ -3,6 +3,12 @@
         <x-ui.page-header title="Kesiapan Pendakian"
             :description="$trip->name.' - '.$trip->trail->name" />
 
+        {{-- Penolakan tidak boleh memakai alert hijau: kotak berhasil yang berisi kabar
+             gagal adalah pesan yang membantah dirinya sendiri. --}}
+        @if ($penolakan)
+            <x-ui.alert variant="warning">{{ $penolakan }}</x-ui.alert>
+        @endif
+
         @if (session('status'))
             <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
