@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\OfficialStatusValue;
 use App\Enums\PreparationStatus;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
+use App\Services\OfficialStatusService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -58,6 +60,34 @@ class TripPlan extends Model
     public function latestReadinessCheck(): HasOne
     {
         return $this->hasOne(ReadinessCheck::class)->latestOfMany();
+    }
+
+    /**
+     * Apakah vonis kesiapan tersimpan sudah didahului keadaan.
+     *
+     * Halaman kesiapan menghitung ulang setiap kali dibuka, jadi ia selalu benar.
+     * Ringkasan di dasbor, daftar trip, dan halaman trip membaca baris tersimpan, dan
+     * baris itu mencatat status resmi yang dipakainya. Ketika status jalur sekarang
+     * berbeda dari yang tercatat, vonisnya dinilai atas keadaan yang sudah berlalu.
+     *
+     * Aplikasi ini sudah menolak pola yang sama di pintu lain: service worker tidak
+     * pernah menyajikan halaman dari cache karena status "BUKA" yang basi lebih
+     * berbahaya daripada halaman yang gagal terbuka (§94, §95).
+     *
+     * Status sekarang boleh dioper dari luar supaya daftar dapat memuatnya sekali untuk
+     * seluruh baris, alih-alih satu query per trip.
+     */
+    public function readinessIsStale(?OfficialStatusValue $statusSekarang = null): bool
+    {
+        $dinilaiDengan = $this->latestReadinessCheck?->official_status_snapshot['status'] ?? null;
+
+        if ($dinilaiDengan === null) {
+            return false;
+        }
+
+        $statusSekarang ??= app(OfficialStatusService::class)->effectiveStatusForTrail($this->trail);
+
+        return $dinilaiDengan !== $statusSekarang->value;
     }
 
     public function hikingSession(): HasOne

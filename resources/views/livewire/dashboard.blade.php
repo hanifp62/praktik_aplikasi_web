@@ -32,7 +32,11 @@
                     &middot; {{ $trip->planned_date->translatedFormat('l, d F Y') }}
                 </p>
 
-                @if ($trip->latestReadinessCheck)
+                @if ($trip->readinessIsStale())
+                    <p class="mt-2 text-sm font-medium text-warn-900">
+                        Status jalur berubah, perlu dinilai ulang
+                    </p>
+                @elseif ($trip->latestReadinessCheck)
                     <p class="mt-2 text-sm text-gray-700">
                         Pemeriksaan terakhir:
                         <span class="font-medium">{{ $trip->latestReadinessCheck->computed_state->label() }}</span>

@@ -32,7 +32,11 @@
                                     <span class="inline-block rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
                                         {{ $trip->status->label() }}
                                     </span>
-                                    @if ($trip->latestReadinessCheck)
+                                    @if ($trip->readinessIsStale($statusJalur[$trip->trail_id] ?? null))
+                                        <p class="mt-1 text-xs font-medium text-warn-900">
+                                            Status jalur berubah, perlu dinilai ulang
+                                        </p>
+                                    @elseif ($trip->latestReadinessCheck)
                                         <p class="mt-1 text-xs text-gray-600">
                                             Kesiapan: {{ $trip->latestReadinessCheck->computed_state->label() }}
                                         </p>

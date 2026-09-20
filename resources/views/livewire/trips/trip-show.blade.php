@@ -30,9 +30,22 @@
             </x-ui.card>
 
             <x-ui.card title="Kesiapan">
-                <p class="text-sm text-gray-900">
-                    {{ $trip->latestReadinessCheck?->computed_state->label() ?? 'Belum dinilai' }}
-                </p>
+                {{--
+                    Vonis tersimpan tidak pernah disajikan sebagai keadaan sekarang ketika
+                    status resmi jalurnya sudah berubah sejak penilaian. Menyebut label
+                    lamanya di samping pengakuan ini justru memberi pendaki dua jawaban
+                    yang bertentangan, jadi labelnya diganti, bukan didampingi.
+                --}}
+                @if ($trip->readinessIsStale())
+                    <p class="text-sm font-medium text-warn-900">Status jalur berubah, perlu dinilai ulang</p>
+                    <p class="mt-1 text-xs text-gray-600">
+                        Penilaian terakhir dibuat ketika status resminya masih berbeda.
+                    </p>
+                @else
+                    <p class="text-sm text-gray-900">
+                        {{ $trip->latestReadinessCheck?->computed_state->label() ?? 'Belum dinilai' }}
+                    </p>
+                @endif
                 <a href="{{ route('trips.readiness', $trip) }}" wire:navigate
                     class="mt-2 inline-block text-sm text-brand-700 underline">Cek kesiapan</a>
             </x-ui.card>
