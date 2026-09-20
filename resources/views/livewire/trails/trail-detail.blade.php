@@ -46,9 +46,24 @@
             </x-ui.card>
         @endif
 
-        <x-ui.card title="Karakteristik jalur"
-            subtitle="Kesulitan dinilai dari beberapa dimensi, bukan hanya ketinggian gunung.">
-            <dl class="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+        {{--
+            Aturan kartu di halaman ini: kartu berarti blok ini punya sumber.
+
+            Status resmi, perizinan, prakiraan BMKG, dan laporan komunitas masing-masing
+            berasal dari pihak yang berbeda, dan §92 menuntut bedanya tetap terbaca.
+            Karakteristik jalur, pos, dan segmen adalah atribut jalur itu sendiri, bukan
+            keterangan dari siapa pun, jadi keduanya tidak berkartu.
+
+            Sebelum aturan ini, sembilan kartu putih bertumpuk menjadi struktur halaman,
+            dan kartu yang dipakai untuk segalanya berhenti berarti apa-apa.
+        --}}
+        <section>
+            <h2 class="text-base font-semibold text-gray-900">Karakteristik jalur</h2>
+            <p class="mt-1 text-sm text-gray-600">
+                Kesulitan dinilai dari beberapa dimensi, bukan hanya ketinggian gunung.
+            </p>
+
+            <dl class="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
                 <div>
                     <dt class="text-gray-500">Jarak</dt>
                     <dd class="font-medium text-gray-900">{{ $trail->distance_km ?? '-' }} km</dd>
@@ -111,7 +126,7 @@
                     </ul>
                 </div>
             @endif
-        </x-ui.card>
+        </section>
 
         {{-- OFFICIAL: authoritative block, visually distinct from community reports (PRD §92). --}}
         <x-ui.card class="border-l-4 border-l-slate-700" title="Status resmi">
@@ -237,17 +252,22 @@
             @endif
         </x-ui.card>
 
-        <x-ui.card title="Checkpoint">
-            @if ($trail->checkpoints->isEmpty())
-                <p class="text-sm text-gray-600">Data checkpoint belum tersedia untuk jalur ini.</p>
-            @else
-                <x-ui.checkpoint-journey :checkpoints="$trail->checkpoints" class="space-y-1" />
-            @endif
-        </x-ui.card>
+        <section>
+            <h2 class="text-base font-semibold text-gray-900">Pos</h2>
+
+            <div class="mt-4">
+                @if ($trail->checkpoints->isEmpty())
+                    <p class="text-sm text-gray-600">Daftar pos jalur ini belum dimasukkan.</p>
+                @else
+                    <x-ui.checkpoint-journey :checkpoints="$trail->checkpoints" class="space-y-1" />
+                @endif
+            </div>
+        </section>
 
         @if ($trail->segments->isNotEmpty())
-            <x-ui.card title="Segmen jalur">
-                <ol class="space-y-2 text-sm">
+            <section>
+                <h2 class="text-base font-semibold text-gray-900">Segmen jalur</h2>
+                <ol class="mt-4 space-y-2 text-sm">
                     @foreach ($trail->segments as $segment)
                         <li class="rounded-md border border-gray-100 px-3 py-2">
                             <span class="font-medium text-gray-900">{{ $segment->sequence }}. {{ $segment->name }}</span>
@@ -261,7 +281,7 @@
                         </li>
                     @endforeach
                 </ol>
-            </x-ui.card>
+            </section>
         @endif
 
         {{-- COMMUNITY: supplementary field intelligence, never official status (PRD §49). --}}
