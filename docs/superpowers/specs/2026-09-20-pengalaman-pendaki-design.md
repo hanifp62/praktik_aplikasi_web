@@ -30,8 +30,14 @@ Tiga bukti yang menjelaskan seluruhnya:
 
 1. `trail-detail.blade.php` menerima variabel `$geometry` dan tidak pernah
    menggambarnya. Peta hanya ada sebagai kode sebaris di hike mode.
-2. Foto yang diunggah pendaki hanya tampil di antrean moderasi, tidak pernah
-   dikembalikan kepada pendaki lain.
+2. ~~Foto yang diunggah pendaki hanya tampil di antrean moderasi.~~ **Keliru, dikoreksi
+   20 September 2026.** Foto laporan yang lolos moderasi sudah ditampilkan di halaman
+   jalur lengkap dengan alt text dan pemuatan malas. Klaim ini lahir dari grep yang
+   terpotong `head -5`, dan baris trail-detail tidak ikut terlihat.
+
+   Yang benar-benar kurang jauh lebih sempit: **pelapornya tidak pernah disebut**.
+   Relasi `user:id,name` dimuat eager di `ConditionAggregatorService` dan tidak pernah
+   dipakai satu kali pun, persis pola yang sama dengan `$geometry`.
 3. Seluruh halaman jalur berada di balik login. Hanya `/` yang publik.
 
 Dalam istilah Norman: **gulf of evaluation**. Sistem melakukan banyak, menampakkan

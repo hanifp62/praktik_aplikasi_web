@@ -304,8 +304,22 @@
                                     loading="lazy"
                                     class="mt-2 max-h-56 rounded-md border border-gray-200">
                             @endif
+                            {{--
+                                Pelapornya disebut. Relasi user sudah dimuat eager di
+                                ConditionAggregatorService sejak awal dan tidak pernah
+                                dipakai: query-nya sudah dibayar, gambarannya tidak
+                                pernah ditarik.
+
+                                Ini bukan hiasan. Laporan bertanda tangan dinilai berbeda
+                                dari laporan anonim, dan pendaki yang namanya tercantum
+                                punya alasan untuk teliti. Nama juga yang membuat
+                                kontribusi terasa sebagai kontribusi, bukan pengisian
+                                formulir.
+                            --}}
                             <p class="mt-1 text-xs text-gray-500">
-                                Dilaporkan {{ $report->created_at->diffForHumans() }} berdasarkan pendakian
+                                Dilaporkan
+                                <span class="font-medium text-gray-700">{{ $report->user?->name ?? 'pendaki yang akunnya sudah dihapus' }}</span>
+                                {{ $report->created_at->diffForHumans() }} berdasarkan pendakian
                                 {{ $report->hike_date->translatedFormat('d M Y') }}
                                 @if ($report->segment)
                                     &middot; segmen {{ $report->segment->name }}
