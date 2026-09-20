@@ -11,6 +11,7 @@ use App\Livewire\Admin\DataSourceManager;
 use App\Livewire\Admin\MountainManager;
 use App\Livewire\Admin\OfficialStatusManager;
 use App\Livewire\Admin\PermitManager;
+use App\Livewire\Admin\SystemHealth;
 use App\Livewire\Admin\TrailGeometryImport;
 use App\Livewire\Admin\TrailManager;
 use App\Livewire\Admin\UsabilityStudy;
@@ -80,6 +81,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('audit-logs', AuditLogViewer::class)->name('audit');
     Route::get('analytics', AnalyticsDashboard::class)->name('analytics');
     Route::get('usability', UsabilityStudy::class)->name('usability');
+    Route::get('health', SystemHealth::class)->name('health');
 });
 
 require __DIR__.'/auth.php';

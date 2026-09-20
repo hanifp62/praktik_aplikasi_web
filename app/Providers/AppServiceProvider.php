@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\RecordScheduledTaskRun;
 use App\Models\AuditLog;
 use App\Models\Authority;
 use App\Models\DataSource;
@@ -26,6 +27,9 @@ use App\Policies\TrailConditionReportPolicy;
 use App\Policies\TrailPolicy;
 use App\Policies\TripPlanPolicy;
 use App\Policies\UsabilitySessionPolicy;
+use Illuminate\Console\Events\ScheduledTaskFailed;
+use Illuminate\Console\Events\ScheduledTaskFinished;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -51,5 +55,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ExpertCredential::class, ExpertCredentialPolicy::class);
         Gate::policy(Authority::class, AuthorityPolicy::class);
         Gate::policy(UsabilitySession::class, UsabilitySessionPolicy::class);
+
+        // Dipasang pada event scheduler, bukan di dalam tiap perintah: perintah yang
+        // mencatat dirinya sendiri hanya mencatat perintah yang ingat melakukannya.
+        Event::listen(ScheduledTaskFinished::class, [RecordScheduledTaskRun::class, 'handleFinished']);
+        Event::listen(ScheduledTaskFailed::class, [RecordScheduledTaskRun::class, 'handleFailed']);
     }
 }

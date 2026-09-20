@@ -18,6 +18,7 @@
         'admin.audit' => 'Jejak Audit',
         'admin.analytics' => 'Analitik',
         'admin.usability' => 'Studi Kegunaan',
+        'admin.health' => 'Kesehatan Sistem',
     ];
 
     // Satu query agregat. Angkanya sengaja dibawa ke setiap halaman admin: status yang
