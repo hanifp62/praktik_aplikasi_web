@@ -10,6 +10,7 @@ use App\Livewire\Admin\OfficialStatusManager;
 use App\Livewire\Admin\PermitManager;
 use App\Livewire\Admin\TrailGeometryImport;
 use App\Livewire\Admin\TrailManager;
+use App\Livewire\Dashboard;
 use App\Livewire\Goals\GoalForm;
 use App\Livewire\History\HikingHistoryPage;
 use App\Livewire\Moderation\ModerationQueue;
@@ -30,7 +31,7 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'welcome');
 
 Route::middleware(['auth'])->group(function () {
-    Route::view('dashboard', 'dashboard', ['title' => 'Dasbor'])->middleware('verified')->name('dashboard');
+    Route::get('dashboard', Dashboard::class)->middleware('verified')->name('dashboard');
     Route::view('profile', 'profile', ['title' => 'Profil Akun'])->name('profile');
 
     // Profile -> goal -> route fit -> plan -> prepare -> check -> hike -> report -> history.
