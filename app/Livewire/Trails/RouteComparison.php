@@ -48,11 +48,10 @@ class RouteComparison extends Component
     public function removeTrail(int $trailId, ConsiderationService $consideration): void
     {
         if ($this->selection === '') {
-            $trail = Trail::find($trailId);
-
-            if ($trail !== null) {
-                $consideration->toggle(auth()->user(), $trail);
-            }
+            // remove(), bukan toggle(): "Hapus" adalah penghapusan, bukan sakelar. Klik
+            // ganda atau ulang-kirim yang menemukan barisnya sudah tidak ada tidak boleh
+            // menambahkannya kembali -- lihat docblock ConsiderationService::remove().
+            $consideration->remove(auth()->user(), $trailId);
 
             return;
         }

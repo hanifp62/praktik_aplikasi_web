@@ -18,7 +18,17 @@
             </p>
 
             @if ($trails->count() >= 2)
-                <x-ui.button size="sm" href="{{ route('trails.compare', ['trails' => $trails->pluck('id')->implode(',')]) }}">
+                {{--
+                    route('trails.compare') TELANJANG, tanpa parameter trails: mengirim id
+                    di sini membuat RouteComparison masuk mode URL-eksplisit (baca-saja),
+                    sehingga removeTrail() di sana hanya menyunting URL dan baris di
+                    trail_considerations tidak pernah terhapus -- jalur hilang dari tabel
+                    tapi tetap "Sedang ditimbang" begitu kembali ke Jelajah. Baki ini
+                    SATU-SATUNYA jalan kebanyakan pendaki menuju halaman perbandingan,
+                    jadi tautan telanjang di sini wajib supaya mode timbangan-tersimpan
+                    (yang menulis balik) benar-benar terjangkau, bukan mati langkah.
+                --}}
+                <x-ui.button size="sm" href="{{ route('trails.compare') }}">
                     Bandingkan {{ $trails->count() }} jalur
                 </x-ui.button>
             @endif

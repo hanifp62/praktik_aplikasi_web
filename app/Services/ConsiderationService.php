@@ -77,6 +77,23 @@ class ConsiderationService
     }
 
     /**
+     * Menghapus satu jalur dari timbangan, tanpa syarat.
+     *
+     * Bukan toggle(): "Hapus dari perbandingan" adalah tombol penghapusan, bukan sakelar.
+     * Kalau dipakai toggle() dan tombolnya terpencet dua kali (klik ganda, koneksi
+     * lambat lalu diulang), panggilan kedua menemukan barisnya sudah tidak ada dan
+     * MENAMBAHKANNYA KEMBALI -- jalur yang tadinya berhasil dihapus muncul lagi tanpa
+     * pendaki pernah memilihnya. delete() pada baris yang sudah tidak ada tidak
+     * melakukan apa-apa, jadi mengulang aksi ini selalu aman.
+     */
+    public function remove(User $user, int $trailId): void
+    {
+        TrailConsideration::where('user_id', $user->id)
+            ->where('trail_id', $trailId)
+            ->delete();
+    }
+
+    /**
      * @return Collection<int, Trail>
      */
     public function forUser(User $user): Collection
