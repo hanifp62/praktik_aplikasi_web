@@ -1,4 +1,4 @@
-@props(['summary'])
+@props(['summary', 'tangga' => null])
 
 {{--
     Label kecocokan beserta satu alasan, untuk tingkat daftar.
@@ -20,4 +20,11 @@
     </span>
 
     <p data-fit-reason class="w-full text-sm text-secondary">{{ $summary->alasan }}</p>
+
+    @if ($tangga)
+        {{-- Acuannya diri sendiri, bukan pendaki lain. Perbandingan yang dipersempit
+             sampai menang terasa mungkin adalah mekanik Strava; papan peringkatnya tidak
+             ikut, karena memberi hadiah pada jumlah merusak kepercayaan data (§60). --}}
+        <p class="w-full text-xs text-muted">{{ $tangga }}</p>
+    @endif
 </div>
