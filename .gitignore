@@ -41,3 +41,6 @@ Thumbs.db
 # ulang dengan `npx impeccable install`, jadi tidak ada alasan menanamkannya
 # selamanya di riwayat git.
 */skills/impeccable/scripts/bin/
+
+# Basis data lokal untuk menjalankan aplikasi tanpa menyentuh Supabase produksi.
+/database/*.sqlite
