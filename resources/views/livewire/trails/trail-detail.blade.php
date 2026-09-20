@@ -13,6 +13,39 @@
             @endif
         </x-ui.page-header>
 
+        @php
+            $penandaPos = $trail->checkpoints
+                ->filter(fn ($pos) => $pos->latitude !== null && $pos->longitude !== null)
+                ->sortBy('sequence')
+                ->map(fn ($pos) => [
+                    'lng' => (float) $pos->longitude,
+                    'lat' => (float) $pos->latitude,
+                    'label' => $pos->sequence.'. '.$pos->name,
+                ])
+                ->values()
+                ->all();
+        @endphp
+
+        {{--
+            Peta didahulukan karena ia menjawab pertanyaan pertama pendaki, yaitu jalur
+            ini bentuknya seperti apa, sebelum satu pun angka dibaca. Sebelumnya variabel
+            $geometry sudah dioper ke view ini dan tidak pernah sekali pun dipakai.
+        --}}
+        @if ($geometry || $penandaPos !== [])
+            <x-ui.map id="peta-jalur" :geometry="$geometry" :markers="$penandaPos"
+                :label="'Peta jalur '.$trail->name.' di '.$trail->mountain->name" height="h-96" />
+        @else
+            {{-- Nadanya mengikuti halaman jalur menunggu: kekosongan ini tahapan, dan
+                 yang ditunggu disebut namanya, bukan dibiarkan sebagai kotak kosong. --}}
+            <x-ui.card>
+                <p class="text-sm text-gray-700">
+                    Garis jalur ini belum dimasukkan, jadi belum ada yang dapat digambar di peta.
+                    Garisnya dimasukkan pengelola kawasan atau pemandu bersertifikat yang disahkan
+                    untuk kawasan ini, biasanya dari rekaman GPS di jalurnya sendiri.
+                </p>
+            </x-ui.card>
+        @endif
+
         <x-ui.card title="Karakteristik jalur"
             subtitle="Kesulitan dinilai dari beberapa dimensi, bukan hanya ketinggian gunung.">
             <dl class="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
