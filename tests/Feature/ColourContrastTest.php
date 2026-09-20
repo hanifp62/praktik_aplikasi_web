@@ -100,6 +100,48 @@ class ColourContrastTest extends TestCase
     }
 
     /**
+     * Penyapuan menyeluruh, bukan daftar empat berkas.
+     *
+     * Versi di atas hanya memeriksa empat komponen yang disebut namanya, dan dua
+     * pelanggaran nyata lolos lewat celah itu selama berbulan: radio di pengelola
+     * perizinan dan tombol status di daftar persiapan, keduanya ditulis sebagai markup
+     * sebaris alih-alih memakai komponen.
+     *
+     * Yang dicari hanya kontrol interaktif. Garis pada kartu, lencana, dan panel tidak
+     * termasuk, karena 1.4.11 memang tidak mengaturnya.
+     */
+    public function test_no_interactive_control_anywhere_uses_the_invisible_border(): void
+    {
+        $pelanggar = [];
+
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            $baris = explode("\n", $berkas->getContents());
+
+            foreach ($baris as $nomor => $isi) {
+                if (! str_contains($isi, 'border-gray-300')) {
+                    continue;
+                }
+
+                // Atribut kelas kerap dipecah beberapa baris, dan @class([...]) pada
+                // tombol Blade menaruh warnanya lima sampai enam baris di bawah tag
+                // pembukanya. Jendela dua baris melewatkan persis kasus itu.
+                $konteks = implode(' ', array_slice($baris, max(0, $nomor - 8), 9));
+
+                if (preg_match('/<button|<input|<select|<textarea|wire:click/', $konteks)) {
+                    $pelanggar[] = $berkas->getRelativePathname().':'.($nomor + 1);
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            'gray-300 hanya 1.47:1 di atas putih dan gagal WCAG 1.4.11 pada kontrol di: '
+                .implode(', ', $pelanggar)
+        );
+    }
+
+    /**
      * Merek aplikasi berwarna hijau, tetapi input bawaan Breeze masih menyorot indigo.
      * Setiap isian pada halaman masuk dan daftar berkedip warna yang bukan warna produk.
      */

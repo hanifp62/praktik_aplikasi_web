@@ -60,10 +60,23 @@
                                                 <button type="button"
                                                     wire:click="setStatus({{ $item->id }}, '{{ $status->value }}')"
                                                     aria-pressed="{{ $item->status === $status ? 'true' : 'false' }}"
+                                                    {{--
+                                                        Satu-satunya momen gerak yang diarahkan di aplikasi ini,
+                                                        dan ia dipasang di interaksi yang paling sering diulang:
+                                                        mengonfirmasi satu per satu item persiapan.
+
+                                                        Perpindahan warnanya diberi durasi supaya terlihat sebagai
+                                                        perubahan yang terjadi, bukan sebagai layar yang mendadak
+                                                        berbeda. Yang bergerak hanya warna dan batasnya; tidak ada
+                                                        yang muncul dari ketiadaan, jadi kegagalan skrip tidak
+                                                        pernah meninggalkan tombol yang tak terlihat.
+                                                    --}}
                                                     @class([
-                                                        'rounded-md border px-2.5 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500',
-                                                        'border-brand-600 bg-brand-600 text-white' => $item->status === $status,
-                                                        'border-gray-300 text-gray-700 hover:bg-gray-50' => $item->status !== $status,
+                                                        'rounded-md border px-2.5 py-1 text-xs font-medium',
+                                                        'transition-colors duration-150 ease-out motion-reduce:transition-none',
+                                                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1',
+                                                        'border-brand-700 bg-brand-700 text-white' => $item->status === $status,
+                                                        'border-control text-gray-700 hover:bg-gray-50' => $item->status !== $status,
                                                     ])>
                                                     {{ $status->label() }}
                                                 </button>

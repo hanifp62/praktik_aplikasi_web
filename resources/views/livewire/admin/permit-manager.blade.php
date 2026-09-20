@@ -16,12 +16,12 @@
                     <div class="mt-2 flex flex-wrap gap-4">
                         <label for="scope-mountain" class="flex items-center gap-2 text-sm text-gray-700">
                             <input id="scope-mountain" type="radio" value="mountain" wire:model.live="scope"
-                                class="border-gray-300 text-brand-600 focus:ring-brand-500">
+                                class="border-control text-brand-700 focus:ring-brand-600">
                             Seluruh gunung
                         </label>
                         <label for="scope-trail" class="flex items-center gap-2 text-sm text-gray-700">
                             <input id="scope-trail" type="radio" value="trail" wire:model.live="scope"
-                                class="border-gray-300 text-brand-600 focus:ring-brand-500">
+                                class="border-control text-brand-700 focus:ring-brand-600">
                             Satu jalur tertentu
                         </label>
                     </div>
