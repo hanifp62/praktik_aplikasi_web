@@ -17,6 +17,7 @@
         'admin.credentials' => 'Kredensial Ahli',
         'admin.audit' => 'Jejak Audit',
         'admin.analytics' => 'Analitik',
+        'admin.usability' => 'Studi Kegunaan',
     ];
 
     // Satu query agregat. Angkanya sengaja dibawa ke setiap halaman admin: status yang

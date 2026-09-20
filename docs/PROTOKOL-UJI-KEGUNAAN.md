@@ -159,3 +159,24 @@ Waktu: sekitar 90 menit untuk seluruh alur inti.
 ## Setelah selesai
 
 Gabungkan temuan dari empat bagian ke satu daftar, urutkan menurut keparahan, dan **tulis tiap temuan sebagai test yang gagal lebih dulu** bila memungkinkan. Proyek ini sudah memakai pola itu di seluruh perbaikannya: temuan yang punya penjaga tidak akan kembali diam-diam.
+
+---
+
+## Mencatatnya di dalam sistem
+
+Protokol ini tidak lagi berhenti sebagai dokumen. Halaman **Admin → Studi Kegunaan**
+(`/admin/usability`) menjalankannya:
+
+- Kedelapan tugas sudah terdaftar, dan kriteria berhasilnya tertulis di sebelah pilihan
+  hasilnya, jadi fasilitator tidak menafsirkan ulang dari ingatan.
+- "Berhasil dengan kesulitan" dihitung setengah. Membulatkannya menjadi berhasil
+  menghapus persis masalah yang sedang dicari.
+- SUS dihitung sendiri begitu sepuluh jawabannya lengkap. Lembar setengah terisi tetap
+  tersimpan sebagai pengamatan tugas, tetapi tidak menghasilkan angka.
+- Halaman itu selalu menyebut posisi studi: berapa peserta sudah ada, berapa persen
+  masalah diperkirakan tertemukan menurut kurva 1-(1-0,31)^n, dan berapa responden lagi
+  sebelum rata-rata SUS layak dikutip.
+
+Yang tidak dapat digantikan sistem tetap tidak digantikan: peserta, pengamat, dan
+pembaca layar harus manusia. Yang dihapus hanya ketergantungan pada ketelitian seseorang
+memegang kertas dan menjumlahkan sendiri.

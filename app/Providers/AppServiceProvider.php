@@ -13,6 +13,7 @@ use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\TripPlan;
+use App\Models\UsabilitySession;
 use App\Policies\AuditLogPolicy;
 use App\Policies\AuthorityPolicy;
 use App\Policies\DataSourcePolicy;
@@ -24,6 +25,7 @@ use App\Policies\PermitRequirementPolicy;
 use App\Policies\TrailConditionReportPolicy;
 use App\Policies\TrailPolicy;
 use App\Policies\TripPlanPolicy;
+use App\Policies\UsabilitySessionPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -48,5 +50,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(PermitRequirement::class, PermitRequirementPolicy::class);
         Gate::policy(ExpertCredential::class, ExpertCredentialPolicy::class);
         Gate::policy(Authority::class, AuthorityPolicy::class);
+        Gate::policy(UsabilitySession::class, UsabilitySessionPolicy::class);
     }
 }
