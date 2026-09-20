@@ -20,7 +20,7 @@ class HikingHistoryPage extends Component
     {
         return view('livewire.history.hiking-history-page', [
             'entries' => auth()->user()->hikingHistory()
-                ->with('trail.mountain', 'tripPlan', 'conditionReport')
+                ->with('trail.mountain', 'tripPlan', 'conditionReport.moderationActions')
                 ->orderByDesc('completed_at')
                 ->paginate(10),
         ]);

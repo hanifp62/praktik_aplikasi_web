@@ -89,6 +89,28 @@ class TrailConditionReport extends Model
         return $this->user?->name ?? 'Pendaki terdahulu';
     }
 
+    /**
+     * Alasan penolakan, untuk ditunjukkan kepada pelapornya (PRD §57).
+     *
+     * Moderator mengetik alasan pada setiap tindakan, tetapi sebelumnya alasan itu
+     * tersimpan lalu tidak pernah dibaca siapa pun. Pelapor hanya melihat "Ditolak" dan
+     * tidak dapat memperbaiki apa pun, sementara usaha moderator terbuang.
+     *
+     * Hanya untuk penolakan dan penghapusan. Alasan pada persetujuan adalah catatan
+     * internal moderator, bukan kabar untuk pelapor.
+     */
+    public function rejectionReason(): ?string
+    {
+        if (! in_array($this->moderation_status, [ModerationStatus::REJECTED, ModerationStatus::REMOVED], true)) {
+            return null;
+        }
+
+        return $this->moderationActions
+            ->sortByDesc('created_at')
+            ->firstWhere(fn (ModerationAction $action) => filled($action->reason))
+            ?->reason;
+    }
+
     protected static function booted(): void
     {
         // Berkas foto tidak ikut terhapus oleh penghapusan baris, sehingga tanpa ini

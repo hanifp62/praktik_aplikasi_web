@@ -55,6 +55,16 @@ class ModerationQueue extends Component
         ]);
 
         unset($this->reasons[$reportId]);
+
+        // Setiap tindakan admin lain memberi tahu bahwa ia berhasil. Tanpa ini moderator
+        // menekan tombol lalu menebak apakah tindakannya tercatat, terutama pada filter
+        // "Semua" tempat kartunya tidak hilang dari layar.
+        session()->flash('status', match ($actionType) {
+            ModerationActionType::APPROVE => 'Laporan disetujui dan kini tampil untuk pendaki lain.',
+            ModerationActionType::REJECT => 'Laporan ditolak. Alasannya ditampilkan kepada pelapor di riwayatnya.',
+            ModerationActionType::FLAG => 'Laporan ditandai untuk ditinjau ulang.',
+            ModerationActionType::REMOVE => 'Laporan dihapus dari tampilan publik.',
+        });
     }
 
     public function render()

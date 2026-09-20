@@ -48,6 +48,14 @@
                                         wire:navigate class="text-brand-700 underline">Kirim laporan kondisi</a>
                                 @endif
                             </div>
+
+                            {{-- Pelapor berhak tahu apa yang salah, kalau tidak ia tidak dapat
+                                 memperbaikinya dan usaha moderator menulis alasan terbuang. --}}
+                            @if ($entry->conditionReport?->rejectionReason())
+                                <p class="mt-2 rounded-md border border-warn-300 bg-warn-50 p-3 text-sm text-warn-900">
+                                    Alasan moderator: {{ $entry->conditionReport->rejectionReason() }}
+                                </p>
+                            @endif
                         </x-ui.card>
                     </li>
                 @endforeach

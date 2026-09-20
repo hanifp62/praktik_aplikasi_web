@@ -3,6 +3,10 @@
         <x-ui.page-header title="Moderasi Laporan"
             description="Laporan komunitas hanya tampil untuk publik setelah disetujui. Laporan tidak pernah mengubah status resmi." />
 
+        @if (session('status'))
+            <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
+        @endif
+
         <div class="mb-4 max-w-xs">
             <x-input-label for="filter" value="Filter status" />
             <select id="filter" wire:model.live="filter"
@@ -72,11 +76,26 @@
                                 </label>
                                 <input id="reason-{{ $report->id }}" type="text"
                                     wire:model="reasons.{{ $report->id }}"
-                                    class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500">
+                                    class="block w-full rounded-md border-control text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600">
 
+                                <p class="text-xs text-gray-600">
+                                    Alasan pada penolakan dan penghapusan ditampilkan kepada pelapor di riwayatnya.
+                                </p>
+
+                                {{--
+                                    Menolak atau menghapus membuang intel lapangan yang tidak dapat
+                                    diambil ulang: pendakian itu sudah lewat. Menyetujui dan menandai
+                                    tidak dihalangi, karena keduanya dapat diubah lagi.
+                                --}}
                                 <div class="flex flex-wrap gap-2">
                                     @foreach ($actions as $action)
-                                        <x-ui.button variant="secondary" size="sm" wire:click="act({{ $report->id }}, '{{ $action->value }}')">{{ $action->label() }}</x-ui.button>
+                                        <x-ui.button variant="secondary" size="sm"
+                                            wire:click="act({{ $report->id }}, '{{ $action->value }}')"
+                                            :confirm="in_array($action->value, ['REJECT', 'REMOVE'], true)
+                                                ? $action->label().' laporan ini? Pendakian yang dilaporkan sudah lewat, jadi intelnya tidak dapat diambil ulang.'
+                                                : null">
+                                            {{ $action->label() }}
+                                        </x-ui.button>
                                     @endforeach
                                 </div>
                             </div>
