@@ -68,3 +68,7 @@ Melanggar salah satu ini membuat suite merah, bukan sekadar ditegur saat review.
 - Pernyataan bahwa gunung atau jalur "aman"
 - Skor numerik route fit yang dikirim ke browser
 - Migrasi yang dijalankan langsung ke basis data produksi tanpa cadangan
+
+## Menguji kegunaan
+
+Yang dapat diperiksa mesin sudah dijaga suite. Yang butuh manusia ada di [PROTOKOL-UJI-KEGUNAAN.md](PROTOKOL-UJI-KEGUNAAN.md): heuristic evaluation yang dapat dijalankan tim sendiri tanpa pengguna, uji tugas dengan lima pendaki, kuesioner SUS, dan telusur pembaca layar. Angka-angkanya kecil karena memang cukup: lima pengguna menangkap sekitar 85% masalah kegunaan.
