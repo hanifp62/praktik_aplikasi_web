@@ -118,3 +118,9 @@ PostgreSQL + PostGIS lewat Supabase. Kolom geografi (`geography(TYPE,4326)`) dit
 **BMKG** — `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4={kode}`. Prakiraan 3 hari, interval 3 jam, diperbarui dua kali sehari, batas 60 permintaan per menit per IP. **Atribusi BMKG wajib tampil** di aplikasi. Browser tidak pernah memanggil BMKG langsung; pengambilan dilakukan scheduler (`weather:refresh`).
 
 Prakiraan berbasis wilayah administrasi tingkat IV, sehingga **tidak boleh disebut cuaca puncak** — selalu "prakiraan area sekitar jalur". (§44)
+
+## Kredensial
+
+Kata sandi basis data dan kunci Supabase hanya tinggal di `.env`, yang di-gitignore dan tidak terlacak. Nilainya tidak pernah ditulis ke script, test, dokumentasi, maupun pesan commit: sekali tertempel, ia ikut riwayat git selamanya meski barisnya dihapus. `SecretsNotInRepoTest` menegakkan ini, memindai seluruh berkas terlacak untuk pola kredensial sungguhan, bukan sekadar nama variabelnya.
+
+Rotasi kunci publishable dan kata sandi basis data hanya dapat dilakukan dari dashboard Supabase. Keduanya tidak boleh diganti lewat SQL: `ALTER USER postgres` memutus layanan internal Supabase yang memakai peran itu. Per 20 September 2026 rotasi belum dilakukan; paparan PostgREST-nya sendiri sudah ditutup lewat migrasi.
