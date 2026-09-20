@@ -4,7 +4,9 @@ namespace App\Livewire\Recommendations;
 
 use App\Enums\AnalyticsEvent;
 use App\Models\RecommendationRun;
+use App\Models\Trail;
 use App\Services\AnalyticsRecorder;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -71,6 +73,33 @@ class RecommendationResults extends Component
         return view('livewire.recommendations.recommendation-results', [
             'eligible' => $results->where('eligible', true),
             'excluded' => $results->where('eligible', false),
+            'penyebabKosong' => $this->penyebabKosong($results),
         ]);
+    }
+
+    /**
+     * Layar kosong punya tiga sebab yang menuntut tiga saran berbeda, dan saran yang
+     * salah lebih buruk daripada tidak ada saran.
+     *
+     * Penyaring wilayah bekerja di tingkat query, jadi jalur yang tersaring tidak
+     * pernah menjadi kandidat maupun jalur tersingkir. Ketika itu terjadi, menyuruh
+     * pendaki melonggarkan durasi dan batas elevation gain menyuruhnya mengubah dua
+     * hal yang tidak pernah diuji terhadap satu jalur pun.
+     *
+     * Hasil kosong sama sekali hanya mungkin karena dua hal: tidak ada jalur terbit,
+     * atau wilayahnya menyaring semuanya. Hasil ada tetapi tak satu pun lolos berarti
+     * batasan rencananya yang mengikat, dan di situ saran lama memang benar.
+     */
+    private function penyebabKosong(Collection $results): ?string
+    {
+        if ($results->isNotEmpty()) {
+            return null;
+        }
+
+        if (! Trail::published()->exists()) {
+            return 'katalog';
+        }
+
+        return $this->run->hikingGoal?->region ? 'wilayah' : 'batasan';
     }
 }

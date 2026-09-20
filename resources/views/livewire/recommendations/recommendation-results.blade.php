@@ -9,11 +9,34 @@
         </x-ui.page-header>
 
         @if ($eligible->isEmpty())
+            {{--
+                Tiga sebab, tiga saran. Menyuruh pendaki melonggarkan batas padahal tak
+                satu pun jalur pernah diuji terhadap batas itu membuatnya mengubah hal
+                yang tidak mungkin menolongnya, gagal lagi, lalu menyimpulkan sistemnya
+                rusak.
+            --}}
             <x-ui.card title="Belum ada jalur yang sesuai">
-                <p class="text-sm text-gray-600">
-                    Tidak ada jalur yang memenuhi batasan rencana Anda saat ini. Anda dapat melonggarkan
-                    target durasi atau batas elevation gain, atau menelusuri jalur secara manual.
-                </p>
+                @if ($penyebabKosong === 'katalog')
+                    <p class="text-sm text-gray-600">
+                        Belum ada satu pun jalur berdata di sistem ini. Keterangan jalur belum dimasukkan
+                        pengelola kawasan maupun pemandu bersertifikat yang disahkan untuk kawasannya.
+                        Batasan rencana Anda tidak ada hubungannya dengan layar ini.
+                    </p>
+                @elseif ($penyebabKosong === 'wilayah')
+                    <p class="text-sm text-gray-600">
+                        Belum ada jalur berdata di {{ $run->hikingGoal?->region }}. Jalur di wilayah itu
+                        mungkin sudah dikenali sistem, tetapi keterangannya belum dimasukkan pihak yang
+                        berwenang, jadi tidak ada yang dapat diuji terhadap rencana Anda. Mengubah durasi
+                        atau batas elevation gain tidak akan mengubah hasil ini; kosongkan wilayahnya untuk
+                        melihat jalur di daerah lain.
+                    </p>
+                @else
+                    <p class="text-sm text-gray-600">
+                        Tidak ada jalur yang memenuhi batasan rencana Anda saat ini. Anda dapat melonggarkan
+                        target durasi atau batas elevation gain, atau menelusuri jalur secara manual.
+                    </p>
+                @endif
+
                 <x-ui.button variant="secondary" href="{{ route('trails.index') }}">Telusuri jalur manual</x-ui.button>
             </x-ui.card>
         @endif
