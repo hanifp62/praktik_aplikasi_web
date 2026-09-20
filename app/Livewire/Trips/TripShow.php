@@ -9,6 +9,7 @@ use App\Enums\TripStatus;
 use App\Models\HikingHistory;
 use App\Models\TripPlan;
 use App\Services\AnalyticsRecorder;
+use App\Services\PermitService;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -122,10 +123,13 @@ class TripShow extends Component
         return false;
     }
 
-    public function render()
+    public function render(PermitService $permits)
     {
         return view('livewire.trips.trip-show', [
             'completionStates' => CompletionState::cases(),
+            // Dihitung ulang setiap halaman dibuka, bukan disimpan: jawabannya berubah
+            // seiring hari berjalan meskipun tidak ada satu pun data yang disunting.
+            'jendelaIzin' => $permits->bookingWindowFor($this->trip->trail, $this->trip->planned_date),
         ])->title($this->trip->name);
     }
 }

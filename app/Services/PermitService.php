@@ -85,6 +85,37 @@ class PermitService
         ?CarbonInterface $targetDate,
         PermitRequirement|false|null $requirement = false,
     ): ?string {
+        $jendela = $this->bookingWindowFor($trail, $targetDate, $requirement);
+
+        // Jendela yang sedang terbuka bukan peringatan. Ia tetap penting, tetapi
+        // tempatnya di halaman trip sebagai ajakan bertindak, bukan di daftar
+        // peringatan yang dibaca sebagai daftar hambatan.
+        return $jendela !== null && $jendela['state'] !== self::BOOKING_TERBUKA
+            ? $jendela['message']
+            : null;
+    }
+
+    public const BOOKING_BELUM_DIBUKA = 'BELUM_DIBUKA';
+
+    public const BOOKING_TERBUKA = 'TERBUKA';
+
+    public const BOOKING_DITUTUP = 'DITUTUP';
+
+    /**
+     * Posisi tanggal rencana terhadap jendela pemesanan izin.
+     *
+     * Aritmetikanya hanya ada di sini. Jendela ini bergerak relatif terhadap tanggal
+     * yang sudah dipilih, jadi jawabannya berubah seiring hari berjalan meskipun tidak
+     * ada satu pun data yang disunting: itulah sebabnya ia perlu dihitung ulang setiap
+     * halaman trip dibuka, bukan disimpan.
+     *
+     * @return array{state: string, message: string, requirement: PermitRequirement}|null
+     */
+    public function bookingWindowFor(
+        Trail $trail,
+        ?CarbonInterface $targetDate,
+        PermitRequirement|false|null $requirement = false,
+    ): ?array {
         if ($targetDate === null) {
             return null;
         }
@@ -107,22 +138,40 @@ class PermitService
         $opens = $requirement->booking_opens_days_before;
 
         if ($closes !== null && $daysAhead < $closes) {
-            return $this->message($requirement, sprintf(
-                'Pemesanan izin untuk jalur ini ditutup H-%d, sedangkan tanggal rencana Anda tinggal %d hari lagi.',
-                $closes,
-                $daysAhead
-            ));
+            return [
+                'state' => self::BOOKING_DITUTUP,
+                'requirement' => $requirement,
+                'message' => $this->message($requirement, sprintf(
+                    'Pemesanan izin untuk jalur ini sudah ditutup H-%d, sedangkan tanggal rencana Anda tinggal %d hari lagi.',
+                    $closes,
+                    $daysAhead
+                )),
+            ];
         }
 
         if ($opens !== null && $daysAhead > $opens) {
-            return $this->message($requirement, sprintf(
-                'Pemesanan izin untuk jalur ini baru dibuka H-%d, sedangkan tanggal rencana Anda masih %d hari lagi.',
-                $opens,
-                $daysAhead
-            ));
+            return [
+                'state' => self::BOOKING_BELUM_DIBUKA,
+                'requirement' => $requirement,
+                'message' => $this->message($requirement, sprintf(
+                    'Pemesanan izin untuk jalur ini belum dibuka, baru dibuka H-%d, sedangkan tanggal rencana Anda masih %d hari lagi.',
+                    $opens,
+                    $daysAhead
+                )),
+            ];
         }
 
-        return null;
+        return [
+            'state' => self::BOOKING_TERBUKA,
+            'requirement' => $requirement,
+            'message' => $this->message($requirement, $closes !== null
+                ? sprintf(
+                    'Pemesanan izin untuk jalur ini sedang dibuka dan ditutup H-%d, yaitu %d hari lagi.',
+                    $closes,
+                    max(0, $daysAhead - $closes)
+                )
+                : 'Pemesanan izin untuk jalur ini sedang dibuka.'),
+        ];
     }
 
     /**

@@ -57,6 +57,27 @@
             </x-ui.card>
         </div>
 
+        {{--
+            Jendela pemesanan bergerak relatif terhadap tanggal yang sudah dipilih, jadi
+            peringatan sekali pada saat rekomendasi tidak cukup. Nadanya mengikuti §43:
+            sistem ini menyebut aturan dan penyelenggaranya, tidak pernah menyatakan
+            izinnya sudah aman atau belum.
+        --}}
+        @if ($jendelaIzin)
+            <x-ui.card title="Izin pendakian">
+                <p @class([
+                    'text-sm',
+                    'font-medium text-warn-900' => $jendelaIzin['state'] === \App\Services\PermitService::BOOKING_DITUTUP,
+                    'text-gray-700' => $jendelaIzin['state'] !== \App\Services\PermitService::BOOKING_DITUTUP,
+                ])>{{ $jendelaIzin['message'] }}</p>
+
+                @if ($jendelaIzin['requirement']->booking_url)
+                    <a href="{{ $jendelaIzin['requirement']->booking_url }}" rel="noopener noreferrer" target="_blank"
+                        class="mt-2 inline-block text-sm text-brand-700 underline">Buka kanal pemesanan resmi</a>
+                @endif
+            </x-ui.card>
+        @endif
+
         @if ($trip->notes)
             <x-ui.card title="Catatan">
                 <p class="text-sm text-gray-700">{{ $trip->notes }}</p>
