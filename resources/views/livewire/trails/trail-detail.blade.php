@@ -241,25 +241,7 @@
             @if ($trail->checkpoints->isEmpty())
                 <p class="text-sm text-gray-600">Data checkpoint belum tersedia untuk jalur ini.</p>
             @else
-                <ol class="space-y-2">
-                    @foreach ($trail->checkpoints as $checkpoint)
-                        <li class="flex items-start gap-3 rounded-md border border-gray-100 px-3 py-2 text-sm">
-                            <span class="mt-0.5 rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-                                {{ $checkpoint->sequence }}
-                            </span>
-                            <span>
-                                <span class="font-medium text-gray-900">{{ $checkpoint->name }}</span>
-                                <span class="text-gray-600">&middot; {{ $checkpoint->checkpoint_type->label() }}</span>
-                                @if ($checkpoint->elevation_m)
-                                    <span class="text-gray-600">&middot; {{ $checkpoint->elevation_m }} mdpl</span>
-                                @endif
-                                @if ($checkpoint->notes)
-                                    <span class="block text-gray-600">{{ $checkpoint->notes }}</span>
-                                @endif
-                            </span>
-                        </li>
-                    @endforeach
-                </ol>
+                <x-ui.checkpoint-journey :checkpoints="$trail->checkpoints" class="space-y-1" />
             @endif
         </x-ui.card>
 

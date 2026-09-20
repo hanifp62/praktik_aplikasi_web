@@ -41,7 +41,10 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
         $user->preference()->create(['preferred_duration' => 'ONE_DAY', 'preferred_trip_type' => 'CAMPING']);
         $user = $user->fresh();
 
-        Trail::factory()->easy()->create();
+        // Elevation gain jauh di atas pengalaman yang diisi memaksa mesin menghasilkan
+        // skor berkoma. Tanpa itu semua faktor bernilai 0 atau 1, seluruh perulangan
+        // pemeriksaan dilewati, dan testnya lolos tanpa memeriksa apa pun.
+        Trail::factory()->easy()->create(['elevation_gain_m' => 1600]);
         $goal = HikingGoal::factory()->create(['user_id' => $user->id, 'trip_type' => 'CAMPING', 'region' => null]);
 
         return [$user, app(RouteFitService::class)->recommend($user, $goal)];
@@ -72,6 +75,8 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
             ->call('toggleExplanation', $hasil->id)
             ->html();
 
+        $diperiksa = 0;
+
         foreach ($hasil->matched_factors as $faktor) {
             $skor = (string) $faktor['score'];
 
@@ -81,12 +86,23 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
                 continue;
             }
 
+            $diperiksa++;
+
             $this->assertStringNotContainsString(
                 $skor,
                 $html,
                 "Skor faktor {$faktor['factor']} ({$skor}) bocor ke halaman."
             );
         }
+
+        // Penjaga terhadap test yang lolos tanpa memeriksa apa pun. Kalau seluruh skor
+        // kebetulan bulat, perulangan di atas dilewati seluruhnya dan testnya hijau
+        // tanpa pernah menyentuh halaman.
+        $this->assertGreaterThan(
+            0,
+            $diperiksa,
+            'Tidak ada satu pun skor berkoma untuk diperiksa, jadi test ini belum membuktikan apa-apa.'
+        );
     }
 
     /**
