@@ -10,6 +10,7 @@ use App\Models\ReadinessCheck;
 use App\Models\TripPlan;
 use App\Services\Readiness\ReadinessAssessment;
 use App\Services\RouteFit\RouteFitResult;
+use Carbon\CarbonInterface;
 
 /**
  * Readiness combines route fit, preparation state and current conditions (PRD §38-39).
@@ -40,7 +41,15 @@ class ReadinessService
         $status = $this->officialStatus->effectiveStatusForTrail($trip->trail);
         $conditions = $this->conditions->forTrail($trip->trail);
 
-        $state = $this->determineState($fit, $status, $preparationState, $conditions);
+        // Yang dinilai di sini adalah sebuah rencana, jadi status pada tanggal rencananya
+        // sama menentukannya dengan status hari ini. Penutupan besar di Indonesia bersifat
+        // tahunan dan diumumkan jauh hari, sehingga rencana untuk Januari dapat jatuh ke
+        // penutupan yang sudah tercatat sekarang.
+        $statusTanggalRencana = $trip->planned_date
+            ? $this->officialStatus->effectiveStatusForTrailOn($trip->trail, $trip->planned_date)
+            : $status;
+
+        $state = $this->determineState($fit, $status, $preparationState, $conditions, $statusTanggalRencana);
 
         return new ReadinessAssessment(
             state: $state,
@@ -56,7 +65,15 @@ class ReadinessService
                 'weather' => $conditions['weather_context'],
                 'community' => $conditions['community_context'],
             ],
-            explanation: $this->explain($state, $fit, $status, $preparationState, $conditions),
+            explanation: $this->explain(
+                $state,
+                $fit,
+                $status,
+                $preparationState,
+                $conditions,
+                $statusTanggalRencana,
+                $trip->planned_date,
+            ),
         );
     }
 
@@ -101,10 +118,16 @@ class ReadinessService
         OfficialStatusValue $status,
         array $preparationState,
         array $conditions,
+        ?OfficialStatusValue $statusTanggalRencana = null,
     ): ReadinessState {
         // PRD §39: NOT_RECOMMENDED is reserved for clear product-level conditions such as an
         // official closure or a hard incompatibility - never a judgement about the person.
-        if ($status === OfficialStatusValue::CLOSED || ! $fit->eligible) {
+        //
+        // Tutup pada tanggal rencana sama menentukannya dengan tutup hari ini: yang akan
+        // dijalani pendaki adalah tanggal itu, bukan hari ini.
+        if ($status === OfficialStatusValue::CLOSED
+            || $statusTanggalRencana === OfficialStatusValue::CLOSED
+            || ! $fit->eligible) {
             return ReadinessState::NOT_RECOMMENDED;
         }
 
@@ -149,8 +172,19 @@ class ReadinessService
         OfficialStatusValue $status,
         array $preparationState,
         array $conditions,
+        ?OfficialStatusValue $statusTanggalRencana = null,
+        ?CarbonInterface $tanggalRencana = null,
     ): array {
         $reasons = [];
+
+        // Disebut lebih dulu karena inilah yang paling mungkin mengejutkan: pendaki
+        // melihat jalurnya terbuka hari ini, lalu ditolak tanpa tahu sebabnya.
+        if ($statusTanggalRencana === OfficialStatusValue::CLOSED && $status !== OfficialStatusValue::CLOSED) {
+            $reasons[] = sprintf(
+                'Pada tanggal rencana Anda%s jalur ini tercatat TUTUP, meskipun hari ini tidak.',
+                $tanggalRencana ? ' ('.$tanggalRencana->translatedFormat('d F Y').')' : ''
+            );
+        }
         $outstanding = [];
         $conditionWarnings = $conditions['warnings'] ?? [];
         $weather = $conditions['weather_context'] ?? [];

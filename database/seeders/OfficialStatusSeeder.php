@@ -138,6 +138,27 @@ class OfficialStatusSeeder extends Seeder
                 'expires_at' => '2026-10-31',
             ],
 
+            [
+                // Penutupan yang sudah diumumkan untuk tanggal yang belum tiba.
+                //
+                // Inilah yang membuat sistem ini berguna sebagai alat perencanaan, bukan
+                // hanya papan pengumuman: pendaki yang hari ini menyusun rencana Desember
+                // sudah dapat diberi tahu, alih-alih baru tahu saat mendaftar.
+                //
+                // Pola tahunannya berulang (Januari sampai Maret juga tutup), tetapi yang
+                // dicatat hanya periode yang benar-benar sudah diumumkan. Mengekstrapolasi
+                // pola menjadi tanggal 2027 adalah menebak, bukan mencatat.
+                'slug' => 'gunung-semeru',
+                'status' => OfficialStatusValue::CLOSED,
+                'reason' => 'Penutupan tahunan untuk pemulihan ekosistem dan mitigasi cuaca akhir '
+                    .'tahun yang rawan hujan deras serta badai.',
+                'source' => 'IDN Times',
+                'source_url' => 'https://www.idntimes.com/travel/destination/jadwal-lengkap-penutupan-pendakian-semeru-dan-bromo-2026-00-z5hk4-cctgz0',
+                'published_at' => '2026-01-01',
+                'effective_at' => '2026-12-01',
+                'expires_at' => '2026-12-31',
+            ],
+
             // Prau, Sindoro, Sumbing, Lawu, Arjuno, Salak, Andong, Ungaran, Slamet, Raung,
             // dan Papandayan sengaja tidak dicatat. Tidak ada keterangan yang ditemukan,
             // dan menebaknya sebagai terbuka adalah tepat yang dilarang §95.

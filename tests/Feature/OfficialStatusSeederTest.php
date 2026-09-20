@@ -9,6 +9,7 @@ use App\Services\OfficialStatusService;
 use Database\Seeders\MountainSeeder;
 use Database\Seeders\OfficialStatusSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
@@ -110,6 +111,29 @@ class OfficialStatusSeederTest extends TestCase
             OfficialStatusValue::UNKNOWN,
             $this->statusTerkini('gunung-semeru'),
             'Kabar penutupan tahun lalu bukan kabar hari ini.'
+        );
+    }
+
+    /**
+     * Penutupan Desember Semeru sudah diumumkan untuk tanggal yang belum tiba. Pendaki
+     * yang hari ini menyusun rencana Desember harus diberi tahu sekarang, bukan baru tahu
+     * saat mendaftar.
+     */
+    public function test_an_announced_future_closure_is_readable_for_its_own_dates(): void
+    {
+        $semeru = Mountain::where('slug', 'gunung-semeru')->firstOrFail();
+        $layanan = app(OfficialStatusService::class);
+
+        $this->assertSame(
+            OfficialStatusValue::CLOSED,
+            $layanan->statusOnDate($semeru, Carbon::parse('2026-12-15')),
+            'Pertengahan Desember berada di dalam periode penutupan yang diumumkan.'
+        );
+
+        $this->assertSame(
+            OfficialStatusValue::UNKNOWN,
+            $layanan->statusOnDate($semeru, Carbon::parse('2026-11-15')),
+            'November di luar periode itu, dan tidak ada keterangan lain untuk tanggal itu.'
         );
     }
 

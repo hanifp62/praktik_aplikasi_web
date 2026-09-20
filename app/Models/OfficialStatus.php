@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OfficialStatusValue;
 use App\Enums\StatusScope;
 use App\Services\OfficialStatusService;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -51,10 +52,21 @@ class OfficialStatus extends Model
 
     public function scopeCurrentlyEffective(Builder $query): Builder
     {
-        $now = Carbon::now();
+        return $query->effectiveOn(Carbon::now());
+    }
 
-        return $query->where(fn (Builder $q) => $q->whereNull('effective_at')->orWhere('effective_at', '<=', $now))
-            ->where(fn (Builder $q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', $now));
+    /**
+     * Status yang berlaku pada satu tanggal tertentu, bukan hanya hari ini.
+     *
+     * Penutupan besar di Indonesia bersifat tahunan dan diumumkan jauh hari: Rinjani
+     * tutup 1 Januari sampai 31 Maret, Semeru pada periode yang sama ditambah sepanjang
+     * Desember. Pendaki menyusun rencananya berbulan-bulan sebelumnya, jadi pertanyaan
+     * yang menentukan adalah "tutup pada tanggal rencana saya", bukan "tutup hari ini".
+     */
+    public function scopeEffectiveOn(Builder $query, CarbonInterface $date): Builder
+    {
+        return $query->where(fn (Builder $q) => $q->whereNull('effective_at')->orWhere('effective_at', '<=', $date))
+            ->where(fn (Builder $q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', $date));
     }
 
     public function isExpired(): bool

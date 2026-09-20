@@ -7,6 +7,7 @@ use App\Models\Mountain;
 use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\TrailSegment;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -50,6 +51,54 @@ class OfficialStatusService
         }
 
         $mountainStatus = $this->currentValueFor($mountain);
+
+        if ($mountainStatus === OfficialStatusValue::CLOSED) {
+            return OfficialStatusValue::CLOSED;
+        }
+
+        if ($mountainStatus === OfficialStatusValue::RESTRICTED && $trailStatus !== OfficialStatusValue::CLOSED) {
+            return OfficialStatusValue::RESTRICTED;
+        }
+
+        return $trailStatus;
+    }
+
+    /**
+     * Status yang berlaku pada satu tanggal, bukan hari ini.
+     *
+     * Dipakai ketika yang dinilai adalah rencana, bukan keadaan sekarang. Penutupan
+     * tahunan diumumkan jauh hari, jadi rencana untuk Januari harus dinilai terhadap
+     * Januari.
+     */
+    public function statusOnDate(Model $statusable, CarbonInterface $date): OfficialStatusValue
+    {
+        return OfficialStatus::query()
+            ->where('statusable_type', $statusable->getMorphClass())
+            ->where('statusable_id', $statusable->getKey())
+            ->effectiveOn($date)
+            ->orderByDesc('effective_at')
+            ->orderByDesc('published_at')
+            ->orderByDesc('id')
+            ->first()
+            ?->status ?? OfficialStatusValue::UNKNOWN;
+    }
+
+    /**
+     * Status efektif sebuah jalur pada satu tanggal, lengkap dengan kaskade §42.
+     *
+     * Pembatasan turun dari gunung ke jalur; kelonggaran tidak. Aturannya sama dengan
+     * versi "hari ini", hanya tanggalnya yang berbeda.
+     */
+    public function effectiveStatusForTrailOn(Trail $trail, CarbonInterface $date): OfficialStatusValue
+    {
+        $trailStatus = $this->statusOnDate($trail, $date);
+        $mountain = $trail->relationLoaded('mountain') ? $trail->mountain : $trail->mountain()->first();
+
+        if (! $mountain instanceof Mountain) {
+            return $trailStatus;
+        }
+
+        $mountainStatus = $this->statusOnDate($mountain, $date);
 
         if ($mountainStatus === OfficialStatusValue::CLOSED) {
             return OfficialStatusValue::CLOSED;
