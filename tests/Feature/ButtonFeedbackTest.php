@@ -58,6 +58,23 @@ class ButtonFeedbackTest extends TestCase
     }
 
     /**
+     * Livewire baru menyembunyikan elemen wire:loading setelah hidrasi. Tanpa
+     * display:none dari server, setiap tombol menampilkan spinner dan membacakan
+     * "Memproses" kepada pembaca layar sebelum JavaScript sempat jalan, dan seterusnya
+     * bila JavaScript gagal dimuat sama sekali.
+     */
+    public function test_the_indicator_is_hidden_before_javascript_runs(): void
+    {
+        $isi = Blade::render('<x-ui.button wire:click="simpan">Simpan</x-ui.button>');
+
+        $this->assertMatchesRegularExpression(
+            '/<span wire:loading[^>]*style="display: none;"/',
+            $isi,
+            'Spinner harus sudah tersembunyi dari server.'
+        );
+    }
+
+    /**
      * Tautan bukan aksi Livewire, jadi tidak boleh membawa atribut yang tidak berlaku.
      */
     public function test_a_link_button_carries_no_loading_attributes(): void

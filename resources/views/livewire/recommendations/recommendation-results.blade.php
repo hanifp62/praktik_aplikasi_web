@@ -74,7 +74,7 @@
                         <div class="mt-4 flex flex-wrap gap-2">
                             <x-ui.button variant="secondary" size="sm" wire:click="toggleExplanation({{ $result->id }})"
                                 aria-expanded="{{ $expandedResultId === $result->id ? 'true' : 'false' }}">
-                                Mengapa jalur ini?</x-ui.button>
+                                {{ $result->eligible ? 'Mengapa jalur ini cocok?' : 'Mengapa kurang cocok?' }}</x-ui.button>
                             <x-ui.button variant="secondary" size="sm" wire:click="toggleComparison({{ $result->trail_id }})">
                                 {{ in_array($result->trail_id, $comparison, true) ? 'Batal bandingkan' : 'Tambah ke perbandingan' }}</x-ui.button>
                             <x-ui.button wire:click="selectTrail({{ $result->trail_id }})">
@@ -83,7 +83,14 @@
 
                         @if ($expandedResultId === $result->id)
                             <div class="mt-4 space-y-3 border-t border-gray-100 pt-4">
-                                @foreach (['why_it_fits' => 'Mengapa cocok', 'what_to_watch' => 'Yang perlu diperhatikan', 'preparation_gap' => 'Persiapan yang belum selesai'] as $key => $heading)
+                                {{-- Judulnya mengikuti hasil penilaian. "Mengapa cocok" pada jalur
+                                     yang justru tidak cocok membuat pendaki membaca dua hal yang
+                                     bertentangan dalam satu kotak. --}}
+                                @foreach ([
+                                    'why_it_fits' => $result->eligible ? 'Mengapa cocok' : 'Dasar penilaiannya',
+                                    'what_to_watch' => 'Yang perlu diperhatikan',
+                                    'preparation_gap' => 'Persiapan yang belum selesai',
+                                ] as $key => $heading)
                                     <div>
                                         <h3 class="text-sm font-semibold text-gray-900">{{ $heading }}</h3>
                                         <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-gray-700">

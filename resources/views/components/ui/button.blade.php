@@ -64,7 +64,12 @@
         @if ($confirm) wire:confirm="{{ $confirm }}" @endif
         {{ $attributes->merge(array_merge(['type' => 'button', 'class' => $classes], $loading)) }}
     >
-        <span wire:loading @if ($aksi) wire:target="{{ $aksi }}" @endif class="inline-flex items-center gap-2">
+        {{-- display:none dipasang di server, bukan diserahkan ke Livewire.
+             Livewire baru menyembunyikannya setelah hidrasi, sehingga sebelum JS jalan
+             setiap tombol menampilkan spinner dan membacakan "Memproses" kepada pembaca
+             layar. Livewire tetap menampilkannya saat aksinya berjalan. --}}
+        <span wire:loading @if ($aksi) wire:target="{{ $aksi }}" @endif
+            style="display: none;" class="inline-flex items-center gap-2">
             <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />

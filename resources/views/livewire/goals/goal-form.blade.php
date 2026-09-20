@@ -14,8 +14,8 @@
                 :options="collect($tripTypes)->mapWithKeys(fn ($type) => [$type->value => $type->label()])->all()" />
 
             <x-form.field name="expected_duration_minutes" type="number" min="60"
-                label="Perkiraan durasi yang Anda targetkan (menit)"
-                hint="Contoh: 720 untuk rencana 12 jam." />
+                label="Perkiraan durasi yang Anda targetkan"
+                hint="Dalam menit. Satu hari penuh sekitar 720, setengah hari sekitar 360." />
 
             <x-form.select name="preferred_challenge" label="Tingkat tantangan yang dicari (opsional)"
                 placeholder="Tidak ada preferensi"
