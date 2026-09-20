@@ -59,6 +59,34 @@
             </x-ui.card>
         </div>
 
+        {{--
+            Jejak pendaki didahulukan di atas garis jalur resmi ketika ada, karena inilah
+            yang membedakan halaman hasil dari sekadar ringkasan: yang digambar adalah
+            perjalanannya sendiri.
+
+            Keduanya tidak boleh tertukar. Jejak yang kebetulan mirip jalur resmi membuat
+            pendaki mengira aplikasi ini memverifikasi bahwa ia berjalan di jalur yang
+            benar, dan aplikasi ini tidak melakukan itu.
+        --}}
+        @if ($jejakSaya = $this->jejak())
+            <x-ui.card title="Jejak yang Anda tempuh"
+                subtitle="Rekaman dari perangkat Anda, bukan penilaian apakah Anda berjalan di jalur yang benar.">
+                <x-ui.map id="peta-jejak" :geometry="$jejakSaya" :markers="$penandaPos"
+                    :label="'Jejak pendakian Anda di '.$jalur->name" height="h-96" class="mt-2" />
+
+                <form method="POST" action="{{ route('hike.track.destroy', $trip->hikingSession) }}" class="mt-4">
+                    @csrf
+                    @method('DELETE')
+                    {{-- Hak menghapus berada di tempat jejaknya terlihat, bukan
+                         disembunyikan di halaman pengaturan yang terpisah. --}}
+                    <x-ui.button type="submit" variant="secondary" size="sm"
+                        confirm="Hapus jejak pendakian ini? Pendakiannya sendiri tetap tersimpan.">
+                        Hapus jejak ini
+                    </x-ui.button>
+                </form>
+            </x-ui.card>
+        @endif
+
         @if ($geometri = $jalur->readGeoJson('geometry'))
             <x-ui.card title="Jalur yang ditempuh"
                 subtitle="Garis ini adalah jalur resmi, bukan rekaman GPS perjalanan Anda.">

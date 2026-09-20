@@ -191,9 +191,17 @@ class HikeMode extends Component
 
     public function render()
     {
+        $sesi = $this->trip->hikingSession;
+
         return view('livewire.trips.hike-mode', [
             'checkpoints' => $this->checkpointCoordinates(),
             'geometry' => $this->trip->trail->readGeoJson('geometry'),
+            // Perekaman hanya berjalan bila pendaki menyalakannya sendiri, dan hanya
+            // ketika sesinya benar-benar ada. Penjagaannya ada di server juga, jadi
+            // yang di sini menghindari pekerjaan sia-sia, bukan menjadi satu-satunya
+            // pengaman.
+            'merekamJejak' => (bool) auth()->user()->preference?->record_track && $sesi !== null,
+            'sesiId' => $sesi?->id,
         ]);
     }
 }

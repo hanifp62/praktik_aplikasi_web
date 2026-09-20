@@ -69,6 +69,44 @@
         function hikeMode() {
             return {
                 statusMessage: 'Izin lokasi belum diminta.',
+                hentikanPerekaman: null,
+
+                /*
+                 * Perekaman jejak berjalan sendiri selama halaman ini terbuka, dan
+                 * hanya bila pendaki menyalakannya di profilnya.
+                 *
+                 * Tidak ada yang dikirim ke server selama pendakian. Titiknya menumpuk
+                 * di perangkat, lalu berangkat ketika sinyal kembali: mencoba mengirim
+                 * di jalur hanya menghabiskan baterai untuk permintaan yang gagal.
+                 */
+                init() {
+                    @if ($merekamJejak)
+                        if (typeof window.muatJejak !== 'function') {
+                            return;
+                        }
+
+                        window.muatJejak().then((jejak) => {
+                            this.hentikanPerekaman = jejak.mulaiMerekam(@json($sesiId));
+
+                            const kirim = () => jejak.kirimJejak(
+                                @json($sesiId),
+                                @json(route('hike.track', $sesiId)),
+                                document.querySelector('meta[name="csrf-token"]')?.content ?? ''
+                            ).catch(() => {});
+
+                            // Dicoba saat peramban mengabarkan sinyal kembali, dan sekali
+                            // saat halaman dibuka untuk jejak pendakian sebelumnya yang
+                            // belum sempat terkirim.
+                            window.addEventListener('online', kirim);
+                            kirim();
+                        }).catch(() => {});
+                    @endif
+                },
+
+                destroy() {
+                    this.hentikanPerekaman?.();
+                },
+
                 requestPosition() {
                     if (!navigator.geolocation) {
                         this.statusMessage = 'Browser Anda tidak mendukung layanan lokasi.';

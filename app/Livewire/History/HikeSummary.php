@@ -3,6 +3,7 @@
 namespace App\Livewire\History;
 
 use App\Models\Checkpoint;
+use App\Models\HikeTrackPoint;
 use App\Models\TripPlan;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -67,6 +68,39 @@ class HikeSummary extends Component
         }
 
         return $this->trip->trail->checkpoints->firstWhere('sequence', $urutan);
+    }
+
+    /**
+     * Jejak yang direkam pendaki, sebagai GeoJSON siap gambar.
+     *
+     * Null ketika titiknya kurang dari dua. Dua titik adalah garis; satu titik bukan,
+     * dan menggambarnya sebagai jejak menyatakan pendaki tidak bergerak sama sekali.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function jejak(): ?array
+    {
+        $sesi = $this->trip->hikingSession;
+
+        if ($sesi === null) {
+            return null;
+        }
+
+        $titik = HikeTrackPoint::query()
+            ->where('hiking_session_id', $sesi->id)
+            ->orderBy('recorded_at')
+            ->get(['latitude', 'longitude']);
+
+        if ($titik->count() < 2) {
+            return null;
+        }
+
+        return [
+            'type' => 'LineString',
+            'coordinates' => $titik
+                ->map(fn (HikeTrackPoint $t) => [(float) $t->longitude, (float) $t->latitude])
+                ->all(),
+        ];
     }
 
     public function render()

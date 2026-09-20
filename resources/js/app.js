@@ -40,3 +40,16 @@ window.muatPeta = () => {
 
     return pemuatan;
 };
+
+/*
+ * Perekam jejak dimuat hanya oleh pendaki yang menyalakannya, dan hanya di mode
+ * pendakian. Pola yang sama dengan peta: modul yang tidak dipakai tidak boleh menagih
+ * bita kepada siapa pun.
+ */
+let pemuatanJejak = null;
+
+window.muatJejak = () => {
+    pemuatanJejak ??= import('./jejak.js');
+
+    return pemuatanJejak;
+};
