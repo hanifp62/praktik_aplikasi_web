@@ -23,12 +23,13 @@ class ProgressLadderService
      * Selisih elevation gain yang masih terbaca sebagai "setara", dalam meter.
      *
      * Bukan diukur dari mdpl puncak (BR-02, §18: mdpl bukan penentu kesulitan), melainkan
-     * dari elevation gain, penentu beban yang sesungguhnya. Ambangnya 300 meter karena itu
-     * setengah dari jarak terkecil antar pita kesulitan yang sudah dipakai
-     * CompatibilityScorer (600/1000/1600 m); selisih di bawahnya belum cukup besar untuk
-     * melompati satu pita kesulitan, jadi belum pantas disebut tingkat baru.
+     * dari elevation gain, penentu beban yang sesungguhnya. Ambangnya diturunkan dari pita
+     * kesulitan yang sudah dipakai CompatibilityScorer (600, 1000, 1600 m): jarak antar
+     * pita itu 400 m dan 600 m, dan yang terkecil adalah 400 m. Setengah dari 400 m adalah
+     * 200 m -- selisih di bawah itu belum cukup besar untuk melompati satu pita kesulitan,
+     * jadi belum pantas disebut tingkat baru.
      */
-    private const SETARA_METER = 300;
+    private const SETARA_METER = 200;
 
     public function bandingkanDenganRiwayat(User $user, Trail $trail): ?string
     {

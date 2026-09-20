@@ -45,9 +45,16 @@ class ProgressLadderTest extends TestCase
      */
     private function pernahMendaki(User $user, int $tanjakan, CompletionState $keadaan = CompletionState::COMPLETED): void
     {
-        HikingHistory::factory()->for($user)->create([
+        // Keadaan ABANDONED lewat state abandoned() milik factory-nya sendiri, bukan
+        // array mentah -- factory itu dibuat di tugas ini justru untuk kasus ini.
+        $riwayat = HikingHistory::factory()->for($user);
+
+        if ($keadaan === CompletionState::ABANDONED) {
+            $riwayat = $riwayat->abandoned();
+        }
+
+        $riwayat->create([
             'trail_id' => $this->jalur($tanjakan)->id,
-            'completion_state' => $keadaan->value,
             'completed_at' => now()->subMonth(),
         ]);
     }
