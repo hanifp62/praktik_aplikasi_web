@@ -21,7 +21,7 @@
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <x-ui.card>
                     <p class="text-xs text-gray-500">Pendakian</p>
-                    <p class="mt-1 text-2xl font-semibold text-gray-900">{{ $angka['pendakian'] }}</p>
+                    <p data-angka class="mt-1 text-2xl font-semibold text-gray-900">{{ $angka['pendakian'] }}</p>
                     @if ($angka['pendakian'] > $angka['tuntas'])
                         {{-- Pendakian yang dibatalkan disebut apa adanya, tanpa nada
                              menghukum. Membatalkan karena cuaca adalah keputusan yang
@@ -32,13 +32,13 @@
 
                 <x-ui.card>
                     <p class="text-xs text-gray-500">Gunung berbeda</p>
-                    <p class="mt-1 text-2xl font-semibold text-gray-900">{{ $angka['gunung'] }}</p>
+                    <p data-angka class="mt-1 text-2xl font-semibold text-gray-900">{{ $angka['gunung'] }}</p>
                     <p class="mt-1 text-xs text-gray-600">{{ $angka['jalur'] }} jalur</p>
                 </x-ui.card>
 
                 <x-ui.card>
                     <p class="text-xs text-gray-500">Total elevation gain</p>
-                    <p class="mt-1 text-2xl font-semibold text-gray-900">
+                    <p data-angka class="mt-1 text-2xl font-semibold text-gray-900">
                         {{ number_format($angka['elevasi_total_m'], 0, ',', '.') }} m
                     </p>
                     @if ($angka['elevasi_belum_diketahui'] > 0)
@@ -52,7 +52,7 @@
 
                 <x-ui.card>
                     <p class="text-xs text-gray-500">Tanjakan terbesar</p>
-                    <p class="mt-1 text-2xl font-semibold text-gray-900">
+                    <p data-angka class="mt-1 text-2xl font-semibold text-gray-900">
                         {{ $angka['elevasi_tertinggi_m'] !== null
                             ? number_format($angka['elevasi_tertinggi_m'], 0, ',', '.').' m'
                             : 'belum ada' }}

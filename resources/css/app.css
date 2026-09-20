@@ -86,4 +86,71 @@
     body {
         overflow-wrap: break-word;
     }
+
+    /*
+     * Permukaan yang digambar peramban, bukan oleh kita.
+     *
+     * Sorotan teks, kursor ketik, batang gulir, jarak garis bawah, dan angka pada data
+     * semuanya punya bawaan yang bukan milik palet mana pun. Selama dibiarkan, tiap
+     * halaman membawa sepotong tampilan yang bukan tampilan produk ini.
+     */
+
+    /* Pasangan warna yang rasionya sudah dihitung dan dijaga ColourContrastTest,
+       bukan pasangan baru yang ditebak enak dipandang. */
+    ::selection {
+        background-color: rgb(var(--brand-100));
+        color: rgb(var(--brand-900));
+    }
+
+    :root {
+        caret-color: rgb(var(--brand-700));
+
+        /* Kotak centang dan radio bawaan berwarna biru sistem operasi. */
+        accent-color: rgb(var(--brand-700));
+
+        /* Firefox. Ibu jari lalu alurnya. */
+        scrollbar-color: rgb(156 163 175) transparent;
+    }
+
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: rgb(156 163 175);
+        border: 3px solid rgb(249 250 251);
+        border-radius: 9999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(107 114 128);
+    }
+
+    /*
+     * Garis bawah pada jarak bawaan memotong ekor huruf g, j, dan y. Bahasa Indonesia
+     * penuh dengan ketiganya: "jalur", "gunung", "belum diketahui".
+     */
+    a {
+        text-underline-offset: 0.2em;
+    }
+
+    /*
+     * Angka berlebar tetap untuk data.
+     *
+     * Angka proporsional membuat kolom bergoyang saat nilainya berganti, dan halaman
+     * progres, hasil pendakian, serta seluruh tabel admin isinya angka yang berganti.
+     * Dipasang pada pembawa data, bukan pada body, supaya prosa tetap memakai angka
+     * yang enak dibaca di tengah kalimat.
+     */
+    table,
+    dd,
+    time,
+    [data-angka] {
+        font-variant-numeric: tabular-nums;
+    }
 }

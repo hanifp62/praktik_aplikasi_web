@@ -38,24 +38,24 @@
                 <p class="text-xs text-gray-500">Lama pendakian</p>
                 {{-- Null bukan nol: hike mode tidak selalu dibuka, dan "0 jam" akan
                      menjadi pernyataan yang salah tentang pendakian yang nyata. --}}
-                <p class="mt-1 text-lg font-semibold text-gray-900">{{ $durasi ?? 'tidak tercatat' }}</p>
+                <p data-angka class="mt-1 text-lg font-semibold text-gray-900">{{ $durasi ?? 'tidak tercatat' }}</p>
             </x-ui.card>
 
             <x-ui.card>
                 <p class="text-xs text-gray-500">Pos terjauh</p>
-                <p class="mt-1 text-lg font-semibold text-gray-900">{{ $pos?->name ?? 'tidak tercatat' }}</p>
+                <p data-angka class="mt-1 text-lg font-semibold text-gray-900">{{ $pos?->name ?? 'tidak tercatat' }}</p>
             </x-ui.card>
 
             <x-ui.card>
                 <p class="text-xs text-gray-500">Elevation gain jalur</p>
-                <p class="mt-1 text-lg font-semibold text-gray-900">
+                <p data-angka class="mt-1 text-lg font-semibold text-gray-900">
                     {{ $jalur->elevation_gain_m ? number_format($jalur->elevation_gain_m, 0, ',', '.').' m' : 'belum ada' }}
                 </p>
             </x-ui.card>
 
             <x-ui.card>
                 <p class="text-xs text-gray-500">Persiapan terkonfirmasi</p>
-                <p class="mt-1 text-lg font-semibold text-gray-900">{{ $riwayat->preparation_completion_percent }}%</p>
+                <p data-angka class="mt-1 text-lg font-semibold text-gray-900">{{ $riwayat->preparation_completion_percent }}%</p>
             </x-ui.card>
         </div>
 
