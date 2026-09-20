@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Volt\Volt;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -66,6 +68,36 @@ class IndonesianInterfaceTest extends TestCase
 
         $this->assertStringContainsString('Dasbor', $isi);
         $this->assertStringContainsString('Keluar', $isi);
+    }
+
+    /**
+     * Menyisir setiap string __() di seluruh tampilan dan memastikan ada terjemahannya.
+     *
+     * Tanpa ini, satu halaman baru yang memakai kalimat Inggris akan lolos: string yang
+     * tidak punya terjemahan dikembalikan Laravel apa adanya, tanpa galat.
+     */
+    public function test_every_translatable_string_has_an_indonesian_translation(): void
+    {
+        $belum = [];
+
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            preg_match_all("/__\('([^']+)'\)/", $berkas->getContents(), $cocok);
+
+            foreach ($cocok[1] as $string) {
+                // Kunci berkas lang seperti auth.password diselesaikan lewat lang/id/.
+                if (! str_contains($string, ' ') && str_contains($string, '.')) {
+                    continue;
+                }
+
+                // Ditanyakan apakah kuncinya ada, bukan apakah hasilnya berbeda:
+                // terjemahan "Email" memang "Email", dan itu bukan tanda terlewat.
+                if (! Lang::has($string)) {
+                    $belum[$string] = true;
+                }
+            }
+        }
+
+        $this->assertSame([], array_keys($belum), 'Belum diterjemahkan: '.implode(' | ', array_keys($belum)));
     }
 
     public function test_validation_messages_are_indonesian(): void
