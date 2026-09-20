@@ -318,6 +318,36 @@
                                 kontribusi terasa sebagai kontribusi, bukan pengisian
                                 formulir.
                             --}}
+                            {{--
+                                Yang dihargai kegunaan laporannya, bukan jumlahnya.
+                                Papan peringkat kontribusi sempat direncanakan lalu
+                                dibatalkan: memberi hadiah pada jumlah menghasilkan
+                                laporan bervolume tinggi bermutu rendah, dan itu
+                                menyerang persis kepercayaan data yang menjadi nilai
+                                produk ini.
+
+                                Pelapor tidak melihat tombolnya pada laporannya sendiri,
+                                karena angka yang dapat dinaikkan sendirian tidak
+                                mengukur apa-apa.
+                            --}}
+                            @if ($report->user_id !== auth()->id())
+                                @php($sudah = in_array($report->id, $terimaKasihSaya, true))
+                                <div class="mt-2">
+                                    <x-ui.button variant="secondary" size="sm"
+                                        wire:click="berterimaKasih({{ $report->id }}, {{ $sudah ? 'false' : 'true' }})"
+                                        aria-pressed="{{ $sudah ? 'true' : 'false' }}">
+                                        {{ $sudah ? 'Sudah berterima kasih' : 'Laporan ini menolong' }}
+                                        @if ($report->thanks_count > 0)
+                                            <span class="text-gray-500">&middot; {{ $report->thanks_count }}</span>
+                                        @endif
+                                    </x-ui.button>
+                                </div>
+                            @elseif ($report->thanks_count > 0)
+                                <p class="mt-2 text-xs text-brand-900">
+                                    {{ $report->thanks_count }} pendaki menyatakan laporan ini menolong mereka.
+                                </p>
+                            @endif
+
                             <p class="mt-1 text-xs text-gray-500">
                                 Dilaporkan
                                 <span class="font-medium text-gray-700">{{ $report->user?->name ?? 'pendaki yang akunnya sudah dihapus' }}</span>

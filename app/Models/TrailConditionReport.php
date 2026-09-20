@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Storage;
 
@@ -48,6 +49,14 @@ class TrailConditionReport extends Model
     public function moderatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'moderated_by');
+    }
+
+    /**
+     * Ucapan terima kasih dari pendaki lain yang laporan ini menolongnya.
+     */
+    public function thanks(): HasMany
+    {
+        return $this->hasMany(ReportThank::class);
     }
 
     public function moderationActions(): MorphMany

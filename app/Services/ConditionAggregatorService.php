@@ -53,6 +53,11 @@ class ConditionAggregatorService
             ->visibleToPublic()
             ->where('hike_date', '>=', now()->subDays($days)->toDateString())
             ->with('user:id,name', 'segment:id,name')
+            // Dihitung di basis data dalam satu query, bukan dengan memuat seluruh
+            // ucapan terima kasih lalu menghitungnya di memori. Satu laporan populer
+            // dapat punya ratusan, dan tidak satu pun darinya perlu dibaca untuk
+            // menampilkan angkanya.
+            ->withCount('thanks')
             ->orderByDesc('hike_date')
             ->limit($limit)
             ->get();

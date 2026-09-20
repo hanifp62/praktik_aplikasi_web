@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Trails;
 
+use App\Models\ReportThank;
 use App\Models\Trail;
 use App\Services\CheckpointPaceService;
 use App\Services\ConditionAggregatorService;
@@ -26,6 +27,59 @@ class TrailDetail extends Component
         $this->trail = $trail->load('mountain', 'segments', 'checkpoints', 'dataSource');
     }
 
+    /**
+     * Berterima kasih pada laporan yang menolong, atau menariknya kembali.
+     *
+     * Menggantikan papan peringkat kontribusi yang dibatalkan setelah risetnya. Yang
+     * dihargai kegunaannya, dan yang menilainya pendaki lain yang membacanya sebelum
+     * berangkat.
+     *
+     * Ketiga penjagaan di bawah menjaga satu hal yang sama: angkanya tidak boleh dapat
+     * dinaikkan sendirian. Angka yang dapat dinaikkan sendirian tidak mengukur apa-apa.
+     */
+    public function berterimaKasih(int $reportId, bool $ya = true): void
+    {
+        $laporan = $this->trail->conditionReports()
+            ->visibleToPublic()
+            ->whereKey($reportId)
+            ->first();
+
+        // Laporan yang belum lolos moderasi belum terlihat siapa pun, jadi tidak ada
+        // yang dapat menyatakan laporan itu menolongnya. Jalur lain juga tidak dapat
+        // disentuh dari halaman ini.
+        if ($laporan === null || $laporan->user_id === auth()->id()) {
+            return;
+        }
+
+        $kunci = ['trail_condition_report_id' => $laporan->id, 'user_id' => auth()->id()];
+
+        $ya
+            ? ReportThank::firstOrCreate($kunci)
+            : ReportThank::where($kunci)->delete();
+    }
+
+    /**
+     * Laporan yang sudah diberi terima kasih oleh pembaca ini.
+     *
+     * Satu query untuk seluruh daftar, bukan satu per laporan: tanpa ini jumlah query
+     * tumbuh seiring jumlah laporan yang ditampilkan.
+     *
+     * @param  array<int, int>  $reportIds
+     * @return array<int, int>
+     */
+    private function sudahBerterimaKasih(array $reportIds): array
+    {
+        if ($reportIds === [] || auth()->guest()) {
+            return [];
+        }
+
+        return ReportThank::query()
+            ->where('user_id', auth()->id())
+            ->whereIn('trail_condition_report_id', $reportIds)
+            ->pluck('trail_condition_report_id')
+            ->all();
+    }
+
     public function createTrip(): void
     {
         $this->redirectRoute('trips.create', ['trail' => $this->trail->id], navigate: true);
@@ -48,14 +102,19 @@ class TrailDetail extends Component
             ? $routeFit->evaluate($user, $user->hikingGoals()->latest()->first(), $this->trail)
             : null;
 
+        $kondisi = $conditions->forTrail($this->trail);
+
         return view('livewire.trails.trail-detail', [
-            'conditions' => $conditions->forTrail($this->trail),
+            'conditions' => $kondisi,
             'fit' => $fit,
             'geometry' => $this->trail->readGeoJson('geometry'),
             'permit' => app(PermitService::class)->requirementFor($this->trail),
             // Waktu tempuh antarpos dari rekaman pendaki. Hasilnya di-cache mengikuti
             // TTL publik, jadi halaman ini tidak menghitung ulang tiap kali dibuka.
             'tempoPos' => app(CheckpointPaceService::class)->forTrail($this->trail),
+            'terimaKasihSaya' => $this->sudahBerterimaKasih(
+                collect($kondisi['community_context']['reports'] ?? [])->pluck('id')->all()
+            ),
         ])->title($this->trail->name.' - '.$this->trail->mountain->name);
     }
 }
