@@ -36,7 +36,13 @@
                     lamanya di samping pengakuan ini justru memberi pendaki dua jawaban
                     yang bertentangan, jadi labelnya diganti, bukan didampingi.
                 --}}
-                @if ($trip->readinessIsStale())
+                @if ($trip->trailIsWithdrawn())
+                    <p class="text-sm font-medium text-warn-900">Jalur ditarik dari katalog</p>
+                    <p class="mt-1 text-xs text-gray-600">
+                        Keterangan jalur ini tidak lagi diperbarui di sini. Tanyakan keadaannya
+                        langsung kepada pengelola kawasan.
+                    </p>
+                @elseif ($trip->readinessIsStale())
                     <p class="text-sm font-medium text-warn-900">Status jalur berubah, perlu dinilai ulang</p>
                     <p class="mt-1 text-xs text-gray-600">
                         Penilaian terakhir dibuat ketika status resminya masih berbeda.

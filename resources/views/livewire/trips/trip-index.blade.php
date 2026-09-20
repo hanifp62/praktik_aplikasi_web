@@ -32,7 +32,11 @@
                                     <span class="inline-block rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
                                         {{ $trip->status->label() }}
                                     </span>
-                                    @if ($trip->readinessIsStale($statusJalur[$trip->trail_id] ?? null))
+                                    @if ($trip->trailIsWithdrawn())
+                                        <p class="mt-1 text-xs font-medium text-warn-900">
+                                            Jalur ditarik dari katalog
+                                        </p>
+                                    @elseif ($trip->readinessIsStale($statusJalur[$trip->trail_id] ?? null))
                                         <p class="mt-1 text-xs font-medium text-warn-900">
                                             Status jalur berubah, perlu dinilai ulang
                                         </p>

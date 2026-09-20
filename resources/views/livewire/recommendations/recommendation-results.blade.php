@@ -54,13 +54,28 @@
                     <x-ui.card>
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
+                                {{--
+                                    Run punya URL permanen, jadi jalur dapat diarsipkan
+                                    setelah run ini dibuat. Barisnya tetap ada karena run
+                                    adalah catatan tentang apa yang dinilai saat itu, tetapi
+                                    tautannya dicabut: halaman jalur terarsip menjawab 404.
+                                --}}
                                 <h2 class="text-lg font-semibold text-gray-900">
-                                    <a href="{{ route('trails.show', $result->trail) }}" wire:navigate
-                                        class="hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                    @if ($result->trail->archived_at)
                                         {{ $result->trail->name }}
-                                    </a>
+                                    @else
+                                        <a href="{{ route('trails.show', $result->trail) }}" wire:navigate
+                                            class="hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                            {{ $result->trail->name }}
+                                        </a>
+                                    @endif
                                 </h2>
                                 <p class="text-sm text-gray-600">{{ $result->trail->mountain->name }}</p>
+                                @if ($result->trail->archived_at)
+                                    <p class="mt-1 text-sm font-medium text-warn-900">
+                                        Jalur ini ditarik dari katalog setelah penilaian ini dibuat.
+                                    </p>
+                                @endif
                             </div>
                             <x-ui.fit-badge :label="$result->label" />
                         </div>
@@ -100,8 +115,10 @@
                                 {{ $result->eligible ? 'Mengapa jalur ini cocok?' : 'Mengapa kurang cocok?' }}</x-ui.button>
                             <x-ui.button variant="secondary" size="sm" wire:click="toggleComparison({{ $result->trail_id }})">
                                 {{ in_array($result->trail_id, $comparison, true) ? 'Batal bandingkan' : 'Tambah ke perbandingan' }}</x-ui.button>
-                            <x-ui.button wire:click="selectTrail({{ $result->trail_id }})">
-                                Pilih jalur ini</x-ui.button>
+                            @unless ($result->trail->archived_at)
+                                <x-ui.button wire:click="selectTrail({{ $result->trail_id }})">
+                                    Pilih jalur ini</x-ui.button>
+                            @endunless
                         </div>
 
                         @if ($expandedResultId === $result->id)

@@ -32,7 +32,11 @@
                     &middot; {{ $trip->planned_date->translatedFormat('l, d F Y') }}
                 </p>
 
-                @if ($trip->readinessIsStale())
+                @if ($trip->trailIsWithdrawn())
+                    <p class="mt-2 text-sm font-medium text-warn-900">
+                        Jalur ditarik dari katalog
+                    </p>
+                @elseif ($trip->readinessIsStale())
                     <p class="mt-2 text-sm font-medium text-warn-900">
                         Status jalur berubah, perlu dinilai ulang
                     </p>

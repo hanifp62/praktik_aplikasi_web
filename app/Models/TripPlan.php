@@ -63,6 +63,22 @@ class TripPlan extends Model
     }
 
     /**
+     * Jalur trip ini ditarik dari katalog setelah tripnya dibuat.
+     *
+     * Dibedakan dari readinessIsStale() karena saran yang benar berbeda. Vonis basi
+     * diperbaiki dengan menilai ulang; penarikan tidak. Menilai ulang jalur yang sudah
+     * tidak dikelola di sini hanya mengulang sesuatu yang hasilnya tidak akan berubah,
+     * dan menyembunyikan bahwa aplikasi memang berhenti menjadi sumber untuk jalur itu.
+     *
+     * Pengarsipan tidak menulis baris status resmi, jadi pembanding status pada
+     * readinessIsStale() memang tidak pernah melihatnya.
+     */
+    public function trailIsWithdrawn(): bool
+    {
+        return $this->trail?->archived_at !== null;
+    }
+
+    /**
      * Apakah vonis kesiapan tersimpan sudah didahului keadaan.
      *
      * Halaman kesiapan menghitung ulang setiap kali dibuka, jadi ia selalu benar.

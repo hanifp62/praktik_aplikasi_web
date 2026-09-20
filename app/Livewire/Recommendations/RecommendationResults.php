@@ -74,6 +74,16 @@ class RecommendationResults extends Component
 
     public function selectTrail(int $trailId, AnalyticsRecorder $analytics): void
     {
+        // Tombolnya sudah hilang dari tampilan, tetapi halaman yang dimuat sebelum jalur
+        // itu diarsipkan masih dapat memanggil aksi ini. Pembuatan trip akan menolaknya
+        // juga, hanya saja pendaki baru mengetahuinya setelah berpindah halaman dan
+        // membaca galat pada form yang tidak pernah ia isi.
+        if (! Trail::published()->whereKey($trailId)->exists()) {
+            $this->addError('trail', 'Jalur ini sudah ditarik dari katalog dan tidak dapat dipilih lagi.');
+
+            return;
+        }
+
         $analytics->record(AnalyticsEvent::ROUTE_SELECTED, auth()->user(), ['trail_id' => $trailId]);
 
         $this->redirectRoute('trips.create', ['trail' => $trailId, 'goal' => $this->run->hiking_goal_id], navigate: true);

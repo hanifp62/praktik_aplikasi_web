@@ -99,7 +99,14 @@ class RouteFitService
             $failures[] = 'official_status_closed';
         }
 
-        if ($trail->archived_at !== null || ! $trail->is_published) {
+        // Dua keadaan yang berlawanan arah dan tidak boleh berbagi satu kode. Jalur yang
+        // belum terbit sedang menunggu datanya dilengkapi; jalur terarsip justru pernah
+        // terbit lalu ditarik. Menyebut keduanya "belum dipublikasikan" membuat pemilik
+        // trip menyangka datanya sedang disiapkan, padahal menunggu tidak akan mengubah
+        // apa pun.
+        if ($trail->archived_at !== null) {
+            $failures[] = 'trail_archived';
+        } elseif (! $trail->is_published) {
             $failures[] = 'trail_not_published';
         }
 
