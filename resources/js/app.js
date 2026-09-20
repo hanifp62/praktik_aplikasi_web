@@ -10,6 +10,22 @@
  * sinyal tipis, dan bergantung pada host pihak ketiga persis pada saat itu adalah
  * kegagalan yang dapat dihindari.
  */
+/*
+ * Service worker didaftarkan agar aplikasi dapat dipasang ke layar utama (PRD §106).
+ *
+ * Yang disimpannya hanya shell. Halaman selalu diambil dari jaringan, karena menyajikan
+ * status jalur dan prakiraan cuaca dari cache berarti menampilkan keadaan lama seolah
+ * kini, dan §94 serta §95 melarang persis itu.
+ */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+            // Pemasangan yang gagal tidak boleh mengganggu apa pun: aplikasi tetap
+            // berjalan penuh tanpa service worker.
+        });
+    });
+}
+
 let pemuatan = null;
 
 window.muatPeta = () => {

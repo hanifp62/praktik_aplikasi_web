@@ -8,6 +8,9 @@
         <title>{{ $title ?? config('app.name') }}</title>
 
         <!-- Fonts -->
+        <link rel="manifest" href="/manifest.webmanifest">
+        <meta name="theme-color" content="#047857">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 

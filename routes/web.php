@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProgressiveWebAppController;
 use App\Http\Controllers\ReportPhotoController;
 use App\Livewire\Admin\AnalyticsDashboard;
 use App\Livewire\Admin\AuditLogViewer;
@@ -72,3 +73,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 });
 
 require __DIR__.'/auth.php';
+
+/*
+ * PWA (§106). Manifest dan service worker lewat route karena isinya mengikuti hash
+ * build, bukan berkas statis yang harus ditulis ulang setiap deploy.
+ */
+Route::get('manifest.webmanifest', [ProgressiveWebAppController::class, 'manifest'])->name('pwa.manifest');
+Route::get('sw.js', [ProgressiveWebAppController::class, 'serviceWorker'])->name('pwa.sw');
+Route::view('offline', 'offline')->name('pwa.offline');
