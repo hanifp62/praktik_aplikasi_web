@@ -209,8 +209,16 @@ class ReadinessService
             }
         }
 
-        foreach ($preparationState['critical_outstanding'] ?? [] as $label) {
-            $outstanding[] = sprintf('Item persiapan kritis belum dikonfirmasi: %s.', $label);
+        // Satu kalimat pembuka, lalu nama barangnya saja. Mengulang "Item persiapan
+        // kritis belum dikonfirmasi" dua belas kali mengubur yang justru perlu dibaca.
+        $kritis = $preparationState['critical_outstanding'] ?? [];
+
+        if ($kritis !== []) {
+            $outstanding[] = sprintf(
+                '%d item persiapan kritis belum dikonfirmasi: %s.',
+                count($kritis),
+                implode(', ', $kritis)
+            );
         }
 
         if (($preparationState['completion_percent'] ?? 0) < 100) {

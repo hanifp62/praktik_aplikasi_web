@@ -33,11 +33,11 @@ new class extends Component
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*')" wire:navigate>
-                        Jalur
-                    </x-nav-link>
                     <x-nav-link :href="route('goals.create')" :active="request()->routeIs('goals.*')" wire:navigate>
                         Buat Rencana
+                    </x-nav-link>
+                    <x-nav-link :href="route('trails.index')" :active="request()->routeIs('trails.*')" wire:navigate>
+                        Jalur
                     </x-nav-link>
                     <x-nav-link :href="route('trips.index')" :active="request()->routeIs('trips.*')" wire:navigate>
                         Trip

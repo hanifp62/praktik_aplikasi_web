@@ -26,7 +26,7 @@
                 <tbody>
                     @foreach ($logs as $log)
                         <tr class="border-b border-gray-100 align-top">
-                            <td class="p-4 text-gray-700">{{ $log->created_at->translatedFormat('d M Y H:i') }}</td>
+                            <td class="p-4 text-gray-700">{{ \App\Support\Timezone::display($log->created_at, \App\Support\Timezone::DEFAULT) }}</td>
                             <td class="p-4 text-gray-700">{{ $log->actor?->name ?? 'Sistem' }}</td>
                             <td class="p-4 font-medium text-gray-900">{{ $log->action }}</td>
                             <td class="p-4 text-gray-700">

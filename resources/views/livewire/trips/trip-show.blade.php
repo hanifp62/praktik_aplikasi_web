@@ -5,7 +5,11 @@
             <p class="mt-1 text-sm text-gray-600">
                 {{ $trip->planned_date->translatedFormat('d M Y') }}
                 @if ($trip->start_time)
+                    {{-- Jam ini rencana pengguna, bukan instan UTC, jadi tidak dikonversi.
+                         Penandanya tetap disebut: "mulai 06:00" ambigu bagi pendaki Jakarta
+                         yang merencanakan Rinjani. --}}
                     &middot; mulai {{ \Illuminate\Support\Carbon::parse($trip->start_time)->format('H:i') }}
+                    {{ \App\Support\Timezone::label(\App\Support\Timezone::forTrail($trip->trail)) }}
                 @endif
                 &middot; {{ $trip->trip_type->label() }}
             </p>

@@ -37,12 +37,14 @@
                 Sistem tidak menyatakan bahwa suatu pendakian aman.
             </p>
             @if ($check)
-                <p class="mt-2 text-xs">Dihitung {{ $check->computed_at->translatedFormat('d M Y H:i') }}</p>
+                {{-- §93: jam dibaca dalam zona gunungnya, lengkap penandanya. Tanpa itu angkanya
+                     tidak dapat dibaca; selisih Sabang ke Jayapura sampai dua jam. --}}
+                <p class="mt-2 text-xs">Dihitung {{ \App\Support\Timezone::display($check->computed_at, \App\Support\Timezone::forTrail($trip->trail)) }}</p>
             @endif
         </section>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <x-ui.card title="Route fit">
+            <x-ui.card title="Kecocokan jalur">
                 <p class="text-sm text-gray-900">
                     {{ \App\Enums\RouteFitLabel::tryFrom($check->route_fit_snapshot['label'] ?? '')?->label() ?? 'Tidak dinilai' }}
                 </p>

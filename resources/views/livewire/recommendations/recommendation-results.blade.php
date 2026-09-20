@@ -4,7 +4,7 @@
             title="Rekomendasi Jalur"
             description="Label kecocokan menjelaskan hubungan antara profil Anda, rencana perjalanan, dan karakteristik jalur. Label ini bukan penilaian keselamatan.">
             <p class="mt-2 text-xs text-gray-500">
-                Dihasilkan {{ $run->generated_at->translatedFormat('d M Y H:i') }} &middot; engine {{ $run->engine_version }}
+                Dihasilkan {{ \App\Support\Timezone::display($run->generated_at, \App\Support\Timezone::DEFAULT) }}
             </p>
         </x-ui.page-header>
 

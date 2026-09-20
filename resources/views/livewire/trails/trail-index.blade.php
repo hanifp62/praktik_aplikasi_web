@@ -50,7 +50,7 @@
                                     <dd class="font-medium text-gray-900">{{ $trail->distance_km ?? '-' }} km</dd>
                                 </div>
                                 <div>
-                                    <dt class="text-gray-500">Gain</dt>
+                                    <dt class="text-gray-500">Tanjakan</dt>
                                     <dd class="font-medium text-gray-900">{{ $trail->elevation_gain_m ?? '-' }} m</dd>
                                 </div>
                                 <div>
