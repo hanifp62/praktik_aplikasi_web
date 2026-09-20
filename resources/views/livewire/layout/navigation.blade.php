@@ -45,6 +45,9 @@ new class extends Component
                     <x-nav-link :href="route('history')" :active="request()->routeIs('history')" wire:navigate>
                         Riwayat
                     </x-nav-link>
+                    <x-nav-link :href="route('progress')" :active="request()->routeIs('progress')" wire:navigate>
+                        Progres
+                    </x-nav-link>
                     @if (auth()->user()?->isModerator())
                         <x-nav-link :href="route('moderation.queue')" :active="request()->routeIs('moderation.*')" wire:navigate>
                             Moderasi
@@ -122,6 +125,9 @@ new class extends Component
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('history')" :active="request()->routeIs('history')" wire:navigate>
                 Riwayat
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('progress')" :active="request()->routeIs('progress')" wire:navigate>
+                Progres
             </x-responsive-nav-link>
             @if (auth()->user()?->isModerator())
                 <x-responsive-nav-link :href="route('moderation.queue')" :active="request()->routeIs('moderation.*')" wire:navigate>
