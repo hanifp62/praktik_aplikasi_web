@@ -89,6 +89,43 @@ class TimestampZoneTest extends TestCase
         );
     }
 
+    /**
+     * Sapuan lain: now(), today(), atau Carbon::now() mentah membaca "hari ini"
+     * menurut zona aplikasi (UTC, config/app.php), dan tidak ada pengguna yang hidup
+     * di UTC. Dipakai langsung berdampingan dengan diffInDays()/whereDate() pada
+     * kolom tanggal, ia salah selama tujuh sampai sembilan jam setiap hari (lihat
+     * docblock App\Support\Timezone).
+     *
+     * Menggrep "Asia/Jakarta" ke seluruh app/ pernah dicoba dan terlalu berisik:
+     * string itu juga muncul sebagai data domain (zona gunung tersimpan, seeder).
+     * Sapuan ini dipersempit ke pola yang sungguh berbahaya, pemanggilan now()/today()
+     * pada baris yang sama dengan diffInDays()/whereDate(), yang selalu berarti "hari
+     * ini" sedang dipakai untuk aritmetika hari, bukan disebut sebagai data.
+     */
+    public function test_no_day_level_date_comparison_calls_now_or_today_directly(): void
+    {
+        $pelanggar = [];
+
+        foreach (File::allFiles(app_path()) as $berkas) {
+            foreach (file($berkas->getPathname()) as $nomor => $baris) {
+                if (! preg_match('/\b(?:diffInDays|whereDate)\s*\(/', $baris)) {
+                    continue;
+                }
+
+                if (preg_match('/\b(?:now|today)\s*\(\)|Carbon::now\s*\(\)/', $baris)
+                    && ! str_contains($baris, 'Timezone::')) {
+                    $pelanggar[] = $berkas->getRelativePathname().':'.($nomor + 1);
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            'diffInDays()/whereDate() memakai now()/today() mentah, bukan App\Support\Timezone, di: '.implode(', ', $pelanggar)
+        );
+    }
+
     private function trip(string $timezone): TripPlan
     {
         $user = User::factory()->create();

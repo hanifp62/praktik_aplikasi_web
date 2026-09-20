@@ -13,6 +13,7 @@ use App\Models\TrailConditionReport;
 use App\Models\User;
 use App\Services\ConditionAggregatorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -22,6 +23,13 @@ use Tests\TestCase;
 class CommunityReportModerationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
 
     public function test_a_new_report_enters_moderation_and_is_not_public_yet(): void
     {
@@ -100,6 +108,30 @@ class CommunityReportModerationTest extends TestCase
         $conditions = app(ConditionAggregatorService::class)->forTrail($trail);
 
         $this->assertSame('CLOSED', $conditions['official_status']['status']);
+    }
+
+    /**
+     * Pukul 18:00 UTC sudah pukul 01:00 keesokan harinya di WIB (UTC+7): tanggal WIB
+     * (dan WITA, WIT) sudah berganti hari sementara tanggal UTC (zona aplikasi,
+     * config/app.php) belum. Laporan ini didaki 8 hari yang lalu menurut kalender
+     * Indonesia (AGING, PRD §59: CURRENT <= 7 hari). daysSinceHike() yang memakai
+     * now() mentah masih membaca tanggal kemarin sehingga selisihnya terhitung satu
+     * hari lebih sedikit, cukup untuk menggeser laporan ini ke CURRENT, laporan yang
+     * sudah mulai basi tampil seolah masih baru.
+     */
+    public function test_report_freshness_does_not_look_fresher_than_the_indonesian_calendar_day(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-10 18:00:00', 'UTC'));
+
+        $trail = Trail::factory()->create();
+        TrailConditionReport::factory()->approved()->create([
+            'trail_id' => $trail->id,
+            'hike_date' => '2026-09-03',
+        ]);
+
+        $conditions = app(ConditionAggregatorService::class)->forTrail($trail);
+
+        $this->assertSame('AGING', $conditions['community_context']['freshness']);
     }
 
     public function test_case_c_no_community_report_says_so_explicitly(): void

@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use App\Enums\TripStatus;
 use App\Models\TripPlan;
+use App\Support\Timezone;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -44,7 +46,15 @@ class Dashboard extends Component
                 TripStatus::PLANNED->value,
                 TripStatus::READY_FOR_DEPARTURE->value,
             ])
-            ->whereDate('planned_date', '>=', now()->toDateString())
+            // now() menyelesaikan "hari ini" menurut zona aplikasi (UTC), dan selama
+            // tujuh jam setiap hari tanggal UTC masih kemarin bagi WIB. Trip yang
+            // sudah lewat menurut WIB tetap lolos filter ini, dan karena diurutkan
+            // naik berdasarkan planned_date, trip basi itu terpilih lebih dulu dan
+            // menyembunyikan trip yang sungguh berangkat hari ini. Forward-looking,
+            // jadi dipakai WIB (earliestDateInIndonesia): tanggalnya selalu yang
+            // terkecil di antara ketiga zona, sehingga filter ini tidak pernah
+            // menutup trip yang sah dari zona mana pun.
+            ->whereDate('planned_date', '>=', Timezone::earliestDateInIndonesia())
             ->orderBy('planned_date')
             ->first();
     }
@@ -84,7 +94,15 @@ class Dashboard extends Component
      */
     private function hitungMundur(TripPlan $trip): array
     {
-        $hari = (int) now()->startOfDay()->diffInDays($trip->planned_date->startOfDay(), false);
+        // now() menyelesaikan "hari ini" menurut zona aplikasi (UTC), dan selama tujuh
+        // jam setiap hari tanggal UTC masih kemarin bagi WIB, sehingga hitungan ini
+        // kelebihan satu hari dan kartu berkata "besok" untuk keberangkatan yang
+        // sesungguhnya hari ini. Forward-looking (angka ini tidak boleh terlihat lebih
+        // longgar daripada kenyataan), jadi dipakai WIB (earliestDateInIndonesia):
+        // tanggalnya selalu yang terkecil di antara ketiga zona Indonesia.
+        $hariIni = Carbon::parse(Timezone::earliestDateInIndonesia());
+
+        $hari = (int) $hariIni->diffInDays($trip->planned_date->copy()->startOfDay(), false);
 
         return match (true) {
             $hari < 0 => ['angka' => null, 'kata' => 'Tanggalnya sudah lewat'],

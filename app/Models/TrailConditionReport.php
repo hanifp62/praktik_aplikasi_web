@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ConditionTag;
 use App\Enums\ModerationStatus;
+use App\Support\Timezone;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
@@ -82,10 +84,23 @@ class TrailConditionReport extends Model
 
     /**
      * PRD §51: freshness is expressed relative to the hike date, not just created_at.
+     *
+     * Ini bukan validasi batas (hike_date sendiri sudah dijamin tidak di masa depan oleh
+     * ConditionReportForm, yang memakai Timezone::latestDateInIndonesia() sebagai
+     * langit-langit). Di sini now() dipakai sebagai "hari ini" untuk menghitung sudah
+     * berapa lama laporan itu berlalu, dan zona aplikasi (UTC, config/app.php) selama
+     * tujuh jam setiap hari masih membaca tanggal kemarin dibanding kalender Indonesia.
+     *
+     * Arahnya sama berbahayanya dengan status resmi basi yang disajikan dari cache
+     * (§94, §95): laporan yang mulai basi tampil seolah masih baru lebih berbahaya
+     * daripada laporan baru yang sesaat tampil sedikit lebih basi. Supaya jumlah hari
+     * ini tidak pernah terlihat lebih segar daripada kenyataan, dipakai WIT
+     * (latestDateInIndonesia), zona yang paling dahulu berganti hari sehingga
+     * tanggalnya selalu yang terbesar di antara ketiganya.
      */
     public function daysSinceHike(): int
     {
-        return (int) $this->hike_date->diffInDays(now());
+        return (int) $this->hike_date->diffInDays(Carbon::parse(Timezone::latestDateInIndonesia()));
     }
 
     /**
