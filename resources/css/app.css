@@ -71,4 +71,19 @@
 
         --radius-control: 0.375rem;
     }
+
+    /*
+     * Teks bebas dari pengguna mencapai 1000 karakter, dan tidak ada yang memaksanya
+     * berisi spasi. Satu URL panjang atau tempelan tanpa spasi pada catatan trip cukup
+     * untuk meluber keluar kotaknya: overflow-wrap bawaan tidak pernah memotong kata,
+     * jadi untaian itu mendorong lebar halaman dan seluruh layar tergeser menyamping
+     * di telepon. Yang rusak bukan satu paragraf, melainkan tata letak halamannya.
+     *
+     * Aturan ini hanya bekerja ketika sebuah kata memang tidak muat. Teks normal tidak
+     * berubah sama sekali, jadi biayanya nol dan cakupannya seluruh aplikasi, termasuk
+     * halaman yang belum ditulis.
+     */
+    body {
+        overflow-wrap: break-word;
+    }
 }
