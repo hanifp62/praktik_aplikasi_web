@@ -12,7 +12,10 @@
         <meta name="theme-color" content="#047857">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        {{-- Tiga suara: antarmuka, judul, dan pengukuran. Alasan pemilihannya tertulis
+             di tailwind.config.js. display=swap supaya teks terbaca sejak sebelum
+             hurufnya tiba, karena jaringan lambat adalah keadaan normal di sini. --}}
+        <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700|newsreader:400,500,600|jetbrains-mono:400,500&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])

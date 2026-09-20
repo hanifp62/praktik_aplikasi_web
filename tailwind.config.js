@@ -18,8 +18,30 @@ export default {
 
     theme: {
         extend: {
+            /*
+             * Tiga suara, bukan satu.
+             *
+             * Diukur sebelum diubah: 363 dari 426 pemakaian ukuran teks adalah text-sm
+             * atau text-xs, dan fontnya Figtree bawaan scaffolding. Satu huruf generik
+             * pada satu ukuran kecil membuat setiap layar terbaca seperti sel tabel,
+             * berapa pun kecerdasan yang ada di belakangnya.
+             *
+             * Plus Jakarta Sans dirancang Tokotype untuk identitas kota Jakarta.
+             * Dipilih bukan karena tampak mahal, melainkan karena ia huruf Indonesia
+             * untuk produk tentang gunung-gunung Indonesia; alasan itu bertahan ketika
+             * seleranya berubah, sedangkan "sedang populer" tidak.
+             *
+             * Newsreader dipakai untuk judul halaman. Serif memberi bobot editorial yang
+             * tidak dapat dicapai ketebalan huruf sans, dan membedakan judul dari
+             * antarmuka tanpa membesarkannya sampai berteriak.
+             *
+             * JetBrains Mono khusus pengukuran: jarak, elevation gain, durasi, dan
+             * koordinat. Angka adalah data, bukan prosa.
+             */
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Plus Jakarta Sans', ...defaultTheme.fontFamily.sans],
+                serif: ['Newsreader', ...defaultTheme.fontFamily.serif],
+                mono: ['JetBrains Mono', ...defaultTheme.fontFamily.mono],
             },
 
             colors: {

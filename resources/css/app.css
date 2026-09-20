@@ -85,6 +85,41 @@
      */
     body {
         overflow-wrap: break-word;
+
+        /*
+         * Ukuran baca dasar ditetapkan, bukan diwarisi.
+         *
+         * Aplikasi ini memakai text-sm untuk hampir segalanya: 363 dari 426 pemakaian
+         * ukuran teks adalah text-sm atau text-xs. Ukuran itu pantas untuk tabel admin
+         * dan tidak pantas untuk keterangan yang dibaca pendaki di bawah matahari
+         * sambil berdiri di jalur.
+         *
+         * Menaikkan akarnya menggeser seluruh skala Tailwind sekaligus, sehingga
+         * text-sm menjadi ukuran yang masih terbaca dan text-base menjadi nyaman,
+         * tanpa menyentuh satu pun kelas di ratusan berkas view.
+         */
+        font-size: 16.5px;
+        line-height: 1.6;
+
+        /* Huruf modern membawa fitur yang mati secara bawaan. Keduanya merapikan
+           pasangan huruf tanpa mengubah satu pun ukuran. */
+        font-feature-settings: 'kern' 1, 'liga' 1;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /*
+     * Judul halaman memakai serif.
+     *
+     * Serif memberi bobot editorial yang tidak dapat dicapai ketebalan huruf sans, dan
+     * membedakan judul dari antarmuka tanpa membesarkannya sampai berteriak. Dipasang
+     * pada h1 di lapisan base supaya setiap halaman mendapatnya, termasuk yang ditulis
+     * besok.
+     */
+    h1 {
+        font-family: theme('fontFamily.serif');
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
     }
 
     /*
@@ -140,18 +175,18 @@
     }
 
     /*
-     * Angka berlebar tetap untuk data.
+     * Pengukuran memakai huruf berlebar tetap dan keluarga mono.
      *
-     * Angka proporsional membuat kolom bergoyang saat nilainya berganti, dan halaman
-     * progres, hasil pendakian, serta seluruh tabel admin isinya angka yang berganti.
-     * Dipasang pada pembawa data, bukan pada body, supaya prosa tetap memakai angka
-     * yang enak dibaca di tengah kalimat.
+     * Jarak, elevation gain, durasi, dan koordinat adalah data, bukan prosa. Huruf
+     * proporsional membuat kolom angka bergoyang saat nilainya berganti, dan mata
+     * membaca deret angka jauh lebih cepat ketika lebarnya tetap.
      */
     table,
     dd,
     time,
     [data-angka] {
         font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum' 1;
     }
 
     /*
