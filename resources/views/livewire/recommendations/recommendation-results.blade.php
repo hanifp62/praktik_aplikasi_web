@@ -158,6 +158,23 @@
 
                         @if ($expandedResultId === $result->id)
                             <div class="mt-4 space-y-3 border-t border-gray-100 pt-4">
+                                {{--
+                                    Batang faktor didahulukan di atas prosanya. Mesin ini
+                                    menimbang delapan faktor, dan pertanyaan pertama pendaki
+                                    adalah faktor mana yang menahan, bukan kalimat mana yang
+                                    menjelaskannya. Prosa tetap ada di bawah untuk yang ingin
+                                    membaca alasannya utuh.
+
+                                    Dirender hanya ketika panelnya dibuka, jadi anggaran 120 kB
+                                    halaman hasil tidak tersentuh sama sekali.
+                                --}}
+                                @if ($result->matched_factors)
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-gray-900">Penilaian per faktor</h3>
+                                        <x-ui.factor-bars :factors="$result->matched_factors" class="mt-2" />
+                                    </div>
+                                @endif
+
                                 {{-- Judulnya mengikuti hasil penilaian. "Mengapa cocok" pada jalur
                                      yang justru tidak cocok membuat pendaki membaca dua hal yang
                                      bertentangan dalam satu kotak. --}}
