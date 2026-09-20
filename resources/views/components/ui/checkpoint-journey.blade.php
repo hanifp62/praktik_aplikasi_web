@@ -82,7 +82,17 @@
                     <span class="w-px bg-subtle"></span>
                 </div>
                 <div class="py-1 text-xs">
-                    <p class="text-secondary">{{ $antara[$i] }}</p>
+                    {{-- Arah naik dan turun membawa arti, jadi ia mendapat ikon; ikonnya
+                         aria-hidden karena teks di sebelahnya sudah menyebut arahnya, dan
+                         seluruh barisnya memang sudah disembunyikan dari pembaca layar. --}}
+                    <p class="flex items-center gap-1 text-secondary">
+                        @if (str_contains($antara[$i], 'naik'))
+                            <x-ui.icon name="arrow-up" class="h-3 w-3" />
+                        @elseif (str_contains($antara[$i], 'turun'))
+                            <x-ui.icon name="arrow-down" class="h-3 w-3" />
+                        @endif
+                        {{ $antara[$i] }}
+                    </p>
 
                     {{--
                         Waktu tempuh dari rekaman pendaki, bukan dari rumus.
