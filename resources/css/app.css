@@ -54,6 +54,16 @@
         --danger-700: 190 18 60;
         --danger-900: 136 19 55;
 
+        /*
+         * Batas kontrol interaktif. WCAG 1.4.11 menuntut 3:1 terhadap latarnya, dan
+         * gray-300 bawaan Breeze hanya 1.47:1: kotak isiannya praktis tidak berbatas
+         * bagi penglihatan rendah. Nilai ini 3.52:1, dihitung bukan ditaksir.
+         *
+         * Hanya untuk kontrol. Garis dekoratif pada kartu dan pemisah tetap gray-200
+         * atau gray-300, karena 1.4.11 memang tidak mengaturnya.
+         */
+        --control-border: 133 137 143;
+
         --radius-control: 0.375rem;
     }
 }

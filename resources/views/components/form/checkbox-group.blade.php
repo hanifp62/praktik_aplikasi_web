@@ -6,7 +6,7 @@
         @foreach ($options as $value => $optionLabel)
             <label class="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm">
                 <input type="checkbox" value="{{ $value }}" wire:model="{{ $name }}"
-                    class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                    class="rounded border-control text-brand-700 focus:ring-brand-600">
                 {{ $optionLabel }}
             </label>
         @endforeach

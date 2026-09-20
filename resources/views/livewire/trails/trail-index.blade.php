@@ -14,7 +14,7 @@
             <div>
                 <x-input-label for="technical" value="Tingkat teknis" />
                 <select id="technical" wire:model.live="technical"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+                    class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600">
                     <option value="">Semua</option>
                     @foreach ($technicalLevels as $level)
                         <option value="{{ $level->value }}">{{ $level->label() }}</option>

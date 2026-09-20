@@ -31,7 +31,7 @@
                     <div>
                         <x-input-label for="mountain_id" value="Gunung" />
                         <select id="mountain_id" wire:model="mountain_id"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+                            class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600">
                             <option value="">Pilih gunung</option>
                             @foreach ($mountains as $mountain)
                                 <option value="{{ $mountain->id }}">{{ $mountain->name }}</option>
@@ -43,7 +43,7 @@
                     <div>
                         <x-input-label for="trail_id" value="Jalur" />
                         <select id="trail_id" wire:model="trail_id"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+                            class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600">
                             <option value="">Pilih jalur</option>
                             @foreach ($trails as $trail)
                                 <option value="{{ $trail->id }}">{{ $trail->name }} &middot; {{ $trail->mountain->name }}</option>
@@ -92,14 +92,14 @@
 
                 <label for="guide_required" class="flex items-center gap-2 text-sm text-gray-700">
                     <input id="guide_required" type="checkbox" wire:model="guide_required"
-                        class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                        class="rounded border-control text-brand-700 focus:ring-brand-600">
                     Wajib didampingi pemandu terdaftar
                 </label>
 
                 <div>
                     <x-input-label for="notes" value="Catatan tambahan" />
                     <textarea id="notes" wire:model="notes" rows="3"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
+                        class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
                     <x-input-error :messages="$errors->get('notes')" class="mt-1" />
                 </div>
 

@@ -57,6 +57,60 @@ class ColourContrastTest extends TestCase
         );
     }
 
+    /**
+     * WCAG 1.4.11 menuntut 3:1 untuk batas komponen antarmuka, bukan hanya untuk teks.
+     * Batas input bawaan Breeze memakai gray-300 yang hanya 1.47:1 di atas putih: bagi
+     * mata dengan penglihatan rendah, kotak isiannya praktis tidak berbatas.
+     *
+     * Yang dituntut hanya komponen interaktif. Garis dekoratif pada kartu dan pemisah
+     * tidak termasuk, dan tidak perlu digelapkan.
+     */
+    public function test_the_border_of_an_interactive_control_is_visible(): void
+    {
+        $ratio = $this->ratio($this->token('control-border'), $this->token('white'));
+
+        $this->assertGreaterThanOrEqual(
+            self::LARGE_TEXT_AND_UI,
+            $ratio,
+            sprintf('Batas kontrol hanya %.2f:1 di atas putih.', $ratio)
+        );
+    }
+
+    /**
+     * @return array<int, array{0: string}>
+     */
+    public static function interactiveControls(): array
+    {
+        return [
+            ['views/components/text-input.blade.php'],
+            ['views/components/form/select.blade.php'],
+            ['views/components/ui/button.blade.php'],
+            ['views/components/secondary-button.blade.php'],
+        ];
+    }
+
+    #[DataProvider('interactiveControls')]
+    public function test_an_interactive_control_does_not_use_the_invisible_border(string $path): void
+    {
+        $this->assertStringNotContainsString(
+            'border-gray-300',
+            File::get(resource_path($path)),
+            $path.': gray-300 hanya 1.47:1 dan gagal WCAG 1.4.11.'
+        );
+    }
+
+    /**
+     * Merek aplikasi berwarna hijau, tetapi input bawaan Breeze masih menyorot indigo.
+     * Setiap isian pada halaman masuk dan daftar berkedip warna yang bukan warna produk.
+     */
+    public function test_focus_colours_follow_the_brand(): void
+    {
+        $input = File::get(resource_path('views/components/text-input.blade.php'));
+
+        $this->assertStringNotContainsString('indigo', $input);
+        $this->assertStringContainsString('brand-', $input);
+    }
+
     public function test_the_focus_ring_is_distinguishable_from_the_page(): void
     {
         // Focus ring adalah komponen non-teks, jadi ambangnya 3:1 (WCAG 1.4.11).

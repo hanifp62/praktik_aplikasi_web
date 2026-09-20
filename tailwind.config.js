@@ -23,6 +23,10 @@ export default {
             },
 
             colors: {
+                // Batas kontrol interaktif, dipisahkan dari abu dekoratif karena
+                // WCAG 1.4.11 hanya mengatur yang interaktif.
+                control: token('control-border'),
+
                 brand: {
                     50: token('brand-50'),
                     100: token('brand-100'),

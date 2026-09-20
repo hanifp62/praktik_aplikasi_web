@@ -35,7 +35,7 @@
                     <div>
                         <x-input-label for="bio" value="Catatan singkat (opsional)" />
                         <textarea id="bio" wire:model="bio" rows="3"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
+                            class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
                         <x-input-error :messages="$errors->get('bio')" class="mt-2" />
                     </div>
                 </fieldset>

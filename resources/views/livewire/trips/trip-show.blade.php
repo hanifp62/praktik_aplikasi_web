@@ -65,7 +65,7 @@
                     <div>
                         <x-input-label for="personal_notes" value="Catatan pribadi (opsional)" />
                         <textarea id="personal_notes" wire:model="personal_notes" rows="3"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
+                            class="mt-1 block w-full rounded-md border-control shadow-sm focus:border-brand-600 focus:ring-brand-600"></textarea>
                         <x-input-error :messages="$errors->get('personal_notes')" class="mt-2" />
                     </div>
 
