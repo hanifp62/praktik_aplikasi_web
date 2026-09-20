@@ -20,6 +20,31 @@
         <meta name="description" content="{{ \Illuminate\Support\Str::limit($ringkas, 155) }}">
         <link rel="canonical" href="{{ route('public.trail', $trail) }}">
 
+        {{--
+            Kartu sosial. Halaman ini dibuat untuk ditemukan dan dibagikan, dan tautan
+            tanpa kartu muncul sebagai URL telanjang di setiap tempat ia ditempel —
+            grup pendakian, pesan langsung, papan rencana perjalanan.
+
+            Gambarnya ikon aplikasi, bukan foto jalur: foto jalur berasal dari laporan
+            komunitas yang membawa nama pelapornya, dan halaman publik tidak pernah
+            menerbitkan data pribadi siapa pun.
+
+            Yang berumur pendek tetap tidak ikut, sama seperti isi halamannya: status
+            resmi dan prakiraan cuaca hanya ada di dalam aplikasi (§94, §95). Cuplikan
+            pencarian hidup lebih lama daripada isinya, dan kartu sosial hidup lebih lama
+            lagi — ia tersimpan di percakapan orang.
+        --}}
+        <link rel="icon" href="/favicon.ico" sizes="any">
+        <link rel="apple-touch-icon" href="/icons/app-192.png">
+        <meta property="og:type" content="article">
+        <meta property="og:site_name" content="{{ config('app.name') }}">
+        <meta property="og:title" content="{{ $trail->name }} - {{ $trail->mountain->name }}">
+        <meta property="og:description" content="{{ \Illuminate\Support\Str::limit($ringkas, 155) }}">
+        <meta property="og:url" content="{{ route('public.trail', $trail) }}">
+        <meta property="og:image" content="{{ url('/icons/app-512.png') }}">
+        <meta property="og:locale" content="id_ID">
+        <meta name="twitter:card" content="summary">
+
         @vite(['resources/css/app.css'])
     </head>
     <body class="min-h-screen bg-white font-sans text-primary antialiased">

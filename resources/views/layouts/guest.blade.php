@@ -10,6 +10,11 @@
         <!-- Fonts -->
         <link rel="manifest" href="/manifest.webmanifest">
         <meta name="theme-color" content="#047857">
+        {{-- Berkasnya sudah ada di public/ sejak awal dan tidak pernah dinyatakan,
+             sehingga peramban hanya menemukannya lewat konvensi dan peranti Apple tidak
+             menemukannya sama sekali. --}}
+        <link rel="icon" href="/favicon.ico" sizes="any">
+        <link rel="apple-touch-icon" href="/icons/app-192.png">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         {{-- Tiga suara: antarmuka, judul, dan pengukuran. Alasan pemilihannya tertulis
