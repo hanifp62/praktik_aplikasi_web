@@ -33,31 +33,32 @@
             </span>
         </x-ui.page-header>
 
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <x-ui.card>
-                <p class="text-xs text-gray-500">Lama pendakian</p>
+        {{-- Satu kelompok angka, bukan empat kartu setara yang tidak memilih apa pun. --}}
+        <dl class="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-gray-200 py-6 sm:grid-cols-4">
+            <div>
+                <dt class="text-sm text-gray-500">Lama pendakian</dt>
                 {{-- Null bukan nol: hike mode tidak selalu dibuka, dan "0 jam" akan
                      menjadi pernyataan yang salah tentang pendakian yang nyata. --}}
-                <p data-angka class="mt-1 text-lg font-semibold text-gray-900">{{ $durasi ?? 'tidak tercatat' }}</p>
-            </x-ui.card>
+                <dd data-angka class="mt-1 text-xl font-semibold text-gray-900">{{ $durasi ?? 'tidak tercatat' }}</dd>
+            </div>
 
-            <x-ui.card>
-                <p class="text-xs text-gray-500">Pos terjauh</p>
-                <p data-angka class="mt-1 text-lg font-semibold text-gray-900">{{ $pos?->name ?? 'tidak tercatat' }}</p>
-            </x-ui.card>
+            <div>
+                <dt class="text-sm text-gray-500">Pos terjauh</dt>
+                <dd class="mt-1 text-xl font-semibold text-gray-900">{{ $pos?->name ?? 'tidak tercatat' }}</dd>
+            </div>
 
-            <x-ui.card>
-                <p class="text-xs text-gray-500">Elevation gain jalur</p>
-                <p data-angka class="mt-1 text-lg font-semibold text-gray-900">
+            <div>
+                <dt class="text-sm text-gray-500">Elevation gain jalur</dt>
+                <dd data-angka class="mt-1 text-xl font-semibold text-gray-900">
                     {{ $jalur->elevation_gain_m ? number_format($jalur->elevation_gain_m, 0, ',', '.').' m' : 'belum ada' }}
-                </p>
-            </x-ui.card>
+                </dd>
+            </div>
 
-            <x-ui.card>
-                <p class="text-xs text-gray-500">Persiapan terkonfirmasi</p>
-                <p data-angka class="mt-1 text-lg font-semibold text-gray-900">{{ $riwayat->preparation_completion_percent }}%</p>
-            </x-ui.card>
-        </div>
+            <div>
+                <dt class="text-sm text-gray-500">Persiapan terkonfirmasi</dt>
+                <dd data-angka class="mt-1 text-xl font-semibold text-gray-900">{{ $riwayat->preparation_completion_percent }}%</dd>
+            </div>
+        </dl>
 
         {{--
             Jejak pendaki didahulukan di atas garis jalur resmi ketika ada, karena inilah
