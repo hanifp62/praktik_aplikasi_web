@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\RouteFit\RouteFitResult;
 use App\Services\RouteFit\TrailFitSummary;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Lang;
 
 /**
  * Kecocokan untuk sekumpulan jalur sekaligus.
@@ -16,9 +17,12 @@ use Illuminate\Support\Collection;
  * bukan karena mesinnya terbatas melainkan karena tidak ada cara memanggilnya untuk
  * banyak jalur tanpa memanggil status resmi sekali per jalur.
  *
- * OfficialStatusService sudah menyediakan versi batch dari keduanya, dan
- * RouteFitService::evaluate() sudah menerima status dan pembatasan segmen yang dimuat
- * dari luar. Layanan ini hanya menyambungkan keduanya, dan itu sebabnya ia setipis ini.
+ * OfficialStatusService dan PermitService masing-masing sudah menyediakan versi batch
+ * dari data yang tadinya diambil ulang per jalur, dan RouteFitService::evaluate() sudah
+ * menerima ketiganya (status, pembatasan segmen, izin) dimuat dari luar. Ketiganya
+ * dipanggil di sini, bukan hanya dua, karena mengabaikan salah satunya membuat anggaran
+ * query kembali tumbuh linear terhadap jumlah jalur (§96) -- PermitService khususnya
+ * yang tadinya luput sampai diketahui lewat pengukuran, bukan lewat dugaan.
  */
 class TrailFitService
 {
@@ -82,7 +86,7 @@ class TrailFitService
     private function alasan(RouteFitResult $hasil): string
     {
         if (! $hasil->eligible) {
-            return $hasil->failedRules[0] ?? 'Tidak memenuhi syarat dasar untuk ditawarkan.';
+            return $this->alasanTersingkir($hasil->failedRules[0] ?? null);
         }
 
         $lemah = $hasil->weakFactors();
@@ -94,5 +98,23 @@ class TrailFitService
         $kuat = $hasil->strongFactors();
 
         return $kuat !== [] ? $kuat[0]->detail : 'Tidak ada faktor yang menonjol untuk jalur ini.';
+    }
+
+    /**
+     * failedRules berisi kunci mesin seperti official_status_closed, bukan kalimat --
+     * menampilkannya mentah adalah persis pelanggaran §90 yang metode ini ada untuk
+     * mencegah. Lang::has() dicek secara eksplisit, bukan diserahkan ke __(), karena
+     * __() pada kunci yang tidak diterjemahkan mengembalikan kuncinya sendiri: itu
+     * cacat yang sama, hanya tertunda sampai ada aturan baru yang belum diberi kalimat.
+     */
+    private function alasanTersingkir(?string $rule): string
+    {
+        if ($rule === null) {
+            return 'Tidak memenuhi syarat dasar untuk ditawarkan.';
+        }
+
+        return Lang::has('recommendation.'.$rule)
+            ? __('recommendation.'.$rule)
+            : 'Tidak memenuhi syarat dasar untuk ditawarkan.';
     }
 }

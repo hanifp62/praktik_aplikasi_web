@@ -122,6 +122,30 @@ class TrailFitServiceTest extends TestCase
     }
 
     /**
+     * failedRules menyimpan kunci mesin seperti trail_archived, bukan kalimat siap tampil.
+     *
+     * §90 melarang kunci mentah sampai ke pengguna. Sebuah test yang hanya memeriksa
+     * "alasan tidak kosong" akan tetap lulus walau isinya cuma nama aturan itu sendiri;
+     * di sini yang diperiksa adalah bentuknya: kunci mesin berupa huruf kecil dan garis
+     * bawah saja, sedangkan kalimat sungguhan memuat huruf besar, spasi, dan beberapa kata.
+     */
+    public function test_a_disqualified_trail_gets_a_readable_reason_not_a_rule_key(): void
+    {
+        $gunung = Mountain::factory()->create();
+        $jalur = Trail::factory()->count(1)->for($gunung)->create([
+            'is_published' => true,
+            'archived_at' => now(),
+        ]);
+
+        $ringkasan = app(TrailFitService::class)->forTrails($this->pendaki(), $jalur);
+        $satu = $ringkasan[$jalur->first()->id];
+
+        $this->assertFalse($satu->eligible);
+        $this->assertDoesNotMatchRegularExpression('/^[a-z_]+$/', $satu->alasan);
+        $this->assertGreaterThan(3, str_word_count($satu->alasan), 'Alasan harus berupa kalimat, bukan satu kunci mesin.');
+    }
+
+    /**
      * Tanpa goal, ringkasan menyatakan dirinya kecocokan dasar.
      *
      * Kecocokan tanpa rencana dan kecocokan untuk rencana tertentu adalah dua pernyataan
