@@ -125,6 +125,39 @@ class PermitService
         return null;
     }
 
+    /**
+     * Pasangan bookingWarningFor untuk keadaan sebaliknya: rencana tanpa tanggal.
+     *
+     * Keduanya saling meniadakan, jadi jalur berizin selalu mendapat tepat satu
+     * kalimat tentang pemesanan. Tanpa ini, tidak adanya peringatan pada rencana tak
+     * bertanggal terbaca sebagai "izin aman", padahal artinya tidak ada yang bisa
+     * dibandingkan dengan jendela pemesanan (PRD §95).
+     */
+    public function uncheckedWindowNoticeFor(
+        Trail $trail,
+        ?CarbonInterface $targetDate,
+        PermitRequirement|false|null $requirement = false,
+    ): ?string {
+        if ($targetDate !== null) {
+            return null;
+        }
+
+        $requirement = $requirement === false ? $this->requirementFor($trail) : $requirement;
+
+        if ($requirement === null) {
+            return null;
+        }
+
+        if ($requirement->booking_opens_days_before === null && $requirement->booking_closes_days_before === null) {
+            return null;
+        }
+
+        return $this->message(
+            $requirement,
+            'Jalur ini mewajibkan izin, dan jendela pemesanannya belum diperiksa karena rencana Anda belum bertanggal.'
+        );
+    }
+
     private function message(PermitRequirement $requirement, string $situation): string
     {
         $message = sprintf('%s Penyelenggara: %s.', $situation, $requirement->authority);

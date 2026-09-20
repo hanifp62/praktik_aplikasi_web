@@ -6,7 +6,8 @@
 
         <form wire:submit="save" class="space-y-5 rounded-lg bg-white p-6 shadow-sm">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <x-form.field name="target_date" type="date" label="Target tanggal (opsional)" />
+                <x-form.field name="target_date" type="date" label="Target tanggal (opsional)"
+                    hint="Diisi agar jendela pemesanan izin dan status jalur diperiksa untuk tanggal itu." />
                 <x-form.field name="region" label="Wilayah (opsional)" placeholder="Jawa Tengah" />
             </div>
 

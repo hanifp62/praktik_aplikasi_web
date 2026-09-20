@@ -157,6 +157,12 @@ class RouteFitService
             $warnings[] = $permitWarning;
         }
 
+        $uncheckedWindow = $this->permits->uncheckedWindowNoticeFor($trail, $goal?->target_date, $permit);
+
+        if ($uncheckedWindow !== null) {
+            $warnings[] = $uncheckedWindow;
+        }
+
         return $warnings;
     }
 

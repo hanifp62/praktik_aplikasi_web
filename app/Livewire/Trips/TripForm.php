@@ -55,6 +55,10 @@ class TripForm extends Component
         $this->trip_type = $latestGoal?->trip_type?->value ?? auth()->user()->preference?->preferred_trip_type?->value;
         $this->planned_date = $latestGoal?->target_date?->toDateString();
         $this->hiking_goal_id = $latestGoal?->id;
+
+        // Konteks yang diketik pendaki pada rencana ikut terbawa ke trip. Tanpa baris
+        // ini catatannya tersimpan di rencana dan tidak pernah dibaca di mana pun.
+        $this->notes = $latestGoal?->notes;
     }
 
     /**
