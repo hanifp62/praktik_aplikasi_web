@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\CompletionState;
 use App\Models\HikingHistory;
+use App\Models\TrailConditionReport;
 use App\Models\User;
 
 /**
@@ -53,6 +54,31 @@ class HikerProgressService
             'elevasi_belum_diketahui' => $tuntas->count() - $berelevasi->count(),
             'elevasi_tertinggi_m' => $berelevasi->max(fn (HikingHistory $h) => $h->trail->elevation_gain_m),
             'terakhir' => $riwayat->max('completed_at'),
+        ] + $this->dampakLaporan($user);
+    }
+
+    /**
+     * Dampak laporan kondisi yang ditulis pendaki ini.
+     *
+     * Tanpa ini, menulis laporan terasa seperti mengisi formulir lalu menekan kirim:
+     * pelapor tidak pernah tahu laporannya terbit, dibaca, atau menolong siapa pun, dan
+     * perilaku yang tidak pernah mendapat umpan balik berhenti dengan sendirinya.
+     *
+     * Hanya laporan yang lolos moderasi yang terhitung. Laporan yang masih menunggu
+     * belum terlihat siapa pun, dan menghitungnya sebagai terbit membuat pelapor
+     * mengira sesuatu sudah menolong orang padahal belum.
+     *
+     * @return array<string, int>
+     */
+    private function dampakLaporan(User $user): array
+    {
+        $terbit = TrailConditionReport::query()
+            ->where('user_id', $user->id)
+            ->visibleToPublic();
+
+        return [
+            'laporan_terbit' => (clone $terbit)->count(),
+            'terima_kasih' => (clone $terbit)->withCount('thanks')->get()->sum('thanks_count'),
         ];
     }
 

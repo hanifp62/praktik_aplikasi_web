@@ -3,7 +3,13 @@
         <x-ui.page-header title="Progres Pendakian"
             description="Catatan perjalanan Anda sendiri. Tidak dibandingkan dengan siapa pun." />
 
-        @if ($angka['pendakian'] === 0)
+        {{--
+            Pendakian dan laporan adalah dua sumbangan yang saling bebas. Seseorang dapat
+            menulis laporan kondisi tanpa pernah menandai satu trip pun selesai, dan
+            mengurung blok laporan di dalam syarat jumlah pendakian membuat sumbangannya
+            tidak terlihat sama sekali.
+        --}}
+        @if ($angka['pendakian'] === 0 && $angka['laporan_terbit'] === 0)
             {{--
                 Keadaan awal setiap pendaki, dan ia tidak boleh terbaca sebagai
                 kegagalan. Nol di sini artinya belum mulai, bukan tertinggal.
@@ -49,7 +55,8 @@
             @endif
 
             {{-- Satu kelompok angka, bukan empat klaim setara. --}}
-            <dl class="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-gray-200 py-6 sm:grid-cols-4">
+            @if ($angka['pendakian'] > 0)
+                <dl class="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-gray-200 py-6 sm:grid-cols-4">
                 <div>
                     <dt class="text-sm text-gray-500">Pendakian</dt>
                     <dd data-angka class="mt-1 text-2xl font-semibold text-gray-900">{{ $angka['pendakian'] }}</dd>
@@ -90,6 +97,39 @@
                     </dd>
                 </div>
             </dl>
+            @endif
+
+            {{--
+                Dikalimatkan sebagai dampak pada orang lain, bukan sebagai skor.
+                "2 pendaki menyatakan laporan Anda menolong" menyebut orang; "2 poin"
+                menyebut angka. Yang pertama alasan menulis laporan berikutnya, yang
+                kedua alasan menulis laporan sebanyak-banyaknya.
+            --}}
+            <section>
+                <h2 class="text-base font-semibold text-gray-900">Laporan kondisi</h2>
+
+                @if ($angka['laporan_terbit'] === 0)
+                    {{-- Nol tidak ditampilkan sebagai angka: pendaki yang belum pernah
+                         melaporkan tidak sedang tertinggal dari siapa pun. --}}
+                    <p class="mt-2 text-sm text-gray-700">
+                        Belum ada laporan kondisi dari Anda. Setelah turun, keterangan tentang jalur
+                        yang baru Anda lalui adalah hal yang paling dibutuhkan pendaki berikutnya.
+                    </p>
+                    <a href="{{ route('reports.create') }}" wire:navigate
+                        class="mt-2 inline-block text-sm font-medium text-brand-700 underline">Tulis laporan kondisi</a>
+                @else
+                    <p class="mt-2 text-sm text-gray-700">
+                        <span data-angka class="font-semibold text-gray-900">{{ $angka['laporan_terbit'] }}</span>
+                        laporan Anda sudah terbit dan dapat dibaca pendaki lain.
+                    </p>
+
+                    @if ($angka['terima_kasih'] > 0)
+                        <p class="mt-1 text-sm text-brand-900">
+                            {{ $angka['terima_kasih'] }} pendaki menyatakan laporan Anda menolong mereka.
+                        </p>
+                    @endif
+                @endif
+            </section>
 
             <p class="text-sm text-gray-700">
                 Tiap pendakian punya halaman hasilnya sendiri berisi jalur, durasi, dan catatan Anda.
