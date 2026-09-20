@@ -44,3 +44,6 @@ Thumbs.db
 
 # Basis data lokal untuk menjalankan aplikasi tanpa menyentuh Supabase produksi.
 /database/*.sqlite
+
+# Ruang kerja subagent-driven-development, bukan bagian produk.
+/.superpowers/

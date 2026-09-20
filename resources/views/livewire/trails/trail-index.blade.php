@@ -30,39 +30,25 @@
         </form>
 
         @if ($trails->isEmpty())
-            <x-ui.card>
-                <p class="text-sm text-secondary">Tidak ada jalur yang cocok dengan filter Anda.</p>
-            </x-ui.card>
+            <x-ui.empty-state title="Tidak ada jalur yang cocok"
+                description="Saringan yang sedang aktif tidak menemukan jalur. Melonggarkan tingkat teknis atau mengosongkan wilayah biasanya menolong lebih cepat daripada mengubah kata pencarian." />
         @else
-            <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {{--
+                Daftar, bukan kisi kartu.
+
+                Kisi dua kolom memuat empat jalur di satu layar; daftar memuat delapan,
+                dan yang dilakukan orang di halaman ini membandingkan, bukan membaca satu
+                per satu. Dipisah garis rambut, tanpa kotak: kotak di sekeliling setiap
+                baris menggambar sembilan bingkai untuk memisahkan sembilan hal yang
+                urutannya sudah jelas.
+            --}}
+            <p class="mb-2 text-sm text-muted">{{ $trails->total() }} jalur cocok</p>
+
+            <div class="border-t border-subtle">
                 @foreach ($trails as $trail)
-                    <li>
-                        <x-ui.card>
-                            <h2 class="text-base font-semibold text-primary">
-                                <a href="{{ route('trails.show', $trail) }}" wire:navigate
-                                    class="hover:underline focus:outline-none focus:ring-2 focus:ring-brand-500">
-                                    {{ $trail->name }}
-                                </a>
-                            </h2>
-                            <p class="text-sm text-secondary">{{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }}</p>
-                            <dl class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 text-sm">
-                                <div>
-                                    <dt class="text-muted">Jarak</dt>
-                                    <dd class="font-medium text-primary">{{ $trail->distance_km ?? '-' }} km</dd>
-                                </div>
-                                <div>
-                                    <dt class="text-muted">Tanjakan</dt>
-                                    <dd class="font-medium text-primary">{{ $trail->elevation_gain_m ?? '-' }} m</dd>
-                                </div>
-                                <div>
-                                    <dt class="text-muted">Teknis</dt>
-                                    <dd class="font-medium text-primary">{{ $trail->technical_demand->label() }}</dd>
-                                </div>
-                            </dl>
-                        </x-ui.card>
-                    </li>
+                    <x-ui.trail-row :trail="$trail" />
                 @endforeach
-            </ul>
+            </div>
 
             <div class="mt-6">{{ $trails->links() }}</div>
         @endif

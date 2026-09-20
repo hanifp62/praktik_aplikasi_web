@@ -49,7 +49,11 @@ class DashboardRelevanceTest extends TestCase
             ->get('/dashboard')
             ->assertOk()
             ->assertSee($trip->name)
-            ->assertSee('3 hari lagi')
+            // Angka dan katanya kini dipisah supaya angkanya dapat dibuat sebesar
+            // perannya: dulu hitung mundur dipasang sebagai judul kartu, sehingga fakta
+            // paling mendesak di halaman ini berukuran sama dengan setiap judul lain.
+            // Yang dituntut tetap sama, yaitu keduanya terbaca dan berurutan.
+            ->assertSeeInOrder(['3', 'hari lagi'])
             ->assertSee(route('trips.readiness', $trip), escape: false)
             ->assertDontSee('Mulai rencana pendakian');
     }

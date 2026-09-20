@@ -69,18 +69,28 @@ class Dashboard extends Component
     }
 
     /**
-     * Jarak hari ke keberangkatan, sebagai kalimat. Angka mentah memaksa pembacanya
-     * menghitung sendiri, dan "0 hari lagi" bukan cara orang bicara.
+     * Jarak hari ke keberangkatan, terpisah antara angka dan katanya.
+     *
+     * Dulu ia satu kalimat utuh dan dipasang sebagai judul kartu, sehingga fakta paling
+     * mendesak di halaman ini berukuran sama dengan setiap judul lain. Dipisah supaya
+     * angkanya dapat dibuat sebesar perannya, sementara katanya tetap ada: angka mentah
+     * memaksa pembacanya menghitung sendiri.
+     *
+     * Hari ini, besok, dan tanggal yang sudah lewat tidak punya angka yang pantas
+     * dibesarkan. Ketiganya mengembalikan angka null dan kalimatnya utuh, karena
+     * "0 hari lagi" bukan cara orang bicara.
+     *
+     * @return array{angka: ?int, kata: string}
      */
-    private function hitungMundur(TripPlan $trip): string
+    private function hitungMundur(TripPlan $trip): array
     {
         $hari = (int) now()->startOfDay()->diffInDays($trip->planned_date->startOfDay(), false);
 
         return match (true) {
-            $hari < 0 => 'Tanggalnya sudah lewat',
-            $hari === 0 => 'Berangkat hari ini',
-            $hari === 1 => 'Berangkat besok',
-            default => $hari.' hari lagi',
+            $hari < 0 => ['angka' => null, 'kata' => 'Tanggalnya sudah lewat'],
+            $hari === 0 => ['angka' => null, 'kata' => 'Berangkat hari ini'],
+            $hari === 1 => ['angka' => null, 'kata' => 'Berangkat besok'],
+            default => ['angka' => $hari, 'kata' => 'hari lagi'],
         };
     }
 }
