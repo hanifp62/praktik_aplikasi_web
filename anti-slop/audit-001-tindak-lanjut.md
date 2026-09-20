@@ -88,3 +88,91 @@ ditetapkan di kode, dan dua perulangan `<option>` dikecualikan aturannya sendiri
 | Aplikasi pernah dijalankan | tidak | ya, tujuh halaman lewat HTTP |
 
 Temuan 4 sampai 8 tetap terbuka dan tidak disentuh.
+
+---
+
+# Lanjutan: temuan 4 sampai 8
+
+Commit: `61e9de5`, `2304685`
+
+## 4. R-06 (JetBrains Mono adalah pilihan bawaan AI) selesai, dan lebih besar daripada temuannya
+
+Pengukuran menjawab pertanyaan "mengapa huruf ini" dengan jawaban yang lebih sederhana
+daripada mencari penggantinya.
+
+Komentar di `tailwind.config.js` menyebut huruf itu "khusus pengukuran: jarak, elevation
+gain, durasi, dan koordinat". Tidak satu pun pengukuran memakainya. Semuanya memakai
+`tabular-nums` pada huruf sans. `font-mono` muncul **tepat dua kali** di seluruh
+aplikasi, keduanya kunci tugas penjadwal pada satu halaman admin.
+
+Jadi setiap pengguna mengunduh dua bobot huruf untuk dua baris yang tidak pernah ia
+lihat, dan alasan yang tertulis menggambarkan pemakaian yang tidak ada. Alasan semacam
+itu lebih buruk daripada tidak ada alasan, karena ia menghentikan pertanyaan berikutnya.
+
+Ketiga layout berhenti memuatnya. Kunci seperti `weather:refresh` justru persis yang
+pantas memakai mono bawaan sistem.
+
+## 5. R-37 (tidak ada berkas arah) selesai
+
+`DESIGN.md` memisahkan kata pemilik produk dari simpulan yang ditarik agen, supaya
+bagian yang boleh dibantah terlihat. Tiga dial ditetapkan beserta dasarnya: ENERGY 1,
+RHYTHM 2, MOTION 1.
+
+Satu hal sengaja dibiarkan terbuka di sana, bukan dijawab sendiri: **mode gelap belum
+diputuskan pemilik produk.** Ia bukan pekerjaan yang ditunda melainkan keputusan yang
+belum diambil.
+
+## 6. R-29 (empat warna inti) selesai
+
+Keempatnya memang punya alasan, hanya saja alasan itu tidak pernah ditulis sebagai
+keputusan palet. Sekarang tertulis, beserta aturannya: warna baru hanya boleh masuk
+ketika ia membawa arti yang tidak dibawa keempatnya.
+
+## 7. R-11 (lima varian radius) selesai
+
+Yang sungguh tidak konsisten ternyata bukan jumlah variannya. `rounded-md` dan
+`rounded-control` bernilai persis sama, `0.375rem`, dengan dua nama, dan hanya satu di
+antaranya dibaca dari token.
+
+| Kelas | Sebelum | Sesudah |
+|---|---|---|
+| `rounded-control` | 19 | **89** |
+| `rounded-md` | 70 | 0 |
+| `rounded-lg` | 29 | 29 |
+| `rounded-full` | 11 | 11 |
+| `rounded-sm` | 1 | 1 |
+
+Nilainya identik, jadi tidak ada satu piksel pun yang berubah. `rounded-sm`
+dipertahankan karena perannya sah: cincin fokus yang memeluk teks sebaris.
+
+## 8. R-02 (em dash) selesai, dengan batas yang dinyatakan
+
+Sebelas em dash di kode dan berkas arah diganti koma, titik dua, atau tanda kurung.
+
+Dokumen spec, rencana, dan audit di `docs/` sengaja tidak disentuh: ia catatan bertanggal
+tentang apa yang terjadi pada hari itu, dan menulis ulang catatan supaya terlihat rapi
+adalah menyunting rekaman, bukan memperbaiki tulisan. Penjaganya menyatakan batas itu di
+dalam dirinya sendiri.
+
+---
+
+# Keadaan akhir
+
+| Diukur | Sebelum audit | Sesudah |
+|---|---|---|
+| Test | 786 | **798** (787 lulus, 11 dilewati) |
+| Temuan terbuka | 8 | **0** |
+| Target sentuh di bawah 44px | 6 | 0 |
+| Daftar utama tanpa keadaan kosong | 15 | 0 |
+| Rute GET yang tidak pernah dirender test | seluruhnya | 0 |
+| Huruf web yang diunduh | 3 keluarga | 2 |
+| Nama radius untuk satu nilai | 2 | 1 |
+| Em dash di kode | 11 | 0 |
+| Berkas arah desain | tidak ada | `DESIGN.md`, tiga dial ditetapkan |
+
+Satu hal menunggu keputusan pemilik produk, dan ditulis di `DESIGN.md` alih-alih
+dijawab sendiri: mode gelap.
+
+Satu hal menunggu izin yang bukan milik pemilik produk: pembacaan Supabase produksi
+ditolak lapisan izin Claude Code (`Reason: [Production Reads]`), sehingga dugaan bahwa
+delapan migrasi belum berjalan masih dugaan, bukan ukuran.
