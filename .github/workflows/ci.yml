@@ -40,6 +40,12 @@ jobs:
           extensions: mbstring, pdo, pdo_sqlite, pdo_pgsql, gd, exif
           coverage: none
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
@@ -48,19 +54,30 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      - name: Install Node dependencies
+        run: npm ci
+
+      # Manifest Vite tidak ada di repositori: /public/build di-gitignore. Enam view
+      # memakai @vite, jadi seluruh test yang merender halaman akan gagal dengan
+      # ViteException bila aset belum dibangun. Langkah ini sebelumnya berada di
+      # bawah test, sehingga urutannya sendiri yang membuat CI merah.
+      - name: Build assets
+        run: npm run build
+
       - name: Lint (Pint)
         run: vendor/bin/pint --test
 
-      - name: Unit and feature tests
-        run: php artisan test --testsuite=Unit --testsuite=Feature
+      # Dipisah menjadi dua langkah, bukan satu perintah dengan dua opsi suite: opsi
+      # kedua menimpa yang pertama, bukan menambahnya. Perintah lama karena itu hanya
+      # menjalankan Feature, dan 104 test Unit tidak pernah dieksekusi CI sama sekali.
+      # Dipisah juga membuat kegagalan tiap suite terbaca sendiri-sendiri.
+      - name: Unit tests
+        run: php artisan test --testsuite=Unit
+
+      - name: Feature tests
+        run: php artisan test --testsuite=Feature
 
       - name: Spatial tests (PostGIS)
         env:
           SPATIAL_TEST_DSN: pgsql://hiking:hiking@127.0.0.1:5432/hiking_test
         run: php artisan test --testsuite=Spatial
-
-      - name: Install Node dependencies
-        run: npm ci
-
-      - name: Build assets
-        run: npm run build
