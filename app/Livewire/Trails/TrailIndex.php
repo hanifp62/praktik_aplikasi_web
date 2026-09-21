@@ -72,6 +72,9 @@ class TrailIndex extends Component
     public function render()
     {
         $trails = Trail::query()
+            // Lapis kedua gerbang kelengkapan dipanggil per jalur saat menilai fit;
+            // tanpa pemuatan di muka ini ia menambah tiga query per baris (§96).
+            ->withPublishabilityData()
             ->published()
             ->with('mountain')
             // Wajib dikurung: tanpa grup, OR-nya menggantung di luar published() dan

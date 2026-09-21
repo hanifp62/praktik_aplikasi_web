@@ -39,7 +39,7 @@ class RecommendationQueryBudgetTest extends TestCase
     public function test_a_recommendation_run_stays_within_the_query_budget(): void
     {
         [$user, $goal] = $this->hikerWithGoal();
-        Trail::factory()->count(12)->create();
+        Trail::factory()->published()->count(12)->create();
 
         $queries = $this->countQueries(fn () => app(RouteFitService::class)->recommend($user, $goal));
 
@@ -55,14 +55,14 @@ class RecommendationQueryBudgetTest extends TestCase
         [$user, $goal] = $this->hikerWithGoal();
         $service = app(RouteFitService::class);
 
-        Trail::factory()->count(3)->create();
+        Trail::factory()->published()->count(3)->create();
 
         // Run pemanasan agar relasi pengguna sudah termuat pada kedua pengukuran,
         // sehingga yang dibandingkan benar-benar hanya pengaruh jumlah jalur.
         $service->recommend($user, $goal);
         $small = $this->countQueries(fn () => $service->recommend($user, $goal));
 
-        Trail::factory()->count(30)->create();
+        Trail::factory()->published()->count(30)->create();
         $large = $this->countQueries(fn () => $service->recommend($user, $goal));
 
         $this->assertSame(
@@ -75,7 +75,7 @@ class RecommendationQueryBudgetTest extends TestCase
     public function test_every_candidate_still_produces_a_stored_result(): void
     {
         [$user, $goal] = $this->hikerWithGoal();
-        Trail::factory()->count(12)->create();
+        Trail::factory()->published()->count(12)->create();
 
         $run = app(RouteFitService::class)->recommend($user, $goal);
 
@@ -85,7 +85,7 @@ class RecommendationQueryBudgetTest extends TestCase
     public function test_results_keep_their_ranking_and_audit_fields(): void
     {
         [$user, $goal] = $this->hikerWithGoal();
-        Trail::factory()->count(5)->create();
+        Trail::factory()->published()->count(5)->create();
 
         $run = app(RouteFitService::class)->recommend($user, $goal);
 

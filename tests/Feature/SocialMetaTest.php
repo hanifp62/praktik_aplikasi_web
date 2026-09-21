@@ -22,9 +22,9 @@ class SocialMetaTest extends TestCase
 
     private function jalur(): Trail
     {
-        return Trail::factory()->easy()->for(
+        return Trail::factory()->published()->easy()->for(
             Mountain::factory()->create(['name' => 'Merbabu', 'province' => 'Jawa Tengah'])
-        )->create(['name' => 'Jalur Selo', 'is_published' => true, 'archived_at' => null]);
+        )->create(['name' => 'Jalur Selo', 'archived_at' => null]);
     }
 
     public function test_a_public_trail_page_carries_its_own_social_card(): void

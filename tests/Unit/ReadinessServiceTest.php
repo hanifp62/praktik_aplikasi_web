@@ -59,7 +59,7 @@ class ReadinessServiceTest extends TestCase
 
     public function test_case_a_fit_complete_preparation_and_open_status_is_ready(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         OfficialStatus::factory()->create([
             'statusable_id' => $trail->id,
             'statusable_type' => $trail->getMorphClass(),
@@ -75,7 +75,7 @@ class ReadinessServiceTest extends TestCase
 
     public function test_case_b_incomplete_preparation_needs_preparation(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         OfficialStatus::factory()->create([
             'statusable_id' => $trail->id,
             'statusable_type' => $trail->getMorphClass(),
@@ -92,7 +92,7 @@ class ReadinessServiceTest extends TestCase
 
     public function test_case_c_closed_status_is_not_recommended(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         OfficialStatus::factory()->closed()->create([
             'statusable_id' => $trail->id,
             'statusable_type' => $trail->getMorphClass(),
@@ -108,7 +108,7 @@ class ReadinessServiceTest extends TestCase
 
     public function test_case_d_unknown_status_cannot_be_confidently_verified(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
 
         $trip = $this->tripFor($trail);
         $this->seedPreparation($trip, confirmAll: true);

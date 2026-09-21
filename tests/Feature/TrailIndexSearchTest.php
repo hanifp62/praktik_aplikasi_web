@@ -28,7 +28,7 @@ class TrailIndexSearchTest extends TestCase
     {
         $mountain = Mountain::factory()->create(['name' => 'Gunung Rahasia']);
         Trail::factory()->for($mountain)->unpublished()->create(['name' => 'Jalur Draft']);
-        Trail::factory()->for($mountain)->create(['name' => 'Jalur Terbit']);
+        Trail::factory()->published()->for($mountain)->create(['name' => 'Jalur Terbit']);
 
         Livewire::actingAs($this->hiker())
             ->test(TrailIndex::class)
@@ -42,7 +42,7 @@ class TrailIndexSearchTest extends TestCase
     public function test_searching_by_mountain_name_never_exposes_archived_trails(): void
     {
         $mountain = Mountain::factory()->create(['name' => 'Gunung Arsip']);
-        Trail::factory()->for($mountain)->create(['name' => 'Jalur Diarsipkan', 'archived_at' => now()]);
+        Trail::factory()->published()->for($mountain)->create(['name' => 'Jalur Diarsipkan', 'archived_at' => now()]);
 
         Livewire::actingAs($this->hiker())
             ->test(TrailIndex::class)
@@ -53,7 +53,7 @@ class TrailIndexSearchTest extends TestCase
     public function test_searching_by_trail_name_still_works(): void
     {
         $mountain = Mountain::factory()->create(['name' => 'Gunung Lain']);
-        Trail::factory()->for($mountain)->create(['name' => 'Jalur Cemoro Sewu']);
+        Trail::factory()->published()->for($mountain)->create(['name' => 'Jalur Cemoro Sewu']);
 
         Livewire::actingAs($this->hiker())
             ->test(TrailIndex::class)
@@ -64,8 +64,8 @@ class TrailIndexSearchTest extends TestCase
     public function test_search_combines_with_the_technical_filter(): void
     {
         $mountain = Mountain::factory()->create(['name' => 'Gunung Uji']);
-        Trail::factory()->for($mountain)->easy()->create(['name' => 'Jalur Ringan']);
-        Trail::factory()->for($mountain)->highlyTechnical()->create(['name' => 'Jalur Teknis']);
+        Trail::factory()->published()->for($mountain)->easy()->create(['name' => 'Jalur Ringan']);
+        Trail::factory()->published()->for($mountain)->highlyTechnical()->create(['name' => 'Jalur Teknis']);
 
         Livewire::actingAs($this->hiker())
             ->test(TrailIndex::class)

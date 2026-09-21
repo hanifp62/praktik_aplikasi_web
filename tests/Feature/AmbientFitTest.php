@@ -45,7 +45,7 @@ class AmbientFitTest extends TestCase
 
     private function jalurTerbit(): Trail
     {
-        return Trail::factory()->for(Mountain::factory()->create())->create(['is_published' => true]);
+        return Trail::factory()->for(Mountain::factory()->create())->published()->create();
     }
 
     public function test_the_browse_page_says_whether_each_trail_fits_the_reader(): void
@@ -123,7 +123,7 @@ class AmbientFitTest extends TestCase
         $this->actingAs($user);
 
         $gunung = Mountain::factory()->create();
-        Trail::factory()->count(4)->for($gunung)->create(['is_published' => true]);
+        Trail::factory()->count(4)->for($gunung)->published()->create();
 
         // Pemanasan: pengukuran pertama menghitung cache yang terisi, bukan pertumbuhan.
         $this->get(route('trails.index'));
@@ -133,7 +133,7 @@ class AmbientFitTest extends TestCase
         $this->get(route('trails.index'));
         $sedikit = count(DB::getQueryLog());
 
-        Trail::factory()->count(20)->for($gunung)->create(['is_published' => true]);
+        Trail::factory()->count(20)->for($gunung)->published()->create();
 
         DB::flushQueryLog();
         $this->get(route('trails.index'));

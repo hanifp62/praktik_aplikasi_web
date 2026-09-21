@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CheckpointType;
+use App\Exceptions\PublicationGateViolation;
 use App\Models\Concerns\HasSpatialColumns;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -17,6 +18,31 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Hidden(['location'])]
 class Checkpoint extends Model
 {
+    /**
+     * R-022 sebagai invariant keadaan: jalur terbit tidak boleh kehilangan checkpoint
+     * terakhirnya.
+     *
+     * Penghapusan terjadi di model ini, bukan di Trail, sehingga penjaga di Trail tidak
+     * akan pernah melihatnya. Tanpa penjaga di sini, invariant keadaan punya lubang
+     * seukuran satu tombol hapus.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Checkpoint $checkpoint): void {
+            $trail = $checkpoint->trail;
+
+            if (! $trail instanceof Trail || ! $trail->is_published) {
+                return;
+            }
+
+            if ($trail->checkpoints()->count() > 1) {
+                return;
+            }
+
+            throw new PublicationGateViolation($trail, ['Jalur belum memiliki checkpoint.']);
+        });
+    }
+
     use HasFactory;
     use HasSpatialColumns;
 

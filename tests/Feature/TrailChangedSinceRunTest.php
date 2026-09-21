@@ -48,7 +48,7 @@ class TrailChangedSinceRunTest extends TestCase
         $user->preference()->create(['preferred_duration' => 'ONE_DAY', 'preferred_trip_type' => 'CAMPING']);
         $user = $user->fresh();
 
-        $trail = Trail::factory()->easy()->create([
+        $trail = Trail::factory()->published()->easy()->create([
             'distance_km' => 8.50,
             'elevation_gain_m' => 900,
         ]);

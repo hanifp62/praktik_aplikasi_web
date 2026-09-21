@@ -50,7 +50,7 @@ class TripLifecycleTest extends TestCase
 
     public function test_a_trip_cannot_be_created_on_an_archived_trail(): void
     {
-        $archived = Trail::factory()->create(['archived_at' => now()]);
+        $archived = Trail::factory()->published()->create(['archived_at' => now()]);
 
         Livewire::actingAs(User::factory()->create())
             ->test(TripForm::class)
@@ -64,7 +64,7 @@ class TripLifecycleTest extends TestCase
 
     public function test_a_trip_can_be_created_on_a_published_trail(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
 
         Livewire::actingAs(User::factory()->create())
             ->test(TripForm::class)
@@ -157,7 +157,7 @@ class TripLifecycleTest extends TestCase
     {
         $user = User::factory()->create();
         $mountain = Mountain::factory()->create();
-        $trail = Trail::factory()->for($mountain)->create();
+        $trail = Trail::factory()->published()->for($mountain)->create();
 
         return TripPlan::create([
             'user_id' => $user->id,

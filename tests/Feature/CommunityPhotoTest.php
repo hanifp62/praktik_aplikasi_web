@@ -41,7 +41,7 @@ class CommunityPhotoTest extends TestCase
 
     public function test_an_approved_photo_is_shown_to_hikers(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $laporan = $this->laporan($trail, ModerationStatus::APPROVED);
 
         $this->bukaJalur($trail)
@@ -55,7 +55,7 @@ class CommunityPhotoTest extends TestCase
      */
     public function test_a_photo_awaiting_moderation_never_appears(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $laporan = $this->laporan($trail, ModerationStatus::PENDING);
 
         $this->bukaJalur($trail)
@@ -65,7 +65,7 @@ class CommunityPhotoTest extends TestCase
 
     public function test_a_rejected_photo_never_appears(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $laporan = $this->laporan($trail, ModerationStatus::REJECTED);
 
         $this->bukaJalur($trail)
@@ -75,8 +75,8 @@ class CommunityPhotoTest extends TestCase
 
     public function test_a_photo_from_another_trail_never_appears(): void
     {
-        $trail = Trail::factory()->easy()->create();
-        $lain = $this->laporan(Trail::factory()->easy()->create(), ModerationStatus::APPROVED);
+        $trail = Trail::factory()->published()->easy()->create();
+        $lain = $this->laporan(Trail::factory()->published()->easy()->create(), ModerationStatus::APPROVED);
 
         $this->bukaJalur($trail)
             ->assertOk()
@@ -90,7 +90,7 @@ class CommunityPhotoTest extends TestCase
      */
     public function test_each_photo_carries_who_took_it_and_when(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->laporan($trail, ModerationStatus::APPROVED);
 
         $halaman = $this->bukaJalur($trail);
@@ -106,7 +106,7 @@ class CommunityPhotoTest extends TestCase
      */
     public function test_the_photos_are_marked_as_community_input_not_official(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->laporan($trail, ModerationStatus::APPROVED);
 
         $this->bukaJalur($trail)->assertSee('community-', escape: false);
@@ -117,7 +117,7 @@ class CommunityPhotoTest extends TestCase
      */
     public function test_a_report_without_a_photo_leaves_no_broken_frame(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->laporan($trail, ModerationStatus::APPROVED, foto: null);
 
         $this->bukaJalur($trail)

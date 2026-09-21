@@ -40,7 +40,7 @@ class RecommendationFlowTest extends TestCase
     public function test_creating_a_goal_runs_the_engine_and_stores_explanations(): void
     {
         $user = $this->userWithProfile();
-        Trail::factory()->easy()->create();
+        Trail::factory()->published()->easy()->create();
 
         Livewire::actingAs($user)
             ->test(GoalForm::class)
@@ -60,8 +60,8 @@ class RecommendationFlowTest extends TestCase
     public function test_a_closed_trail_never_becomes_an_active_recommendation(): void
     {
         $user = $this->userWithProfile();
-        $open = Trail::factory()->easy()->create();
-        $closed = Trail::factory()->easy()->create();
+        $open = Trail::factory()->published()->easy()->create();
+        $closed = Trail::factory()->published()->easy()->create();
         OfficialStatus::factory()->closed()->create([
             'statusable_id' => $closed->id,
             'statusable_type' => $closed->getMorphClass(),

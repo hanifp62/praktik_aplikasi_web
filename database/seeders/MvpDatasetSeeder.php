@@ -91,7 +91,11 @@ class MvpDatasetSeeder extends Seeder
                         'weather_adm4_code' => $trailData['adm4'],
                         'weather_reference_area' => $trailData['weather_area'],
                         'data_source_id' => $source->id,
-                        'is_published' => true,
+                        // F1(b): seeder membuat draf, bukan jalur terbit. Menerbitkan
+                        // adalah tindakan kurasi yang melewati publishabilityReport(),
+                        // dan dataset ini belum punya geometri. Kunci `is_published`
+                        // sengaja tidak disebut supaya baris yang sudah ada tidak ikut
+                        // berubah saat seeder dijalankan ulang.
                     ]
                 );
 

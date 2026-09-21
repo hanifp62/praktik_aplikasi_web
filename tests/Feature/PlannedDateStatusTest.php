@@ -121,7 +121,7 @@ class PlannedDateStatusTest extends TestCase
 
         return TripPlan::create([
             'user_id' => $user->id,
-            'trail_id' => Trail::factory()->for(Mountain::factory())->create()->id,
+            'trail_id' => Trail::factory()->published()->for(Mountain::factory())->create()->id,
             'name' => 'Rencana jauh hari',
             'planned_date' => $tanggal->toDateString(),
             'trip_type' => TripType::CAMPING->value,

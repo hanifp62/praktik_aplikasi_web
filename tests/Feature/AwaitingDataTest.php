@@ -114,7 +114,7 @@ class AwaitingDataTest extends TestCase
 
     public function test_a_published_trail_still_shows_its_full_detail(): void
     {
-        $jalur = Trail::factory()->for($this->gunungBerbadan())->create([
+        $jalur = Trail::factory()->published()->for($this->gunungBerbadan())->create([
             'distance_km' => 9.4,
             'elevation_gain_m' => 1100,
             'estimated_duration_minutes' => 600,
@@ -139,7 +139,7 @@ class AwaitingDataTest extends TestCase
     {
         $gunung = Mountain::factory()->create(['name' => 'Gunung Rahasia']);
         Trail::factory()->for($gunung)->unpublished()->create(['name' => 'Jalur Draft']);
-        Trail::factory()->for($gunung)->create(['name' => 'Jalur Terbit']);
+        Trail::factory()->published()->for($gunung)->create(['name' => 'Jalur Terbit']);
 
         $isi = $this->actingAs(User::factory()->create())
             ->get('/trails?search=Rahasia')

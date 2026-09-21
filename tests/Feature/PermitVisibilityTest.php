@@ -27,7 +27,7 @@ class PermitVisibilityTest extends TestCase
 
     public function test_the_trail_detail_page_shows_the_permit_rules(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         PermitRequirement::factory()->create([
             'trail_id' => $trail->id,
             'authority' => 'TN Bromo Tengger Semeru',
@@ -46,7 +46,7 @@ class PermitVisibilityTest extends TestCase
 
     public function test_a_trail_without_permit_rules_shows_no_permit_section(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
 
         $html = $this->actingAs(User::factory()->create())
             ->get(route('trails.show', $trail))
@@ -60,7 +60,7 @@ class PermitVisibilityTest extends TestCase
         $user = User::factory()->create();
         $user->profile()->create(['experience_level' => ExperienceLevel::INTERMEDIATE->value, 'completed_at' => now()]);
 
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         PermitRequirement::factory()->create([
             'trail_id' => $trail->id,
             'authority' => 'TN Bromo Tengger Semeru',
@@ -79,7 +79,7 @@ class PermitVisibilityTest extends TestCase
 
     public function test_the_preparation_checklist_gains_a_critical_permit_item(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         PermitRequirement::factory()->create([
             'trail_id' => $trail->id,
             'authority' => 'TN Bromo Tengger Semeru',
@@ -99,7 +99,7 @@ class PermitVisibilityTest extends TestCase
 
     public function test_a_trail_without_permit_rules_gains_no_permit_item(): void
     {
-        $trip = $this->tripFor(Trail::factory()->create());
+        $trip = $this->tripFor(Trail::factory()->published()->create());
         app(PreparationService::class)->generateFor($trip);
 
         $this->assertNull(
@@ -109,7 +109,7 @@ class PermitVisibilityTest extends TestCase
 
     public function test_regenerating_keeps_the_permit_item_status(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         PermitRequirement::factory()->create(['trail_id' => $trail->id]);
 
         $trip = $this->tripFor($trail);

@@ -33,7 +33,7 @@ class ElevationProfileDisplayTest extends TestCase
 
     public function test_the_profile_is_drawn_when_the_trail_has_one(): void
     {
-        $trail = Trail::factory()->easy()->create(['elevation_profile' => $this->profil()]);
+        $trail = Trail::factory()->published()->easy()->create(['elevation_profile' => $this->profil()]);
 
         $this->actingAs(User::factory()->create())
             ->get(route('trails.show', $trail))
@@ -48,7 +48,7 @@ class ElevationProfileDisplayTest extends TestCase
      */
     public function test_the_chart_carries_a_text_summary_for_screen_readers(): void
     {
-        $trail = Trail::factory()->easy()->create(['elevation_profile' => $this->profil()]);
+        $trail = Trail::factory()->published()->easy()->create(['elevation_profile' => $this->profil()]);
 
         $halaman = $this->actingAs(User::factory()->create())->get(route('trails.show', $trail));
 
@@ -59,7 +59,7 @@ class ElevationProfileDisplayTest extends TestCase
 
     public function test_a_trail_without_a_profile_shows_no_empty_chart(): void
     {
-        $trail = Trail::factory()->easy()->create(['elevation_profile' => null]);
+        $trail = Trail::factory()->published()->easy()->create(['elevation_profile' => null]);
 
         $this->actingAs(User::factory()->create())
             ->get(route('trails.show', $trail))
@@ -73,7 +73,7 @@ class ElevationProfileDisplayTest extends TestCase
      */
     public function test_a_single_point_is_not_drawn(): void
     {
-        $trail = Trail::factory()->easy()->create([
+        $trail = Trail::factory()->published()->easy()->create([
             'elevation_profile' => [['km' => 0.0, 'm' => 1200]],
         ]);
 

@@ -26,7 +26,7 @@ class TrailDetailMapTest extends TestCase
 
     public function test_a_trail_with_geometry_is_drawn(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
 
         if (! Trail::spatialSupported()) {
             $this->markTestSkipped('Butuh PostGIS untuk menulis geometri.');
@@ -45,7 +45,7 @@ class TrailDetailMapTest extends TestCase
      */
     public function test_checkpoints_alone_already_put_the_trail_on_a_map(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
 
         Checkpoint::factory()->for($trail)->create([
             'name' => 'Pos Bayangan',
@@ -67,7 +67,7 @@ class TrailDetailMapTest extends TestCase
      */
     public function test_a_trail_without_any_coordinates_says_so_instead_of_showing_an_empty_box(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
 
         $halaman = $this->bukaJalur($trail);
 
@@ -82,7 +82,7 @@ class TrailDetailMapTest extends TestCase
      */
     public function test_the_checkpoint_names_are_readable_without_the_map(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
 
         foreach ([['Pos 1 Watu Gede', 1], ['Pos 2 Sabana', 2]] as [$nama, $urutan]) {
             Checkpoint::factory()->for($trail)->create([

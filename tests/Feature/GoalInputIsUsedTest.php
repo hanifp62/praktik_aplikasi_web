@@ -50,7 +50,7 @@ class GoalInputIsUsedTest extends TestCase
     public function test_goal_notes_are_carried_into_the_trip_created_from_it(): void
     {
         $user = $this->userWithProfile();
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
 
         Livewire::actingAs($user)
             ->test(GoalForm::class)
@@ -77,7 +77,7 @@ class GoalInputIsUsedTest extends TestCase
     public function test_a_permit_trail_admits_the_booking_window_was_not_checked_without_a_date(): void
     {
         $user = $this->userWithProfile();
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         PermitRequirement::factory()->create(['trail_id' => $trail->id]);
 
         Livewire::actingAs($user)
@@ -104,7 +104,7 @@ class GoalInputIsUsedTest extends TestCase
     public function test_the_admission_disappears_once_a_date_is_given(): void
     {
         $user = $this->userWithProfile();
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         PermitRequirement::factory()->create(['trail_id' => $trail->id]);
 
         Livewire::actingAs($user)
@@ -130,7 +130,7 @@ class GoalInputIsUsedTest extends TestCase
     public function test_a_trail_without_a_permit_requirement_says_nothing_about_booking(): void
     {
         $user = $this->userWithProfile();
-        Trail::factory()->easy()->create();
+        Trail::factory()->published()->easy()->create();
 
         Livewire::actingAs($user)
             ->test(GoalForm::class)

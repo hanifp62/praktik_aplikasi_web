@@ -44,15 +44,24 @@ class RouteFitUnknownDataTest extends TestCase
         );
     }
 
-    public function test_unknown_data_on_a_critical_factor_forces_kurang_cocok(): void
+    /**
+     * Kontraknya berubah bersama R-008. Dulu jalur tanpa data kritis tetap dinilai dan
+     * jatuh ke KURANG_COCOK; kini ia dikecualikan lebih dulu, karena aturan canonical
+     * melarang jalur dengan data kritis hilang masuk hasil rekomendasi sama sekali.
+     *
+     * Yang dijaga tetap sama: ketiadaan data tidak pernah menjadi "cocok", dan alasannya
+     * sampai ke pengguna sebagai kalimat, bukan kunci mesin.
+     */
+    public function test_unknown_data_on_a_critical_factor_excludes_the_trail(): void
     {
         $user = $this->experienced();
         $trail = $this->trailWithoutData();
 
         $result = app(RouteFitService::class)->evaluate($user, $this->goal($user), $trail);
 
-        // Beban fisik adalah faktor kritis; tanpa datanya kecocokan tidak dapat dinilai.
-        $this->assertSame(RouteFitLabel::KURANG_COCOK, $result->label);
+        $this->assertFalse($result->eligible);
+        $this->assertContains('trail_data_incomplete', $result->failedRules);
+        $this->assertNotSame(RouteFitLabel::COCOK, $result->label);
     }
 
     public function test_the_missing_data_is_named_in_the_explanation(): void
@@ -74,7 +83,7 @@ class RouteFitUnknownDataTest extends TestCase
     public function test_complete_data_is_not_flagged_as_unknown(): void
     {
         $user = $this->beginner();
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->easy()->published()->create();
 
         $result = app(RouteFitService::class)->evaluate($user, $this->goal($user), $trail);
 
@@ -103,14 +112,23 @@ class RouteFitUnknownDataTest extends TestCase
 
     private function trailWithoutData(): Trail
     {
-        return Trail::factory()->create([
+        // Jalur ini melanggar gerbang publikasi dengan sengaja: karakteristik dasarnya
+        // kosong sehingga publishabilityReport() menolaknya. Keadaan itu persis keadaan
+        // jalur-jalur yang telanjur tayang di basis data sungguhan, dan yang diuji di
+        // sini adalah bagaimana Route Fit memperlakukan UNKNOWN ketika baris seperti itu
+        // sudah ada. saveQuietly() melewati penjaga model dengan sadar; jangan menirunya
+        // di luar test yang memang mereproduksi keadaan warisan.
+        $trail = Trail::factory()->create([
             'distance_km' => null,
             'elevation_gain_m' => null,
             'elevation_loss_m' => null,
             'estimated_duration_minutes' => null,
             'terrain_character' => null,
-            'is_published' => true,
         ]);
+
+        $trail->forceFill(['is_published' => true])->saveQuietly();
+
+        return $trail;
     }
 
     private function beginner(): User

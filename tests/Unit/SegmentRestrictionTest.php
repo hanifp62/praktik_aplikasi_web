@@ -31,7 +31,7 @@ class SegmentRestrictionTest extends TestCase
 
     public function test_a_closed_segment_is_reported_by_the_status_service(): void
     {
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         $segment = $this->closedSegment($trail, 'Kalimati - Puncak', 'Aktivitas vulkanik');
 
         $restrictions = app(OfficialStatusService::class)->segmentRestrictionsForTrail($trail);
@@ -44,7 +44,7 @@ class SegmentRestrictionTest extends TestCase
 
     public function test_a_closed_segment_warns_without_excluding_the_trail(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->closedSegment($trail, 'Kalimati - Puncak', 'Aktivitas vulkanik');
 
         $result = app(RouteFitService::class)->evaluate($user = $this->experienced(), $this->goal($user), $trail);
@@ -56,7 +56,7 @@ class SegmentRestrictionTest extends TestCase
 
     public function test_a_closed_segment_caps_the_label(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->closedSegment($trail, 'Kalimati - Puncak', 'Aktivitas vulkanik');
 
         $result = app(RouteFitService::class)->evaluate($user = $this->experienced(), $this->goal($user), $trail);
@@ -70,7 +70,7 @@ class SegmentRestrictionTest extends TestCase
 
     public function test_a_trail_without_segment_restrictions_is_unaffected(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         TrailSegment::factory()->for($trail)->create(['name' => 'Basecamp - Pos 1']);
 
         $result = app(RouteFitService::class)->evaluate($user = $this->experienced(), $this->goal($user), $trail);
@@ -81,7 +81,7 @@ class SegmentRestrictionTest extends TestCase
 
     public function test_a_reopened_segment_no_longer_restricts(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $segment = $this->closedSegment($trail, 'Kalimati - Puncak', 'Aktivitas vulkanik');
 
         // Status yang lebih baru membuka kembali segmen tersebut.

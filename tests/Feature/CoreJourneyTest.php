@@ -167,10 +167,9 @@ class CoreJourneyTest extends TestCase
 
     private function publishedTrail(): Trail
     {
-        return Trail::factory()->easy()->create([
+        return Trail::factory()->easy()->published()->create([
             'mountain_id' => Mountain::factory()->create()->id,
             'data_source_id' => DataSource::factory()->create()->id,
-            'is_published' => true,
         ]);
     }
 }

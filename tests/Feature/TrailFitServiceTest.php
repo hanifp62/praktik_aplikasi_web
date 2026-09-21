@@ -52,7 +52,7 @@ class TrailFitServiceTest extends TestCase
     {
         $gunung = Mountain::factory()->create();
 
-        return Trail::factory()->count($jumlah)->for($gunung)->create(['is_published' => true]);
+        return Trail::factory()->count($jumlah)->for($gunung)->published()->create();
     }
 
     public function test_it_summarises_every_trail_it_is_given(): void
@@ -132,8 +132,7 @@ class TrailFitServiceTest extends TestCase
     public function test_a_disqualified_trail_gets_a_readable_reason_not_a_rule_key(): void
     {
         $gunung = Mountain::factory()->create();
-        $jalur = Trail::factory()->count(1)->for($gunung)->create([
-            'is_published' => true,
+        $jalur = Trail::factory()->count(1)->published()->for($gunung)->create([
             'archived_at' => now(),
         ]);
 

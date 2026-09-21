@@ -169,7 +169,7 @@ dan tidak boleh secara default digantikan oleh foto komunitas yang tidak terveri
 
 ---
 
-# LEGACY RULE — DISPOSISI SELESAI
+# LEGACY RULE: DISPOSISI SELESAI
 
 Dua batasan berikut sebelumnya hidup di CLAUDE.md tanpa owner. Keduanya kini sudah
 mendapat disposisi dari pemilik produk, dan catatan ini disimpan sebagai jejak keputusan.

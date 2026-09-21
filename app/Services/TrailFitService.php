@@ -42,6 +42,10 @@ class TrailFitService
             return [];
         }
 
+        // Satu query untuk seluruh koleksi; gerbang kelengkapan yang dipanggil per jalur
+        // di evaluate() kemudian membaca dari memori, bukan dari basis data (§96).
+        Trail::hydratePublishabilityData($trails);
+
         $statuses = $this->status->effectiveStatusesForTrails($trails);
         $restrictions = $this->status->segmentRestrictionsForTrails($trails);
         $weights = $this->fit->weights();

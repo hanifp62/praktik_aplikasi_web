@@ -104,7 +104,7 @@ class ReadinessDashboardTest extends TestCase
         $user->profile()->create(['experience_level' => ExperienceLevel::ADVANCED->value, 'completed_at' => now()]);
 
         $mountain = Mountain::factory()->create();
-        $trail = Trail::factory()->for($mountain)->easy()->create();
+        $trail = Trail::factory()->published()->for($mountain)->easy()->create();
 
         $trip = TripPlan::create([
             'user_id' => $user->id,

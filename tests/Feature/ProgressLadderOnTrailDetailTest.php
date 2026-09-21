@@ -48,7 +48,7 @@ class ProgressLadderOnTrailDetailTest extends TestCase
     {
         return Trail::factory()
             ->for(Mountain::factory()->create())
-            ->create(['is_published' => true, 'elevation_gain_m' => $tanjakan]);
+            ->published()->create(['elevation_gain_m' => $tanjakan]);
     }
 
     public function test_a_step_up_climb_shows_the_ladder_sentence_on_the_trail_page(): void

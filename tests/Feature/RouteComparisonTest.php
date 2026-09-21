@@ -29,7 +29,7 @@ class RouteComparisonTest extends TestCase
 
     private function jalur(): Trail
     {
-        return Trail::factory()->for(Mountain::factory()->create())->create(['is_published' => true]);
+        return Trail::factory()->for(Mountain::factory()->create())->published()->create();
     }
 
     public function test_the_bare_menu_link_shows_the_stored_shortlist(): void

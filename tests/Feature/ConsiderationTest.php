@@ -30,7 +30,7 @@ class ConsiderationTest extends TestCase
 
     private function jalur(): Trail
     {
-        return Trail::factory()->for(Mountain::factory()->create())->create(['is_published' => true]);
+        return Trail::factory()->for(Mountain::factory()->create())->published()->create();
     }
 
     public function test_a_hiker_can_put_a_trail_aside_to_think_about(): void

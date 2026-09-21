@@ -90,7 +90,7 @@ class RefusalMessagesTest extends TestCase
             'completed_at' => now(),
         ]);
 
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
 
         OfficialStatus::factory()->create([
             'statusable_type' => Trail::class,

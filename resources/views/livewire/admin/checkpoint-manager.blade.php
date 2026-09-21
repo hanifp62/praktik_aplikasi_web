@@ -9,6 +9,12 @@
             <x-ui.alert variant="success">{{ session('status') }}</x-ui.alert>
         @endif
 
+        {{-- Penolakan gerbang publikasi adalah keputusan domain: ia memakai varian
+             peringatan dengan role="alert", bukan varian sukses. --}}
+        @if (session('penolakan'))
+            <x-ui.alert variant="warning">{{ session('penolakan') }}</x-ui.alert>
+        @endif
+
         <x-ui.card class="mb-6" :title="$editingId ? 'Ubah checkpoint' : 'Tambah checkpoint'">
             <form wire:submit="save" class="space-y-4">
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

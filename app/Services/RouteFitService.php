@@ -110,6 +110,14 @@ class RouteFitService
             $failures[] = 'trail_not_published';
         }
 
+        // R-008/R-022 lapis kedua. Penyaring kandidat di recommend() sudah menutup
+        // jalur utama, tetapi evaluate() dipanggil juga oleh jelajah, detail jalur, dan
+        // halaman trip. Tanpa pemeriksaan di sini, salah satu dari mereka dapat
+        // memberi label fit kepada jalur yang datanya tidak lengkap.
+        if ($trail->publishabilityReport() !== []) {
+            $failures[] = 'trail_data_incomplete';
+        }
+
         $tripType = $goal?->trip_type;
         $duration = $trail->estimated_duration_minutes;
 
@@ -287,6 +295,12 @@ class RouteFitService
 
         $candidates = $trails ?? Trail::query()
             ->published()
+            // R-008/R-022 lapis pertama: jalur dengan data kritis yang hilang tidak
+            // pernah menjadi kandidat. withPublishabilityData() memuat hitungan relasi
+            // dan penanda geometri sekali, sehingga lapis kedua di
+            // hardConstraintFailures() tidak menambah query per jalur (§96).
+            ->dataComplete()
+            ->withPublishabilityData()
             ->with('mountain')
             ->when($goal->region, fn ($query, $region) => $query->whereHas(
                 'mountain',
@@ -296,6 +310,8 @@ class RouteFitService
 
         // Dimuat sekali per run, bukan per jalur: tanpa ini jumlah query tumbuh linear
         // terhadap jumlah kandidat (PRD §96).
+        Trail::hydratePublishabilityData($candidates);
+
         $weights = $this->weights();
         $statuses = $this->officialStatus->effectiveStatusesForTrails($candidates);
         $restrictions = $this->officialStatus->segmentRestrictionsForTrails($candidates);

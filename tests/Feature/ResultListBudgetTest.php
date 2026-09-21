@@ -54,7 +54,7 @@ class ResultListBudgetTest extends TestCase
         $user->preference()->create(['preferred_duration' => 'ONE_DAY', 'preferred_trip_type' => 'CAMPING']);
         $user = $user->fresh();
 
-        Trail::factory()->count($jumlah)->easy()->create();
+        Trail::factory()->published()->count($jumlah)->easy()->create();
 
         $goal = HikingGoal::factory()->create([
             'user_id' => $user->id,

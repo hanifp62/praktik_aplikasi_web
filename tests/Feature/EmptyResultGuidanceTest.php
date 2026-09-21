@@ -57,7 +57,7 @@ class EmptyResultGuidanceTest extends TestCase
     public function test_a_region_with_no_published_trail_is_named_as_the_reason(): void
     {
         $user = $this->userWithProfile();
-        Trail::factory()->easy()->for(Mountain::factory()->create(['province' => 'Jawa Tengah']))->create();
+        Trail::factory()->published()->easy()->for(Mountain::factory()->create(['province' => 'Jawa Tengah']))->create();
 
         $run = $this->runFor($user, ['region' => 'Jawa Timur', 'trip_type' => 'CAMPING']);
 
@@ -74,7 +74,7 @@ class EmptyResultGuidanceTest extends TestCase
     public function test_loosening_the_limits_is_still_suggested_when_candidates_were_actually_tested(): void
     {
         $user = $this->userWithProfile();
-        Trail::factory()->easy()->create(['elevation_gain_m' => 2000]);
+        Trail::factory()->published()->easy()->create(['elevation_gain_m' => 2000]);
 
         $run = $this->runFor($user, [
             'region' => null,

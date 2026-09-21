@@ -102,7 +102,10 @@ class EveryRouteRendersTest extends TestCase
         $this->seed();
 
         $admin = User::where('role', 'admin')->firstOrFail();
-        $trail = Trail::where('is_published', true)->firstOrFail();
+        // F1(b): seeder menghasilkan draf, bukan jalur terbit. Menerbitkan adalah
+        // tindakan kurasi, jadi test melakukannya sendiri lewat gerbang yang sama.
+        $trail = Trail::query()->firstOrFail();
+        $trail->update(['is_published' => true]);
 
         $halaman = [
             route('trails.show', $trail),

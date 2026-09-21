@@ -30,7 +30,7 @@ class WeatherRefreshTest extends TestCase
         Http::fake(['*' => Http::response(['data' => []], 200)]);
 
         $mountain = Mountain::factory()->create();
-        Trail::factory()->count(5)->for($mountain)->create(['weather_adm4_code' => '35.07.17.2002']);
+        Trail::factory()->published()->count(5)->for($mountain)->create(['weather_adm4_code' => '35.07.17.2002']);
 
         $this->artisan('weather:refresh')->assertSuccessful();
 
@@ -41,8 +41,8 @@ class WeatherRefreshTest extends TestCase
     {
         Http::fake(['*' => Http::response(['data' => []], 200)]);
 
-        Trail::factory()->count(3)->create(['weather_adm4_code' => '35.07.17.2002']);
-        Trail::factory()->count(2)->create(['weather_adm4_code' => '33.08.10.2001']);
+        Trail::factory()->published()->count(3)->create(['weather_adm4_code' => '35.07.17.2002']);
+        Trail::factory()->published()->count(2)->create(['weather_adm4_code' => '33.08.10.2001']);
 
         $this->artisan('weather:refresh')->assertSuccessful();
 
@@ -62,7 +62,7 @@ class WeatherRefreshTest extends TestCase
 
     public function test_condition_aggregation_reads_the_weather_context_once(): void
     {
-        $trail = Trail::factory()->create(['weather_adm4_code' => '35.07.17.2002']);
+        $trail = Trail::factory()->published()->create(['weather_adm4_code' => '35.07.17.2002']);
 
         $weatherQueries = 0;
         DB::listen(function ($query) use (&$weatherQueries) {

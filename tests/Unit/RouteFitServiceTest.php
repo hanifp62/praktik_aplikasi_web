@@ -55,7 +55,7 @@ class RouteFitServiceTest extends TestCase
     public function test_beginner_on_easy_route_is_labelled_cocok(): void
     {
         $user = $this->beginner();
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
 
         $result = app(RouteFitService::class)->evaluate($user, $this->goal($user), $trail);
 
@@ -66,7 +66,7 @@ class RouteFitServiceTest extends TestCase
     public function test_beginner_on_moderate_route_needs_preparation(): void
     {
         $user = $this->beginner();
-        $trail = Trail::factory()->create([
+        $trail = Trail::factory()->published()->create([
             'elevation_gain_m' => 1300,
             'distance_km' => 12,
             'estimated_duration_minutes' => 600,
@@ -81,7 +81,7 @@ class RouteFitServiceTest extends TestCase
     public function test_beginner_on_highly_technical_route_is_kurang_cocok(): void
     {
         $user = $this->beginner();
-        $trail = Trail::factory()->highlyTechnical()->create();
+        $trail = Trail::factory()->published()->highlyTechnical()->create();
 
         $result = app(RouteFitService::class)->evaluate($user, $this->goal($user, [
             'expected_duration_minutes' => 2880,
@@ -93,7 +93,7 @@ class RouteFitServiceTest extends TestCase
     public function test_experienced_hiker_on_moderate_route_is_cocok(): void
     {
         $user = $this->experienced();
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
 
         $result = app(RouteFitService::class)->evaluate($user, $this->goal($user), $trail);
 
@@ -103,7 +103,7 @@ class RouteFitServiceTest extends TestCase
     public function test_closed_trail_is_excluded(): void
     {
         $user = $this->experienced();
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         OfficialStatus::factory()->closed()->create([
             'statusable_id' => $trail->id,
             'statusable_type' => $trail->getMorphClass(),
@@ -119,7 +119,7 @@ class RouteFitServiceTest extends TestCase
     public function test_restricted_trail_stays_eligible_but_warns(): void
     {
         $user = $this->experienced();
-        $trail = Trail::factory()->create();
+        $trail = Trail::factory()->published()->create();
         OfficialStatus::factory()->restricted()->create([
             'statusable_id' => $trail->id,
             'statusable_type' => $trail->getMorphClass(),
@@ -134,7 +134,7 @@ class RouteFitServiceTest extends TestCase
     public function test_multi_day_route_is_excluded_from_a_day_trip_goal(): void
     {
         $user = $this->experienced();
-        $trail = Trail::factory()->create(['estimated_duration_minutes' => 30 * 60]);
+        $trail = Trail::factory()->published()->create(['estimated_duration_minutes' => 30 * 60]);
 
         $result = app(RouteFitService::class)->evaluate($user, $this->goal($user, [
             'trip_type' => 'TEKTOK',
@@ -148,8 +148,8 @@ class RouteFitServiceTest extends TestCase
     {
         $user = $this->beginner();
         $goal = $this->goal($user);
-        Trail::factory()->easy()->create();
-        Trail::factory()->highlyTechnical()->create();
+        Trail::factory()->published()->easy()->create();
+        Trail::factory()->published()->highlyTechnical()->create();
 
         $run = app(RouteFitService::class)->recommend($user, $goal);
 

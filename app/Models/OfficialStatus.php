@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\OfficialStatusValue;
 use App\Enums\StatusScope;
+use App\Exceptions\PublicationGateViolation;
 use App\Services\OfficialStatusService;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -80,6 +81,23 @@ class OfficialStatus extends Model
         // tercakup, penutupan jalur tidak boleh tertahan di cache sampai TTL habis.
         static::saved(fn (self $status) => $status->forgetAffectedTrailCaches());
         static::deleted(fn (self $status) => $status->forgetAffectedTrailCaches());
+
+        // R-022 sebagai invariant keadaan: jalur terbit tidak boleh kehilangan catatan
+        // status resmi terakhirnya. Penghapusan terjadi di model ini, bukan di Trail,
+        // sehingga penjaga di sana buta terhadapnya.
+        static::deleting(function (self $status): void {
+            $trail = $status->statusable;
+
+            if (! $trail instanceof Trail || ! $trail->is_published) {
+                return;
+            }
+
+            if ($trail->officialStatuses()->count() > 1) {
+                return;
+            }
+
+            throw new PublicationGateViolation($trail, ['Status resmi belum pernah dicatat.']);
+        });
     }
 
     private function forgetAffectedTrailCaches(): void

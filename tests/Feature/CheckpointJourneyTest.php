@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Checkpoint;
+use App\Models\DataSource;
+use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,7 +48,7 @@ class CheckpointJourneyTest extends TestCase
      */
     public function test_the_climb_between_two_posts_is_named(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->pos($trail, 1, 'Basecamp', 1200);
         $this->pos($trail, 2, 'Pos 1', 1520);
 
@@ -57,7 +59,7 @@ class CheckpointJourneyTest extends TestCase
 
     public function test_a_descent_between_two_posts_is_named_as_a_descent(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->pos($trail, 1, 'Puncak Bayangan', 2800);
         $this->pos($trail, 2, 'Sabana', 2650);
 
@@ -70,7 +72,7 @@ class CheckpointJourneyTest extends TestCase
      */
     public function test_the_distance_between_two_posts_is_computed_from_their_coordinates(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->pos($trail, 1, 'Basecamp', 1200, -7.4500, 110.4400);
         $this->pos($trail, 2, 'Pos 1', 1520, -7.4600, 110.4400);
 
@@ -84,7 +86,7 @@ class CheckpointJourneyTest extends TestCase
      */
     public function test_a_missing_elevation_produces_no_claim_at_all(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->pos($trail, 1, 'Basecamp', 1200);
         $this->pos($trail, 2, 'Pos 1', null);
 
@@ -96,7 +98,7 @@ class CheckpointJourneyTest extends TestCase
 
     public function test_a_missing_coordinate_produces_no_distance_claim(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->pos($trail, 1, 'Basecamp', 1200, -7.45, 110.44);
         $this->pos($trail, 2, 'Pos 1', 1520);
 
@@ -111,7 +113,7 @@ class CheckpointJourneyTest extends TestCase
      */
     public function test_the_posts_follow_their_sequence(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->pos($trail, 2, 'Pos Kedua', 1500);
         $this->pos($trail, 1, 'Pos Pertama', 1200);
 
@@ -130,7 +132,7 @@ class CheckpointJourneyTest extends TestCase
      */
     public function test_the_connecting_line_is_hidden_from_screen_readers(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $this->pos($trail, 1, 'Basecamp', 1200);
         $this->pos($trail, 2, 'Pos 1', 1520);
 
@@ -139,8 +141,17 @@ class CheckpointJourneyTest extends TestCase
 
     public function test_a_single_post_has_no_between_to_describe(): void
     {
-        $trail = Trail::factory()->easy()->create();
+        // Diterbitkan setelah posnya sendiri ada, supaya gerbang publikasi terpenuhi
+        // tanpa checkpoint perancah dari factory: test ini justru tentang satu pos.
+        $trail = Trail::factory()->easy()->create([
+            'data_source_id' => DataSource::factory()->create()->id,
+        ]);
         $this->pos($trail, 1, 'Basecamp', 1200);
+        OfficialStatus::factory()->create([
+            'statusable_type' => $trail->getMorphClass(),
+            'statusable_id' => $trail->getKey(),
+        ]);
+        $trail->refresh()->update(['is_published' => true]);
 
         $this->buka($trail)
             ->assertOk()

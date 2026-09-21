@@ -34,7 +34,7 @@ class CheckpointPaceDisplayTest extends TestCase
     {
         parent::setUp();
 
-        $this->trail = Trail::factory()->easy()->create();
+        $this->trail = Trail::factory()->published()->easy()->create();
 
         $this->pos1 = Checkpoint::factory()->for($this->trail)->create([
             'sequence' => 1, 'name' => 'Pos 1', 'latitude' => -7.4500, 'longitude' => 110.4400,

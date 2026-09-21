@@ -41,9 +41,17 @@ class PublicTrailPageTest extends TestCase
     {
         $gunung = Mountain::factory()->create(['name' => 'Merbabu', 'province' => 'Jawa Tengah']);
 
-        $trail = Trail::factory()->easy()->for($gunung)->create([
+        // Gerbang publikasi kini invariant model, jadi jalur tak terbit memang tidak
+        // boleh melewati published(). Statenya dipasang hanya ketika jalurnya memang
+        // terbit, dan kolomnya tidak lagi disetel langsung.
+        $pabrik = Trail::factory()->easy()->for($gunung);
+
+        if ($terbit) {
+            $pabrik = $pabrik->published();
+        }
+
+        $trail = $pabrik->create([
             'name' => 'Jalur Selo',
-            'is_published' => $terbit,
             'archived_at' => $diarsipkan ? now() : null,
             'elevation_gain_m' => 1400,
         ]);
@@ -192,9 +200,8 @@ class PublicTrailPageTest extends TestCase
     public function test_the_summary_omits_zero_distance_instead_of_printing_it(): void
     {
         $gunung = Mountain::factory()->create(['name' => 'Merbabu', 'province' => 'Jawa Tengah']);
-        $trail = Trail::factory()->easy()->for($gunung)->create([
+        $trail = Trail::factory()->published()->easy()->published()->for($gunung)->create([
             'name' => 'Jalur Selo',
-            'is_published' => true,
             'distance_km' => 0,
         ]);
 

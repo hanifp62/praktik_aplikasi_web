@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Enums\CheckpointType;
+use App\Exceptions\PublicationGateViolation;
 use App\Models\Checkpoint;
 use App\Models\Trail;
 use App\Services\AuditLogService;
@@ -133,13 +134,36 @@ class CheckpointManager extends Component
         $audit->record(auth()->user(), 'checkpoint.reordered', $checkpoint, ['sequence' => $original], ['sequence' => $checkpoint->sequence]);
     }
 
+    /**
+     * Menghapus checkpoint, dengan dua urutan yang penting.
+     *
+     * Pertama, jejak audit ditulis setelah penghapusan berhasil, bukan sebelumnya.
+     * Urutan lama tidak berbahaya selama delete() praktis tidak pernah gagal; sejak
+     * gerbang publikasi menjadi invariant keadaan, ia dapat menulis "checkpoint.deleted"
+     * untuk penghapusan yang ditolak, dan jejak audit yang berbohong lebih buruk
+     * daripada tidak ada jejak sama sekali.
+     *
+     * Kedua, penolakan penjaga adalah keputusan domain, bukan kerusakan sistem. Admin
+     * berhak membaca alasannya beserta langkah berikutnya, bukan halaman 500.
+     */
     public function delete(int $id, AuditLogService $audit): void
     {
         $this->authorize('update', $this->trail);
 
         $checkpoint = $this->trail->checkpoints()->findOrFail($id);
-        $audit->record(auth()->user(), 'checkpoint.deleted', $checkpoint, $checkpoint->toArray(), null);
-        $checkpoint->delete();
+        $sebelum = $checkpoint->toArray();
+
+        try {
+            $checkpoint->delete();
+        } catch (PublicationGateViolation) {
+            session()->flash('penolakan', 'Checkpoint terakhir tidak dapat dihapus selama jalur '
+                .'masih dipublikasikan. Turunkan jalur ke DRAFT terlebih dahulu.');
+
+            return;
+        }
+
+        $audit->record(auth()->user(), 'checkpoint.deleted', $checkpoint, $sebelum, null);
+        session()->flash('status', 'Checkpoint dihapus.');
     }
 
     private function resetForm(): void

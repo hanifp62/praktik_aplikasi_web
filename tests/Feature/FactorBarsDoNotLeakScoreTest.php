@@ -44,7 +44,7 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
         // Elevation gain jauh di atas pengalaman yang diisi memaksa mesin menghasilkan
         // skor berkoma. Tanpa itu semua faktor bernilai 0 atau 1, seluruh perulangan
         // pemeriksaan dilewati, dan testnya lolos tanpa memeriksa apa pun.
-        Trail::factory()->easy()->create(['elevation_gain_m' => 1600]);
+        Trail::factory()->published()->easy()->create(['elevation_gain_m' => 1600]);
         $goal = HikingGoal::factory()->create(['user_id' => $user->id, 'trip_type' => 'CAMPING', 'region' => null]);
 
         return [$user, app(RouteFitService::class)->recommend($user, $goal)];

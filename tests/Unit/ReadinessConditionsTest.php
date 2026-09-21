@@ -129,7 +129,7 @@ class ReadinessConditionsTest extends TestCase
         $user->profile()->create(['experience_level' => ExperienceLevel::ADVANCED->value, 'completed_at' => now()]);
 
         $mountain = Mountain::factory()->create();
-        $trail = Trail::factory()->for($mountain)->easy()->create(['weather_adm4_code' => '35.07.17.2002']);
+        $trail = Trail::factory()->published()->for($mountain)->easy()->create(['weather_adm4_code' => '35.07.17.2002']);
 
         OfficialStatus::factory()->create([
             'statusable_type' => (new Trail)->getMorphClass(),

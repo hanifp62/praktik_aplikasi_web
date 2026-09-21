@@ -40,7 +40,7 @@ class ArchivedTrailInOldRunTest extends TestCase
         $user->preference()->create(['preferred_duration' => 'ONE_DAY', 'preferred_trip_type' => 'CAMPING']);
         $user = $user->fresh();
 
-        $trail = Trail::factory()->easy()->create();
+        $trail = Trail::factory()->published()->easy()->create();
         $goal = HikingGoal::factory()->create(['user_id' => $user->id, 'trip_type' => 'CAMPING', 'region' => null]);
 
         return [$user, app(RouteFitService::class)->recommend($user, $goal), $trail];

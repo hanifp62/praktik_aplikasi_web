@@ -46,7 +46,7 @@ class ComparisonAsCostTest extends TestCase
 
     private function jalur(): Trail
     {
-        return Trail::factory()->for(Mountain::factory()->create())->create(['is_published' => true]);
+        return Trail::factory()->for(Mountain::factory()->create())->published()->create();
     }
 
     /**
@@ -119,7 +119,7 @@ class ComparisonAsCostTest extends TestCase
     {
         $user = $this->pendaki();
         $a = Trail::factory()->for(Mountain::factory()->create())
-            ->create(['is_published' => true, 'distance_km' => 0, 'elevation_gain_m' => 500]);
+            ->published()->create(['distance_km' => 0, 'elevation_gain_m' => 500]);
         $b = $this->jalur();
 
         $halaman = $this->actingAs($user)

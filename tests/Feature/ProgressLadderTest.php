@@ -34,7 +34,7 @@ class ProgressLadderTest extends TestCase
     {
         return Trail::factory()
             ->for(Mountain::factory()->create())
-            ->create(['is_published' => true, 'elevation_gain_m' => $tanjakan]);
+            ->published()->create(['elevation_gain_m' => $tanjakan]);
     }
 
     /**
@@ -161,7 +161,7 @@ class ProgressLadderTest extends TestCase
         // Riwayat: gunung rendah (2000 mdpl) tapi tanjakannya berat (1400 m).
         $sudahDidaki = Trail::factory()
             ->for(Mountain::factory()->create(['elevation_mdpl' => 2000]))
-            ->create(['is_published' => true, 'elevation_gain_m' => 1400]);
+            ->published()->create(['elevation_gain_m' => 1400]);
 
         HikingHistory::factory()->for($user)->create([
             'trail_id' => $sudahDidaki->id,
@@ -172,7 +172,7 @@ class ProgressLadderTest extends TestCase
         // Kandidat: gunung lebih tinggi (3000 mdpl) tapi tanjakannya ringan (700 m).
         $kandidat = Trail::factory()
             ->for(Mountain::factory()->create(['elevation_mdpl' => 3000]))
-            ->create(['is_published' => true, 'elevation_gain_m' => 700]);
+            ->published()->create(['elevation_gain_m' => 700]);
 
         $kalimat = app(ProgressLadderService::class)->bandingkanDenganRiwayat($user, $kandidat);
 

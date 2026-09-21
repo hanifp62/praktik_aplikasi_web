@@ -92,7 +92,12 @@ class TrailPublishGateTest extends TestCase
     {
         $trail = $this->completeTrail();
         $trail->update(['is_published' => true]);
-        $trail->update(['data_source_id' => null]);
+
+        // G1(A) membuat kemunduran ini mustahil lewat jalur model: penjaga menolaknya.
+        // Yang diuji di sini adalah penandaan bagi baris yang telanjur ada dalam keadaan
+        // itu, persis seperti tujuh jalur di basis data sungguhan. saveQuietly() dipakai
+        // sadar untuk mereproduksinya, dan tidak boleh ditiru di kode produksi.
+        $trail->forceFill(['data_source_id' => null])->saveQuietly();
 
         Livewire::actingAs($this->admin())
             ->test(TrailManager::class)
