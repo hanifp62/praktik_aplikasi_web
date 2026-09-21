@@ -323,7 +323,12 @@ MVP tidak bertujuan menjadi:
 - advanced navigation platform;
 - offline navigation platform;
 - wearable platform;
-- autonomous AI safety system.
+- autonomous AI safety system;
+- mountain CRUD;
+- direktori wisata generik;
+- aplikasi GPS semata;
+- aplikasi ulasan semata;
+- tiruan AllTrails, Traveloka, atau Strava.
 
 ---
 
@@ -351,6 +356,21 @@ HIKER
     ▼
  CONDITIONS
 ```
+
+## Field per entitas
+
+**Mountain:** identity; region; elevation; location; management area; description;
+source.
+
+**Trail:** mountain_id; name/via; geometry; distance; elevation gain/loss; duration;
+terrain; physical demand; technical demand; navigation complexity; camping dan water
+characteristics; weather reference area; source/verification.
+
+**Segment:** trail_id; sequence; geometry; terrain; technical level; navigation
+complexity; distance/elevation; notes.
+
+**Checkpoint:** trail atau segment; sequence; coordinate; elevation; distance from
+start; estimated time; notes.
 
 ---
 
@@ -388,7 +408,10 @@ Setiap trail dapat mempunyai:
 - water availability;
 - route geometry;
 - checkpoint;
-- segment characteristics.
+- segment characteristics;
+- physical demand;
+- mountain_id sebagai relasi ke gunungnya;
+- source dan verification state.
 
 ---
 
@@ -759,6 +782,24 @@ Tujuan:
 - audit;
 - research.
 
+Konteks yang dipersistenkan agar sebuah rekomendasi dapat direproduksi:
+
+```text
+engine_version
+rule/config version
+profile snapshot
+goal snapshot
+trail snapshot
+condition snapshot yang relevan
+evaluated rules
+matched factors
+warnings
+generated_at
+```
+
+Snapshot yang identik dengan konfigurasi yang identik harus menghasilkan klasifikasi
+yang konsisten.
+
 ---
 
 # 32. FR-05 RECOMMENDATION RESULT
@@ -805,6 +846,11 @@ Comparison tidak menghasilkan:
 
 Sistem hanya membantu user memahami perbedaan.
 
+**Maximum compare set: 5 trails.**
+
+Batas ini adalah parameter perilaku fitur comparison dan mengikat baik antarmuka maupun
+sisi server.
+
 ---
 
 # 34. FR-07 TRAIL DETAIL
@@ -848,6 +894,15 @@ Fields:
 - trip type;
 - notes.
 
+Keenam state di atas adalah **closed set**. Tidak ada state trip di luar daftar tersebut.
+
+Transisi yang tidak sah **wajib ditolak**. Penolakan bukan anjuran; ia adalah perilaku
+yang mengikat.
+
+Penegakan dilakukan **server-side**, mengikuti alur
+`Request → Validation → Controller → Domain Service`. Pembatasan di antarmuka saja tidak
+memenuhi ketentuan ini.
+
 ---
 
 # 36. FR-09 PREPARATION PLAN
@@ -888,6 +943,14 @@ Categories:
 ### Official Status
 
 - latest status checked.
+
+### General Physical Preparation
+
+- kondisi fisik umum menjelang keberangkatan;
+- pengalaman terakhir yang relevan dengan beban rute ini.
+
+Kategori ini bersifat persiapan, bukan penilaian medis. Sistem tidak menyatakan pengguna
+sehat, bugar, atau layak secara medis (§40).
 
 ---
 
@@ -1262,6 +1325,17 @@ Minimal information.
 
 Tujuannya mengurangi cognitive load ketika user sedang bergerak.
 
+**Plan Mode** biasanya terjadi di rumah atau kampus, dengan koneksi stabil, perhatian
+penuh, dan tujuan membandingkan. Ia boleh menampilkan filter, perbandingan, informasi
+rute rinci, grafik, persiapan, dan riwayat.
+
+**Hike Mode** terjadi di lapangan: layar tersilau matahari, satu tangan memegang
+perangkat, badan lelah, perhatian terbatas, sinyal lemah, baterai menipis. Ia hanya
+menampilkan posisi saat ini bila izin diberikan, rute, checkpoint berikutnya, jarak,
+peringatan kritis, dan informasi esensial.
+
+Hike Mode tidak boleh menjelma menjadi dasbor mini.
+
 ---
 
 # 55. MAP POLICY
@@ -1396,6 +1470,18 @@ Contoh:
 > Verified: 18 Sep 2026  
 > Scope: Jalur B  
 > Status: OPEN
+
+Granularitas timestamp dipisah, bukan satu kolom:
+
+```text
+retrieved_at   — kapan sistem mengambilnya
+published_at   — kapan sumber menerbitkannya, bila tersedia
+verified_at    — kapan admin memverifikasinya
+```
+
+`source URL` disimpan ketika sumbernya punya alamat yang dapat dirujuk. Freshness state
+(CURRENT / AGING / STALE / UNKNOWN) ada di §93, dan ambangnya ditentukan per sumber:
+tidak ada satu ambang universal untuk semua jenis data (§59).
 
 ---
 
@@ -1670,6 +1756,17 @@ Request
 → Service
 → Response
 ```
+
+Selain tujuh service di atas, batas domain berikut juga berlaku:
+
+```text
+RecommendationService
+ProgressService
+DataSourceService
+```
+
+Aturan yang mengikat: business rule berukuran besar tidak diletakkan di dalam
+controller, Blade template, atau kode klien ad-hoc.
 
 ---
 
@@ -2207,6 +2304,31 @@ Monitor:
 - recommendation success;
 - report success.
 
+### Product telemetry — nama event
+
+```text
+recommendation.generated
+recommendation.empty
+recommendation.fallback
+trail.selected
+consideration.created
+trip.created
+readiness.completed
+weather.refresh.success
+weather.refresh.failed
+official_status.refresh.success
+official_status.refresh.failed
+report.submitted
+report.approved
+report.rejected
+trip.completed
+```
+
+Nama di atas adalah kontrak; §62 FR-20 menyebut peristiwa yang sama dalam bahasa
+manusia. Laravel Pulse dipakai bila berguna, dan Horizon/Redis ketika kompleksitas
+antrean memang menuntutnya. Perkakas observability tidak ditambahkan sekadar demi
+penampilan.
+
 ---
 
 # 100. TESTING STRATEGY
@@ -2412,6 +2534,10 @@ System:
 20. Audit
 21. Security
 22. Testing
+23. Trail segment
+24. Basic route visualization
+25. Pertimbangkan — save, shortlist, compare (maksimum 5 trail), read-only sharing
+26. Personal progress
 
 ---
 
@@ -2419,11 +2545,11 @@ System:
 
 1. Basic Hike Mode
 2. Basic GPS
-3. Route comparison
+3. Checkpoint field support
 4. Photo reports
 5. PWA installability
 6. Elevation profile
-7. Saved routes
+7. Richer field interaction
 
 ---
 
@@ -3075,6 +3201,12 @@ External data selalu memiliki source + timestamp.
 
 Weather location direpresentasikan sebagai reference area, bukan otomatis kondisi puncak.
 
+## BR-16
+
+Konten tipis hasil AI tidak boleh diproduksi dalam skala besar untuk manipulasi kata
+kunci pencarian. Halaman publik harus ditulis untuk pembaca yang benar-benar merencanakan
+pendakian, bukan untuk mesin pencari.
+
 ---
 
 # 133. FINAL MVP USER JOURNEY
@@ -3345,7 +3477,13 @@ Curated 5–10 mountains.
 
 ### MVP boundary
 
-**FIXED**
+**DIAMANDEMEN — lihat §146 GR-01.**
+
+Batas MVP tidak lagi berstatus FIXED tanpa syarat. Ia diubah satu kali atas keputusan
+pemilik produk untuk memasukkan Pertimbangkan (save, shortlist, compare maks 5,
+read-only sharing), Trail segment, Basic route visualization, dan Personal progress ke
+dalam §105. Perubahan berikutnya atas batas MVP tetap memerlukan governance record §130
+dan persetujuan pemilik.
 
 ### Remaining work
 
@@ -3364,3 +3502,169 @@ Dan satu filter terakhir untuk setiap fitur:
 > **“Apakah fitur ini meningkatkan FIT, PREPARE, CHECK, HIKE, atau REPORT?”**
 
 Jika tidak, fitur tersebut berada di luar MVP.
+
+---
+
+# 145. FR-21 INFORMATION ARCHITECTURE & PRODUCT SURFACES
+
+Ditambahkan di ekor agar penomoran section §1–§144 dan FR-01–FR-20 tetap utuh, dan
+seluruh cross-reference `(§nn)` yang sudah ada tidak berubah. Sumbernya adalah
+`CLAUDE.md` §6 dan §47, dipindahkan atas keputusan pemilik produk (D2, D7-A).
+
+## 145.1 Lima permukaan produk
+
+Navigasi produk terdiri atas lima permukaan. Setiap permukaan menjawab satu pertanyaan
+pengguna, memiliki cakupan sendiri, dan memiliki batas negatif yang mengikat.
+
+### JELAJAH
+
+**User question:**
+
+> "Apa yang tersedia dan mana yang relevan?"
+
+**Scope:**
+
+- search;
+- filter;
+- discovery;
+- recommendation;
+- Route Fit;
+- trail detail;
+- basic route visualization.
+
+**Negative boundary:**
+
+Jelajah tidak memutuskan untuk pengguna. Ia menyajikan kandidat beserta alasannya.
+
+### PERTIMBANGKAN
+
+**User question:**
+
+> "Pilihan mana yang benar-benar ingin saya pertimbangkan?"
+
+**Scope:**
+
+- save;
+- shortlist;
+- compare, dengan **maximum compare set: 5 trails** (§33 FR-06);
+- remove;
+- catatan opsional bila diimplementasikan;
+- read-only comparison sharing.
+
+**Negative boundary:**
+
+Comparison tidak menghasilkan "winner" (§33). Shared comparison bersifat read-only dan
+tidak pernah menulis ke shortlist privat pengguna lain.
+
+### PERJALANAN
+
+**User question:**
+
+> "Bagaimana saya merencanakan dan mempersiapkannya?"
+
+**Scope:**
+
+- trip;
+- tanggal dan waktu;
+- trip type;
+- preparation (§36);
+- readiness (§38);
+- pre-departure check.
+
+**Negative boundary:**
+
+Readiness adalah decision support, bukan medical atau legal clearance (§40).
+
+### KABAR
+
+**User question:**
+
+> "Apa kondisi terkini dan mana yang dapat dipercaya?"
+
+**Scope:**
+
+- official status (§41);
+- weather context (§44);
+- recent conditions;
+- community reports (§48);
+- freshness dan source (§59, §93).
+
+**Negative boundary:**
+
+**Kabar bukan feed sosial generik.** Ia adalah intel kondisi jalur. Laporan komunitas
+tidak pernah menggantikan status resmi (§50, BR-06).
+
+### PROGRES
+
+**User question:**
+
+> "Bagaimana perkembangan saya?"
+
+**Scope:**
+
+- hiking history (§52);
+- progresi pribadi;
+- completed routes;
+- elevation gain progression;
+- route complexity progression.
+
+**Negative boundary:**
+
+Progres adalah perbandingan terhadap diri sendiri. Riwayat tidak otomatis menaikkan
+experience level (BR-11), dan kuantitas kontribusi bukan metrik inti.
+
+## 145.2 Struktur URL publik
+
+Struktur berikut mengikat routing, canonical URL, dan tautan internal.
+
+```text
+/gunung/{slug}
+/gunung/{slug}/via/{trail}
+/panduan/{topic}
+/kondisi/{trail}
+```
+
+Struktur ini mencerminkan model domain Mountain → Trail (BR-01): gunung dan jalur
+memiliki alamat sendiri, dan jalur tidak diperlakukan sebagai anak yang tak beralamat.
+
+---
+
+# 146. GOVERNANCE RECORD — PERUBAHAN PRD
+
+Setiap perubahan PRD mencatat tujuh hal sesuai §130.
+
+## GR-01 — Pertimbangkan dipindahkan dari MVP+ ke MVP
+
+**Requirement changed.**
+§105 menerima Trail segment, Basic route visualization, Pertimbangkan (save, shortlist,
+compare maks 5, read-only sharing), dan Personal progress. §106 melepas Route comparison
+dan Saved routes, dan menerima Checkpoint field support serta Richer field interaction
+agar setara dengan cakupan MVP+ yang sudah disepakati. §143 diamandemen karena MVP
+boundary sebelumnya berstatus FIXED.
+
+**Reason.**
+Keputusan pemilik produk (D3). `CLAUDE.md` §31 sejak awal menempatkan Pertimbangkan di
+MVP sementara §106 menempatkannya di MVP+; kedua dokumen berkonflik. Keadaan kode
+memihak posisi MVP: timbangan maksimum 5, lintas perangkat, dan halaman perbandingan
+sudah terbangun. Pertimbangkan juga merupakan satu dari lima permukaan navigasi (§145),
+sehingga membiarkannya opsional akan melemahkan arsitektur informasi produk.
+
+**Impact.**
+Batas MVP melebar. Definition of Done MVP kini mencakup save, shortlist, compare, dan
+read-only sharing. Tidak ada fitur yang dikeluarkan dari MVP.
+
+**Affected modules.**
+Consideration, Discovery, Progress, dan Trail detail. Tidak ada perubahan pada
+Recommendation, Trip, Preparation, Readiness, Condition, maupun Administration.
+
+**Security impact.**
+Tidak ada permukaan baru. Read-only sharing sudah tunduk pada object-level authorization
+(§77); sifat read-only-nya ditegaskan kembali di §145.1 dan tidak berubah.
+
+**Data impact.**
+Tidak ada perubahan skema. Tabel dan relasi yang dibutuhkan sudah ada.
+
+**Scope impact.**
+Tidak ada penambahan fitur baru. Perubahan ini memindahkan fitur yang sudah dibangun ke
+klasifikasi yang benar, sehingga §131 Feature Gate tidak dilanggar: Pertimbangkan
+memenuhi kriteria 1 (meningkatkan route selection).

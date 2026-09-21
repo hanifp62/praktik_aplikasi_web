@@ -38,6 +38,34 @@ laporan sesama pendaki (§92). Ketiadaan data dinyatakan sebagai UNKNOWN dan tid
 dianggap BUKA (§95). Penilaian kecocokan dijelaskan per faktor, dan skor internalnya
 tidak pernah ditampilkan sebagai angka (BR-09).
 
+## Growth
+
+Pemasaran adalah bagian dari rancangan produk, bukan lapisan yang ditempel setelahnya.
+Kontrak SEO teknisnya ada di `docs/ARCHITECTURE.md`; struktur URL publiknya ada di
+`PRD.md` §145.2. Bagian ini hanya soal strategi.
+
+**Corong.**
+
+```text
+SEARCH → HALAMAN JALUR PUBLIK → ROUTE FIT → SHORTLIST → TRIP
+       → HIKE → REPORT → PROGRESS → SHARE → PENGGUNA BARU
+```
+
+Corong ini menutup lingkaran: pendaki yang selesai melapor menghasilkan bahan yang
+membuat halaman publik berguna bagi pendaki berikutnya. Pertumbuhan datang dari
+kegunaan, bukan dari volume halaman.
+
+**Halaman publik yang masuk akal.** Halaman gunung, halaman jalur/via, halaman
+kawasan atau niat pencarian, panduan persiapan, dan ringkasan kondisi terkini bila
+datanya memang ada. Ditulis untuk orang yang sedang merencanakan pendakian sungguhan.
+
+**Mekanisme pertumbuhan.** Pencarian organik; berbagi perbandingan; data komunitas;
+kemitraan kampus dan komunitas luar ruang; progresi pribadi; perencanaan berulang.
+
+**Yang tidak dikejar.** Trafik sia-sia. Kunjungan yang tidak pernah sampai ke Route Fit
+tidak dihitung sebagai keberhasilan, dan tidak ada mekanisme pertumbuhan yang boleh
+mengorbankan kepercayaan data atau melunakkan bahasa keselamatan.
+
 ## Operating Context
 
 - **Tidak ada sinyal di hampir seluruh gunung Indonesia.** Ini menentukan rancangan,
@@ -111,3 +139,102 @@ menjadi satu-satunya pembawa arti; peta memakai `role="region"` dengan padanan t
 tidak pernah `role="img"`; setiap grafik membawa rangkuman angkanya sebagai teks.
 
 Ponsel adalah platform utama (§88), termasuk peranti kelas bawah di jaringan lambat.
+
+## Prioritas dan peran
+
+Urutan prioritas pemilik produk, dan urutan ini mengikat ketika dua kebutuhan
+bertabrakan:
+
+1. IMK/HCI;
+2. UI/UX;
+3. logika produk dan arsitektur informasi;
+4. arsitektur dan skalabilitas;
+5. keamanan, privasi, kepatuhan;
+6. keandalan dan penanganan kegagalan;
+7. kesiapan operasional dan observability;
+8. manajemen dan konsistensi data;
+9. pemasaran, SEO, pertumbuhan.
+
+Agen yang mengerjakan produk ini menggabungkan peran lead engineer, perancang UI/UX,
+perancang produk, software engineer, QA/audit engineer, peninjau keamanan dan privasi,
+serta technical product manager. Sasarannya mutu berkelas perusahaan, bukan kerumitan
+berkelas perusahaan.
+
+## ATM — Amati, Tiru, Modifikasi
+
+Cara belajar dari produk yang sudah terbukti. Sasarannya bukan kemiripan visual,
+melainkan dampak IMK/UI/UX dan dukungan keputusan yang setara atau lebih baik.
+
+**Amati.** Pelajari masalah yang dipecahkan, konteks pemakaian, model mental pengguna,
+pola interaksi, hierarki informasi, mekanisme keputusan, umpan balik, mekanisme
+kepercayaan, mekanisme retensi, batasan operasional, dan efek UX yang terukur.
+
+**Tiru.** Ambil hanya mekanisme atau prinsip yang mendasarinya. **Jangan** menyalin
+merek, warna dan identitas visual, tata letak per piksel, teks milik orang lain, kode
+sumber, atau asumsi yang hanya berlaku di domain lain.
+
+**Modifikasi.** Sesuaikan dengan pendakian gunung Indonesia: pengguna lokal, model
+domain Mountain ≠ Trail, konsep via dan basecamp, status resmi, kenyataan data cuaca,
+konteks luar ruang dan seluler, koneksi lemah, sensitivitas lokasi, laporan kondisi
+komunitas, persiapan, dan masalah produk yang sebenarnya.
+
+Jangan menambahkan fitur pesaing semata-mata karena pesaing memilikinya.
+
+## Rujukan dan apa yang diambil
+
+**AllTrails — kepercayaan lewat konteks.** Mekanisme yang dipelajari: penemuan jalur,
+penyaringan, karakteristik rute, kondisi, ulasan sebagai intelijen komunitas, rute
+tersimpan. Efek yang dituju: *"Saya memahami ongkos dan konteks jalur sebelum
+berangkat."* Adaptasinya: jarak, elevation gain/loss, durasi, medan, tuntutan teknis,
+kompleksitas navigasi, konteks segmen dan checkpoint, status resmi, konteks cuaca,
+kondisi terbaru, dan celah persiapan.
+
+**Traveloka — kemudahan memutuskan.** Mekanisme: pencarian, filter, penyimpanan,
+perbandingan, penyempitan pilihan, menunda komitmen tanpa kehilangan kandidat. Efek yang
+dituju: *"Saya dapat mempersempit pilihan, menyimpan kandidat, membandingkan, lalu
+memutuskan."* Adaptasinya: permukaan Pertimbangkan, shortlist, perbandingan maksimum
+lima, berbagi read-only, dan membuat trip dari jalur terpilih.
+
+**Strava — kesinambungan dan kemajuan pribadi.** Mekanisme: siklus hidup aktivitas,
+riwayat, perbandingan dengan diri sendiri, penemuan rute, komunitas, alasan untuk
+kembali. Efek yang dituju: *"Pengalaman sebelumnya berharga dan saya dapat melihat
+perkembangan diri saya."* Adaptasinya: riwayat pendakian dan progresi elevation gain,
+jarak, durasi, serta paparan kompleksitas rute. Kuantitas kontribusi tidak dijadikan
+metrik papan peringkat inti.
+
+## Model kerja IMK
+
+Alur: riset → konteks pemakaian → arsitektur informasi → perancangan interaksi →
+prototipe → uji kegunaan → iterasi → implementasi → pengukuran. Protokol ujinya ada di
+`docs/PROTOKOL-UJI-KEGUNAAN.md`.
+
+Tiga hal yang tidak boleh disamakan:
+
+- kilau visual bukan kegunaan;
+- banyaknya fitur bukan mutu produk;
+- CSS responsif bukan UX seluler yang baik, dan test hijau bukan kebenaran produksi.
+
+Prinsip intinya: progressive disclosure; explainability; transparansi sumber; tanpa
+false precision; interaksi sadar konteks; beban kognitif rendah di mode lapangan;
+mobile-first; aksesibilitas sejak perancangan; state yang dapat diduga; serta state
+kosong, galat, dan fallback yang bermakna.
+
+## Hasil UX yang diukur
+
+Enam hasil yang dituju, dan semuanya masih hipotesis sampai divalidasi:
+
+1. **Discoverability** — pengguna menemukan jalur yang relevan.
+2. **Comprehension** — pengguna memahami karakteristik jalur.
+3. **Comparability** — pengguna melihat trade-off.
+4. **Confidence** — pengguna memahami alasannya dan sumbernya.
+5. **Preparedness** — pengguna tahu apa yang masih kurang.
+6. **Continuity** — pengguna memahami progresinya dan punya alasan untuk kembali.
+
+Target validasi yang diusulkan: efektivitas keputusan ≥90% peserta memilih jalur relevan
+tanpa intervensi moderator; pemahaman keputusan ≥80% menyebut dua alasan rekomendasi
+dengan benar; efisiensi perbandingan ≥80% membandingkan tiga jalur dalam dua menit pada
+uji yang ditentukan; pemahaman kepercayaan ≥90% membedakan informasi resmi dari
+komunitas; SUS ≥80 untuk studi yang ditentukan.
+
+**Angka-angka ini tidak boleh dikarang.** Selama studinya belum dijalankan, ia target,
+bukan hasil.

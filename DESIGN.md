@@ -169,16 +169,16 @@ dan tidak boleh secara default digantikan oleh foto komunitas yang tidak terveri
 
 ---
 
-# UNOWNED LEGACY RULE — NEEDS PRODUCT DISPOSITION
+# LEGACY RULE — DISPOSISI SELESAI
 
-Dua batasan berikut hidup di CLAUDE.md dan **tidak terwakili** oleh R-001–R-024 mana pun.
-Keduanya dicatat di sini agar tidak hilang saat pruning. Keduanya **bukan** canonical
-rule, tidak diberi nomor R-xxx, dan menunggu keputusan ownership terpisah dari pemilik
-produk.
+Dua batasan berikut sebelumnya hidup di CLAUDE.md tanpa owner. Keduanya kini sudah
+mendapat disposisi dari pemilik produk, dan catatan ini disimpan sebagai jejak keputusan.
+Keduanya **bukan** aturan canonical milik berkas ini dan tidak diberi nomor R-xxx.
 
-| Batasan | Lokasi sekarang | Status |
+| Batasan | Owner sekarang | Disposisi |
 |---|---|---|
-| Comparison maksimum 5 Trail | CLAUDE.md §26 | UNOWNED LEGACY RULE — NEEDS PRODUCT DISPOSITION |
-| Larangan sertifikasi keahlian otomatis dari satu trip | CLAUDE.md §27 | UNOWNED LEGACY RULE — NEEDS PRODUCT DISPOSITION |
+| Comparison maksimum 5 Trail | `PRD.md` §33 FR-06 | Dipindahkan. Ia parameter perilaku fitur, bukan prinsip global, sehingga tidak dibebankan ke registry BR |
+| Larangan sertifikasi keahlian otomatis dari satu trip | `PRD.md` BR-11 | Dinyatakan sudah tercakup. BR-11 ("User history tidak otomatis menaikkan experience level") lebih luas dan memuatnya penuh; tidak ada BR baru dibuat |
 
-Teks aslinya di CLAUDE.md tidak disentuh pada fase ini.
+Tiga kemunculan batasan pertama di CLAUDE.md (§26, §3.2, §6) dan satu kemunculan
+batasan kedua (§27) dihapus setelah parity terhadap PRD terverifikasi.

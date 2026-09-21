@@ -74,7 +74,7 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 
 ## Aturan yang tidak boleh dilanggar
 
-Aturan berikut berasal dari PRD dan ada test yang menjaganya. Melanggarnya membuat suite merah.
+Sembilan aturan pertama berasal dari PRD dan ada test yang menjaganya: melanggarnya membuat suite merah. Aturan kesepuluh adalah aturan tata kelola yang tidak dapat dijaga suite, dan ditandai demikian.
 
 1. **Sistem tidak pernah menyatakan sesuatu aman.** Yang boleh dinyatakan adalah fakta bersumber: "Status resmi saat ini OPEN". (§40)
 2. **Skor numerik tidak pernah sampai ke klien.** `internal_score` hanya untuk peringkat dan audit. (§28)
@@ -85,6 +85,16 @@ Aturan berikut berasal dari PRD dan ada test yang menjaganya. Melanggarnya membu
 7. **Makna tidak pernah disampaikan lewat warna saja.** (§87)
 8. **Kegagalan sumber eksternal tidak memblokir alur.** BMKG yang tidak dapat dihubungi dilaporkan apa adanya, tetapi tidak menahan pengguna dari langkah inti. (§94)
 9. **Waktu disimpan UTC, ditampilkan dalam zona gunungnya** lengkap dengan penanda WIB/WITA/WIT. (§93)
+10. **Arsitekturnya adalah monolit modular, dan itu pilihan sadar.** Dua belas domain produk adalah batas modul, bukan batas layanan. Memecahnya menjadi layanan terpisah membutuhkan bukti kebutuhan yang terukur, bukan preferensi, dan membutuhkan persetujuan pemilik produk (R-021). *Aturan tata kelola, bukan aturan berpenjaga-test.*
+
+## Kontrak SEO teknis
+
+Ini kontrak engineering, bukan strategi pemasaran. Strategi pertumbuhan ada di `PRODUCT.md`; struktur URL publik ada di `PRD.md` §145.2.
+
+- **Metadata, canonical, sitemap, dan structured data hanya boleh merepresentasikan konten yang benar-benar tersedia dan terlihat di halaman.** Structured data yang mendeskripsikan sesuatu yang tidak dirender adalah klaim palsu kepada mesin pencari, dan sifatnya sama dengan mengarang data kepada pengguna.
+- **Tidak boleh ada SEO claim yang tidak sesuai dengan konten.** Judul, deskripsi, dan markup mengikuti apa yang halaman itu benar-benar tawarkan.
+- Halaman jalur yang datanya belum lengkap tidak dipromosikan sebagai lengkap. Gerbang publikasi §110 dan larangan mengarang data berlaku sama di lapisan metadata.
+- Larangan konten tipis hasil AI dalam skala besar ada di `PRD.md` BR-16.
 
 ## Yang belum ada
 
@@ -100,6 +110,8 @@ Dicatat terbuka supaya tidak terlupakan:
 Halaman galat ada di `resources/views/errors/`, berbahasa Indonesia, dan **tidak menyentuh basis data, sesi, maupun Livewire**: ia dirender justru ketika sesuatu sedang rusak. Font dari luar juga tidak dimuat, karena kalau jaringannya yang bermasalah, menunggunya hanya menunda pengguna membaca apa yang terjadi. Halaman 500 dan 503 mengarahkan pendaki yang sedang bersiap berangkat untuk memastikan status jalur langsung ke pengelola, bukan menunggu aplikasi pulih.
 
 **Menghapus jalur akan ikut menghapus laporan komunitasnya.** Seluruh foreign key ke `trails` memakai `CASCADE`. Saat ini tidak ada cara menghapus jalur dari antarmuka, hanya mengarsipkan, jadi risikonya belum terjangkau. Kalau suatu saat fitur hapus jalur ditambahkan, intel lapangan ikut hilang, dan itu bertentangan dengan keputusan pada penghapusan akun yang justru mempertahankan laporan tanpa nama pemiliknya.
+
+Keputusan penghapusan akun yang dimaksud ada di `docs/KEBIJAKAN-DATA-PRIBADI.md`, dan itulah canonical policy-nya. Berkas arsitektur ini hanya menunjuk ke sana; ia tidak memutuskan apa pun soal data pribadi.
 
 ## Catatan operasional
 
