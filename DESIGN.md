@@ -113,3 +113,72 @@ judul serta kartu tetap bebas darinya.
   produk ini ketepatan. Ia merusak nilai inti produknya sendiri.
 - **Mode gelap.** Belum diputuskan pemilik produk. Ia bukan pekerjaan yang ditunda
   melainkan keputusan yang belum diambil, dan berkas ini menunggu jawabannya.
+
+---
+
+# Aturan canonical (R-015–R-017)
+
+Berkas ini adalah **canonical owner** untuk R-015, R-016, dan R-017.
+
+**Provenance:** USER-PROVIDED CANONICAL SOURCE. Statement, Scope, dan Invariant disalin
+dari sumber canonical pemilik produk. Ketiganya bukan bagian **Turunan** di atas dan
+tidak boleh diperlakukan sebagai simpulan agen.
+
+**Transitional duplication:** CLAUDE.md §27, §26, dan §30 masih memuat representasi lama
+untuk ketiga rule ini, dan bagian *Yang tidak dikerjakan* di atas menyinggung papan
+peringkat kontribusi. Representasi-representasi itu berstatus PRESENT_NONCANONICAL dan
+dibiarkan utuh sampai pruning setelah reachability terbukti. Ketika berbeda, blok di
+bawah ini yang berlaku.
+
+---
+
+## R-015 | Progress adalah self-comparison
+
+**Statement.** Progress digunakan terutama untuk membandingkan perkembangan pengguna
+dengan riwayat dirinya sendiri; bukan leaderboard kontribusi sebagai inti pengalaman.
+
+**Scope.** Progress dashboard, history, achievement, analytics, dan personal development
+UX.
+
+**Invariant.** Progress harus berorientasi pada perkembangan individual, bukan ranking
+kontribusi antar pengguna sebagai core mechanic.
+
+---
+
+## R-016 | Comparison tidak memiliki winner
+
+**Statement.** Fitur comparison menyajikan trade-off dan perbedaan antar pilihan; sistem
+tidak menetapkan satu pilihan sebagai pemenang.
+
+**Scope.** Compare flow, comparison UI, shared comparison, recommendation presentation.
+
+**Invariant.** Comparison harus membantu pengguna memahami trade-off tanpa menghasilkan
+"winner", ranking paksaan, atau keputusan final atas nama pengguna.
+
+---
+
+## R-017 | Community photo bukan default trail-card hero
+
+**Statement.** Foto komunitas yang belum memenuhi status/standar yang sesuai tidak boleh
+menjadi hero/default visual utama pada Trail Card.
+
+**Scope.** Trail Card, discovery, recommendation result, community media integration.
+
+**Invariant.** Visual utama Trail Card harus mengikuti media/asset authority yang sesuai
+dan tidak boleh secara default digantikan oleh foto komunitas yang tidak terverifikasi.
+
+---
+
+# UNOWNED LEGACY RULE — NEEDS PRODUCT DISPOSITION
+
+Dua batasan berikut hidup di CLAUDE.md dan **tidak terwakili** oleh R-001–R-024 mana pun.
+Keduanya dicatat di sini agar tidak hilang saat pruning. Keduanya **bukan** canonical
+rule, tidak diberi nomor R-xxx, dan menunggu keputusan ownership terpisah dari pemilik
+produk.
+
+| Batasan | Lokasi sekarang | Status |
+|---|---|---|
+| Comparison maksimum 5 Trail | CLAUDE.md §26 | UNOWNED LEGACY RULE — NEEDS PRODUCT DISPOSITION |
+| Larangan sertifikasi keahlian otomatis dari satu trip | CLAUDE.md §27 | UNOWNED LEGACY RULE — NEEDS PRODUCT DISPOSITION |
+
+Teks aslinya di CLAUDE.md tidak disentuh pada fase ini.
