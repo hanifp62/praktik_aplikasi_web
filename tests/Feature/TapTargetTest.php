@@ -9,7 +9,7 @@ use Tests\TestCase;
  * Ukuran target sentuh.
  *
  * WCAG 2.2 AA menuntut 24x24 (2.5.8), dan aplikasi ini memilih 44px lewat min-h-11 di
- * x-ui.button. Angka 44 bukan kutipan WCAG melainkan standar produk ini sendiri, dan
+ * komponen Button. Angka 44 bukan kutipan WCAG melainkan standar produk ini sendiri, dan
  * alasannya ada di penggunanya: tombol ditekan jempol, di luar ruangan, kadang dengan
  * sarung tangan, oleh orang yang sedang berdiri di jalur.
  *
@@ -19,24 +19,18 @@ use Tests\TestCase;
  * telepon, dan tombol status daftar persiapan, yang komentarnya sendiri menyebutnya
  * "interaksi yang paling sering diulang".
  *
- * Sapuan ini juga hanya memeriksa <button>, sehingga seluruh <a> tidak terlihat --
- * padahal responsive-nav-link dan dropdown-link, satu-satunya jalan ke empat dari lima
- * permukaan menu di ponsel (§88, Tugas 7), adalah tautan, bukan tombol. Diperluas ke
- * <a> yang memakai wire:navigate: atribut itu menandai tautan yang sungguh berpindah
- * halaman di dalam aplikasi (kontrol navigasi), berbeda dari tautan konten biasa yang
- * tidak diklaim standar 44px ini. Tautan prosa tetap dikecualikan lewat 'underline',
- * persis seperti sebelumnya.
+ * Tautan navigasi ikut diperiksa, bukan hanya <button>: di ponsel, tautan menu adalah
+ * satu-satunya jalan ke permukaan aplikasi (§88). Tautan prosa di dalam kalimat
+ * dikecualikan lewat 'underline', karena WCAG 2.5.8 sendiri mengecualikannya.
  *
- * wire:navigate pada komponen tautan yang dapat dipakai ulang (nav-link,
- * responsive-nav-link, dropdown-link) tidak pernah tertulis di berkas komponennya
- * sendiri -- ia diteruskan pemanggil lewat $attributes->merge(), jadi tidak terlihat
- * dari baris manapun di berkas itu. Berkas yang tag <a>-nya sendiri memakai
- * $attributes->merge() diperlakukan sebagai kontrol navigasi tanpa syarat wire:navigate:
- * di seluruh resources/views/components, pola itu hanya dipakai oleh komponen tautan
- * navigasi, tidak pernah oleh tautan konten sebaris.
+ * Dua dunia disapu. Di Blade yang masih dilayani, tautan navigasi ditandai
+ * wire:navigate atau $attributes->merge() pada komponen tautan. Di React, setiap
+ * <Tautan> dan <Link> adalah tautan di dalam aplikasi.
  */
 class TapTargetTest extends TestCase
 {
+    use SumberReact;
+
     /**
      * Tinggi minimum dinyatakan, bukan diwariskan dari isinya.
      *
@@ -118,6 +112,113 @@ class TapTargetTest extends TestCase
     }
 
     /**
+     * Sapuan yang sama di sumber React: setiap <button>, <Tautan>, dan <Link>.
+     *
+     * Kelas kerap tidak tertulis di tag itu sendiri, melainkan di konstanta seperti
+     * `tombolMenu` atau `tautanTeks`, kadang di berkas lain. Nama yang disebut di
+     * className dicari definisinya, lebih dulu di berkas yang sama, dan isinya ikut
+     * diperiksa. Tautan.tsx dilewati: ia pembungkus <Link> yang kelasnya datang dari
+     * pemanggil, dan pemanggilnyalah yang diperiksa.
+     */
+    public function test_every_react_button_and_in_app_link_can_be_hit_by_a_thumb(): void
+    {
+        $pelanggar = [];
+        $diperiksa = 0;
+
+        foreach ($this->berkasTsx() as $berkas) {
+            $nama = str_replace('\\', '/', $berkas->getRelativePathname());
+
+            if ($nama === 'components/ui/Tautan.tsx') {
+                continue;
+            }
+
+            $isi = $this->tanpaKomentarJs($berkas->getContents());
+
+            foreach (['button', 'Tautan', 'Link'] as $elemen) {
+                foreach ($this->tagBernama($isi, $elemen) as [$tag, $baris]) {
+                    $diperiksa++;
+                    $jendela = $tag.' '.$this->definisiKelas($tag, $isi);
+
+                    // Tautan teks di dalam kalimat dikecualikan WCAG 2.5.8 sendiri.
+                    if (str_contains($jendela, 'underline')) {
+                        continue;
+                    }
+
+                    if (! preg_match('/(?<![\w:-])(?:min-h-11|min-h-12|min-h-\[44px\]|h-1[1-6]|py-[34]|p-[34])(?![\w-])/', $jendela)) {
+                        $pelanggar[] = $nama.':'.$baris;
+                    }
+                }
+            }
+        }
+
+        $this->assertGreaterThan(30, $diperiksa, 'Sapuan tidak menemukan kontrol untuk diperiksa.');
+        $this->assertSame([], $pelanggar, 'Target sentuh di bawah 44px pada: '.implode(', ', $pelanggar));
+    }
+
+    /**
+     * Isi definisi setiap nama yang disebut di className sebuah tag.
+     */
+    private function definisiKelas(string $tag, string $isiBerkas): string
+    {
+        $mulai = strpos($tag, 'className={');
+
+        if ($mulai === false) {
+            return '';
+        }
+
+        // Hanya nama, bukan kata di dalam untaian kelas: untaian dibuang, dan dari
+        // template literal yang tersisa hanya bagian ${...}.
+        $ekspresi = (string) preg_replace('/\'[^\']*\'|"[^"]*"/', ' ', substr($tag, $mulai + 11));
+        $ekspresi = (string) preg_replace_callback(
+            '/`([^`]*)`/',
+            fn (array $m) => preg_match_all('/\$\{([^}]*)\}/', $m[1], $bagian) ? implode(' ', $bagian[1]) : ' ',
+            $ekspresi
+        );
+
+        preg_match_all('/\b[A-Za-z_]\w*\b/', $ekspresi, $nama);
+
+        $definisi = '';
+
+        foreach (array_unique($nama[0]) as $satu) {
+            $pola = '/\b(?:const|let)\s+'.preg_quote($satu, '/').'\b\s*(?::[^=]+)?=\s*([^;]+);/';
+
+            if (preg_match($pola, $isiBerkas, $cocok)) {
+                $definisi .= ' '.$cocok[1];
+
+                continue;
+            }
+
+            foreach ($this->sumberSemua() as $isiLain) {
+                if (preg_match($pola, $isiLain, $cocok)) {
+                    $definisi .= ' '.$cocok[1];
+
+                    break;
+                }
+            }
+        }
+
+        return $definisi;
+    }
+
+    /**
+     * Seluruh sumber .ts dan .tsx, untuk konstanta kelas yang diimpor dari berkas lain.
+     *
+     * @return array<int, string>
+     */
+    private function sumberSemua(): array
+    {
+        static $isi = null;
+
+        return $isi ??= array_map(
+            fn ($berkas) => $this->tanpaKomentarJs($berkas->getContents()),
+            array_values(array_filter(
+                File::allFiles(resource_path('js')),
+                fn ($berkas) => in_array($berkas->getExtension(), ['ts', 'tsx'], true)
+            ))
+        );
+    }
+
+    /**
      * Baris metrik tidak memaksa tiga kolom di layar sempit.
      *
      * Tiga kolom di dalam kartu ber-padding pada lebar 400px menyisakan sekitar seratus
@@ -132,6 +233,12 @@ class TapTargetTest extends TestCase
             $isi = preg_replace('/\{\{--.*?--\}\}/s', ' ', $berkas->getContents());
 
             if (preg_match_all('/(?<![a-z:-])grid-cols-([3-9]|1[0-2])\b/', $isi, $m)) {
+                $pelanggar[] = $berkas->getRelativePathname().' ('.implode(', ', $m[0]).')';
+            }
+        }
+
+        foreach ($this->berkasTsx() as $berkas) {
+            if (preg_match_all('/(?<![a-z:-])grid-cols-([3-9]|1[0-2])\b/', $this->tanpaKomentarJs($berkas->getContents()), $m)) {
                 $pelanggar[] = $berkas->getRelativePathname().' ('.implode(', ', $m[0]).')';
             }
         }

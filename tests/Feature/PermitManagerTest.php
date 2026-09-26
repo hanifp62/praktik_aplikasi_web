@@ -3,14 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use App\Livewire\Admin\PermitManager;
 use App\Models\AuditLog;
 use App\Models\Mountain;
 use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -19,7 +18,7 @@ use Tests\TestCase;
  *
  * Aturan izin adalah data yang berubah dan menentukan apakah sebuah pendakian dapat
  * terjadi sama sekali, jadi perubahannya masuk jejak audit (PRD §61) dan membawa
- * sumber serta waktu verifikasi (PRD §60).
+ * sumber serta waktu verifikasi (PRD §60). Halamannya kini React; tulisnya POST/PUT/DELETE.
  */
 class PermitManagerTest extends TestCase
 {
@@ -33,25 +32,38 @@ class PermitManagerTest extends TestCase
 
         $this->actingAs($this->admin())
             ->get(route('admin.permits'))
-            ->assertOk();
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Admin/Permits')->where('title', 'Kelola Perizinan'));
+    }
+
+    public function test_a_hiker_cannot_write_rules_directly(): void
+    {
+        $rule = PermitRequirement::factory()->create(['mountain_id' => Mountain::factory()->create()->id]);
+        $pendaki = User::factory()->create();
+
+        $this->actingAs($pendaki)->post(route('admin.permits.store'), $this->isian())->assertForbidden();
+        $this->actingAs($pendaki)->put(route('admin.permits.update', $rule), $this->isian())->assertForbidden();
+        $this->actingAs($pendaki)->delete(route('admin.permits.destroy', $rule))->assertForbidden();
+
+        $this->assertSame(1, PermitRequirement::count());
     }
 
     public function test_an_admin_can_record_a_mountain_level_rule(): void
     {
         $mountain = Mountain::factory()->create();
 
-        Livewire::actingAs($this->admin())
-            ->test(PermitManager::class)
-            ->set('scope', 'mountain')
-            ->set('mountain_id', $mountain->id)
-            ->set('authority', 'TN Bromo Tengger Semeru')
-            ->set('booking_url', 'https://bookingsemeru.bromotenggersemeru.org')
-            ->set('daily_quota', 200)
-            ->set('booking_closes_days_before', 2)
-            ->set('guide_required', true)
-            ->set('source', 'Situs resmi TNBTS')
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($this->admin())
+            ->post(route('admin.permits.store'), $this->isian([
+                'mountain_id' => $mountain->id,
+                'authority' => 'TN Bromo Tengger Semeru',
+                'booking_url' => 'https://bookingsemeru.bromotenggersemeru.org',
+                'daily_quota' => 200,
+                'booking_closes_days_before' => 2,
+                'guide_required' => true,
+                'source' => 'Situs resmi TNBTS',
+            ]))
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('admin.permits'));
 
         $rule = PermitRequirement::firstOrFail();
 
@@ -65,14 +77,16 @@ class PermitManagerTest extends TestCase
     {
         $trail = Trail::factory()->create();
 
-        Livewire::actingAs($this->admin())
-            ->test(PermitManager::class)
-            ->set('scope', 'trail')
-            ->set('trail_id', $trail->id)
-            ->set('authority', 'Pengelola jalur')
-            ->set('source', 'Papan pengumuman basecamp')
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($this->admin())
+            ->post(route('admin.permits.store'), $this->isian([
+                'scope' => 'trail',
+                'trail_id' => $trail->id,
+                // Sasaran lain yang ikut terkirim diabaikan: hanya satu sasaran yang terisi.
+                'mountain_id' => Mountain::factory()->create()->id,
+                'authority' => 'Pengelola jalur',
+                'source' => 'Papan pengumuman basecamp',
+            ]))
+            ->assertSessionHasNoErrors();
 
         $rule = PermitRequirement::firstOrFail();
 
@@ -82,56 +96,45 @@ class PermitManagerTest extends TestCase
 
     public function test_a_rule_must_target_something(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(PermitManager::class)
-            ->set('scope', 'trail')
-            ->set('trail_id', null)
-            ->set('authority', 'Tanpa sasaran')
-            ->call('save')
-            ->assertHasErrors('trail_id');
+        $this->actingAs($this->admin())
+            ->post(route('admin.permits.store'), $this->isian(['scope' => 'trail', 'trail_id' => null, 'authority' => 'Tanpa sasaran']))
+            ->assertSessionHasErrors(['trail_id' => 'Pilih jalur yang aturannya dicatat.']);
 
         $this->assertSame(0, PermitRequirement::count());
     }
 
     public function test_a_closing_window_cannot_be_wider_than_the_opening_window(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(PermitManager::class)
-            ->set('scope', 'mountain')
-            ->set('mountain_id', Mountain::factory()->create()->id)
-            ->set('authority', 'Pengelola')
-            ->set('booking_opens_days_before', 2)
-            ->set('booking_closes_days_before', 30)
-            ->call('save')
-            ->assertHasErrors('booking_closes_days_before');
+        $this->actingAs($this->admin())
+            ->post(route('admin.permits.store'), $this->isian([
+                'mountain_id' => Mountain::factory()->create()->id,
+                'booking_opens_days_before' => 2,
+                'booking_closes_days_before' => 30,
+            ]))
+            ->assertSessionHasErrors('booking_closes_days_before');
     }
 
     public function test_editing_a_rule_keeps_it_as_one_record(): void
     {
-        $rule = PermitRequirement::factory()->create([
-            'mountain_id' => Mountain::factory()->create()->id,
-            'authority' => 'Nama lama',
-        ]);
+        $mountain = Mountain::factory()->create();
+        $rule = PermitRequirement::factory()->create(['mountain_id' => $mountain->id, 'authority' => 'Nama lama']);
 
-        Livewire::actingAs($this->admin())
-            ->test(PermitManager::class)
-            ->call('edit', $rule->id)
-            ->set('authority', 'Nama baru')
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($this->admin())
+            ->put(route('admin.permits.update', $rule), $this->isian(['mountain_id' => $mountain->id, 'authority' => 'Nama baru']))
+            ->assertSessionHasNoErrors();
 
         $this->assertSame(1, PermitRequirement::count());
         $this->assertSame('Nama baru', $rule->fresh()->authority);
+        $this->assertTrue(AuditLog::where('action', 'permit_requirement.updated')->exists());
     }
 
     public function test_changes_are_written_to_the_audit_log(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(PermitManager::class)
-            ->set('scope', 'mountain')
-            ->set('mountain_id', Mountain::factory()->create()->id)
-            ->set('authority', 'TN Gunung Rinjani')
-            ->call('save');
+        $this->actingAs($this->admin())
+            ->post(route('admin.permits.store'), $this->isian([
+                'mountain_id' => Mountain::factory()->create()->id,
+                'authority' => 'TN Gunung Rinjani',
+            ]));
 
         $this->assertTrue(
             AuditLog::where('action', 'permit_requirement.created')->exists(),
@@ -145,12 +148,28 @@ class PermitManagerTest extends TestCase
             'mountain_id' => Mountain::factory()->create()->id,
         ]);
 
-        Livewire::actingAs($this->admin())
-            ->test(PermitManager::class)
-            ->call('delete', $rule->id);
+        $this->actingAs($this->admin())
+            ->delete(route('admin.permits.destroy', $rule))
+            ->assertRedirect(route('admin.permits'))
+            ->assertSessionHas('status', 'Aturan perizinan dihapus.');
 
         $this->assertSame(0, PermitRequirement::count());
         $this->assertTrue(AuditLog::where('action', 'permit_requirement.deleted')->exists());
+    }
+
+    /**
+     * @param  array<string, mixed>  $ganti
+     * @return array<string, mixed>
+     */
+    private function isian(array $ganti = []): array
+    {
+        return array_merge([
+            'scope' => 'mountain',
+            'trail_id' => null,
+            'mountain_id' => null,
+            'authority' => 'Pengelola',
+            'guide_required' => false,
+        ], $ganti);
     }
 
     private function admin(): User

@@ -6,15 +6,15 @@ use App\Enums\ExperienceLevel;
 use App\Enums\PreparationStatus;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
-use App\Livewire\Trips\ReadinessDashboard;
 use App\Models\Mountain;
 use App\Models\ReadinessCheck;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use App\Services\PreparationService;
+use Database\Seeders\PreparationTemplateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -27,7 +27,7 @@ use Tests\TestCase;
  * baru pada pemuatan berikutnya, sehingga konfirmasi pengguna hilang.
  *
  * Konfirmasi pre-departure adalah langkah inti North Star Metric (PRD §63), jadi
- * kehilangannya bukan cacat kosmetik.
+ * kehilangannya bukan cacat kosmetik. Halaman kini React; aksinya rute POST.
  */
 class ReadinessDashboardTest extends TestCase
 {
@@ -53,9 +53,10 @@ class ReadinessDashboardTest extends TestCase
     {
         $trip = $this->trip();
 
-        Livewire::actingAs($trip->user)
-            ->test(ReadinessDashboard::class, ['trip' => $trip])
-            ->call('recompute');
+        $this->actingAs($trip->user)
+            ->post(route('trips.readiness.recompute', $trip))
+            ->assertRedirect(route('trips.readiness', $trip))
+            ->assertSessionHas('status', 'Kesiapan dihitung ulang.');
 
         $this->assertSame(1, ReadinessCheck::count());
     }
@@ -64,24 +65,23 @@ class ReadinessDashboardTest extends TestCase
     {
         $trip = $this->trip();
 
-        Livewire::actingAs($trip->user)
-            ->test(ReadinessDashboard::class, ['trip' => $trip])
-            ->call('confirmPreDeparture')
-            ->assertSet('preDepartureConfirmed', true);
+        $this->actingAs($trip->user)
+            ->post(route('trips.readiness.confirm', $trip))
+            ->assertSessionHas('status', 'Pre-departure check tercatat.');
 
         // Memuat ulang halaman: konfirmasinya harus tetap terbaca.
-        Livewire::actingAs($trip->user)
-            ->test(ReadinessDashboard::class, ['trip' => $trip])
-            ->assertSet('preDepartureConfirmed', true);
+        $this->get(route('trips.readiness', $trip))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Readiness')
+                ->where('preDeparture.dikonfirmasi', true)
+                ->where('preDeparture.dicatat', fn (?string $v) => $v !== null && str_contains($v, 'WIB')));
     }
 
     public function test_confirming_moves_the_trip_to_ready_for_departure(): void
     {
         $trip = $this->trip();
 
-        Livewire::actingAs($trip->user)
-            ->test(ReadinessDashboard::class, ['trip' => $trip])
-            ->call('confirmPreDeparture');
+        $this->actingAs($trip->user)->post(route('trips.readiness.confirm', $trip));
 
         $this->assertSame(TripStatus::READY_FOR_DEPARTURE, $trip->fresh()->status);
     }
@@ -90,12 +90,48 @@ class ReadinessDashboardTest extends TestCase
     {
         $trip = $this->trip();
 
-        Livewire::actingAs($trip->user)
-            ->test(ReadinessDashboard::class, ['trip' => $trip])
-            ->assertSet('preDepartureConfirmed', false)
-            ->assertStatus(200);
+        $this->actingAs($trip->user)
+            ->get(route('trips.readiness', $trip))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Readiness')
+                ->where('title', 'Kesiapan Pendakian')
+                ->where('preDeparture.dikonfirmasi', false)
+                ->where('check.label', fn (string $v) => in_array($v, ['Siap', 'Perlu persiapan', 'Tidak direkomendasikan'], true))
+                ->where('bolehKonfirmasi', true)
+                ->has('check.penjelasan'));
 
         $this->assertSame(0, ReadinessCheck::count());
+    }
+
+    /**
+     * BR-09 dan R-005: skor internal dan angka kecocokan tidak pernah sampai ke props.
+     * Persiapan dikirim sebagai hitungan, bukan persentase.
+     */
+    public function test_no_internal_score_or_percentage_reaches_the_page(): void
+    {
+        $this->seed(PreparationTemplateSeeder::class);
+        $trip = $this->trip();
+
+        $halaman = $this->actingAs($trip->user)->get(route('trips.readiness', $trip));
+        $props = json_encode($halaman->viewData('page')['props']);
+
+        $this->assertStringNotContainsString('internal_score', $props);
+        $this->assertStringNotContainsString('score', strtolower($props));
+        $halaman->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('check.persiapan', fn (string $v) => (bool) preg_match('/^\d+ dari \d+ item dikonfirmasi$/', $v)));
+    }
+
+    public function test_another_user_cannot_recompute_or_confirm(): void
+    {
+        $trip = $this->trip();
+        $penyusup = User::factory()->create();
+
+        $this->actingAs($penyusup)->post(route('trips.readiness.recompute', $trip))->assertForbidden();
+        $this->actingAs($penyusup)->post(route('trips.readiness.confirm', $trip))->assertForbidden();
+
+        $this->assertSame(0, ReadinessCheck::count());
+        $this->assertSame(TripStatus::PLANNED, $trip->fresh()->status);
     }
 
     private function trip(): TripPlan

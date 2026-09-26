@@ -6,15 +6,12 @@ use App\Enums\CompletionState;
 use App\Enums\HikingSessionStatus;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
-use App\Livewire\Trips\TripForm;
-use App\Livewire\Trips\TripShow;
 use App\Models\HikingHistory;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -27,6 +24,8 @@ use Tests\TestCase;
  * Tidak ada penjaga transisi status, sehingga trip yang sudah dibatalkan masih dapat
  * dimulai dan diselesaikan. completion_state divalidasi sebagai string biasa padahal
  * kolomnya di-cast ke enum, sehingga nilai asing menghasilkan error 500.
+ *
+ * Halaman trip kini React (Inertia); aksinya rute POST biasa.
  */
 class TripLifecycleTest extends TestCase
 {
@@ -36,14 +35,9 @@ class TripLifecycleTest extends TestCase
     {
         $hidden = Trail::factory()->unpublished()->create();
 
-        Livewire::actingAs(User::factory()->create())
-            ->test(TripForm::class)
-            ->set('trail_id', $hidden->id)
-            ->set('name', 'Coba jalur tersembunyi')
-            ->set('planned_date', now()->addDay()->toDateString())
-            ->set('trip_type', TripType::TEKTOK->value)
-            ->call('save')
-            ->assertHasErrors('trail_id');
+        $this->actingAs(User::factory()->create())
+            ->post(route('trips.store'), $this->isian($hidden, 'Coba jalur tersembunyi'))
+            ->assertSessionHasErrors('trail_id');
 
         $this->assertSame(0, TripPlan::count());
     }
@@ -52,62 +46,117 @@ class TripLifecycleTest extends TestCase
     {
         $archived = Trail::factory()->published()->create(['archived_at' => now()]);
 
-        Livewire::actingAs(User::factory()->create())
-            ->test(TripForm::class)
-            ->set('trail_id', $archived->id)
-            ->set('name', 'Coba jalur arsip')
-            ->set('planned_date', now()->addDay()->toDateString())
-            ->set('trip_type', TripType::TEKTOK->value)
-            ->call('save')
-            ->assertHasErrors('trail_id');
+        $this->actingAs(User::factory()->create())
+            ->post(route('trips.store'), $this->isian($archived, 'Coba jalur arsip'))
+            ->assertSessionHasErrors('trail_id');
+
+        $this->assertSame(0, TripPlan::count());
     }
 
     public function test_a_trip_can_be_created_on_a_published_trail(): void
     {
         $trail = Trail::factory()->published()->create();
+        $user = User::factory()->create();
 
-        Livewire::actingAs(User::factory()->create())
-            ->test(TripForm::class)
-            ->set('trail_id', $trail->id)
-            ->set('name', 'Rencana sah')
-            ->set('planned_date', now()->addDay()->toDateString())
-            ->set('trip_type', TripType::TEKTOK->value)
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($user)
+            ->post(route('trips.store'), $this->isian($trail, 'Rencana sah'))
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('trips.preparation', TripPlan::firstOrFail()));
 
-        $this->assertSame(1, TripPlan::count());
+        $trip = TripPlan::firstOrFail();
+        $this->assertSame($user->id, $trip->user_id);
+        $this->assertSame(TripStatus::PLANNED, $trip->status);
+    }
+
+    /**
+     * Pemilik dan status ditetapkan server. Isian yang menyelundupkan user_id atau
+     * status tidak berpengaruh (mass assignment).
+     */
+    public function test_ownership_and_status_cannot_be_smuggled_in(): void
+    {
+        $trail = Trail::factory()->published()->create();
+        $user = User::factory()->create();
+        $lain = User::factory()->create();
+
+        $this->actingAs($user)->post(route('trips.store'), $this->isian($trail, 'Rencana') + [
+            'user_id' => $lain->id,
+            'status' => TripStatus::COMPLETED->value,
+        ])->assertSessionHasNoErrors();
+
+        $trip = TripPlan::firstOrFail();
+        $this->assertSame($user->id, $trip->user_id);
+        $this->assertSame(TripStatus::PLANNED, $trip->status);
+    }
+
+    /**
+     * Goal milik orang lain dilepas dari trip, bukan ditautkan.
+     */
+    public function test_someone_elses_goal_is_not_attached(): void
+    {
+        $trail = Trail::factory()->published()->create();
+        $goalOrangLain = User::factory()->create()->hikingGoals()->create(['trip_type' => TripType::TEKTOK->value]);
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trips.store'), $this->isian($trail, 'Rencana') + ['hiking_goal_id' => $goalOrangLain->id])
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull(TripPlan::firstOrFail()->hiking_goal_id);
     }
 
     public function test_a_cancelled_trip_cannot_be_started(): void
     {
         $trip = $this->trip(TripStatus::CANCELLED);
 
-        Livewire::actingAs($trip->user)
-            ->test(TripShow::class, ['trip' => $trip])
-            ->call('startHike');
+        $this->actingAs($trip->user)
+            ->post(route('trips.start', $trip))
+            ->assertRedirect(route('trips.show', $trip))
+            ->assertSessionHas('penolakan-trip', 'Tindakan tidak dapat dilakukan: trip berstatus Dibatalkan.');
 
         $this->assertSame(TripStatus::CANCELLED, $trip->fresh()->status);
+    }
+
+    public function test_a_planned_trip_can_be_started_and_opens_hike_mode(): void
+    {
+        $trip = $this->trip(TripStatus::PLANNED);
+
+        $this->actingAs($trip->user)
+            ->post(route('trips.start', $trip))
+            ->assertRedirect(route('trips.hike', $trip));
+
+        $this->assertSame(TripStatus::IN_PROGRESS, $trip->fresh()->status);
+        $this->assertSame(HikingSessionStatus::ACTIVE, $trip->fresh()->hikingSession->status);
     }
 
     public function test_a_completed_trip_cannot_be_cancelled(): void
     {
         $trip = $this->trip(TripStatus::COMPLETED);
 
-        Livewire::actingAs($trip->user)
-            ->test(TripShow::class, ['trip' => $trip])
-            ->call('cancel');
+        $this->actingAs($trip->user)
+            ->post(route('trips.cancel', $trip))
+            ->assertSessionHas('penolakan-trip');
 
         $this->assertSame(TripStatus::COMPLETED, $trip->fresh()->status);
+    }
+
+    public function test_a_planned_trip_can_be_cancelled(): void
+    {
+        $trip = $this->trip(TripStatus::PLANNED);
+
+        $this->actingAs($trip->user)
+            ->post(route('trips.cancel', $trip))
+            ->assertRedirect(route('trips.show', $trip))
+            ->assertSessionHas('status', 'Trip dibatalkan.');
+
+        $this->assertSame(TripStatus::CANCELLED, $trip->fresh()->status);
     }
 
     public function test_a_planned_trip_cannot_be_completed_without_starting(): void
     {
         $trip = $this->trip(TripStatus::PLANNED);
 
-        Livewire::actingAs($trip->user)
-            ->test(TripShow::class, ['trip' => $trip])
-            ->set('completion_state', CompletionState::COMPLETED->value)
-            ->call('complete');
+        $this->actingAs($trip->user)
+            ->post(route('trips.complete', $trip), ['completion_state' => CompletionState::COMPLETED->value])
+            ->assertSessionHas('penolakan-trip');
 
         $this->assertSame(TripStatus::PLANNED, $trip->fresh()->status);
         $this->assertSame(0, HikingHistory::count());
@@ -122,12 +171,13 @@ class TripLifecycleTest extends TestCase
             'started_at' => now(),
         ]);
 
-        Livewire::actingAs($trip->user)
-            ->test(TripShow::class, ['trip' => $trip])
-            ->set('completion_state', CompletionState::COMPLETED->value)
-            ->call('complete');
+        // Selesai mendaki langsung mengajak menulis laporan kondisi (loop §7: HIKE → REPORT).
+        $this->actingAs($trip->user)
+            ->post(route('trips.complete', $trip), ['completion_state' => CompletionState::COMPLETED->value], ['X-Inertia' => 'true'])
+            ->assertRedirect(route('reports.create', ['trail' => $trip->trail_id, 'trip' => $trip->id]));
 
         $this->assertSame(TripStatus::COMPLETED, $trip->fresh()->status);
+        $this->assertSame(HikingSessionStatus::COMPLETED, $trip->fresh()->hikingSession->status);
         $this->assertSame(1, HikingHistory::count());
     }
 
@@ -135,11 +185,9 @@ class TripLifecycleTest extends TestCase
     {
         $trip = $this->trip(TripStatus::IN_PROGRESS);
 
-        Livewire::actingAs($trip->user)
-            ->test(TripShow::class, ['trip' => $trip])
-            ->set('completion_state', 'MENDAKI_SAMBIL_TERBANG')
-            ->call('complete')
-            ->assertHasErrors('completion_state');
+        $this->actingAs($trip->user)
+            ->post(route('trips.complete', $trip), ['completion_state' => 'MENDAKI_SAMBIL_TERBANG'])
+            ->assertSessionHasErrors('completion_state');
 
         $this->assertSame(TripStatus::IN_PROGRESS, $trip->fresh()->status);
     }
@@ -151,6 +199,19 @@ class TripLifecycleTest extends TestCase
         $this->assertFalse(TripStatus::COMPLETED->canTransitionTo(TripStatus::IN_PROGRESS));
         $this->assertFalse(TripStatus::CANCELLED->canTransitionTo(TripStatus::IN_PROGRESS));
         $this->assertSame([], TripStatus::COMPLETED->allowedTransitions());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function isian(Trail $trail, string $nama): array
+    {
+        return [
+            'trail_id' => $trail->id,
+            'name' => $nama,
+            'planned_date' => now('Asia/Jakarta')->addDay()->toDateString(),
+            'trip_type' => TripType::TEKTOK->value,
+        ];
     }
 
     private function trip(TripStatus $status): TripPlan

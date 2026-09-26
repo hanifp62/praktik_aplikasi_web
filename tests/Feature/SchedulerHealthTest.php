@@ -70,10 +70,16 @@ class SchedulerHealthTest extends TestCase
         $this->assertTrue($this->service()->needsAttention());
     }
 
+    /**
+     * Setiap tugas yang dipantau berjalan baru-baru ini. Fixture-nya menyapu
+     * SchedulerHealthService::TUGAS, bukan daftar tulisan tangan, supaya tugas yang
+     * didaftarkan besok ikut tercakup.
+     */
     public function test_a_recent_successful_run_is_healthy(): void
     {
-        $this->catat('weather:refresh', ScheduledTaskRun::SUCCESS, now()->subHours(3));
-        $this->catat('data:freshness-check', ScheduledTaskRun::SUCCESS, now()->subHours(3));
+        foreach (array_keys(SchedulerHealthService::TUGAS) as $kunci) {
+            $this->catat($kunci, ScheduledTaskRun::SUCCESS, now()->subHour());
+        }
 
         $this->assertSame(SchedulerHealthService::SEHAT, $this->baris('weather:refresh')['keadaan']);
         $this->assertFalse($this->service()->needsAttention());
@@ -88,6 +94,22 @@ class SchedulerHealthTest extends TestCase
         $this->catat('weather:refresh', ScheduledTaskRun::SUCCESS, now()->subHours(20));
 
         $this->assertSame(SchedulerHealthService::TERLAMBAT, $this->baris('weather:refresh')['keadaan']);
+    }
+
+    /**
+     * trips:kirim-pengingat berjalan tiap jam. Dua jam tanpa jalan masih wajar; lebih
+     * dari tiga jam berarti penjadwalnya berhenti, dan pengingat yang jatuh tempo baru
+     * terkirim ketika ia berjalan lagi.
+     */
+    public function test_the_hourly_reminder_task_is_overdue_after_three_hours_without_a_run(): void
+    {
+        $this->catat('trips:kirim-pengingat', ScheduledTaskRun::SUCCESS, now()->subHours(2));
+
+        $this->assertSame(SchedulerHealthService::SEHAT, $this->baris('trips:kirim-pengingat')['keadaan']);
+
+        $this->travel(2)->hours();
+
+        $this->assertSame(SchedulerHealthService::TERLAMBAT, $this->baris('trips:kirim-pengingat')['keadaan']);
     }
 
     /**

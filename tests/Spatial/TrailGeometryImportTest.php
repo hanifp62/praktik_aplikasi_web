@@ -3,14 +3,16 @@
 namespace Tests\Spatial;
 
 use App\Enums\UserRole;
-use App\Livewire\Admin\TrailGeometryImport;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Livewire\Livewire;
 
 /**
  * Jalur tulis impor GPX, satu-satunya bagian yang butuh PostGIS sungguhan.
+ *
+ * Alurnya dua permintaan seperti yang dilakukan kurator: unggah berkas untuk pratinjau,
+ * lalu simpan. Di SQLite langkah simpan menolak dengan jujur (tanpa PostGIS), jadi
+ * penulisan geometrinya hanya dapat dibuktikan di sini.
  */
 class TrailGeometryImportTest extends SpatialTestCase
 {
@@ -18,10 +20,7 @@ class TrailGeometryImportTest extends SpatialTestCase
     {
         $trail = Trail::factory()->create();
 
-        Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => $trail])
-            ->set('berkas', $this->gpx())
-            ->call('simpan');
+        $this->impor($this->admin(), $trail);
 
         $geojson = $trail->fresh()->readGeoJson('geometry');
 
@@ -37,10 +36,7 @@ class TrailGeometryImportTest extends SpatialTestCase
 
         $this->assertContains('Geometri jalur belum tersedia.', $trail->publishabilityReport());
 
-        Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => $trail])
-            ->set('berkas', $this->gpx())
-            ->call('simpan');
+        $this->impor($this->admin(), $trail);
 
         $this->assertNotContains('Geometri jalur belum tersedia.', $trail->fresh()->publishabilityReport());
     }
@@ -50,10 +46,7 @@ class TrailGeometryImportTest extends SpatialTestCase
         $trail = Trail::factory()->create();
         $trail->writeLineString('geometry', [[112.0, -7.0], [112.1, -7.1]]);
 
-        Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => $trail])
-            ->set('berkas', $this->gpx())
-            ->call('simpan');
+        $this->impor($this->admin(), $trail);
 
         $this->assertCount(3, $trail->fresh()->readGeoJson('geometry')['coordinates']);
     }
@@ -63,15 +56,23 @@ class TrailGeometryImportTest extends SpatialTestCase
         $trail = Trail::factory()->create();
         $admin = $this->admin();
 
-        Livewire::actingAs($admin)
-            ->test(TrailGeometryImport::class, ['trail' => $trail])
-            ->set('berkas', $this->gpx())
-            ->call('simpan');
+        $this->impor($admin, $trail);
 
         $this->assertDatabaseHas('audit_logs', [
             'actor_id' => $admin->id,
             'action' => 'trail.geometry_imported',
         ]);
+    }
+
+    private function impor(User $admin, Trail $trail): void
+    {
+        $this->actingAs($admin)
+            ->post(route('trails.geometry.preview', $trail), ['berkas' => $this->gpx()])
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)
+            ->post(route('trails.geometry.store', $trail))
+            ->assertSessionHas('status', 'Geometri jalur tersimpan.');
     }
 
     private function gpx(): UploadedFile

@@ -4,9 +4,12 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class EmailVerificationTest extends TestCase
@@ -17,11 +20,9 @@ class EmailVerificationTest extends TestCase
     {
         $user = User::factory()->unverified()->create();
 
-        $response = $this->actingAs($user)->get('/verify-email');
-
-        $response
-            ->assertSeeVolt('pages.auth.verify-email')
-            ->assertStatus(200);
+        $this->actingAs($user)->get('/verify-email')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Auth/VerifyEmail'));
     }
 
     public function test_email_can_be_verified(): void
@@ -56,5 +57,28 @@ class EmailVerificationTest extends TestCase
         $this->actingAs($user)->get($verificationUrl);
 
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_the_verification_email_can_be_sent_again(): void
+    {
+        Notification::fake();
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)->from('/verify-email')->post(route('verification.send'))
+            ->assertRedirect('/verify-email')
+            ->assertSessionHas('status', 'verification-link-sent');
+
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_a_verified_user_is_not_sent_another_email(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('verification.send'))
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        Notification::assertNothingSent();
     }
 }

@@ -13,6 +13,9 @@ use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -22,9 +25,8 @@ use Tests\TestCase;
  * diingat, dan puncak emosional produk ini selama ini berakhir di kotak isian catatan
  * pribadi. Pendaki menekan "Tandai selesai" lalu tidak pernah melihat apa pun lagi.
  *
- * Seluruh isinya berasal dari data yang sudah tersimpan. Tidak ada tabel baru, dan tidak
- * ada jejak GPS: yang digambar adalah garis jalur resmi, karena jejak pendaki memang
- * belum pernah direkam dan aplikasi ini tidak menggambar yang tidak diketahuinya.
+ * Seluruh isinya berasal dari data yang sudah tersimpan. Halamannya React (Inertia):
+ * yang diuji adalah props dari server; peta dan grafik dijaga dari sumber komponennya.
  */
 class HikeSummaryTest extends TestCase
 {
@@ -57,7 +59,7 @@ class HikeSummaryTest extends TestCase
     private function pendakianSelesai(
         CompletionState $hasil = CompletionState::COMPLETED,
         bool $denganSesi = true,
-        int $posTercapai = 3,
+        ?int $posTercapai = 3,
     ): array {
         $user = User::factory()->create();
         $trail = Trail::factory()->easy()->create(['name' => 'Jalur Selo']);
@@ -68,8 +70,7 @@ class HikeSummaryTest extends TestCase
                 'name' => 'Pos '.$urutan,
                 'elevation_m' => 1200 + $urutan * 200,
                 // Berkoordinat, karena tanpa PostGIS geometri jalurnya null dan pos
-                // adalah satu-satunya yang dapat menggambar peta. Itu juga keadaan
-                // nyata pada jalur yang posnya sudah dicatat tetapi garisnya belum.
+                // adalah satu-satunya yang dapat menggambar peta.
                 'latitude' => -7.45 - $urutan * 0.01,
                 'longitude' => 110.44,
             ]);
@@ -89,7 +90,10 @@ class HikeSummaryTest extends TestCase
                 'status' => HikingSessionStatus::COMPLETED->value,
                 'started_at' => Carbon::parse('2026-09-15 04:00:00'),
                 'ended_at' => Carbon::parse('2026-09-15 12:30:00'),
-                'reached_sequence' => $posTercapai,
+                // Kolom yang ditulis hike mode. Versi sebelumnya menulis reached_sequence,
+                // yang tidak ada dan terbuang diam-diam, sehingga test lamanya lulus hanya
+                // karena "Pos 3" juga tertulis di daftar pos dan di catatan pribadi.
+                'reached_checkpoint_sequence' => $posTercapai,
             ]);
         }
 
@@ -107,7 +111,7 @@ class HikeSummaryTest extends TestCase
         return [$user, $trip->fresh()];
     }
 
-    private function buka(User $user, TripPlan $trip)
+    private function buka(User $user, TripPlan $trip): TestResponse
     {
         return $this->actingAs($user)->get(route('history.summary', $trip));
     }
@@ -116,10 +120,12 @@ class HikeSummaryTest extends TestCase
     {
         [$user, $trip] = $this->pendakianSelesai();
 
-        $this->buka($user, $trip)
-            ->assertOk()
-            ->assertSee('Jalur Selo')
-            ->assertSee('Kabut turun sejak Pos 3.');
+        $this->buka($user, $trip)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Community/HikeSummary')
+            ->where('title', 'Hasil pendakian Jalur Selo')
+            ->where('jalur.nama', 'Jalur Selo')
+            ->where('catatan', 'Kabut turun sejak Pos 3.')
+            ->where('angka.persiapan', '80%'));
     }
 
     /**
@@ -130,14 +136,25 @@ class HikeSummaryTest extends TestCase
     {
         [$user, $trip] = $this->pendakianSelesai();
 
-        $this->buka($user, $trip)->assertSee('8 jam 30 menit');
+        $this->buka($user, $trip)->assertInertia(fn (AssertableInertia $page) => $page->where('angka.durasi', '8 jam 30 menit'));
     }
 
+    /**
+     * Regresi: pos terjauh dibaca dari kolom yang benar-benar ditulis hike mode. Yang
+     * diperiksa nilai angkanya sendiri, bukan kemunculan "Pos 3" di mana pun di halaman.
+     */
     public function test_the_furthest_post_reached_is_named(): void
     {
         [$user, $trip] = $this->pendakianSelesai(posTercapai: 3);
 
-        $this->buka($user, $trip)->assertSee('Pos 3');
+        $this->buka($user, $trip)->assertInertia(fn (AssertableInertia $page) => $page->where('angka.posTerjauh', 'Pos 3'));
+    }
+
+    public function test_a_session_that_never_reached_a_post_says_so(): void
+    {
+        [$user, $trip] = $this->pendakianSelesai(posTercapai: null);
+
+        $this->buka($user, $trip)->assertInertia(fn (AssertableInertia $page) => $page->where('angka.posTerjauh', 'tidak tercatat'));
     }
 
     /**
@@ -148,10 +165,11 @@ class HikeSummaryTest extends TestCase
     {
         [$user, $trip] = $this->pendakianSelesai(denganSesi: false);
 
-        $this->buka($user, $trip)
-            ->assertOk()
-            ->assertSee('Jalur Selo')
-            ->assertSee('tidak tercatat');
+        $this->buka($user, $trip)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('jalur.nama', 'Jalur Selo')
+            ->where('angka.durasi', 'tidak tercatat')
+            ->where('angka.posTerjauh', 'tidak tercatat')
+            ->where('jejak', null));
     }
 
     /**
@@ -162,9 +180,8 @@ class HikeSummaryTest extends TestCase
     {
         [$user, $trip] = $this->pendakianSelesai(hasil: CompletionState::ABANDONED);
 
-        $this->buka($user, $trip)
-            ->assertOk()
-            ->assertSee(CompletionState::ABANDONED->label());
+        $this->buka($user, $trip)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('hasil', CompletionState::ABANDONED->label()));
     }
 
     public function test_another_hiker_cannot_read_it(): void
@@ -191,9 +208,10 @@ class HikeSummaryTest extends TestCase
     }
 
     /**
-     * Profil elevasi dan peta dipakai ulang dari Fase 1, bukan digambar ulang di sini.
+     * Profil elevasi dan peta pos dipakai ulang, bukan digambar ulang di sini: server
+     * mengirim titiknya, komponen bersama yang menggambarnya.
      */
-    public function test_it_draws_the_trail_using_the_components_from_phase_one(): void
+    public function test_it_draws_the_trail_with_the_shared_components(): void
     {
         [$user, $trip] = $this->pendakianSelesai();
 
@@ -205,8 +223,17 @@ class HikeSummaryTest extends TestCase
             ],
         ]);
 
-        $this->buka($user, $trip)
-            ->assertSee('Profil elevasi')
-            ->assertSee('role="region"', escape: false);
+        $this->buka($user, $trip)->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('profil', 3)
+            ->has('penandaPos', 4)
+            ->where('penandaPos.0.label', '1. Pos 1')
+            ->has('pos', 4)
+            ->where('pos.1.antara', fn (?string $antara) => str_contains((string) $antara, 'naik 200 m')));
+
+        $sumber = File::get(resource_path('js/pages/Community/HikeSummary.tsx'));
+        $this->assertStringContainsString('<ElevationProfile', $sumber);
+        $this->assertStringContainsString('<PetaGaris', $sumber);
+        $this->assertStringContainsString('<WadahPeta', File::get(resource_path('js/components/community/PetaGaris.tsx')));
+        $this->assertStringContainsString('role="region"', File::get(resource_path('js/components/peta/WadahPeta.tsx')));
     }
 }

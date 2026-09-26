@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" {{ \App\Support\ThemePreference::htmlAttribute(request()) }}>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Tidak ada koneksi</title>
+        <x-brand.head :fonts="false" />
 
         @vite(['resources/css/app.css'])
     </head>
-    <body class="min-h-screen bg-white font-sans text-primary antialiased">
+    <body class="min-h-dvh bg-canvas font-sans text-primary antialiased">
         {{--
             Halaman ini muncul persis ketika pengguna paling mungkin berada di lapangan.
             Karena itu ia tidak menyebut satu pun kondisi jalur, cuaca, atau status resmi:
             apa pun yang ditampilkan dari ingatan lama akan terbaca sebagai keadaan
             sekarang, dan itu yang dilarang §94 dan §95.
         --}}
-        <main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12 sm:px-6">
+        <main class="mx-auto flex min-h-dvh max-w-xl flex-col justify-center px-4 py-12 sm:px-6">
             <p class="text-sm font-medium text-muted">Luring</p>
 
             <h1 class="mt-2 text-2xl font-semibold text-primary sm:text-3xl">

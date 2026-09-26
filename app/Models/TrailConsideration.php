@@ -8,12 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Satu jalur yang sedang ditimbang seorang pendaki.
+ * Satu jalur yang disimpan seorang pendaki, beserta catatan pribadinya (FR-22).
+ *
+ * `note` sengaja tidak fillable: ia ditulis lewat ConsiderationService::simpanCatatan()
+ * setelah barisnya dipastikan milik penulisnya, tidak pernah lewat pengisian massal.
  */
 #[Fillable(['user_id', 'trail_id'])]
 class TrailConsideration extends Model
 {
     use HasFactory;
+
+    /** Batas panjang catatan, sama dengan lebar kolom `note`. */
+    public const CATATAN_MAKS = 500;
 
     public function user(): BelongsTo
     {

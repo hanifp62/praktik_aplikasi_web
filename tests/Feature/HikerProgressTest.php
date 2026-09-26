@@ -171,6 +171,37 @@ class HikerProgressTest extends TestCase
         $this->assertSame('Gunung Terpetakan', $penanda[0]['label']);
     }
 
+    /**
+     * Deret grafik: hanya pendakian yang tuntas, urut dari yang paling awal, dan jalur
+     * tanpa elevation gain tetap ikut sebagai null, bukan nol (§95).
+     */
+    public function test_the_chart_series_is_chronological_and_keeps_unknown_as_unknown(): void
+    {
+        $user = User::factory()->create();
+
+        $this->riwayat($user, $this->jalur(1300))->update(['completed_at' => now()->subDays(2)]);
+        $this->riwayat($user, $this->jalur(null))->update(['completed_at' => now()->subDays(10)]);
+        $this->riwayat($user, $this->jalur(900))->update(['completed_at' => now()->subDays(30)]);
+        $this->riwayat($user, $this->jalur(2000), CompletionState::ABANDONED)->update(['completed_at' => now()->subDay()]);
+
+        $deret = app(HikerProgressService::class)->tanjakanPerPendakian($user);
+
+        $this->assertSame([900, null, 1300], array_column($deret, 'elevasi_m'));
+    }
+
+    public function test_the_chart_series_keeps_only_the_latest_hikes(): void
+    {
+        $user = User::factory()->create();
+
+        foreach (range(1, 4) as $i) {
+            $this->riwayat($user, $this->jalur($i * 100))->update(['completed_at' => now()->subDays(10 - $i)]);
+        }
+
+        $deret = app(HikerProgressService::class)->tanjakanPerPendakian($user, batas: 3);
+
+        $this->assertSame([200, 300, 400], array_column($deret, 'elevasi_m'), 'Yang paling lama terpotong, urutannya tetap dari yang awal.');
+    }
+
     public function test_an_abandoned_hike_does_not_put_a_mountain_on_the_map(): void
     {
         $user = User::factory()->create();

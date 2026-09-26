@@ -19,9 +19,9 @@ enum ConsiderationOutcome: string
     public function label(): string
     {
         return match ($this) {
-            self::DITAMBAHKAN => 'Ditambahkan ke pertimbangan',
-            self::DIHAPUS => 'Dihapus dari pertimbangan',
-            self::DITOLAK => 'Ditolak, daftar pertimbangan sudah penuh',
+            self::DITAMBAHKAN => 'Disimpan',
+            self::DIHAPUS => 'Dihapus dari simpanan',
+            self::DITOLAK => 'Simpanan sudah penuh',
         };
     }
 }

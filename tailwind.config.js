@@ -10,10 +10,15 @@ const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;
 
 /** @type {import('tailwindcss').Config} */
 export default {
+    // Halaman React (resources/js) wajib ikut dipindai. Tanpa baris itu, setiap kelas
+    // yang hanya dipakai di komponen .tsx tidak pernah dibuat, dan kegagalannya diam:
+    // navigasi bawah kehilangan inset-x-0 dan melebar melewati layar, tanpa galat
+    // apa pun di build maupun di peramban (ditemukan lewat pengukuran 25 Sep 2026).
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+        './resources/js/**/*.{js,jsx,ts,tsx}',
     ],
 
     theme: {
@@ -76,6 +81,10 @@ export default {
                 muted: token('text-muted'),
 
                 brand: {
+                    // Hijau sebagai latar depan (tautan, penekanan, garis grafik).
+                    // Terpisah dari 700 yang menjadi isian tombol, karena keduanya
+                    // berpisah jalan di tema gelap; alasannya di app.css.
+                    ink: token('brand-ink'),
                     50: token('brand-50'),
                     100: token('brand-100'),
                     200: token('brand-200'),
@@ -106,6 +115,10 @@ export default {
                     700: token('danger-700'),
                     900: token('danger-900'),
                 },
+                logo: {
+                    mark: token('logo-mark'),
+                    type: token('logo-type'),
+                },
             },
 
 
@@ -122,6 +135,20 @@ export default {
             },
             borderRadius: {
                 control: 'var(--radius-control)',
+                kartu: 'var(--radius-kartu)',
+                luar: 'var(--radius-luar)',
+            },
+            // Token gerak dari app.css (DK-26): durasi dan kurva pegas yang dihitung.
+            transitionDuration: {
+                sentuh: 'var(--dur-sentuh)',
+                cepat: 'var(--dur-cepat)',
+                sedang: 'var(--dur-sedang)',
+                lambat: 'var(--dur-lambat)',
+            },
+            transitionTimingFunction: {
+                gerak: 'var(--ease-gerak)',
+                pudar: 'var(--ease-pudar)',
+                lentur: 'var(--ease-lentur)',
             },
         },
     },

@@ -1,0 +1,74 @@
+name: Security
+
+# Pemeriksaan keamanan yang tidak menunggu pull request (spec v3 DK-54). Advisori baru
+# terbit tanpa ada perubahan kode, jadi audit juga terjadwal setiap Senin; GitHub hanya
+# menjalankan jadwal dari cabang bawaan (main). Merah di sini berarti ada advisori pada
+# dependensi terkunci atau pola rahasia di berkas repo. Memperbaiki advisori berarti
+# mengubah versi dependensi, yang butuh izin pemilik (CLAUDE.md R-020, PRD §161).
+
+on:
+  push:
+    branches: [main, develop, hardening]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 1 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-dependensi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Membaca composer.lock; tidak butuh vendor/. Paket yang ditinggalkan
+      # pemeliharanya dilaporkan tanpa menggagalkan job.
+      - name: Composer audit
+        run: composer audit --locked --no-interaction --abandoned=report
+
+      # Membaca package-lock.json; tidak butuh node_modules/. Advisori high dan
+      # critical menggagalkan job. if: always() supaya npm audit tetap berjalan dan
+      # melapor walau langkah Composer audit di atasnya sudah gagal.
+      - name: npm audit
+        if: always()
+        run: npm audit --audit-level=high
+
+  pemindai-rahasia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo, pdo_sqlite
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Memindai setiap berkas yang akan ikut commit untuk pola kredensial sungguhan.
+      # --fail-on-skipped: bila git ls-files gagal, test di-skip (bukan lulus), dan
+      # tanpa flag ini job tetap hijau walau tidak ada satu berkas pun yang dipindai.
+      - name: Pemindai rahasia
+        run: php artisan test --filter=SecretsNotInRepoTest --fail-on-skipped

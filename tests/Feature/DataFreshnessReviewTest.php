@@ -8,6 +8,8 @@ use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -27,9 +29,14 @@ class DataFreshnessReviewTest extends TestCase
         $this->actingAs($this->admin())
             ->get('/admin/official-statuses')
             ->assertOk()
-            ->assertSee('Perlu ditinjau')
-            ->assertSee('Sudah kedaluwarsa')
-            ->assertSee('Jalur Cibodas');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('tinjau.kedaluwarsa', 1)
+                ->where('tinjau.kedaluwarsa.0.nama', 'Jalur Cibodas'));
+
+        // Halaman React merender panelnya di klien; judul dan kategorinya dijaga dari sumber.
+        $sumber = File::get(resource_path('js/pages/Admin/OfficialStatuses.tsx'));
+        $this->assertStringContainsString('title="Perlu ditinjau"', $sumber);
+        $this->assertStringContainsString('Sudah kedaluwarsa', $sumber);
     }
 
     public function test_the_panel_stays_hidden_when_nothing_needs_review(): void
@@ -45,7 +52,10 @@ class DataFreshnessReviewTest extends TestCase
         $this->actingAs($this->admin())
             ->get('/admin/official-statuses')
             ->assertOk()
-            ->assertDontSee('Perlu ditinjau');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('tinjau.kedaluwarsa', 0)
+                ->has('tinjau.segera', 0)
+                ->has('tinjau.basi', 0));
     }
 
     /**
@@ -57,17 +67,19 @@ class DataFreshnessReviewTest extends TestCase
         $this->statusKedaluwarsa('Jalur Selo');
 
         $this->actingAs($this->admin())
-            ->get('/admin/trails')
+            ->get('/admin/permits')
             ->assertOk()
-            ->assertSee('status perlu ditinjau');
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('adminNav.perluDitinjau', 1));
+
+        $this->assertStringContainsString('status perlu ditinjau', File::get(resource_path('js/components/admin/AdminNav.tsx')));
     }
 
     public function test_no_badge_when_there_is_nothing_to_review(): void
     {
         $this->actingAs($this->admin())
-            ->get('/admin/trails')
+            ->get('/admin/permits')
             ->assertOk()
-            ->assertDontSee('status perlu ditinjau');
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('adminNav.perluDitinjau', 0));
     }
 
     /**

@@ -30,4 +30,15 @@ class PublicationGateViolation extends RuntimeException
             implode(' ', $missing),
         ));
     }
+
+    /**
+     * Kalimat untuk kurator ketika penjaga menolak perubahan pada jalur yang tayang: apa
+     * yang kurang, lalu langkah berikutnya. Penolakan ini keputusan domain, jadi halaman
+     * admin menampilkannya sebagai peringatan, bukan halaman 500.
+     */
+    public function curatorMessage(): string
+    {
+        return 'Perubahan ditolak karena jalur yang tayang harus tetap memenuhi syarat publikasi. '
+            .implode(' ', $this->missing).' Turunkan jalur ke DRAFT terlebih dahulu.';
+    }
 }

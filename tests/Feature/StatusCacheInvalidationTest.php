@@ -4,13 +4,11 @@ namespace Tests\Feature;
 
 use App\Enums\OfficialStatusValue;
 use App\Enums\UserRole;
-use App\Livewire\Admin\OfficialStatusManager;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\User;
 use App\Services\OfficialStatusService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -48,14 +46,14 @@ class StatusCacheInvalidationTest extends TestCase
         // jalur sesaat sebelum balai mencatat penutupan.
         $this->assertSame(OfficialStatusValue::UNKNOWN->value, $this->statusTercache($trail));
 
-        Livewire::actingAs($this->admin())
-            ->test(OfficialStatusManager::class)
-            ->set('scope', 'TRAIL')
-            ->set('statusable_id', $trail->id)
-            ->set('status', OfficialStatusValue::CLOSED->value)
-            ->set('reason', 'Kebakaran lahan di jalur pendakian.')
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($this->admin())
+            ->post(route('admin.statuses.store'), [
+                'scope' => 'TRAIL',
+                'statusable_id' => $trail->id,
+                'status' => OfficialStatusValue::CLOSED->value,
+                'reason' => 'Kebakaran lahan di jalur pendakian.',
+            ])
+            ->assertSessionHasNoErrors();
 
         $this->assertSame(
             OfficialStatusValue::CLOSED->value,
@@ -79,14 +77,14 @@ class StatusCacheInvalidationTest extends TestCase
             $this->assertSame(OfficialStatusValue::UNKNOWN->value, $this->statusTercache($trail));
         }
 
-        Livewire::actingAs($this->admin())
-            ->test(OfficialStatusManager::class)
-            ->set('scope', 'MOUNTAIN')
-            ->set('statusable_id', $mountain->id)
-            ->set('status', OfficialStatusValue::CLOSED->value)
-            ->set('reason', 'Aktivitas vulkanik meningkat.')
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($this->admin())
+            ->post(route('admin.statuses.store'), [
+                'scope' => 'MOUNTAIN',
+                'statusable_id' => $mountain->id,
+                'status' => OfficialStatusValue::CLOSED->value,
+                'reason' => 'Aktivitas vulkanik meningkat.',
+            ])
+            ->assertSessionHasNoErrors();
 
         foreach ($trails as $trail) {
             $this->assertSame(

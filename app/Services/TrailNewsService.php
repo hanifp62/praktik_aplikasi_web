@@ -60,7 +60,10 @@ class TrailNewsService
             return collect();
         }
 
-        $jalur = Trail::query()->whereIn('mountain_id', $gunung)->pluck('id');
+        // Hanya jalur terbit (R-022). Draf dan jalur terarsip tidak punya halaman publik,
+        // dan status atau laporan tentangnya tidak boleh bocor lewat pintu paling ramai
+        // ini. Status yang diumumkan untuk gunungnya sendiri tetap sampai.
+        $jalur = Trail::query()->published()->whereIn('mountain_id', $gunung)->pluck('id');
 
         return $this->status($gunung, $jalur, $limit)
             ->concat($this->laporan($jalur, $limit))

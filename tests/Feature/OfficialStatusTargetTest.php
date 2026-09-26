@@ -3,11 +3,9 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use App\Livewire\Admin\OfficialStatusManager;
 use App\Models\Mountain;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -32,13 +30,13 @@ class OfficialStatusTargetTest extends TestCase
 
     public function test_a_target_that_does_not_exist_is_reported_on_the_field(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(OfficialStatusManager::class)
-            ->set('scope', 'MOUNTAIN')
-            ->set('statusable_id', 999999)
-            ->set('status', 'OPEN')
-            ->call('save')
-            ->assertHasErrors('statusable_id');
+        $this->actingAs($this->admin())
+            ->post(route('admin.statuses.store'), [
+                'scope' => 'MOUNTAIN',
+                'statusable_id' => 999999,
+                'status' => 'OPEN',
+            ])
+            ->assertSessionHasErrors('statusable_id');
     }
 
     /**
@@ -49,25 +47,25 @@ class OfficialStatusTargetTest extends TestCase
     {
         $mountain = Mountain::factory()->create();
 
-        Livewire::actingAs($this->admin())
-            ->test(OfficialStatusManager::class)
-            ->set('scope', 'TRAIL')
-            ->set('statusable_id', $mountain->id)
-            ->set('status', 'OPEN')
-            ->call('save')
-            ->assertHasErrors('statusable_id');
+        $this->actingAs($this->admin())
+            ->post(route('admin.statuses.store'), [
+                'scope' => 'TRAIL',
+                'statusable_id' => $mountain->id,
+                'status' => 'OPEN',
+            ])
+            ->assertSessionHasErrors('statusable_id');
     }
 
     public function test_a_real_target_still_saves(): void
     {
         $mountain = Mountain::factory()->create();
 
-        Livewire::actingAs($this->admin())
-            ->test(OfficialStatusManager::class)
-            ->set('scope', 'MOUNTAIN')
-            ->set('statusable_id', $mountain->id)
-            ->set('status', 'OPEN')
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($this->admin())
+            ->post(route('admin.statuses.store'), [
+                'scope' => 'MOUNTAIN',
+                'statusable_id' => $mountain->id,
+                'status' => 'OPEN',
+            ])
+            ->assertSessionHasNoErrors();
     }
 }

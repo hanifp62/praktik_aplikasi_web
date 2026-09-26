@@ -6,22 +6,35 @@ use App\Models\Checkpoint;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
  * Halaman jalur menggambar geometrinya.
  *
- * Variabel $geometry sudah dioper ke view ini sejak lama dan tidak pernah sekali pun
- * dipakai. Pendaki yang membuka halaman jalur karena itu membaca deretan angka tanpa
- * pernah melihat bentuk jalurnya, padahal datanya ada di baris yang sama.
+ * Variabel $geometry sempat dioper ke view dan tidak pernah dipakai: pendaki membaca
+ * deretan angka tanpa pernah melihat bentuk jalurnya. Kini geometri dan penanda pos
+ * dikirim sebagai props petaJalur dan digambar PetaJalur.tsx (garis, titik awal dan
+ * akhir, penanda pos).
  */
 class TrailDetailMapTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function bukaJalur(Trail $trail)
+    /**
+     * @return array{geometry: array<string, mixed>|null, penanda: array<int, array<string, mixed>>}
+     */
+    private function peta(Trail $trail): array
     {
-        return $this->actingAs(User::factory()->create())->get(route('trails.show', $trail));
+        return $this->actingAs(User::factory()->create())
+            ->get(route('trails.show', $trail))
+            ->assertOk()
+            ->viewData('page')['props']['petaJalur'];
+    }
+
+    private function sumberPeta(): string
+    {
+        return File::get(resource_path('js/components/trails/rinci/PetaJalur.tsx'));
     }
 
     public function test_a_trail_with_geometry_is_drawn(): void
@@ -34,9 +47,13 @@ class TrailDetailMapTest extends TestCase
 
         $trail->writeLineString('geometry', [[110.44, -7.45], [110.45, -7.46]]);
 
-        $this->bukaJalur($trail->fresh())
-            ->assertOk()
-            ->assertSee('role="region"', escape: false);
+        $peta = $this->peta($trail->fresh());
+
+        $this->assertSame('LineString', $peta['geometry']['type']);
+        $this->assertCount(2, $peta['geometry']['coordinates']);
+        $this->assertStringContainsString("addLayer({ id: 'garis-jalur'", $this->sumberPeta());
+        $this->assertStringContainsString("'Awal jalur'", $this->sumberPeta());
+        $this->assertStringContainsString("'Akhir jalur'", $this->sumberPeta());
     }
 
     /**
@@ -54,31 +71,49 @@ class TrailDetailMapTest extends TestCase
             'longitude' => 110.44,
         ]);
 
-        $this->bukaJalur($trail)
-            ->assertOk()
-            ->assertSee('role="region"', escape: false)
-            ->assertSee('Pos Bayangan');
+        $peta = $this->peta($trail);
+
+        $this->assertSame([['lng' => 110.44, 'lat' => -7.45, 'label' => '1. Pos Bayangan']], $peta['penanda']);
+        $this->assertStringContainsString('petaJalur.penanda.length > 0', File::get(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     /**
-     * Wadah peta kosong terbaca sebagai peta yang gagal dimuat, dan pendaki
-     * menyimpulkan aplikasinya rusak. Nadanya mengikuti halaman jalur menunggu yang
-     * sudah ada: kekosongan ini tahapan, dan yang ditunggu disebut namanya.
+     * Peta adalah wilayah interaktif, bukan gambar: role="img" menyembunyikan isinya dari
+     * pembaca layar dan menuntut teks alternatif yang mustahil untuk peta yang digeser.
+     */
+    public function test_the_map_is_an_interactive_region(): void
+    {
+        $wadah = File::get(resource_path('js/components/peta/WadahPeta.tsx'));
+
+        // Perannya dipegang WadahPeta, jadi peta jalur wajib menggambar lewat sana.
+        $this->assertStringContainsString('<WadahPeta', $this->sumberPeta());
+        $this->assertStringNotContainsString('role="img"', $this->sumberPeta());
+        $this->assertStringContainsString('role="region"', $wadah);
+        $this->assertStringNotContainsString('role="img"', $wadah);
+    }
+
+    /**
+     * Wadah peta kosong terbaca sebagai peta yang gagal dimuat. Kekosongan ini tahapan,
+     * dan yang ditunggu disebut namanya.
      */
     public function test_a_trail_without_any_coordinates_says_so_instead_of_showing_an_empty_box(): void
     {
         $trail = Trail::factory()->published()->easy()->create();
 
-        $halaman = $this->bukaJalur($trail);
+        $peta = $this->peta($trail);
 
-        $halaman->assertOk();
-        $halaman->assertDontSee('role="region"', escape: false);
-        $halaman->assertSee('Garis jalur ini belum dimasukkan');
+        $this->assertSame([], $peta['penanda']);
+
+        if (! Trail::spatialSupported()) {
+            $this->assertNull($peta['geometry']);
+        }
+
+        $this->assertStringContainsString('Garis jalur ini belum dimasukkan', File::get(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     /**
-     * Padanan non-visual peta. Pembaca layar tidak dapat menelusuri peta yang dapat
-     * digeser, jadi nama posnya harus terbaca sebagai teks (WCAG 1.1.1).
+     * Padanan non-visual peta: nama pos terbaca sebagai teks (WCAG 1.1.1), baik di
+     * daftar pos maupun di daftar penanda sr-only yang menyertai peta.
      */
     public function test_the_checkpoint_names_are_readable_without_the_map(): void
     {
@@ -93,9 +128,10 @@ class TrailDetailMapTest extends TestCase
             ]);
         }
 
-        $halaman = $this->bukaJalur($trail);
+        $props = $this->actingAs(User::factory()->create())->get(route('trails.show', $trail))->viewData('page')['props'];
 
-        $halaman->assertSee('Pos 1 Watu Gede');
-        $halaman->assertSee('Pos 2 Sabana');
+        $this->assertContains('Pos 1 Watu Gede', array_column($props['pos'], 'name'));
+        $this->assertContains('Pos 2 Sabana', array_column($props['pos'], 'name'));
+        $this->assertStringContainsString('<span className="sr-only">{penanda.map((p) => p.label)', $this->sumberPeta());
     }
 }

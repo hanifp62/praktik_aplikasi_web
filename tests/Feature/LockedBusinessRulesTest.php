@@ -8,7 +8,6 @@ use App\Enums\NavigationExperience;
 use App\Enums\PreparationStatus;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
-use App\Livewire\Trips\TripShow;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\TripPlan;
@@ -20,7 +19,6 @@ use App\Services\WeatherService;
 use Database\Seeders\PreparationTemplateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -81,8 +79,12 @@ class LockedBusinessRulesTest extends TestCase
             ->assertOk()
             ->getContent();
 
+        // Halaman persiapan kini React: kalimatnya ada di sumber komponen, bukan di HTML.
+        $sumber = File::get(resource_path('js/pages/Trips/Preparation.tsx'));
+
         foreach (['tidak punya', 'tidak memiliki', 'tidak dimiliki'] as $tuduhan) {
             $this->assertStringNotContainsString($tuduhan, $isi);
+            $this->assertStringNotContainsString($tuduhan, $sumber);
         }
     }
 
@@ -104,10 +106,8 @@ class LockedBusinessRulesTest extends TestCase
             'navigasi' => $pendaki->experience->navigation_experience,
         ];
 
-        Livewire::actingAs($pendaki)
-            ->test(TripShow::class, ['trip' => $trip])
-            ->set('completion_state', CompletionState::COMPLETED->value)
-            ->call('complete');
+        $this->actingAs($pendaki)
+            ->post(route('trips.complete', $trip), ['completion_state' => CompletionState::COMPLETED->value]);
 
         $this->assertSame(TripStatus::COMPLETED, $trip->fresh()->status, 'Pendakiannya memang selesai.');
 

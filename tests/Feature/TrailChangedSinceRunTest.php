@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\ExperienceLevel;
 use App\Enums\NavigationExperience;
-use App\Livewire\Recommendations\RecommendationResults;
 use App\Models\HikingGoal;
 use App\Models\RecommendationResult;
 use App\Models\RecommendationRun;
@@ -12,7 +11,8 @@ use App\Models\Trail;
 use App\Models\User;
 use App\Services\RouteFitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -20,14 +20,11 @@ use Tests\TestCase;
  *
  * Kartu hasil dahulu membaca jarak, elevation gain, dan durasi langsung dari tabel
  * jalur, yaitu nilai sekarang, sementara skor dan labelnya historis. Keduanya duduk
- * dalam satu kotak tanpa apa pun yang membedakan.
+ * dalam satu kotak tanpa apa pun yang membedakan: pendaki membaca angka yang benar hari
+ * ini dan menyimpulkan bahwa label di sebelahnya dihitung dari angka itu.
  *
- * Itu lebih menyesatkan daripada kalau dua-duanya basi: pendaki membaca angka yang benar
- * hari ini dan menyimpulkan bahwa label di sebelahnya dihitung dari angka itu.
- *
- * Sejak pintu kontribusi ahli dibuka, keadaan ini berhenti menjadi kasus pinggiran.
- * Sebelumnya karakteristik jalur hanya berubah kalau admin mengoreksi; sekarang ia
- * berubah setiap kali seorang pemandu bersertifikat menyumbang datanya.
+ * Sejak pintu kontribusi ahli dibuka, karakteristik jalur berubah setiap kali seorang
+ * pemandu bersertifikat menyumbang datanya, jadi keadaan ini bukan kasus pinggiran.
  */
 class TrailChangedSinceRunTest extends TestCase
 {
@@ -58,6 +55,11 @@ class TrailChangedSinceRunTest extends TestCase
         return [$user, app(RouteFitService::class)->recommend($user, $goal), $trail];
     }
 
+    private function halaman(User $user, RecommendationRun $run): TestResponse
+    {
+        return $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk();
+    }
+
     public function test_the_run_records_the_trail_as_it_was(): void
     {
         [, , $trail] = $this->runSatuJalur();
@@ -71,7 +73,7 @@ class TrailChangedSinceRunTest extends TestCase
 
     /**
      * Angka yang ditampilkan harus yang dipakai menilai, supaya kartunya utuh dengan
-     * dirinya sendiri.
+     * dirinya sendiri. Angkanya diformat di server (titik ribuan, koma desimal).
      */
     public function test_the_card_shows_the_figures_the_label_was_computed_from(): void
     {
@@ -79,10 +81,9 @@ class TrailChangedSinceRunTest extends TestCase
 
         $trail->update(['elevation_gain_m' => 1800]);
 
-        $page = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run]);
-
-        $page->assertSee('900');
-        $page->assertDontSee('1800');
+        $this->halaman($user, $run)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('eligible.0.angka.tanjakan', '900 m')
+            ->where('eligible.0.angka.jarak', '8,5 km'));
     }
 
     public function test_it_says_the_trail_data_changed_since(): void
@@ -91,9 +92,7 @@ class TrailChangedSinceRunTest extends TestCase
 
         $trail->update(['elevation_gain_m' => 1800]);
 
-        Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->assertSee('Data jalur ini berubah');
+        $this->halaman($user, $run)->assertInertia(fn (AssertableInertia $page) => $page->where('eligible.0.berubah', true));
     }
 
     /**
@@ -106,18 +105,14 @@ class TrailChangedSinceRunTest extends TestCase
 
         $trail->update(['camping_available' => ! $trail->camping_available]);
 
-        Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->assertSee('Data jalur ini berubah');
+        $this->halaman($user, $run)->assertInertia(fn (AssertableInertia $page) => $page->where('eligible.0.berubah', true));
     }
 
     public function test_an_untouched_trail_says_nothing(): void
     {
         [$user, $run] = $this->runSatuJalur();
 
-        Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->assertDontSee('Data jalur ini berubah');
+        $this->halaman($user, $run)->assertInertia(fn (AssertableInertia $page) => $page->where('eligible.0.berubah', false));
     }
 
     /**
@@ -132,9 +127,8 @@ class TrailChangedSinceRunTest extends TestCase
         RecommendationResult::query()->update(['trail_snapshot' => null]);
         $trail->update(['elevation_gain_m' => 1800]);
 
-        Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run->fresh()])
-            ->assertSee('1800')
-            ->assertDontSee('Data jalur ini berubah');
+        $this->halaman($user, $run)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('eligible.0.angka.tanjakan', '1.800 m')
+            ->where('eligible.0.berubah', false));
     }
 }

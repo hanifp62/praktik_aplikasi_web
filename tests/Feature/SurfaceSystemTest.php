@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -13,6 +14,8 @@ use Tests\TestCase;
  */
 class SurfaceSystemTest extends TestCase
 {
+    use SumberReact;
+
     private function css(): string
     {
         static $isi = null;
@@ -37,7 +40,8 @@ class SurfaceSystemTest extends TestCase
      *
      * Empat puluh delapan bayangan membuat setiap blok tampak melayang, dan halaman yang
      * seluruh isinya melayang tidak punya bidang dasar. Lapisan yang benar-benar melayang
-     * memakai shadow-overlay, satu elevasi yang disebut namanya.
+     * memakai shadow-overlay, satu elevasi yang disebut namanya. Disapu di view Blade
+     * dan sumber React sekaligus.
      */
     public function test_no_view_uses_a_drop_shadow_as_a_separator(): void
     {
@@ -51,35 +55,53 @@ class SurfaceSystemTest extends TestCase
             }
         }
 
+        foreach ($this->berkasTsx() as $berkas) {
+            if (preg_match('/\bshadow-(?:sm|md|lg|xl|2xl)\b/', $this->tanpaKomentarJs($berkas->getContents()))) {
+                $pelanggar[] = $berkas->getRelativePathname();
+            }
+        }
+
         $this->assertSame([], $pelanggar, 'Bayangan sebagai pemisah di: '.implode(', ', $pelanggar));
     }
 
     public function test_the_page_title_carries_real_weight(): void
     {
-        // Komentar Blade dilewati: penjelasan mengapa text-2xl ditinggalkan justru layak
+        // Komentar dilewati: penjelasan mengapa text-2xl ditinggalkan justru layak
         // disimpan, dan versi pertama test ini menolak berkasnya karena alasan itu.
-        $isi = preg_replace(
-            '/\{\{--.*?--\}\}/s',
-            ' ',
-            File::get(resource_path('views/components/ui/page-header.blade.php'))
-        );
+        $isi = $this->tanpaKomentarJs(File::get(resource_path('js/components/ui/PageHeader.tsx')));
 
-        $this->assertMatchesRegularExpression('/text-3xl|text-4xl/', $isi);
+        $this->assertMatchesRegularExpression('/<h1 className="[^"]*\btext-(?:3xl|4xl)\b/', $isi);
         $this->assertStringNotContainsString('text-2xl', $isi);
     }
 
     /**
-     * Tombol utama halaman masuk adalah tombol produk ini.
+     * Tombol utama halaman akun adalah tombol produk ini.
      *
-     * Delapan halaman auth dan profil memakai tombol Breeze berwarna netral gelap,
+     * Delapan halaman auth dan profil dahulu memakai tombol Breeze berwarna netral gelap,
      * sementara seluruh aplikasi memakai tombol merek. Layar pertama yang dilihat orang
      * membawa tombol yang berbeda dari produknya.
+     *
+     * @return array<string, array{0: string}>
      */
-    public function test_the_auth_pages_use_the_product_button(): void
+    public static function halamanAkun(): array
     {
-        $isi = File::get(resource_path('views/components/primary-button.blade.php'));
+        return [
+            'masuk' => ['Auth/Login'],
+            'daftar' => ['Auth/Register'],
+            'lupa kata sandi' => ['Auth/ForgotPassword'],
+            'atur ulang' => ['Auth/ResetPassword'],
+            'verifikasi' => ['Auth/VerifyEmail'],
+            'konfirmasi' => ['Auth/ConfirmPassword'],
+        ];
+    }
 
-        $this->assertStringContainsString('x-ui.button', $isi);
+    #[DataProvider('halamanAkun')]
+    public function test_the_auth_pages_use_the_product_button(string $halaman): void
+    {
+        $isi = File::get(resource_path("js/pages/{$halaman}.tsx"));
+
+        $this->assertStringContainsString("import { Button } from '@/components/ui/Button';", $isi);
+        $this->assertMatchesRegularExpression('/<Button\b/', $isi);
         $this->assertStringNotContainsString('bg-primary', $isi);
     }
 }

@@ -3,7 +3,7 @@
     // (bool) "0.00" adalah true di PHP -- hanya "" dan "0" yang falsy. Truthiness mentah
     // di sini berarti jalur berjarak nol tetap menulis "Jarak 0.00 km" di ringkasan
     // publik, seolah itu ukuran sungguhan. Dicast ke float dulu, baru diuji, sama seperti
-    // pola yang dipakai trail-row.blade.php dan route-comparison.blade.php.
+    // pola yang dipakai trail-row.blade.php dan App\Http\Resources\TrailRowResource.
     $ringkas = $trail->name.' di '.$trail->mountain->name.', '.$trail->mountain->province.'. '
         .((float) $trail->distance_km ? 'Jarak '.$trail->distance_km.' km. ' : '')
         .($trail->elevation_gain_m ? 'Elevation gain '.number_format($trail->elevation_gain_m, 0, ',', '.').' m. ' : '')
@@ -11,7 +11,7 @@
 @endphp
 
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" {{ \App\Support\ThemePreference::htmlAttribute(request()) }}>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -39,8 +39,7 @@
             pencarian hidup lebih lama daripada isinya, dan kartu sosial hidup lebih lama
             lagi, karena ia tersimpan di percakapan orang.
         --}}
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="apple-touch-icon" href="/icons/app-192.png">
+        <x-brand.head :fonts="false" />
         <meta property="og:type" content="article">
         <meta property="og:site_name" content="{{ config('app.name') }}">
         <meta property="og:title" content="{{ $trail->name }} - {{ $trail->mountain->name }}">
@@ -52,7 +51,7 @@
 
         @vite(['resources/css/app.css'])
     </head>
-    <body class="min-h-screen bg-white font-sans text-primary antialiased">
+    <body class="min-h-dvh bg-canvas font-sans text-primary antialiased">
         <main class="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
             <header>
                 <p class="text-sm font-medium text-muted">{{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }}</p>

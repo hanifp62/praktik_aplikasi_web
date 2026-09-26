@@ -19,6 +19,8 @@ use Tests\TestCase;
  */
 class ColourContrastTest extends TestCase
 {
+    use SumberReact;
+
     private const NORMAL_TEXT = 4.5;
 
     private const LARGE_TEXT_AND_UI = 3.0;
@@ -42,6 +44,9 @@ class ColourContrastTest extends TestCase
             ['warn-900', 'warn-50', 'blok peringatan'],
             ['danger-900', 'danger-100', 'badge KURANG COCOK dan alert bahaya'],
             ['danger-900', 'danger-50', 'blok bahaya'],
+            // Label sumber "Komunitas" (PRD §92): pembeda keterangan komunitas dari
+            // keterangan resmi, pengganti garis aksen tebal di sisi kartu.
+            ['community-900', 'community-50', 'label sumber komunitas'],
             // Pasangan semantik. Sampai lapisan ini ada, yang dihitung hanya pasangan
             // warna merek, dan warna yang membawa hampir seluruh teks aplikasi tidak
             // pernah diperiksa sama sekali.
@@ -57,20 +62,75 @@ class ColourContrastTest extends TestCase
             ['text-muted', 'canvas', 'metadata di atas latar halaman'],
             ['text-muted', 'surface', 'metadata di atas kartu'],
             ['text-muted', 'surface-sunken', 'metadata di atas sumur'],
-            ['text-muted', 'white', 'metadata di atas putih murni'],
+            // Hijau sebagai latar depan: tautan ghost, penekanan, garis profil elevasi.
+            // Di tema gelap ia menerang (brand-700 hanya 2.77:1 di atas permukaan gelap),
+            // dan pasangan ini yang membuktikan pemetaan ulangnya cukup.
+            ['brand-ink', 'canvas', 'tautan di atas latar halaman'],
+            ['brand-ink', 'surface', 'tautan di atas kartu'],
+            ['brand-ink', 'surface-sunken', 'tautan di atas sumur'],
+            ['logo-type', 'canvas', 'wordmark di atas latar halaman'],
+            ['logo-type', 'surface', 'wordmark di atas bilah navigasi'],
         ];
     }
 
-    #[DataProvider('textPairs')]
-    public function test_text_pairings_meet_aa(string $foreground, string $background, string $usage): void
+    /**
+     * Setiap pasangan dihitung di kedua tema. Tema gelap bukan varian yang ditaksir
+     * dari tema terang: setiap tokennya nilai sendiri, dan setiap pasangan gagal
+     * dengan caranya sendiri.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string, 3: string}>
+     */
+    public static function textPairsInBothSchemes(): array
     {
-        $ratio = $this->ratio($this->token($foreground), $this->token($background));
+        $kasus = [];
+
+        foreach (self::textPairs() as [$depan, $belakang, $keterangan]) {
+            foreach (['light', 'dark'] as $skema) {
+                $kasus["{$skema}: {$keterangan}"] = [$skema, $depan, $belakang, $keterangan];
+            }
+        }
+
+        return $kasus;
+    }
+
+    #[DataProvider('textPairsInBothSchemes')]
+    public function test_text_pairings_meet_aa(string $scheme, string $foreground, string $background, string $usage): void
+    {
+        $ratio = $this->ratio($this->token($foreground, $scheme), $this->token($background, $scheme));
 
         $this->assertGreaterThanOrEqual(
             self::NORMAL_TEXT,
             $ratio,
-            sprintf('%s: %s di atas %s hanya %.2f:1.', $usage, $foreground, $background, $ratio)
+            sprintf('[%s] %s: %s di atas %s hanya %.2f:1.', $scheme, $usage, $foreground, $background, $ratio)
         );
+    }
+
+    /**
+     * Tema gelap ditulis dua kali di app.css (blok media dan blok atribut) karena
+     * format token "R G B" tidak dapat memakai light-dark(). Dua blok yang identik
+     * hari ini akan melenceng besok tanpa penjaga ini, dan tema yang dipilih pengguna
+     * diam-diam berbeda dari tema yang mengikuti sistem.
+     */
+    public function test_both_dark_blocks_define_identical_tokens(): void
+    {
+        $this->assertSame(
+            $this->tokens('dark-media'),
+            $this->tokens('dark'),
+            'Blok gelap prefers-color-scheme dan blok data-theme=dark berbeda.'
+        );
+    }
+
+    /**
+     * Setiap token terang yang menyebut warna punya padanan gelap. Token yang
+     * terlewat memakai nilai terangnya di tema gelap, dan itu persis kegagalan
+     * yang tidak terlihat sampai seseorang membuka halaman yang memakainya.
+     */
+    public function test_every_colour_token_has_a_dark_counterpart(): void
+    {
+        $terang = array_keys($this->tokens('light'));
+        $gelap = array_keys($this->tokens('dark'));
+
+        $this->assertSame([], array_values(array_diff($terang, $gelap)), 'Token tanpa padanan gelap.');
     }
 
     /**
@@ -93,15 +153,16 @@ class ColourContrastTest extends TestCase
     }
 
     /**
+     * Komponen kontrol bersama halaman React: isian teks, pilihan, area teks, dan kotak
+     * centang di Field.tsx, serta seluruh varian tombol di Button.tsx.
+     *
      * @return array<int, array{0: string}>
      */
     public static function interactiveControls(): array
     {
         return [
-            ['views/components/text-input.blade.php'],
-            ['views/components/form/select.blade.php'],
-            ['views/components/ui/button.blade.php'],
-            ['views/components/secondary-button.blade.php'],
+            ['js/components/ui/Field.tsx'],
+            ['js/components/ui/Button.tsx'],
         ];
     }
 
@@ -118,10 +179,10 @@ class ColourContrastTest extends TestCase
     /**
      * Penyapuan menyeluruh, bukan daftar empat berkas.
      *
-     * Versi di atas hanya memeriksa empat komponen yang disebut namanya, dan dua
-     * pelanggaran nyata lolos lewat celah itu selama berbulan: radio di pengelola
-     * perizinan dan tombol status di daftar persiapan, keduanya ditulis sebagai markup
-     * sebaris alih-alih memakai komponen.
+     * Versi di atas hanya memeriksa komponen yang disebut namanya, dan dua pelanggaran
+     * nyata lolos lewat celah itu selama berbulan: radio di pengelola perizinan dan
+     * tombol status di daftar persiapan, keduanya ditulis sebagai markup sebaris
+     * alih-alih memakai komponen. Disapu di view Blade dan sumber React sekaligus.
      *
      * Yang dicari hanya kontrol interaktif. Garis pada kartu, lencana, dan panel tidak
      * termasuk, karena 1.4.11 memang tidak mengaturnya.
@@ -149,6 +210,22 @@ class ColourContrastTest extends TestCase
             }
         }
 
+        foreach ($this->berkasTsx() as $berkas) {
+            $baris = explode("\n", $this->tanpaKomentarJs($berkas->getContents()));
+
+            foreach ($baris as $nomor => $isi) {
+                if (! str_contains($isi, 'border-gray-300')) {
+                    continue;
+                }
+
+                $konteks = implode(' ', array_slice($baris, max(0, $nomor - 8), 9));
+
+                if (preg_match('/<(?:button|input|select|textarea|Button|TextInput|Select|Textarea|Checkbox)\b|onClick=/', $konteks)) {
+                    $pelanggar[] = $berkas->getRelativePathname().':'.($nomor + 1);
+                }
+            }
+        }
+
         $this->assertSame(
             [],
             $pelanggar,
@@ -158,15 +235,18 @@ class ColourContrastTest extends TestCase
     }
 
     /**
-     * Merek aplikasi berwarna hijau, tetapi input bawaan Breeze masih menyorot indigo.
+     * Merek aplikasi berwarna hijau, tetapi input bawaan Breeze dahulu menyorot indigo.
      * Setiap isian pada halaman masuk dan daftar berkedip warna yang bukan warna produk.
+     * Kelas fokusnya kini hidup di satu konstanta Field.tsx yang dipakai isian teks,
+     * pilihan, dan area teks.
      */
     public function test_focus_colours_follow_the_brand(): void
     {
-        $input = File::get(resource_path('views/components/text-input.blade.php'));
+        $isian = File::get(resource_path('js/components/ui/Field.tsx'));
 
-        $this->assertStringNotContainsString('indigo', $input);
-        $this->assertStringContainsString('brand-', $input);
+        $this->assertStringNotContainsString('indigo', $isian);
+        $this->assertMatchesRegularExpression("/const kontrol = '[^']*\bfocus:border-brand-600\b[^']*\bfocus:ring-brand-600\b/", $isian);
+        $this->assertMatchesRegularExpression("/type=\"checkbox\" className=\\{kelas\\('[^']*\\bfocus:ring-brand-600\\b/", $isian);
     }
 
     /**
@@ -176,9 +256,9 @@ class ColourContrastTest extends TestCase
      */
     public function test_the_danger_button_darkens_on_hover_instead_of_lightening(): void
     {
-        $isi = File::get(resource_path('views/components/danger-button.blade.php'));
+        $isi = File::get(resource_path('js/components/ui/Button.tsx'));
 
-        $this->assertStringContainsString('hover:bg-danger-700', $isi);
+        $this->assertMatchesRegularExpression("/danger: '[^']*\bbg-danger-600\b[^']*\bhover:bg-danger-700\b/", $isi);
 
         $normal = $this->ratio($this->token('danger-600'), $this->token('white'));
         $hover = $this->ratio($this->token('danger-700'), $this->token('white'));
@@ -209,6 +289,58 @@ class ColourContrastTest extends TestCase
         $this->assertSame([], $pelanggar, 'Warna mentah di: '.implode(', ', $pelanggar));
     }
 
+    /**
+     * Komponen non-teks di tema gelap: batas kontrol, cincin fokus, dan garis grafik
+     * masing-masing butuh 3:1 terhadap permukaan tempatnya berdiri.
+     *
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function darkNonTextPairs(): array
+    {
+        return [
+            'batas isian di atas kartu' => ['control-border', 'surface'],
+            'batas isian di atas latar' => ['control-border', 'canvas'],
+            'cincin fokus di atas latar' => ['brand-600', 'canvas'],
+            'cincin fokus di atas kartu' => ['brand-600', 'surface'],
+            'garis profil elevasi' => ['brand-ink', 'surface'],
+            'tanda logo di atas latar' => ['logo-mark', 'canvas'],
+            'tanda logo di atas bilah' => ['logo-mark', 'surface'],
+            'isian tombol primer di atas latar' => ['brand-700', 'canvas'],
+        ];
+    }
+
+    #[DataProvider('darkNonTextPairs')]
+    public function test_dark_non_text_pairings_meet_the_ui_threshold(string $foreground, string $background): void
+    {
+        $ratio = $this->ratio($this->token($foreground, 'dark'), $this->token($background, 'dark'));
+
+        $this->assertGreaterThanOrEqual(
+            self::LARGE_TEXT_AND_UI,
+            $ratio,
+            sprintf('[dark] %s di atas %s hanya %.2f:1.', $foreground, $background, $ratio)
+        );
+    }
+
+    /**
+     * Putih dan hitam yang ditulis langsung tidak berganti di tema gelap. Tema gelap
+     * hidup sepenuhnya di token, jadi view tidak boleh menyebut keduanya, dan tidak
+     * boleh memakai varian dark: yang berarti ada adaptasi di luar token.
+     */
+    public function test_no_view_hardcodes_white_black_or_a_dark_variant(): void
+    {
+        $pelanggar = [];
+
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            $isi = preg_replace('/\{\{--.*?--\}\}/s', ' ', $berkas->getContents());
+
+            if (preg_match('/\b(?:bg-white|text-black|bg-black|ring-black|dark:[a-z])/', $isi)) {
+                $pelanggar[] = $berkas->getRelativePathname();
+            }
+        }
+
+        $this->assertSame([], $pelanggar, 'Warna tanpa token di: '.implode(', ', $pelanggar));
+    }
+
     public function test_the_focus_ring_is_distinguishable_from_the_page(): void
     {
         // Focus ring adalah komponen non-teks, jadi ambangnya 3:1 (WCAG 1.4.11).
@@ -219,14 +351,16 @@ class ColourContrastTest extends TestCase
 
     public function test_the_primary_button_does_not_use_the_shade_that_fails(): void
     {
-        $button = File::get(resource_path('views/components/ui/button.blade.php'));
+        $button = File::get(resource_path('js/components/ui/Button.tsx'));
 
-        // brand-600 pernah menjadi dasar tombol dan gagal AA pada 3.77:1.
+        // brand-600 pernah menjadi dasar tombol dan gagal AA pada 3.77:1. Yang dihitung
+        // lolos di atas adalah putih di atas brand-700, jadi itu yang wajib dipakai.
         $this->assertStringNotContainsString(
             'bg-brand-600',
             $button,
             'brand-600 tidak lolos AA sebagai latar teks putih.'
         );
+        $this->assertMatchesRegularExpression("/primary: '[^']*\bbg-brand-700\b[^']*\btext-white\b/", $button);
     }
 
     public function test_every_token_referenced_here_exists_in_the_stylesheet(): void
@@ -247,20 +381,54 @@ class ColourContrastTest extends TestCase
      *
      * @return array{0: int, 1: int, 2: int}|null
      */
-    private function token(string $name): ?array
+    private function token(string $name, string $scheme = 'light'): ?array
     {
         if ($name === 'white') {
             return [255, 255, 255];
         }
 
-        static $css = null;
-        $css ??= File::get(resource_path('css/app.css'));
+        return $this->tokens($scheme)[$name] ?? null;
+    }
 
-        if (! preg_match('/--'.preg_quote($name, '/').':\s*(\d+)\s+(\d+)\s+(\d+);/', $css, $m)) {
-            return null;
+    /**
+     * Seluruh token satu skema, dibaca dari bloknya sendiri di app.css.
+     *
+     * Versi sebelumnya memakai preg_match atas seluruh berkas, sehingga hanya
+     * kemunculan pertama tiap token yang terbaca dan blok gelap tidak pernah diperiksa
+     * (F13). Blok dipilih dari selektornya, lalu token diambil dari dalam blok itu saja.
+     *
+     * @return array<string, array{0: int, 1: int, 2: int}>
+     */
+    private function tokens(string $scheme): array
+    {
+        static $cache = [];
+
+        if (isset($cache[$scheme])) {
+            return $cache[$scheme];
         }
 
-        return [(int) $m[1], (int) $m[2], (int) $m[3]];
+        $css = File::get(resource_path('css/app.css'));
+
+        $pembuka = match ($scheme) {
+            'light' => '/:root\s*\{/',
+            'dark' => "/:root\[data-theme='dark'\]\s*\{/",
+            'dark-media' => "/@media \(prefers-color-scheme: dark\)\s*\{\s*:root:not\(\[data-theme='light'\]\)\s*\{/",
+        };
+
+        $this->assertSame(1, preg_match($pembuka, $css, $m, PREG_OFFSET_CAPTURE), "Blok {$scheme} tidak ditemukan.");
+
+        $mulai = $m[0][1] + strlen($m[0][0]);
+        $blok = substr($css, $mulai, strpos($css, '}', $mulai) - $mulai);
+
+        preg_match_all('/--([a-z0-9-]+):\s*(\d+)\s+(\d+)\s+(\d+);/', $blok, $semua, PREG_SET_ORDER);
+
+        $token = [];
+
+        foreach ($semua as $t) {
+            $token[$t[1]] = [(int) $t[2], (int) $t[3], (int) $t[4]];
+        }
+
+        return $cache[$scheme] = $token;
     }
 
     /**

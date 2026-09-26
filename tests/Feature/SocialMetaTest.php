@@ -61,11 +61,15 @@ class SocialMetaTest extends TestCase
 
     public function test_every_layout_declares_the_site_icon(): void
     {
-        foreach (['layouts/app', 'layouts/guest', 'public/trail'] as $berkas) {
+        // Ikon dinyatakan satu kali di komponen head bersama; yang dijaga adalah bahwa
+        // setiap layout memanggil komponen itu, dan komponen itu memang menyatakan ikon.
+        $this->assertStringContainsString('rel="icon"', File::get(resource_path('views/components/brand/head.blade.php')));
+
+        foreach (['public/trail', 'inertia', 'errors/layout', 'offline'] as $berkas) {
             $this->assertStringContainsString(
-                'rel="icon"',
+                '<x-brand.head',
                 File::get(resource_path("views/{$berkas}.blade.php")),
-                "{$berkas} tidak menyatakan ikon situs."
+                "{$berkas} tidak memakai kepala dokumen bersama."
             );
         }
     }

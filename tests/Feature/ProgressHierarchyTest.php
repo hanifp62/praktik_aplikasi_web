@@ -9,22 +9,20 @@ use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
  * Hierarki halaman progres.
  *
- * Empat kartu angka besar berlabel kecil adalah susunan bawaan yang dipakai hampir
- * setiap dasbor, dan susunan itu tidak memilih apa pun: empat hal setara berarti tidak
- * ada yang utama.
+ * Muatan emosional halaman ini adalah petanya, bukan angka tiga: peta gunung yang sudah
+ * didaki menunjukkan di mana saja orang ini pernah berada. Angkanya menjelaskan peta itu,
+ * bukan menggantikannya.
  *
- * Muatan emosional halaman ini adalah petanya, bukan angka tiga. Peta gunung yang sudah
- * didaki menunjukkan sesuatu yang tidak dapat dikatakan angka: di mana saja orang ini
- * pernah berada. Angkanya menjelaskan peta itu, bukan menggantikannya.
- *
- * Yang diuji hierarkinya, bukan gaya visualnya. Urutan di dalam dokumen adalah urutan
- * yang dibaca mata dan dibacakan pembaca layar, dan itu yang menentukan apa yang
- * dianggap utama.
+ * Halamannya React (Inertia). Urutan di dokumen adalah urutan yang dibaca mata dan
+ * dibacakan pembaca layar, jadi urutan itu dijaga dari sumber komponennya; isinya
+ * dijaga dari props yang dikirim server.
  */
 class ProgressHierarchyTest extends TestCase
 {
@@ -41,6 +39,13 @@ class ProgressHierarchyTest extends TestCase
         ]);
 
         $trail = Trail::factory()->easy()->for($gunung)->create(['elevation_gain_m' => 1200]);
+        $this->riwayat($user, $trail);
+
+        return $user->fresh();
+    }
+
+    private function riwayat(User $user, Trail $trail, string $selesai = '-2 days'): void
+    {
         $trip = TripPlan::factory()->create(['user_id' => $user->id, 'trail_id' => $trail->id]);
 
         HikingHistory::create([
@@ -50,18 +55,25 @@ class ProgressHierarchyTest extends TestCase
             'trip_type' => $trip->trip_type->value,
             'completion_state' => CompletionState::COMPLETED->value,
             'preparation_completion_percent' => 90,
-            'completed_at' => now()->subDays(2),
+            'completed_at' => now()->modify($selesai),
         ]);
+    }
 
-        return $user->fresh();
+    private function sumber(): string
+    {
+        return File::get(resource_path('js/pages/Community/HikerProgress.tsx'));
     }
 
     public function test_the_map_comes_before_the_figures(): void
     {
-        $html = $this->actingAs($this->pendakiDenganPuncak())->get(route('progress'))->getContent();
+        $this->actingAs($this->pendakiDenganPuncak())->get(route('progress'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Community/HikerProgress')
+            ->has('gunung', 1)
+            ->where('gunung.0.label', 'Gunung Merbabu'));
 
-        $peta = strpos($html, 'role="region"');
-        $angka = strpos($html, 'Total elevation gain');
+        $sumber = $this->sumber();
+        $peta = strpos($sumber, '<PetaGaris');
+        $angka = strpos($sumber, 'Total elevation gain');
 
         $this->assertNotFalse($peta, 'Peta gunung yang sudah didaki harus ada.');
         $this->assertLessThan($angka, $peta, 'Peta adalah muatan utama halaman ini, jadi ia dibaca lebih dulu.');
@@ -73,24 +85,22 @@ class ProgressHierarchyTest extends TestCase
      */
     public function test_the_figures_are_still_there(): void
     {
-        $halaman = $this->actingAs($this->pendakiDenganPuncak())->get(route('progress'));
-
-        $halaman->assertSee('Gunung berbeda');
-        $halaman->assertSee('Total elevation gain');
-        $halaman->assertSee('1.200');
+        $this->actingAs($this->pendakiDenganPuncak())->get(route('progress'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('angka.gunung', '1')
+            ->where('angka.elevasiTotal', '1.200 m')
+            ->where('angka.elevasiTertinggi', '1.200 m'));
     }
 
     /**
      * Pendaki yang gunungnya belum berkoordinat tidak mendapat kotak peta kosong, dan
-     * angkanya naik menjadi yang utama karena memang hanya itu yang ada.
+     * ketidakhadirannya disebut supaya hitungannya tidak terbaca bertentangan.
      */
     public function test_without_a_mappable_mountain_the_figures_lead(): void
     {
-        $halaman = $this->actingAs($this->pendakiDenganPuncak(berkoordinat: false))->get(route('progress'));
-
-        $halaman->assertOk();
-        $halaman->assertDontSee('role="region"', escape: false);
-        $halaman->assertSee('Total elevation gain');
+        $this->actingAs($this->pendakiDenganPuncak(berkoordinat: false))->get(route('progress'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('gunung', 0)
+            ->where('gunungTanpaKoordinat', '1 gunung lainnya belum berkoordinat, jadi belum dapat digambar.')
+            ->where('angka.elevasiTotal', '1.200 m'));
     }
 
     /**
@@ -99,12 +109,44 @@ class ProgressHierarchyTest extends TestCase
      */
     public function test_the_figures_are_one_group_not_four_competing_cards(): void
     {
-        $html = $this->actingAs($this->pendakiDenganPuncak())->get(route('progress'))->getContent();
-
         $this->assertMatchesRegularExpression(
             '/<dl[^>]*>.*Pendakian.*Gunung berbeda.*Total elevation gain.*<\/dl>/s',
-            $html,
+            $this->sumber(),
             'Angkanya satu kelompok, bukan empat klaim setara.'
         );
+    }
+
+    /**
+     * R-015: grafiknya membandingkan pendaki dengan pendakiannya sendiri, dari yang
+     * paling awal. Pendakian orang lain tidak ikut, jadi deretnya tepat dua butir.
+     */
+    public function test_the_chart_compares_the_hiker_with_their_own_earlier_hikes(): void
+    {
+        $user = User::factory()->create();
+        $this->riwayat($user, Trail::factory()->easy()->create(['name' => 'Jalur Kedua', 'elevation_gain_m' => 1500]), '-3 days');
+        $this->riwayat($user, Trail::factory()->easy()->create(['name' => 'Jalur Pertama', 'elevation_gain_m' => 900]), '-40 days');
+        $this->riwayat(User::factory()->create(), Trail::factory()->easy()->create(['name' => 'Jalur Orang Lain', 'elevation_gain_m' => 3000]));
+
+        $this->actingAs($user)->get(route('progress'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('grafik', 2)
+            ->where('grafik.0.jalur', 'Jalur Pertama')
+            ->where('grafik.0.m', 900)
+            ->where('grafik.0.teks', '900 m')
+            ->where('grafik.1.jalur', 'Jalur Kedua')
+            ->where('grafik.1.teks', '1.500 m'));
+    }
+
+    /**
+     * Satu pendakian belum dapat dibandingkan dengan apa pun. Keterangannya jujur dan
+     * disertai jalan untuk mencatat pendakian berikutnya.
+     */
+    public function test_a_single_hike_gets_an_honest_note_instead_of_a_chart(): void
+    {
+        $this->actingAs($this->pendakiDenganPuncak())->get(route('progress'))->assertInertia(fn (AssertableInertia $page) => $page->has('grafik', 1));
+
+        $grafik = File::get(resource_path('js/components/community/GrafikTanjakan.tsx'));
+        $this->assertStringContainsString('titik.length < 2', $grafik);
+        $this->assertStringContainsString('Grafik ini muncul setelah ada dua pendakian yang selesai sampai target', $grafik);
+        $this->assertStringContainsString('tripsIndex.url()', $grafik);
     }
 }

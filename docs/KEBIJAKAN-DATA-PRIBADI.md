@@ -6,8 +6,8 @@ setelah penghapusan.
 
 - **Provenance:** dipindahkan dari `CLAUDE.md` §23 atas keputusan pemilik produk (D4).
   Seluruh ketentuan di sana dipertahankan dan diperjelas menjadi prosedur.
-- **Hubungan dengan PRD:** `PRD.md` BR-13 (*Precise GPS private by default*) tetap
-  menjadi referensi business-level, dan `PRD.md` §82–§84 tetap mengatur location
+- **Hubungan dengan PRD:** `docs/PRD.md` BR-13 (*Precise GPS private by default*) tetap
+  menjadi referensi business-level, dan `docs/PRD.md` §82–§84 tetap mengatur location
   privacy, data minimization, dan kontrol pengguna. Berkas ini tidak menggantikan
   keduanya; ia merinci apa yang terjadi pada data ketika akun dihapus.
 - **Hubungan dengan arsitektur:** `docs/ARCHITECTURE.md` hanya menunjuk ke berkas ini.
@@ -53,8 +53,8 @@ boleh menjadi pintu belakang untuk menyimpan identitas yang seharusnya sudah hil
 
 ## 4. Lokasi presisi
 
-GPS presisi bersifat privat secara default (`PRD.md` BR-13), tidak diminta di luar Hike
-Mode (`PRD.md` §83), dan **dihapus** pada penghapusan akun.
+GPS presisi bersifat privat secara default (`docs/PRD.md` BR-13), tidak diminta di luar Hike
+Mode (`docs/PRD.md` §83), dan **dihapus** pada penghapusan akun.
 
 Jejak lokasi tidak boleh bertahan dalam bentuk apa pun yang masih dapat dikaitkan dengan
 orang yang sudah menghapus akunnya, termasuk lewat laporan kondisi yang dipertahankan.

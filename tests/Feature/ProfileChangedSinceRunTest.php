@@ -4,13 +4,14 @@ namespace Tests\Feature;
 
 use App\Enums\ExperienceLevel;
 use App\Enums\NavigationExperience;
-use App\Livewire\Recommendations\RecommendationResults;
 use App\Models\HikingGoal;
+use App\Models\RecommendationRun;
 use App\Models\Trail;
 use App\Models\User;
 use App\Services\RouteFitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\File;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
@@ -19,10 +20,7 @@ use Tests\TestCase;
  * menaikkan tingkat pengalamannya lalu membuka kembali run kemarin.
  *
  * Yang ia baca di sana adalah label kecocokan yang dihitung terhadap profil yang sudah
- * tidak ada, di bawah kalimat yang menyebut "profil Anda" dalam bentuk kini. Pendaki
- * yang baru saja menaikkan dirinya dari pemula ke menengah membaca "KURANG COCOK" yang
- * dihitung untuk orang yang bukan dirinya lagi, dan tidak ada apa pun di halaman itu
- * yang memberitahunya.
+ * tidak ada, di bawah kalimat yang menyebut "profil Anda" dalam bentuk kini.
  *
  * Run tidak dihitung ulang. Ia catatan tentang apa yang dinilai saat itu, dan
  * menghitungnya ulang di tempat akan menghapus catatan tersebut sekaligus membuat
@@ -33,6 +31,9 @@ class ProfileChangedSinceRunTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * @return array{0: User, 1: RecommendationRun}
+     */
     private function pendakiDenganRun(): array
     {
         $user = User::factory()->create();
@@ -51,15 +52,24 @@ class ProfileChangedSinceRunTest extends TestCase
         return [$user, app(RouteFitService::class)->recommend($user, $goal)];
     }
 
+    private function profilBerubah(User $user, RecommendationRun $run): bool
+    {
+        return $this->halaman($user, $run)->viewData('page')['props']['profilBerubah'];
+    }
+
+    private function halaman(User $user, RecommendationRun $run): TestResponse
+    {
+        return $this->actingAs($user->fresh())->get(route('recommendations.show', $run))->assertOk();
+    }
+
     public function test_it_admits_the_profile_changed_since_the_run(): void
     {
         [$user, $run] = $this->pendakiDenganRun();
 
         $user->profile->update(['experience_level' => ExperienceLevel::INTERMEDIATE->value]);
 
-        Livewire::actingAs($user->fresh())
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->assertSee('Profil Anda berubah');
+        $this->assertTrue($this->profilBerubah($user, $run));
+        $this->assertStringContainsString('Profil Anda berubah sejak penilaian ini dibuat', $this->sumber());
     }
 
     /**
@@ -73,9 +83,7 @@ class ProfileChangedSinceRunTest extends TestCase
 
         $user->experience->update(['completed_hikes_count' => 20]);
 
-        Livewire::actingAs($user->fresh())
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->assertSee('Profil Anda berubah');
+        $this->assertTrue($this->profilBerubah($user, $run));
     }
 
     /**
@@ -84,13 +92,11 @@ class ProfileChangedSinceRunTest extends TestCase
      */
     public function test_it_offers_a_way_to_run_the_engine_again(): void
     {
-        [$user, $run] = $this->pendakiDenganRun();
+        $sumber = $this->sumber();
+        $pengakuan = substr($sumber, (int) strpos($sumber, '{profilBerubah ? ('));
 
-        $user->profile->update(['experience_level' => ExperienceLevel::ADVANCED->value]);
-
-        Livewire::actingAs($user->fresh())
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->assertSee(route('goals.create'));
+        $this->assertMatchesRegularExpression('/^\{profilBerubah \? \(.*?<Tautan href=\{goalsCreate\.url\(\)\}/s', $pengakuan);
+        $this->assertStringContainsString("import { create as goalsCreate } from '@/routes/goals';", $sumber);
     }
 
     /**
@@ -101,9 +107,7 @@ class ProfileChangedSinceRunTest extends TestCase
     {
         [$user, $run] = $this->pendakiDenganRun();
 
-        Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->assertDontSee('Profil Anda berubah');
+        $this->assertFalse($this->profilBerubah($user, $run));
     }
 
     /**
@@ -117,8 +121,11 @@ class ProfileChangedSinceRunTest extends TestCase
         $user->profile->update(['experience_level' => ExperienceLevel::EXPERT->value]);
         $user->profile->update(['experience_level' => ExperienceLevel::BEGINNER->value]);
 
-        Livewire::actingAs($user->fresh())
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->assertDontSee('Profil Anda berubah');
+        $this->assertFalse($this->profilBerubah($user, $run));
+    }
+
+    private function sumber(): string
+    {
+        return File::get(resource_path('js/pages/Recommendations/Show.tsx'));
     }
 }

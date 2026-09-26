@@ -7,8 +7,10 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "inertiajs/inertia-laravel": "^3.3",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
+        "laravel/wayfinder": "^0.1.21",
         "league/flysystem-aws-s3-v3": "^3.35",
         "livewire/livewire": "^3.6.4",
         "livewire/volt": "^1.7.0"

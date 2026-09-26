@@ -95,7 +95,7 @@ class DesignDirectionTest extends TestCase
         $berkas = collect(File::allFiles(resource_path()))
             ->merge(File::allFiles(app_path()))
             ->merge(File::allFiles(base_path('tests')))
-            ->filter(fn ($b) => in_array($b->getExtension(), ['php', 'css', 'js'], true))
+            ->filter(fn ($b) => in_array($b->getExtension(), ['php', 'css', 'js', 'ts', 'tsx'], true))
             ->push(new \SplFileInfo(base_path('DESIGN.md')))
             ->push(new \SplFileInfo(base_path('tailwind.config.js')));
 

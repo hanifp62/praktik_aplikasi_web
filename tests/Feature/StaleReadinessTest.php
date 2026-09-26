@@ -7,9 +7,6 @@ use App\Enums\NavigationExperience;
 use App\Enums\OfficialStatusValue;
 use App\Enums\ReadinessState;
 use App\Enums\StatusScope;
-use App\Livewire\Dashboard;
-use App\Livewire\Trips\TripIndex;
-use App\Livewire\Trips\TripShow;
 use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\TripPlan;
@@ -17,7 +14,8 @@ use App\Models\User;
 use App\Services\ReadinessService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -87,6 +85,18 @@ class StaleReadinessTest extends TestCase
     }
 
     /**
+     * Langkah "Cek kesiapan" di halaman trip (React), sebagaimana dikirim server.
+     *
+     * @return array<string, mixed>
+     */
+    private function langkahKesiapan(TripPlan $trip): array
+    {
+        $props = $this->actingAs($trip->user)->get(route('trips.show', $trip))->assertOk()->viewData('page')['props'];
+
+        return collect($props['langkah'])->firstWhere('kunci', 'kesiapan');
+    }
+
+    /**
      * Waktunya dimajukan dan dibiarkan maju. Mengembalikannya sebelum pemeriksaan
      * membuat penutupan yang baru dicatat justru jatuh di masa depan dan belum berlaku,
      * sehingga testnya akan hijau karena alasan yang salah.
@@ -144,10 +154,11 @@ class StaleReadinessTest extends TestCase
 
         $this->majuSehariLaluTutup($trip);
 
-        $page = Livewire::actingAs($trip->user)->test(TripShow::class, ['trip' => $trip->fresh()]);
+        $kesiapan = $this->langkahKesiapan($trip);
 
-        $page->assertDontSee(ReadinessState::READY->label());
-        $page->assertSee('perlu dinilai ulang');
+        $this->assertNotSame(ReadinessState::READY->label(), $kesiapan['keterangan']);
+        $this->assertSame('Status jalur berubah, perlu dinilai ulang', $kesiapan['keterangan']);
+        $this->assertNotSame('selesai', $kesiapan['keadaan'], 'Vonis basi tidak boleh tampak sebagai langkah yang selesai.');
     }
 
     public function test_the_trip_list_stops_presenting_a_superseded_verdict(): void
@@ -156,10 +167,12 @@ class StaleReadinessTest extends TestCase
 
         $this->majuSehariLaluTutup($trip);
 
-        Livewire::actingAs($trip->user)
-            ->test(TripIndex::class)
-            ->assertDontSee(ReadinessState::READY->label())
-            ->assertSee('perlu dinilai ulang');
+        $this->actingAs($trip->user)
+            ->get(route('trips.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Index')
+                ->where('trips.data.0.kesiapan.teks', 'Status jalur berubah, perlu dinilai ulang')
+                ->where('trips.data.0.kesiapan.peringatan', true));
     }
 
     public function test_the_dashboard_stops_presenting_a_superseded_verdict(): void
@@ -168,10 +181,14 @@ class StaleReadinessTest extends TestCase
 
         $this->majuSehariLaluTutup($trip);
 
-        Livewire::actingAs($trip->user)
-            ->test(Dashboard::class)
-            ->assertDontSee(ReadinessState::READY->label())
-            ->assertSee('perlu dinilai ulang');
+        // Dasbor kini React: server menandai vonisnya basi dan tidak mengirim labelnya.
+        $this->actingAs($trip->user)->get(route('dashboard'))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('trip.id', $trip->id)
+                ->where('trip.catatan.jenis', 'basi')
+                ->where('trip.catatan.label', null));
+
+        $this->assertStringContainsString('Status jalur berubah, perlu dinilai ulang', File::get(resource_path('js/pages/Dashboard.tsx')));
     }
 
     /**
@@ -182,8 +199,9 @@ class StaleReadinessTest extends TestCase
     {
         $trip = $this->tripYangDinilaiSiap();
 
-        Livewire::actingAs($trip->user)
-            ->test(TripShow::class, ['trip' => $trip])
-            ->assertDontSee('perlu dinilai ulang');
+        $kesiapan = $this->langkahKesiapan($trip);
+
+        $this->assertStringNotContainsString('perlu dinilai ulang', $kesiapan['keterangan']);
+        $this->assertSame($trip->latestReadinessCheck->computed_state->label(), $kesiapan['keterangan']);
     }
 }

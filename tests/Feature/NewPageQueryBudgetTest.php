@@ -18,6 +18,7 @@ use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\TripPlan;
 use App\Models\User;
+use App\Services\ConsiderationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -149,6 +150,27 @@ class NewPageQueryBudgetTest extends TestCase
             fn () => $this->tambahPos($trail, 12),
             'Halaman hasil pendakian tumbuh bersama jumlah pos'
         );
+    }
+
+    public function test_the_saved_routes_page_does_not_grow_with_the_number_of_saved_trails(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+        $this->simpanJalur($user, 1);
+
+        $this->tidakTumbuh(
+            route('trails.saved'),
+            fn () => $this->simpanJalur($user, 4),
+            'Daftar rute tersimpan tumbuh bersama jumlah simpanannya'
+        );
+    }
+
+    private function simpanJalur(User $user, int $jumlah): void
+    {
+        foreach (range(1, $jumlah) as $i) {
+            app(ConsiderationService::class)->toggle($user, Trail::factory()->easy()->create());
+        }
     }
 
     private function tambahKabar(Trail $trail, int $jumlah): void

@@ -12,6 +12,8 @@ use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -161,7 +163,13 @@ class ExpertGeometryAccessTest extends TestCase
         $this->actingAs($ahli)
             ->get(route('contribute'))
             ->assertOk()
-            ->assertSee(route('trails.geometry', $trail))
-            ->assertSee(route('trails.checkpoints', $trail));
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('trails', 1)
+                ->where('trails.0.id', $trail->id));
+
+        // Halaman React membangun kedua tautan dari id jalur lewat rute bertipe.
+        $sumber = File::get(resource_path('js/pages/Community/TrailContribution.tsx'));
+        $this->assertStringContainsString('geometry.url(t.id)', $sumber);
+        $this->assertStringContainsString('checkpoints.url(t.id)', $sumber);
     }
 }

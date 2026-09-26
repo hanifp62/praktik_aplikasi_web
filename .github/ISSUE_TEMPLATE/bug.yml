@@ -1,0 +1,66 @@
+name: Laporan bug
+description: Sesuatu tidak berjalan seperti seharusnya.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Terima kasih sudah melapor. Kerentanan keamanan, termasuk data milik pengguna lain yang dapat dibuka, jangan dilaporkan di sini; ikuti SECURITY.md.
+        Jangan menempelkan data pribadi, kata sandi, token, atau isi berkas .env.
+  - type: textarea
+    id: langkah
+    attributes:
+      label: Langkah untuk memunculkan
+      description: Urutan langkah dari halaman awal, termasuk jenis akun dan data yang dipakai, tanpa data pribadi.
+      placeholder: "1. Buka /trails\n2. Pilih saringan tanjakan\n3. Buka jalur pertama"
+    validations:
+      required: true
+  - type: textarea
+    id: harapan
+    attributes:
+      label: Yang diharapkan
+    validations:
+      required: true
+  - type: textarea
+    id: kenyataan
+    attributes:
+      label: Yang terjadi
+      description: Pesan galat, tangkapan layar, atau keluaran perintah.
+    validations:
+      required: true
+  - type: dropdown
+    id: lebar
+    attributes:
+      label: Lebar layar
+      options:
+        - Ponsel (sekitar 360 sampai 430 px)
+        - Tablet
+        - Layar lebar (1024 px ke atas)
+    validations:
+      required: true
+  - type: input
+    id: peramban
+    attributes:
+      label: Peramban dan perangkat
+      placeholder: "Chrome di Android"
+  - type: dropdown
+    id: dampak
+    attributes:
+      label: Dampak
+      options:
+        - Menghalangi alur inti (jelajah, rencana, persiapan, mendaki)
+        - Mengganggu tetapi ada jalan lain
+        - Kosmetik
+    validations:
+      required: true
+  - type: checkboxes
+    id: aturan
+    attributes:
+      label: Aturan yang mungkin terlanggar
+      description: Centang bila bug menyentuh aturan kanonis.
+      options:
+        - label: Data yang tidak ada tampil sebagai angka atau tebakan (R-006, R-007)
+        - label: Laporan komunitas atau AI menimpa status resmi (R-009 sampai R-011)
+        - label: Status Buka terbaca sebagai jaminan keselamatan (R-012)
+        - label: Skor atau persen kecocokan tampil (R-004, R-005)

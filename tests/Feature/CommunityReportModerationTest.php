@@ -4,8 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\ModerationStatus;
 use App\Enums\UserRole;
-use App\Livewire\Moderation\ModerationQueue;
-use App\Livewire\Reports\ConditionReportForm;
 use App\Models\ModerationAction;
 use App\Models\OfficialStatus;
 use App\Models\Trail;
@@ -14,7 +12,6 @@ use App\Models\User;
 use App\Services\ConditionAggregatorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -36,13 +33,15 @@ class CommunityReportModerationTest extends TestCase
         $trail = Trail::factory()->create();
         $user = User::factory()->create();
 
-        Livewire::actingAs($user)
-            ->test(ConditionReportForm::class, ['trail' => $trail->id])
-            ->set('hike_date', now()->subDay()->toDateString())
-            ->set('condition_tags', ['MUDDY'])
-            ->set('note', 'Licin setelah hujan.')
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($user)
+            ->post(route('reports.store'), [
+                'trail_id' => $trail->id,
+                'hike_date' => now()->subDay()->toDateString(),
+                'condition_tags' => ['MUDDY'],
+                'note' => 'Licin setelah hujan.',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('history'));
 
         $report = TrailConditionReport::firstOrFail();
 
@@ -55,9 +54,9 @@ class CommunityReportModerationTest extends TestCase
         $report = TrailConditionReport::factory()->create();
         $moderator = User::factory()->create(['role' => UserRole::MODERATOR->value]);
 
-        Livewire::actingAs($moderator)
-            ->test(ModerationQueue::class)
-            ->call('act', $report->id, 'APPROVE');
+        $this->actingAs($moderator)
+            ->post(route('moderation.act', $report), ['action' => 'APPROVE'])
+            ->assertSessionHasNoErrors();
 
         $report->refresh();
 
@@ -71,10 +70,13 @@ class CommunityReportModerationTest extends TestCase
     {
         $report = TrailConditionReport::factory()->create();
 
-        Livewire::actingAs(User::factory()->create())
-            ->test(ModerationQueue::class)
-            ->call('act', $report->id, 'APPROVE')
+        $this->actingAs(User::factory()->create())
+            ->post(route('moderation.act', $report), ['action' => 'APPROVE'])
             ->assertForbidden();
+
+        // Laporan yang belum lolos tidak pernah menjadi publik lewat jalan pintas.
+        $this->assertSame(ModerationStatus::PENDING, $report->fresh()->moderation_status);
+        $this->assertSame(0, TrailConditionReport::visibleToPublic()->count());
     }
 
     public function test_case_a_open_status_with_community_caution_keeps_status_and_adds_warning(): void

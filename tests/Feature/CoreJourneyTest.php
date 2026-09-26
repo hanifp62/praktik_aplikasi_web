@@ -8,9 +8,6 @@ use App\Enums\NavigationExperience;
 use App\Enums\PreparationStatus;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
-use App\Livewire\Goals\GoalForm;
-use App\Livewire\Trips\ReadinessDashboard;
-use App\Livewire\Trips\TripForm;
 use App\Models\AnalyticsEvent;
 use App\Models\DataSource;
 use App\Models\Mountain;
@@ -21,8 +18,6 @@ use App\Models\TripPlan;
 use App\Models\User;
 use Database\Seeders\PreparationTemplateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
-use Livewire\Volt\Volt;
 use Tests\TestCase;
 
 /**
@@ -43,13 +38,12 @@ class CoreJourneyTest extends TestCase
         $this->seed(PreparationTemplateSeeder::class);
         $trail = $this->publishedTrail();
 
-        Volt::test('pages.auth.register')
-            ->set('name', 'Rani')
-            ->set('email', 'rani@contoh.test')
-            ->set('password', 'kata-sandi-rahasia')
-            ->set('password_confirmation', 'kata-sandi-rahasia')
-            ->call('register')
-            ->assertRedirect(route('dashboard', absolute: false));
+        $this->post(route('register.store'), [
+            'name' => 'Rani',
+            'email' => 'rani@contoh.test',
+            'password' => 'kata-sandi-rahasia',
+            'password_confirmation' => 'kata-sandi-rahasia',
+        ])->assertRedirect(route('onboarding', absolute: false));
 
         $user = User::where('email', 'rani@contoh.test')->firstOrFail();
         $this->actingAs($user);
@@ -67,12 +61,11 @@ class CoreJourneyTest extends TestCase
         $this->assertTrue($user->fresh()->hasCompletedProfile(), 'Profil harus terhitung lengkap.');
 
         // Menyimpan goal menjalankan mesin route fit dan mencatat jejak auditnya.
-        Livewire::test(GoalForm::class)
-            ->set('trip_type', TripType::CAMPING->value)
-            ->set('expected_duration_minutes', 720)
-            ->set('target_date', now()->addDays(14)->toDateString())
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->post(route('goals.store'), [
+            'trip_type' => TripType::CAMPING->value,
+            'expected_duration_minutes' => 720,
+            'target_date' => now()->addDays(14)->toDateString(),
+        ])->assertSessionHasNoErrors();
 
         $run = RecommendationRun::where('user_id', $user->id)->latest('id')->firstOrFail();
 
@@ -84,13 +77,12 @@ class CoreJourneyTest extends TestCase
         $this->assertNotNull($result->label, 'Setiap kandidat membawa label publik (PRD §29).');
         $this->assertNotEmpty($result->explanation, 'Setiap rekomendasi membawa penjelasan (PRD §30).');
 
-        Livewire::test(TripForm::class)
-            ->set('trail_id', $result->trail_id)
-            ->set('name', 'Rencana pertama')
-            ->set('planned_date', now()->addDays(14)->toDateString())
-            ->set('trip_type', TripType::CAMPING->value)
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->post(route('trips.store'), [
+            'trail_id' => $result->trail_id,
+            'name' => 'Rencana pertama',
+            'planned_date' => now()->addDays(14)->toDateString(),
+            'trip_type' => TripType::CAMPING->value,
+        ])->assertSessionHasNoErrors();
 
         $trip = TripPlan::where('user_id', $user->id)->firstOrFail();
 
@@ -103,9 +95,8 @@ class CoreJourneyTest extends TestCase
 
         $this->assertSame(100, $trip->fresh()->preparationCompletionPercent());
 
-        Livewire::test(ReadinessDashboard::class, ['trip' => $trip->fresh()])
-            ->call('confirmPreDeparture')
-            ->assertSet('preDepartureConfirmed', true);
+        $this->post(route('trips.readiness.confirm', $trip))
+            ->assertSessionHas('status', 'Pre-departure check tercatat.');
 
         $this->assertSame(TripStatus::READY_FOR_DEPARTURE, $trip->fresh()->status);
 
@@ -128,10 +119,8 @@ class CoreJourneyTest extends TestCase
         $this->publishedTrail();
         $user = User::factory()->create();
 
-        Livewire::actingAs($user)
-            ->test(GoalForm::class)
-            ->set('trip_type', TripType::CAMPING->value)
-            ->call('save')
+        $this->actingAs($user)
+            ->post(route('goals.store'), ['trip_type' => TripType::CAMPING->value])
             ->assertRedirect(route('onboarding'));
 
         $this->assertSame(0, RecommendationRun::count(), 'Mesin tidak berjalan tanpa profil (PRD §104).');
@@ -151,10 +140,7 @@ class CoreJourneyTest extends TestCase
             'published_at' => now(),
         ]);
 
-        Livewire::actingAs($user->fresh())
-            ->test(GoalForm::class)
-            ->set('trip_type', TripType::CAMPING->value)
-            ->call('save');
+        $this->actingAs($user->fresh())->post(route('goals.store'), ['trip_type' => TripType::CAMPING->value]);
 
         $run = RecommendationRun::latest('id')->firstOrFail();
 

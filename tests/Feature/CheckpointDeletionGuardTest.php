@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use App\Livewire\Admin\CheckpointManager;
 use App\Models\AuditLog;
 use App\Models\Checkpoint;
 use App\Models\DataSource;
@@ -11,7 +10,8 @@ use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -45,10 +45,20 @@ class CheckpointDeletionGuardTest extends TestCase
     {
         $trail = $this->publishedTrail();
 
-        $komponen = $this->hapus($trail, $trail->checkpoints()->first()->id);
+        $pesan = 'Checkpoint terakhir tidak dapat dihapus selama jalur masih dipublikasikan. '
+            .'Turunkan jalur ke DRAFT terlebih dahulu.';
 
-        $komponen->assertOk()
-            ->assertSee('Turunkan jalur ke DRAFT terlebih dahulu.');
+        $this->hapus($trail, $trail->checkpoints()->first()->id)
+            ->assertRedirect(route('trails.checkpoints', $trail))
+            ->assertSessionHas('penolakan', $pesan);
+
+        // Halaman berikutnya membawa penolakannya sebagai prop tersendiri, yang dirender
+        // dengan varian peringatan (role="alert"), bukan sebagai pesan sukses.
+        $this->actingAs($this->admin())->get(route('trails.checkpoints', $trail))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Admin/Checkpoints')
+                ->where('penolakan', $pesan)
+                ->where('flash.status', null));
     }
 
     public function test_the_trail_stays_published_after_a_rejected_deletion(): void
@@ -108,11 +118,11 @@ class CheckpointDeletionGuardTest extends TestCase
         $this->assertSame(0, $trail->fresh()->checkpoints()->count());
     }
 
-    private function hapus(Trail $trail, int $checkpointId)
+    private function hapus(Trail $trail, int $checkpointId): TestResponse
     {
-        return Livewire::actingAs($this->admin())
-            ->test(CheckpointManager::class, ['trail' => $trail])
-            ->call('delete', $checkpointId);
+        return $this->actingAs($this->admin())
+            ->from(route('trails.checkpoints', $trail))
+            ->delete(route('trails.checkpoints.destroy', [$trail, $checkpointId]));
     }
 
     private function publishedTrail(): Trail

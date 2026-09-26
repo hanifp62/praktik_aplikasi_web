@@ -15,8 +15,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
-    'user_id', 'trail_id', 'hiking_goal_id', 'name', 'planned_date',
-    'start_time', 'trip_type', 'notes', 'status', 'completed_at',
+    'user_id', 'trail_id', 'hiking_goal_id', 'name', 'planned_date', 'end_date',
+    'start_time', 'participants_count', 'trip_type', 'notes', 'reminders_enabled',
+    'status', 'completed_at',
 ])]
 class TripPlan extends Model
 {
@@ -26,7 +27,10 @@ class TripPlan extends Model
     {
         return [
             'planned_date' => 'date',
+            'end_date' => 'date',
+            'participants_count' => 'integer',
             'trip_type' => TripType::class,
+            'reminders_enabled' => 'boolean',
             'status' => TripStatus::class,
             'completed_at' => 'datetime',
         ];
@@ -109,6 +113,14 @@ class TripPlan extends Model
     public function hikingSession(): HasOne
     {
         return $this->hasOne(HikingSession::class);
+    }
+
+    /**
+     * Pengingat H-3 dan H-1 (FR-24), dijadwalkan App\Services\Trips\TripReminderScheduler.
+     */
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(TripReminder::class);
     }
 
     public function history(): HasOne

@@ -5,17 +5,18 @@ namespace Tests\Feature;
 use App\Enums\ModerationStatus;
 use App\Enums\OfficialStatusValue;
 use App\Enums\StatusScope;
-use App\Livewire\Feed\TrailNews;
-use App\Livewire\Trails\TrailDetail;
 use App\Models\Mountain;
 use App\Models\MountainFollow;
 use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\User;
+use App\Models\WeatherSnapshot;
 use App\Services\TrailNewsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\File;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -25,8 +26,8 @@ use Tests\TestCase;
  * seseorang yang sudah memutuskan merencanakan pendakian, sedangkan ini memberi alasan
  * membukanya di antara dua pendakian.
  *
- * Isinya keadaan gunung, bukan aktivitas orang. Umpan Strava berisi siapa mendaki apa;
- * umpan ini berisi apa yang berubah di gunung yang Anda ikuti.
+ * Isinya keadaan gunung, bukan aktivitas orang. Halamannya React (Inertia): yang diuji
+ * adalah props yang dikirim server, dan teks yang dirender klien dijaga dari sumbernya.
  */
 class TrailNewsTest extends TestCase
 {
@@ -36,7 +37,23 @@ class TrailNewsTest extends TestCase
     {
         $gunung = Mountain::factory()->create(['name' => $nama]);
 
-        return [$gunung, Trail::factory()->easy()->for($gunung)->create(['name' => 'Jalur '.$nama])];
+        return [$gunung, $this->jalurTerbit($gunung, 'Jalur '.$nama)];
+    }
+
+    /**
+     * Jalur terbit tanpa status bawaan factory.
+     *
+     * state published() menambahkan satu status "belum diketahui" supaya gerbang
+     * publikasi terpenuhi; status itu disingkirkan di sini agar setiap test mengukur
+     * kabar yang ia buat sendiri. Gerbang berjalan pada event penyimpanan jalur, jadi
+     * test yang masih perlu mengubah jalur ini memakai saveQuietly().
+     */
+    private function jalurTerbit(Mountain $gunung, string $nama): Trail
+    {
+        $trail = Trail::factory()->easy()->published()->for($gunung)->create(['name' => $nama]);
+        $trail->officialStatuses()->delete();
+
+        return $trail->fresh();
     }
 
     private function tutup(Trail $trail, string $alasan): OfficialStatus
@@ -55,7 +72,7 @@ class TrailNewsTest extends TestCase
     private function laporan(Trail $trail, ModerationStatus $status, string $catatan = 'Jembatan Pos 3 putus.'): TrailConditionReport
     {
         return TrailConditionReport::factory()->for($trail)->create([
-            'user_id' => User::factory()->create()->id,
+            'user_id' => User::factory()->create(['name' => 'Rani'])->id,
             'moderation_status' => $status->value,
             'note' => $catatan,
         ]);
@@ -66,18 +83,35 @@ class TrailNewsTest extends TestCase
         return app(TrailNewsService::class)->forUser($user);
     }
 
+    private function ikuti(User $user, Mountain $gunung): void
+    {
+        MountainFollow::create(['user_id' => $user->id, 'mountain_id' => $gunung->id]);
+    }
+
+    private function halaman(User $user): TestResponse
+    {
+        return $this->actingAs($user)->get(route('news'))->assertOk();
+    }
+
+    private function sumber(): string
+    {
+        return File::get(resource_path('js/pages/Community/TrailNews.tsx'));
+    }
+
+    /**
+     * Aksinya kini milik halaman jalur (rute mountains.follow); yang dijaga di sini
+     * adalah bahwa mengikuti dan berhenti mengikuti sampai ke kabar.
+     */
     public function test_a_hiker_can_follow_and_unfollow_a_mountain(): void
     {
-        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        [$gunung] = $this->gunungBerjalur('Merbabu');
         $user = User::factory()->create();
 
-        Livewire::actingAs($user)->test(TrailDetail::class, ['trail' => $trail])
-            ->call('ikutiGunung');
+        $this->actingAs($user)->post(route('mountains.follow', $gunung), ['ya' => true]);
 
         $this->assertTrue(app(TrailNewsService::class)->follows($user, $gunung));
 
-        Livewire::actingAs($user->fresh())->test(TrailDetail::class, ['trail' => $trail])
-            ->call('ikutiGunung', false);
+        $this->actingAs($user)->post(route('mountains.follow', $gunung), ['ya' => false]);
 
         $this->assertFalse(app(TrailNewsService::class)->follows($user->fresh(), $gunung));
     }
@@ -86,7 +120,7 @@ class TrailNewsTest extends TestCase
     {
         [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
         $user = User::factory()->create();
-        MountainFollow::create(['user_id' => $user->id, 'mountain_id' => $gunung->id]);
+        $this->ikuti($user, $gunung);
 
         $this->tutup($trail, 'Kebakaran lahan.');
         $this->laporan($trail, ModerationStatus::APPROVED);
@@ -112,7 +146,7 @@ class TrailNewsTest extends TestCase
         [, $jalurLain] = $this->gunungBerjalur('Semeru');
 
         $user = User::factory()->create();
-        MountainFollow::create(['user_id' => $user->id, 'mountain_id' => $diikuti->id]);
+        $this->ikuti($user, $diikuti);
 
         $this->tutup($jalurDiikuti, 'Kebakaran lahan.');
         $this->tutup($jalurLain, 'Aktivitas vulkanik.');
@@ -131,12 +165,39 @@ class TrailNewsTest extends TestCase
     {
         [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
         $user = User::factory()->create();
-        MountainFollow::create(['user_id' => $user->id, 'mountain_id' => $gunung->id]);
+        $this->ikuti($user, $gunung);
 
         $this->laporan($trail, ModerationStatus::PENDING, 'Belum diperiksa.');
         $this->laporan($trail, ModerationStatus::REJECTED, 'Ditolak.');
 
         $this->assertCount(0, $this->kabar($user));
+        $this->halaman($user)->assertInertia(fn (AssertableInertia $page) => $page->has('komunitas', 0));
+    }
+
+    /**
+     * Regresi 25 September 2026: kabar mengambil semua jalur di gunung yang diikuti,
+     * termasuk draf dan yang diarsipkan, sehingga status dan laporan tentang jalur yang
+     * tidak punya halaman publik ikut tampil (R-022). Pembantu test lama bahkan membuat
+     * jalur draf, jadi suite ini justru membuktikan kebocorannya.
+     */
+    public function test_drafts_and_archived_trails_never_reach_the_feed(): void
+    {
+        [$gunung, $terbit] = $this->gunungBerjalur('Merbabu');
+        $draf = Trail::factory()->easy()->for($gunung)->create(['name' => 'Jalur Draf', 'is_published' => false]);
+        $arsip = $this->jalurTerbit($gunung, 'Jalur Arsip');
+        $arsip->forceFill(['archived_at' => now()])->saveQuietly();
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+
+        $this->tutup($draf, 'Draf ditutup.');
+        $this->tutup($arsip, 'Arsip ditutup.');
+        $this->laporan($draf, ModerationStatus::APPROVED, 'Laporan jalur draf.');
+        $this->laporan($arsip, ModerationStatus::APPROVED, 'Laporan jalur arsip.');
+        $this->tutup($terbit, 'Longsor di Pos 2.');
+
+        $judul = $this->kabar($user)->pluck('judul')->all();
+
+        $this->assertSame(['Jalur Merbabu'], $judul);
     }
 
     /**
@@ -147,7 +208,7 @@ class TrailNewsTest extends TestCase
     {
         [$gunung] = $this->gunungBerjalur('Merbabu');
         $user = User::factory()->create();
-        MountainFollow::create(['user_id' => $user->id, 'mountain_id' => $gunung->id]);
+        $this->ikuti($user, $gunung);
 
         OfficialStatus::create([
             'statusable_type' => (new Mountain)->getMorphClass(),
@@ -169,7 +230,7 @@ class TrailNewsTest extends TestCase
     {
         [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
         $user = User::factory()->create();
-        MountainFollow::create(['user_id' => $user->id, 'mountain_id' => $gunung->id]);
+        $this->ikuti($user, $gunung);
 
         $lama = $this->laporan($trail, ModerationStatus::APPROVED, 'Yang lama.');
         $lama->update(['created_at' => now()->subDays(5)]);
@@ -188,29 +249,158 @@ class TrailNewsTest extends TestCase
         $user = User::factory()->create();
         $this->gunungBerjalur('Merbabu');
 
-        $this->actingAs($user)
-            ->get(route('news'))
-            ->assertOk()
-            ->assertSee('Belum ada gunung yang Anda ikuti');
+        $this->halaman($user)->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Community/TrailNews')
+            ->where('title', 'Kabar Jalur')
+            ->where('mengikuti', null)
+            ->has('resmi', 0)
+            ->has('komunitas', 0));
+
+        $this->assertStringContainsString('Belum ada gunung yang Anda ikuti', $this->sumber());
     }
 
     /**
-     * PRD §92: keterangan resmi dan masukan komunitas tidak pernah tertukar, termasuk
-     * ketika keduanya berbagi satu urutan waktu.
+     * PRD §92, R-009, R-010: keterangan resmi dan masukan komunitas tidak pernah
+     * tertukar. Keduanya tiba di kelompok masing-masing, dan laporan komunitas tidak
+     * pernah masuk kelompok resmi.
      */
-    public function test_official_and_community_entries_stay_visually_distinct(): void
+    public function test_official_and_community_entries_stay_in_separate_groups(): void
     {
         [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
         $user = User::factory()->create();
-        MountainFollow::create(['user_id' => $user->id, 'mountain_id' => $gunung->id]);
+        $this->ikuti($user, $gunung);
 
         $this->tutup($trail, 'Kebakaran lahan.');
         $this->laporan($trail, ModerationStatus::APPROVED);
 
-        $halaman = Livewire::actingAs($user)->test(TrailNews::class);
+        $this->halaman($user)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('mengikuti', 'Merbabu')
+            ->has('resmi', 1)
+            ->where('resmi.0.judul', 'Jalur Merbabu')
+            ->where('resmi.0.status', OfficialStatusValue::CLOSED->value)
+            ->where('resmi.0.statusLabel', OfficialStatusValue::CLOSED->label())
+            ->where('resmi.0.cakupan', StatusScope::TRAIL->label())
+            ->has('komunitas', 1)
+            ->where('komunitas.0.catatan', 'Jembatan Pos 3 putus.'));
 
-        $halaman->assertSee('Status resmi');
-        $halaman->assertSee('Laporan komunitas');
-        $halaman->assertSee('border-l-community-500', escape: false);
+        $sumber = $this->sumber();
+        // Pembedanya label berkata-kata, bukan warna saja: "Resmi" bergaris kontrol dan
+        // "Laporan komunitas" berlatar token community (pasangan yang dihitung
+        // ColourContrastTest di kedua tema).
+        $this->assertStringContainsString('border-control px-2 py-0.5 text-xs font-medium text-primary">Resmi</span>', $sumber);
+        $this->assertStringContainsString('bg-community-50 px-2 py-0.5 text-xs font-medium text-community-900">Laporan komunitas</span>', $sumber);
+        $this->assertStringContainsString('Laporan komunitas tidak mengubah status resmi jalur.', $sumber);
+    }
+
+    /**
+     * Setiap butir membawa sumber dan waktunya sendiri, supaya pembaca dapat menilai
+     * seberapa jauh ia mempercayainya.
+     */
+    public function test_every_entry_carries_its_source_and_time(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+
+        $this->tutup($trail, 'Kebakaran lahan.');
+        $this->laporan($trail, ModerationStatus::APPROVED);
+
+        $this->halaman($user)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('resmi.0.sumber', 'Balai Besar TN')
+            ->where('resmi.0.waktuIso', fn (string $iso) => $iso !== '')
+            ->where('komunitas.0.pelapor', 'Rani')
+            ->where('komunitas.0.waktu', fn (string $waktu) => $waktu !== ''));
+    }
+
+    /**
+     * PRD §59: kesegaran laporan diukur dari tanggal pendakiannya. Laporan tentang
+     * pendakian sepuluh hari lalu ditandai mulai lama, walau baru dikirim hari ini.
+     */
+    public function test_an_aging_report_is_marked_by_its_hike_date(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+
+        $this->laporan($trail, ModerationStatus::APPROVED)->update(['hike_date' => now()->subDays(10)->toDateString()]);
+
+        $this->halaman($user)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('komunitas.0.kesegaran', 'Mulai lama')
+            ->where('komunitas.0.kesegaranLama', true));
+    }
+
+    /**
+     * R-013: cuaca selalu membawa sumber, wilayah acuan, dan kesegarannya.
+     */
+    public function test_current_weather_comes_with_its_source_area_and_freshness(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $trail->forceFill(['weather_adm4_code' => '33.09.04.2001', 'weather_reference_area' => 'Selo, Boyolali'])->saveQuietly();
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+
+        WeatherSnapshot::factory()->create([
+            'adm4_code' => '33.09.04.2001',
+            'reference_area' => 'Selo, Boyolali',
+            'forecast_at' => now()->addHour(),
+            'weather_description' => 'Cerah Berawan',
+            'temperature_c' => 24,
+            'wind_speed_kmh' => 12,
+            'fetched_at' => now()->subHour(),
+        ]);
+
+        $this->halaman($user)->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('cuaca', 1)
+            ->where('cuaca.0.gunung', 'Merbabu')
+            ->where('cuaca.0.wilayah.0.area', 'Selo, Boyolali')
+            ->where('cuaca.0.wilayah.0.sumber', 'BMKG')
+            ->where('cuaca.0.wilayah.0.ringkasan', 'Cerah Berawan · 24 °C · angin 12 km/jam')
+            ->where('cuaca.0.wilayah.0.kesegaran', 'Terbaru')
+            ->where('cuaca.0.wilayah.0.pesan', null));
+    }
+
+    /**
+     * R-013: snapshot yang sudah lama tidak dibacakan sebagai cuaca saat ini. Yang
+     * tampil adalah kapan data terakhir tersedia.
+     */
+    public function test_stale_weather_is_never_presented_as_current(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+
+        WeatherSnapshot::factory()->create([
+            'adm4_code' => $trail->weather_adm4_code,
+            'forecast_at' => now(),
+            'fetched_at' => now()->subDays(3),
+        ]);
+
+        $this->halaman($user)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('cuaca.0.wilayah.0.ringkasan', null)
+            ->where('cuaca.0.wilayah.0.kesegaran', 'Sudah lama')
+            ->where('cuaca.0.wilayah.0.pesan', fn (string $pesan) => str_starts_with($pesan, 'Data cuaca belum berhasil diperbarui. Data terakhir tersedia pada ')));
+    }
+
+    /**
+     * Tanpa snapshot sama sekali, kalimatnya mengaku tidak tersedia; tidak ada cuaca yang
+     * dikarang untuk mengisi kekosongan.
+     */
+    public function test_missing_weather_is_admitted_not_invented(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        [$tanpaWilayah, $jalurTanpaWilayah] = $this->gunungBerjalur('Sumbing');
+        $jalurTanpaWilayah->forceFill(['weather_adm4_code' => null])->saveQuietly();
+
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+        $this->ikuti($user, $tanpaWilayah);
+
+        $this->halaman($user)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('cuaca.0.gunung', 'Merbabu')
+            ->where('cuaca.0.wilayah.0.ringkasan', null)
+            ->where('cuaca.0.wilayah.0.pesan', 'Data cuaca tidak tersedia.')
+            ->where('cuaca.1.gunung', 'Sumbing')
+            ->has('cuaca.1.wilayah', 0)
+            ->where('cuaca.1.pesan', 'Data cuaca tidak tersedia.'));
     }
 }

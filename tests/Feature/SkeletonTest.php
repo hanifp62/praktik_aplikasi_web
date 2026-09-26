@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -18,11 +17,15 @@ use Tests\TestCase;
  */
 class SkeletonTest extends TestCase
 {
+    /**
+     * Satu baris bentuk per baris yang sedang ditunggu, sebanyak yang diminta pemanggil.
+     */
     public function test_a_skeleton_takes_the_shape_of_what_is_coming(): void
     {
-        $html = Blade::render('<x-ui.skeleton rows="3" />');
+        $kerangka = $this->kerangka();
 
-        $this->assertSame(3, substr_count($html, 'data-skeleton-row'));
+        $this->assertMatchesRegularExpression('/Array\.from\(\{ length: rows \}, \(_, i\) => \(\s*<div key=\{i\} data-skeleton-row\b/', $kerangka);
+        $this->assertStringContainsString('<Skeleton rows={4}', File::get(resource_path('js/pages/Recommendations/Show.tsx')));
     }
 
     /**
@@ -32,11 +35,10 @@ class SkeletonTest extends TestCase
      */
     public function test_the_skeleton_announces_state_not_shape(): void
     {
-        $html = Blade::render('<x-ui.skeleton rows="2" />');
+        $kerangka = $this->kerangka();
 
-        $this->assertStringContainsString('aria-hidden="true"', $html);
-        $this->assertStringContainsString('aria-live="polite"', $html);
-        $this->assertStringContainsString('Memuat', $html);
+        $this->assertMatchesRegularExpression('/<div aria-hidden="true"[^>]*>\s*\{Array\.from/', $kerangka, 'Baris bentuk harus tersembunyi dari pembaca layar.');
+        $this->assertMatchesRegularExpression('/<p aria-live="polite" className="sr-only">Memuat[^<]*<\/p>/', $kerangka, 'Keadaan memuat harus diumumkan sebagai kalimat.');
     }
 
     /**
@@ -61,9 +63,16 @@ class SkeletonTest extends TestCase
      */
     public function test_the_results_page_shows_a_shape_while_it_waits(): void
     {
-        $isi = File::get(resource_path('views/livewire/recommendations/recommendation-results.blade.php'));
+        $isi = File::get(resource_path('js/pages/Recommendations/Show.tsx'));
 
-        $this->assertStringContainsString('x-ui.skeleton', $isi);
-        $this->assertStringContainsString('wire:target="tampilkanLagi"', $isi);
+        // Halaman React: bentuknya tampil selama permintaan "tampilkan lagi" berjalan.
+        $this->assertStringContainsString('const tampilkanLagi', $isi);
+        $this->assertStringContainsString('onStart: () => setMemuat(true)', $isi);
+        $this->assertStringContainsString('{memuat ? <Skeleton', $isi);
+    }
+
+    private function kerangka(): string
+    {
+        return File::get(resource_path('js/components/ui/Skeleton.tsx'));
     }
 }

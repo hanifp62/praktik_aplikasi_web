@@ -12,12 +12,16 @@ Profil pendaki  →  Rencana (goal)  →  Route Fit  →  Trip  →  Persiapan
         Riwayat  ←  Laporan kondisi  ←  Hike Mode  ←  Readiness check
 ```
 
-| Langkah | Komponen Livewire | Route |
+Frontend sedang dimigrasi dari Livewire ke **React 19 + Inertia 3** (keputusan pemilik
+24 September 2026, jalur C). Kolom komponen di bawah menyebut yang berlaku hari ini;
+halaman yang sudah pindah ditandai **[React]**, ledger lengkapnya di `HANDOVER.md` §0.
+
+| Langkah | Komponen | Route |
 |---|---|---|
 | Profil | `Onboarding\ProfileSetup` | `/onboarding` |
 | Rencana | `Goals\GoalForm` | `/goals/create` |
 | Route Fit | `Recommendations\RecommendationResults` | `/recommendations/{run}` |
-| Jelajah jalur | `Trails\TrailIndex`, `Trails\TrailDetail`, `Trails\RouteComparison` | `/trails*` |
+| Jelajah jalur | **[React]** `Http\Controllers\Trails\TrailIndexController` → `pages/Trails/Index.tsx`; `Trails\TrailDetail`, `Trails\RouteComparison` (Livewire) | `/trails*` |
 | Trip | `Trips\TripForm`, `Trips\TripShow`, `Trips\TripIndex` | `/trips*` |
 | Persiapan | `Trips\PreparationChecklist` | `/trips/{trip}/preparation` |
 | Readiness | `Trips\ReadinessDashboard` | `/trips/{trip}/readiness` |
@@ -70,7 +74,17 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 
 **`app/Policies`** — otorisasi tingkat objek. Setiap komponen Livewire yang menerima model dari route **wajib** memanggil `$this->authorize()` di `mount()`.
 
-**`app/Livewire`** — presentasi. Komponen boleh memanggil service; komponen tidak boleh memuat aturan domain. Kalau Anda menulis `if` yang berisi kebijakan produk di komponen, tempatnya salah.
+**`app/Livewire`** — presentasi lama, sedang dimigrasi. Komponen boleh memanggil service; komponen tidak boleh memuat aturan domain. Kalau Anda menulis `if` yang berisi kebijakan produk di komponen, tempatnya salah.
+
+**`app/Http/Controllers` + `resources/js/pages`** — presentasi baru (React lewat Inertia). Kontraknya:
+
+- **Server memegang data dan otorisasi, React memegang interaksi.** Controller membaca query lewat service (`Services\Trails\TrailSearch`), memformat lewat resource (`Http\Resources\TrailRowResource`: angka sudah "8,0 km" saat sampai di klien), dan merender `Inertia::render('Nama/Halaman', $props)`. Aksi yang mengubah data adalah rute POST biasa dengan Policy/scope yang sama seperti dulu; klien tidak pernah dipercaya untuk keputusan akses.
+- **Props bersama** (`Http\Middleware\HandleInertiaRequests`): `auth.user` secukupnya untuk navigasi (peran hanya menentukan apa yang DITAMPILKAN), `merek`, `tema`, `peta`, `flash`. Bentuknya dikunci di `resources/js/types/index.d.ts`.
+- **Judul dan meta dirender server**: setiap halaman mengirim prop `title` (dan `description` bila publik) yang dibaca `resources/views/inertia.blade.php`, supaya tab, riwayat, dan mesin pencari benar sebelum React berjalan. SSR belum diaktifkan (`config/inertia.php`), keputusan terpisah.
+- **Rute bertipe** dari Wayfinder (`resources/js/routes`, `resources/js/actions`); jalankan `php artisan wayfinder:generate` setiap rute berubah. Jangan menulis URL sebagai string di komponen.
+- **Skor internal tidak pernah sampai ke props** (BR-09), sama seperti ke HTML.
+- **Dua pintu masuk Vite** selama migrasi: `app.js` (layout Livewire) dan `app.tsx` (Inertia), berbagi `dasar.js` (service worker, tema, pemuat peta). Token warna tetap satu-satunya sumber; komponen React memakai kelas Tailwind yang sama, tanpa CSS-in-JS dan tanpa `dark:`.
+- **Test**: halaman React diuji lewat HTTP dan `assertInertia` (props), aksi lewat POST; markup yang dirender klien dijaga dari sumbernya (`InertiaLayoutTest`) dan dipotret di peramban.
 
 ## Aturan yang tidak boleh dilanggar
 
@@ -87,21 +101,55 @@ Sembilan aturan pertama berasal dari PRD dan ada test yang menjaganya: melanggar
 9. **Waktu disimpan UTC, ditampilkan dalam zona gunungnya** lengkap dengan penanda WIB/WITA/WIT. (§93)
 10. **Arsitekturnya adalah monolit modular, dan itu pilihan sadar.** Dua belas domain produk adalah batas modul, bukan batas layanan. Memecahnya menjadi layanan terpisah membutuhkan bukti kebutuhan yang terukur, bukan preferensi, dan membutuhkan persetujuan pemilik produk (R-021). *Aturan tata kelola, bukan aturan berpenjaga-test.*
 
+## Struktur repo dan panduan luar
+
+Keputusan DK-51 (spec v3 bagian 17): repo tetap monolit modular Laravel. Dua panduan
+struktur yang dibandingkan pemilik (monorepo dengan `apps/` dan `packages/`, serta empat repo
+dengan layanan mikro, Kubernetes, Terraform, dan Ansible) diambil prinsipnya lewat pemetaan
+di bawah, bukan dengan memindahkan `app/`. Memindahkan susunan memutus autoload Composer,
+Artisan, Laravel Boost, konvensi Inertia, dan seluruh suite test.
+
+| Unsur panduan | Padanan di Memount |
+|---|---|
+| `apps/backend/src` (config, controllers, middlewares, models, routes, services) | `config/`, `app/Http/Controllers`, `app/Http/Middleware`, `app/Models`, `routes/`, `app/Services`, `app/Policies` |
+| `apps/frontend/src` (components, core, features, views) | Komponen fitur di `resources/js/components`, inti di `resources/js/lib`, halaman di `resources/js/pages`; primitif desain menyusul di W1 |
+| `packages/api-client` | Rute dan aksi bertipe Wayfinder, router Inertia |
+| `packages/ui-design-system` | Token `resources/css/app.css` dan primitif desain (W1) |
+| `packages/config` (ESLint, Prettier, TypeScript) | `tsconfig.json` dan Pint; ESLint dan Prettier menunggu izin (Q17) |
+| `database/` dengan migrasi, seeder, dan README | `database/migrations`, `database/seeders`, `database/factories`, `database/README.md`; dump SQL diabaikan git |
+| `tests/e2e` | Belum ada; Playwright menunggu izin (Q17) |
+| `.github/workflows` (test dan deploy) | `test.yml`, `security.yml`, `deploy.yml` manual (DK-54) |
+| `docker-compose.yml` | PostgreSQL + PostGIS untuk suite Spatial (DK-55) |
+| `.gitignore` sebagai benteng | `.gitignore`, `SecretsNotInRepoTest`, `RepoHygieneTest` |
+| README panduan pasang | `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `docs/README.md` |
+| `Dockerfile`, layanan mikro, Kubernetes, Terraform, Ansible | Tidak diambil (aturan 10 di atas) |
+
+**Kriteria bukti kebutuhan** sebelum usulan memecah layanan atau menambah infrastruktur
+diajukan ke pemilik (R-021). Setiap butir diukur, bukan diperkirakan:
+
+1. Satu domain membutuhkan skala atau sumber daya yang berbeda jauh dari sisanya, terlihat di metrik produksi (latensi p95, CPU, memori) setelah cache, antrean, dan indeks sudah dicoba.
+2. Kegagalan satu domain terbukti menjatuhkan domain lain meski batas waktu, antrean, dan penanganan kegagalan sudah ada.
+3. Ada tim terpisah yang butuh jadwal rilis sendiri untuk domain itu.
+4. Ada kebutuhan runtime atau kepatuhan (misalnya residensi data) yang tidak dapat dipenuhi di dalam monolit.
+5. Untuk Kubernetes, Terraform, atau Ansible: ada lebih dari satu lingkungan yang harus disediakan ulang secara identik, dan platform terkelola (Vercel, Supabase) tidak lagi mencukupi.
+
+Sampai salah satunya terbukti, dua belas domain produk tetap batas modul di dalam `app/`.
+
 ## Kontrak SEO teknis
 
-Ini kontrak engineering, bukan strategi pemasaran. Strategi pertumbuhan ada di `PRODUCT.md`; struktur URL publik ada di `PRD.md` §145.2.
+Ini kontrak engineering, bukan strategi pemasaran. Strategi pertumbuhan ada di `PRODUCT.md`; struktur URL publik ada di `docs/PRD.md` §145.2.
 
 - **Metadata, canonical, sitemap, dan structured data hanya boleh merepresentasikan konten yang benar-benar tersedia dan terlihat di halaman.** Structured data yang mendeskripsikan sesuatu yang tidak dirender adalah klaim palsu kepada mesin pencari, dan sifatnya sama dengan mengarang data kepada pengguna.
 - **Tidak boleh ada SEO claim yang tidak sesuai dengan konten.** Judul, deskripsi, dan markup mengikuti apa yang halaman itu benar-benar tawarkan.
 - Halaman jalur yang datanya belum lengkap tidak dipromosikan sebagai lengkap. Gerbang publikasi §110 dan larangan mengarang data berlaku sama di lapisan metadata.
-- Larangan konten tipis hasil AI dalam skala besar ada di `PRD.md` BR-16.
+- Larangan konten tipis hasil AI dalam skala besar ada di `docs/PRD.md` BR-16.
 
 ## Yang belum ada
 
 Dicatat terbuka supaya tidak terlupakan:
 
 - **Pemeriksaan aksesibilitas manual.** Test hanya menutup hal yang dapat diperiksa mesin: label, struktur judul, bahasa dokumen. Urutan fokus, kebermaknaan teks alternatif, dan kontras pada seluruh kombinasi masih butuh mata manusia.
-- **Suite spasial di mesin pengembang.** Berjalan di CI, tetapi melewati dirinya secara lokal sampai `SPATIAL_TEST_DSN` diisi.
+- **Suite spasial belum pernah hijau.** Dua run CI publik yang ada gagal; run terakhir (21 September 2026, commit `6d9e090`) gagal di langkah Spatial. Sampai 26 September 2026 `SpatialTestCase` galat sebelum terhubung ke basis data apa pun; setelah perbaikannya, hasil pertama di PostGIS menunggu push yang diizinkan. Secara lokal suite ini dilewati sampai `SPATIAL_TEST_DSN` diisi; `docker-compose.yml` menyediakan PostGIS yang sama dengan CI (DK-55), tetapi Docker tidak wajib.
 - **Kurasi data lapangan.** Per 20 September 2026: 7 jalur, semuanya tayang, **0 punya geometri**; 34 checkpoint, **0 punya koordinat**; 7 status resmi tercatat, semuanya `UNKNOWN`. Artinya peta tidak dapat menggambar jalur, mode pendakian tidak dapat mengenali checkpoint terdekat, dan ketujuh jalur yang tayang tidak lolos gerbang §110. Koordinat gunung sungguhan tidak boleh dikarang: angka yang salah pada fitur navigasi lapangan lebih berbahaya daripada tidak ada angka. Ini pekerjaan kurator, bukan pekerjaan kode.
 - **Pengambilan sumber resmi otomatis.** §98 menyebutnya pekerjaan background. Belum ada, dan memang belum ada API resmi yang dapat dipanggil; status tetap dicatat manual oleh kurator. Pemeriksaan data basi sendiri sudah ada (`data:freshness-check` dan panel "Perlu ditinjau"), sehingga status yang kedaluwarsa tidak lagi mundur ke `UNKNOWN` tanpa suara.
 

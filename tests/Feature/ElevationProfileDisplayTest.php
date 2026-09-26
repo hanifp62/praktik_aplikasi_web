@@ -11,8 +11,9 @@ use Tests\TestCase;
  * Profil elevasi pada halaman jalur.
  *
  * Menjawab pertanyaan yang tidak dijawab satu angka elevation gain: apakah tanjakannya
- * merata atau menumpuk di satu bagian. Dua jalur dengan gain yang sama dapat terasa
- * sangat berbeda karenanya.
+ * merata atau menumpuk di satu bagian. Grafiknya digambar klien (ElevationProfile.tsx)
+ * dari props yang disaring server; profil yang tidak dapat digambar dikirim sebagai
+ * tidak ada, dan halaman menyebutnya belum tersedia alih-alih menggambar grafik kosong.
  */
 class ElevationProfileDisplayTest extends TestCase
 {
@@ -31,40 +32,52 @@ class ElevationProfileDisplayTest extends TestCase
         ];
     }
 
-    public function test_the_profile_is_drawn_when_the_trail_has_one(): void
+    /**
+     * @param  array<int, mixed>|null  $profil
+     * @return array<int, array{km: float, m: float}>|null
+     */
+    private function profilDiHalaman(?array $profil): ?array
     {
-        $trail = Trail::factory()->published()->easy()->create(['elevation_profile' => $this->profil()]);
+        $trail = Trail::factory()->published()->easy()->create(['elevation_profile' => $profil]);
 
-        $this->actingAs(User::factory()->create())
+        return $this->actingAs(User::factory()->create())
             ->get(route('trails.show', $trail))
             ->assertOk()
-            ->assertSee('Profil elevasi')
-            ->assertSee('<polyline', escape: false);
+            ->viewData('page')['props']['profilElevasi'];
+    }
+
+    public function test_the_profile_is_drawn_when_the_trail_has_one(): void
+    {
+        $this->assertCount(4, $this->profilDiHalaman($this->profil()));
+
+        $this->assertStringContainsString('<ElevationProfile profile={profilElevasi}', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
+        $this->assertStringContainsString('<polyline', file_get_contents(resource_path('js/components/ui/ElevationProfile.tsx')));
     }
 
     /**
      * Grafik adalah gambar, dan pembaca layar tidak dapat menelusuri seratus titiknya.
-     * Rangkuman angkanya karena itu harus ada sebagai teks (WCAG 1.1.1).
+     * Rangkuman angkanya karena itu ada sebagai teks (WCAG 1.1.1).
      */
     public function test_the_chart_carries_a_text_summary_for_screen_readers(): void
     {
-        $trail = Trail::factory()->published()->easy()->create(['elevation_profile' => $this->profil()]);
+        $profil = $this->profilDiHalaman($this->profil());
 
-        $halaman = $this->actingAs(User::factory()->create())->get(route('trails.show', $trail));
+        $this->assertSame(1200.0, min(array_column($profil, 'm')));
+        $this->assertSame(2560.0, max(array_column($profil, 'm')));
 
-        $halaman->assertSee('1200', escape: false);
-        $halaman->assertSee('2560', escape: false);
-        $halaman->assertSee('role="img"', escape: false);
+        $grafik = file_get_contents(resource_path('js/components/ui/ElevationProfile.tsx'));
+        $this->assertStringContainsString('role="img"', $grafik);
+        $this->assertStringContainsString('<title', $grafik);
     }
 
+    /**
+     * Kekosongan disebut dengan jujur, bukan grafik kosong dan bukan bagian yang lenyap.
+     */
     public function test_a_trail_without_a_profile_shows_no_empty_chart(): void
     {
-        $trail = Trail::factory()->published()->easy()->create(['elevation_profile' => null]);
+        $this->assertNull($this->profilDiHalaman(null));
 
-        $this->actingAs(User::factory()->create())
-            ->get(route('trails.show', $trail))
-            ->assertOk()
-            ->assertDontSee('Profil elevasi');
+        $this->assertStringContainsString('Data ketinggian belum tersedia.', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     /**
@@ -73,13 +86,6 @@ class ElevationProfileDisplayTest extends TestCase
      */
     public function test_a_single_point_is_not_drawn(): void
     {
-        $trail = Trail::factory()->published()->easy()->create([
-            'elevation_profile' => [['km' => 0.0, 'm' => 1200]],
-        ]);
-
-        $this->actingAs(User::factory()->create())
-            ->get(route('trails.show', $trail))
-            ->assertOk()
-            ->assertDontSee('<polyline', escape: false);
+        $this->assertNull($this->profilDiHalaman([['km' => 0.0, 'm' => 1200]]));
     }
 }

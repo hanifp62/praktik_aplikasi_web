@@ -6,6 +6,7 @@ use App\Enums\CompletionState;
 use App\Models\HikingHistory;
 use App\Models\TrailConditionReport;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 
 /**
  * Apa yang sudah ditempuh seorang pendaki, dipantulkan kembali kepadanya.
@@ -80,6 +81,39 @@ class HikerProgressService
             'laporan_terbit' => (clone $terbit)->count(),
             'terima_kasih' => (clone $terbit)->withCount('thanks')->get()->sum('thanks_count'),
         ];
+    }
+
+    /**
+     * Tanjakan jalur tiap pendakian yang selesai sampai target, dari yang paling awal,
+     * untuk grafik yang membandingkan pendaki dengan pendakiannya sendiri (R-015).
+     *
+     * Hanya pendakian yang tuntas: pendakian yang dibatalkan tidak menempuh seluruh
+     * tanjakan jalurnya, dan menggambar angka jalurnya menyatakan sesuatu yang tidak
+     * terjadi. Jalur yang elevation gain-nya belum dicatat tetap ikut dengan nilai null,
+     * bukan nol (§95), supaya urutan pendakiannya tidak terputus diam-diam.
+     *
+     * Satu query, berapa pun jumlah riwayatnya; yang diambil hanya yang terakhir.
+     *
+     * @return array<int, array{tanggal: Carbon, jalur: ?string, elevasi_m: ?int}>
+     */
+    public function tanjakanPerPendakian(User $user, int $batas = 12): array
+    {
+        return HikingHistory::query()
+            ->where('user_id', $user->id)
+            ->where('completion_state', CompletionState::COMPLETED->value)
+            ->with('trail:id,name,elevation_gain_m')
+            ->orderByDesc('completed_at')
+            ->orderByDesc('id')
+            ->limit($batas)
+            ->get()
+            ->reverse()
+            ->map(fn (HikingHistory $h) => [
+                'tanggal' => $h->completed_at,
+                'jalur' => $h->trail?->name,
+                'elevasi_m' => $h->trail?->elevation_gain_m,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

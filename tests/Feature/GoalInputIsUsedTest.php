@@ -4,14 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\ExperienceLevel;
 use App\Enums\NavigationExperience;
-use App\Livewire\Goals\GoalForm;
-use App\Livewire\Trips\TripForm;
 use App\Models\PermitRequirement;
 use App\Models\RecommendationRun;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -52,18 +50,20 @@ class GoalInputIsUsedTest extends TestCase
         $user = $this->userWithProfile();
         $trail = Trail::factory()->published()->easy()->create();
 
-        Livewire::actingAs($user)
-            ->test(GoalForm::class)
-            ->set('trip_type', 'CAMPING')
-            ->set('notes', 'Berangkat bertiga, satu orang baru pertama kali menginap di gunung.')
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($user)->post(route('goals.store'), [
+            'trip_type' => 'CAMPING',
+            'notes' => 'Berangkat bertiga, satu orang baru pertama kali menginap di gunung.',
+        ])->assertSessionHasNoErrors();
 
         $goal = $user->hikingGoals()->latest()->firstOrFail();
 
-        Livewire::actingAs($user)
-            ->test(TripForm::class, ['trail' => $trail->id, 'goal' => $goal->id])
-            ->assertSet('notes', 'Berangkat bertiga, satu orang baru pertama kali menginap di gunung.');
+        $this->actingAs($user)
+            ->get(route('trips.create', ['trail' => $trail->id, 'goal' => $goal->id]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Create')
+                ->where('awal.notes', 'Berangkat bertiga, satu orang baru pertama kali menginap di gunung.')
+                ->where('awal.trail_id', (string) $trail->id)
+                ->where('awal.hiking_goal_id', $goal->id));
     }
 
     /**
@@ -80,12 +80,9 @@ class GoalInputIsUsedTest extends TestCase
         $trail = Trail::factory()->published()->easy()->create();
         PermitRequirement::factory()->create(['trail_id' => $trail->id]);
 
-        Livewire::actingAs($user)
-            ->test(GoalForm::class)
-            ->set('trip_type', 'CAMPING')
-            ->set('target_date', null)
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($user)
+            ->post(route('goals.store'), ['trip_type' => 'CAMPING', 'target_date' => ''])
+            ->assertSessionHasNoErrors();
 
         $warnings = RecommendationRun::latest()->firstOrFail()->results()->firstOrFail()->warnings;
 
@@ -107,12 +104,9 @@ class GoalInputIsUsedTest extends TestCase
         $trail = Trail::factory()->published()->easy()->create();
         PermitRequirement::factory()->create(['trail_id' => $trail->id]);
 
-        Livewire::actingAs($user)
-            ->test(GoalForm::class)
-            ->set('trip_type', 'CAMPING')
-            ->set('target_date', now()->addDays(10)->toDateString())
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($user)
+            ->post(route('goals.store'), ['trip_type' => 'CAMPING', 'target_date' => now()->addDays(10)->toDateString()])
+            ->assertSessionHasNoErrors();
 
         $warnings = RecommendationRun::latest()->firstOrFail()->results()->firstOrFail()->warnings;
 
@@ -132,12 +126,9 @@ class GoalInputIsUsedTest extends TestCase
         $user = $this->userWithProfile();
         Trail::factory()->published()->easy()->create();
 
-        Livewire::actingAs($user)
-            ->test(GoalForm::class)
-            ->set('trip_type', 'CAMPING')
-            ->set('target_date', null)
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->actingAs($user)
+            ->post(route('goals.store'), ['trip_type' => 'CAMPING', 'target_date' => ''])
+            ->assertSessionHasNoErrors();
 
         $warnings = RecommendationRun::latest()->firstOrFail()->results()->firstOrFail()->warnings;
 

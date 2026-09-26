@@ -6,20 +6,20 @@ use App\Enums\AuthorityType;
 use App\Enums\CredentialLevel;
 use App\Enums\UserRole;
 use App\Enums\VerificationStatus;
-use App\Livewire\Admin\CredentialManager;
 use App\Models\Authority;
 use App\Models\ExpertCredential;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
  * Memverifikasi kredensial adalah keputusan yang memberi seseorang hak menyunting data
  * yang dibaca pendaki. Karena itu ia milik admin, tercatat di jejak audit, dan dapat
- * dicabut kembali.
+ * dicabut kembali. Halamannya kini React; keputusannya rute POST bernama.
  */
 class CredentialManagerTest extends TestCase
 {
@@ -28,14 +28,24 @@ class CredentialManagerTest extends TestCase
     public function test_only_an_admin_may_open_the_page(): void
     {
         $this->actingAs(User::factory()->create())->get('/admin/credentials')->assertForbidden();
-        $this->actingAs($this->admin())->get('/admin/credentials')->assertOk();
+
+        $this->actingAs($this->admin())
+            ->get('/admin/credentials')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Admin/Credentials')
+                ->where('title', 'Verifikasi Kredensial Ahli'));
     }
 
     public function test_a_moderator_may_not_verify_credentials(): void
     {
-        $this->actingAs(User::factory()->create(['role' => UserRole::MODERATOR->value]))
-            ->get('/admin/credentials')
-            ->assertForbidden();
+        [$kredensial] = $this->kredensialDan(VerificationStatus::UNVERIFIED);
+        $moderator = User::factory()->create(['role' => UserRole::MODERATOR->value]);
+
+        $this->actingAs($moderator)->get('/admin/credentials')->assertForbidden();
+        $this->actingAs($moderator)->post($this->keputusan($kredensial, 'verifikasi'))->assertForbidden();
+
+        $this->assertSame(VerificationStatus::UNVERIFIED, $kredensial->fresh()->verification_status);
     }
 
     /**
@@ -47,9 +57,7 @@ class CredentialManagerTest extends TestCase
 
         $this->assertFalse($kredensial->user->can('update', $trail));
 
-        Livewire::actingAs($this->admin())
-            ->test(CredentialManager::class)
-            ->call('verifikasi', $kredensial->id);
+        $this->actingAs($this->admin())->post($this->keputusan($kredensial, 'verifikasi'));
 
         $this->assertTrue($kredensial->user->fresh()->can('update', $trail));
     }
@@ -60,23 +68,27 @@ class CredentialManagerTest extends TestCase
 
         $this->assertTrue($kredensial->user->can('update', $trail));
 
-        Livewire::actingAs($this->admin())
-            ->test(CredentialManager::class)
-            ->call('cabut', $kredensial->id);
+        $this->actingAs($this->admin())->post($this->keputusan($kredensial, 'cabut'));
 
         $this->assertFalse($kredensial->user->fresh()->can('update', $trail));
+        $this->assertSame(VerificationStatus::UNVERIFIED, $kredensial->fresh()->verification_status, 'Mencabut mengembalikan, bukan menghapus.');
     }
 
     public function test_a_disputed_credential_grants_nothing(): void
     {
         [$kredensial, $trail] = $this->kredensialDan(VerificationStatus::VERIFIED);
 
-        Livewire::actingAs($this->admin())
-            ->test(CredentialManager::class)
-            ->call('sengketakan', $kredensial->id);
+        $this->actingAs($this->admin())->post($this->keputusan($kredensial, 'sengketakan'));
 
         $this->assertFalse($kredensial->user->fresh()->can('update', $trail));
         $this->assertSame(VerificationStatus::DISPUTED, $kredensial->fresh()->verification_status);
+    }
+
+    public function test_an_unknown_decision_is_not_a_route(): void
+    {
+        [$kredensial] = $this->kredensialDan(VerificationStatus::UNVERIFIED);
+
+        $this->actingAs($this->admin())->post($this->keputusan($kredensial, 'hapus'))->assertNotFound();
     }
 
     /**
@@ -87,36 +99,71 @@ class CredentialManagerTest extends TestCase
         [$kredensial] = $this->kredensialDan(VerificationStatus::UNVERIFIED);
         $admin = $this->admin();
 
-        Livewire::actingAs($admin)
-            ->test(CredentialManager::class)
-            ->call('verifikasi', $kredensial->id);
+        $this->actingAs($admin)->post($this->keputusan($kredensial, 'verifikasi'), ['catatan' => 'Nomor cocok dengan daftar BNSP.']);
 
         $this->assertDatabaseHas('audit_logs', [
             'actor_id' => $admin->id,
             'action' => 'credential.verified',
         ]);
+        $this->assertSame('Nomor cocok dengan daftar BNSP.', $kredensial->fresh()->notes);
     }
 
     public function test_the_admin_is_told_what_the_decision_means(): void
     {
         [$kredensial] = $this->kredensialDan(VerificationStatus::UNVERIFIED);
 
-        Livewire::actingAs($this->admin())
-            ->test(CredentialManager::class)
-            ->call('verifikasi', $kredensial->id)
-            ->assertSee('dapat menyunting data jalur');
+        $this->actingAs($this->admin())
+            ->from(route('admin.credentials'))
+            ->post($this->keputusan($kredensial, 'verifikasi'))
+            ->assertRedirect(route('admin.credentials'))
+            ->assertSessionHas('status', fn (string $pesan) => str_contains($pesan, 'dapat menyunting data jalur'));
     }
 
     /**
      * Mencabut dan menyengketakan membuang hak seseorang, jadi keduanya bertanya dulu.
+     * Teks pertanyaannya dari server; halaman memakainya sebelum mengirim.
      */
     public function test_taking_a_right_away_asks_first(): void
     {
-        $this->kredensialDan(VerificationStatus::VERIFIED);
+        $this->actingAs($this->admin())
+            ->get('/admin/credentials?filter=')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('keputusan.0.value', 'verifikasi')
+                ->where('keputusan.0.konfirmasi', null)
+                ->where('keputusan.1.value', 'sengketakan')
+                ->where('keputusan.1.konfirmasi', fn (?string $teks) => $teks !== null && str_contains($teks, 'dicabut'))
+                ->where('keputusan.2.value', 'cabut')
+                ->where('keputusan.2.konfirmasi', fn (?string $teks) => $teks !== null && str_contains($teks, 'berhenti berlaku')));
 
-        $isi = $this->actingAs($this->admin())->get('/admin/credentials?filter=')->assertOk()->getContent();
+        $this->assertStringContainsString('window.confirm(k.konfirmasi)', File::get(resource_path('js/pages/Admin/Credentials.tsx')));
+    }
 
-        $this->assertStringContainsString('wire:confirm', $isi);
+    /**
+     * Tanpa parameter yang tampil adalah pekerjaan yang menunggu; `?filter=` kosong
+     * berarti semua. Sertifikat yang lewat masa berlakunya ditandai dari server.
+     */
+    public function test_the_list_defaults_to_what_still_awaits_a_decision(): void
+    {
+        $this->kredensialDan(VerificationStatus::UNVERIFIED);
+        [$kedaluwarsa] = $this->kredensialDan(VerificationStatus::VERIFIED);
+        $kedaluwarsa->update(['expires_at' => now()->subDay()->toDateString()]);
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get('/admin/credentials')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('filter', VerificationStatus::UNVERIFIED->value)
+            ->has('kredensial.data', 1)
+            ->where('kredensial.data.0.status', VerificationStatus::UNVERIFIED->value));
+
+        $this->actingAs($admin)->get('/admin/credentials?filter=')->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('kredensial.data', 2)
+            ->where('kredensial.data', fn ($baris) => collect($baris)->contains('kedaluwarsa', true)));
+    }
+
+    private function keputusan(ExpertCredential $kredensial, string $keputusan): string
+    {
+        return route('admin.credentials.decide', ['credential' => $kredensial, 'keputusan' => $keputusan]);
     }
 
     /**
@@ -127,9 +174,8 @@ class CredentialManagerTest extends TestCase
         $gunung = Mountain::factory()->create();
         $trail = Trail::factory()->for($gunung)->create();
 
-        $penerbit = Authority::create([
+        $penerbit = Authority::firstOrCreate(['slug' => 'apgi-uji'], [
             'name' => 'APGI uji',
-            'slug' => 'apgi-uji',
             'abbreviation' => 'APGI',
             'type' => AuthorityType::PROFESSIONAL_ASSOCIATION->value,
         ]);

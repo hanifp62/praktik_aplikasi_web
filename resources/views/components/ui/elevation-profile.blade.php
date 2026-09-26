@@ -37,7 +37,7 @@
                 {{ number_format($kmMax, 1, ',', '.') }} kilometer.
             </title>
             <polygon points="{{ $area }}" fill="rgb(var(--brand-100))" />
-            <polyline points="{{ $koordinat }}" fill="none" stroke="rgb(var(--brand-700))"
+            <polyline points="{{ $koordinat }}" fill="none" stroke="rgb(var(--brand-ink))"
                 stroke-width="3" vector-effect="non-scaling-stroke" />
         </svg>
 

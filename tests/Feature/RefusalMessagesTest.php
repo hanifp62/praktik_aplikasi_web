@@ -6,14 +6,12 @@ use App\Enums\ExperienceLevel;
 use App\Enums\OfficialStatusValue;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
-use App\Livewire\Goals\GoalForm;
-use App\Livewire\Trips\ReadinessDashboard;
 use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -33,20 +31,20 @@ class RefusalMessagesTest extends TestCase
     {
         $trip = $this->trip(OfficialStatusValue::CLOSED);
 
-        Livewire::actingAs($trip->user)
-            ->test(ReadinessDashboard::class, ['trip' => $trip])
-            ->call('confirmPreDeparture')
-            ->assertSee('TUTUP')
-            ->assertDontSee('tidak memungkinkan');
+        $this->actingAs($trip->user)
+            ->followingRedirects()
+            ->post(route('trips.readiness.confirm', $trip))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Readiness')
+                ->where('penolakan', fn (?string $pesan) => str_contains((string) $pesan, 'TUTUP')
+                    && ! str_contains((string) $pesan, 'tidak memungkinkan')));
     }
 
     public function test_a_blocked_check_does_not_change_the_trip(): void
     {
         $trip = $this->trip(OfficialStatusValue::CLOSED);
 
-        Livewire::actingAs($trip->user)
-            ->test(ReadinessDashboard::class, ['trip' => $trip])
-            ->call('confirmPreDeparture');
+        $this->actingAs($trip->user)->post(route('trips.readiness.confirm', $trip));
 
         $this->assertSame(TripStatus::PLANNED, $trip->fresh()->status);
     }
@@ -60,10 +58,9 @@ class RefusalMessagesTest extends TestCase
         $trip = $this->trip(OfficialStatusValue::OPEN);
         $trip->update(['status' => TripStatus::COMPLETED->value]);
 
-        Livewire::actingAs($trip->user)
-            ->test(ReadinessDashboard::class, ['trip' => $trip->fresh()])
-            ->call('confirmPreDeparture')
-            ->assertSee('berstatus Selesai');
+        $this->actingAs($trip->user)
+            ->post(route('trips.readiness.confirm', $trip))
+            ->assertSessionHas('penolakan-kesiapan', fn (string $pesan) => str_contains($pesan, 'berstatus Selesai'));
     }
 
     /**
@@ -74,12 +71,13 @@ class RefusalMessagesTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Livewire::actingAs($user)
-            ->test(GoalForm::class)
-            ->set('target_date', now()->addDays(20)->toDateString())
-            ->set('trip_type', TripType::TEKTOK->value)
-            ->call('save')
-            ->assertRedirect(route('onboarding'));
+        $this->actingAs($user)
+            ->post(route('goals.store'), [
+                'target_date' => now()->addDays(20)->toDateString(),
+                'trip_type' => TripType::TEKTOK->value,
+            ])
+            ->assertRedirect(route('onboarding'))
+            ->assertSessionHas('status', 'Lengkapi profil pendaki terlebih dahulu.');
     }
 
     private function trip(OfficialStatusValue $status): TripPlan

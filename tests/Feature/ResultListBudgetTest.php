@@ -4,44 +4,43 @@ namespace Tests\Feature;
 
 use App\Enums\ExperienceLevel;
 use App\Enums\NavigationExperience;
-use App\Livewire\Recommendations\RecommendationResults;
 use App\Models\HikingGoal;
+use App\Models\RecommendationRun;
 use App\Models\Trail;
 use App\Models\User;
 use App\Services\RouteFitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
  * Halaman hasil adalah satu-satunya daftar di aplikasi ini yang tidak dibatasi.
  *
  * Diukur sebelum perbaikan, dan pertumbuhannya linear sempurna: 10 jalur menghasilkan
- * 64 kB HTML, 20 jalur 126 kB, 40 jalur 251 kB. Biayanya 6,3 kB per baris, sebagian
- * besar dari untaian kelas pada tiga tombol yang diulang di setiap kartu.
+ * 64 kB HTML, 20 jalur 126 kB, 40 jalur 251 kB.
  *
- * Empat puluh bukan angka hipotetis: itu skala sistem ini sekarang, 16 gunung dengan
- * dua sampai tiga jalur masing-masing. Pada cakupan nasional angkanya menjadi megabyte,
- * dikirim ke telepon di daerah yang sinyalnya justru paling tipis.
- *
- * Alasan keduanya bertemu di titik yang sama. Daftar berperingkat berisi empat puluh
- * kartu bukan rekomendasi: pendaki tidak dapat memilih di antara empat puluh, dan
+ * Empat puluh bukan angka hipotetis: itu skala sistem ini sekarang. Pada cakupan
+ * nasional angkanya menjadi megabyte, dikirim ke telepon di daerah yang sinyalnya justru
+ * paling tipis. Daftar berperingkat berisi empat puluh kartu juga bukan rekomendasi:
  * jalur terbaik yang ditemukan mesin tenggelam di antara jalur yang hanya lumayan.
  *
- * PRD tidak mengatur jumlah yang ditampilkan, jadi batas ini keputusan rancangan,
- * bukan pemenuhan pasal.
+ * Di halaman React yang dikirim adalah props: sepuluh jalur teratas, lalu sepuluh
+ * berikutnya lewat `?tampil=` atas permintaan.
  */
 class ResultListBudgetTest extends TestCase
 {
     use RefreshDatabase;
 
     /**
-     * Diukur pada 40 jalur. Sebelum perbaikan angkanya 251 kB. Ambang ini memberi
-     * ruang untuk peringatan dan penjelasan yang panjang, tetapi menutup kembalinya
-     * daftar tak terbatas.
+     * Sebelum perbaikan halaman 40 jalur berukuran 251 kB. Ambang ini memberi ruang
+     * untuk peringatan dan penjelasan yang panjang, tetapi menutup kembalinya daftar
+     * tak terbatas.
      */
     private const ANGGARAN_KB = 120;
 
+    /**
+     * @return array{0: User, 1: RecommendationRun}
+     */
     private function hikerWithTrails(int $jumlah): array
     {
         $user = User::factory()->create();
@@ -65,17 +64,11 @@ class ResultListBudgetTest extends TestCase
         return [$user, app(RouteFitService::class)->recommend($user, $goal)];
     }
 
-    private function barisTerender(string $html): int
-    {
-        return substr_count($html, 'Pilih jalur ini');
-    }
-
     public function test_the_result_page_stays_within_its_size_budget(): void
     {
         [$user, $run] = $this->hikerWithTrails(40);
 
-        $html = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run])->html();
-        $kb = strlen($html) / 1024;
+        $kb = strlen($this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()->getContent()) / 1024;
 
         $this->assertLessThan(
             self::ANGGARAN_KB,
@@ -84,17 +77,14 @@ class ResultListBudgetTest extends TestCase
         );
     }
 
-    public function test_only_the_strongest_matches_are_rendered_at_first(): void
+    public function test_only_the_strongest_matches_are_sent_at_first(): void
     {
         [$user, $run] = $this->hikerWithTrails(40);
 
-        $html = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run])->html();
-
-        $this->assertSame(
-            10,
-            $this->barisTerender($html),
-            'Sepuluh jalur teratas yang dirender lebih dulu, bukan seluruh daftar.'
-        );
+        $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('eligible', 10)
+                ->where('sisaEligible', 30));
     }
 
     /**
@@ -105,17 +95,26 @@ class ResultListBudgetTest extends TestCase
     {
         [$user, $run] = $this->hikerWithTrails(40);
 
-        $page = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run]);
+        $this->actingAs($user)->get(route('recommendations.show', ['run' => $run, 'tampil' => 20]))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('eligible', 20)
+                ->where('sisaEligible', 20)
+                ->where('tampil', 20));
+    }
 
-        $page->assertSee('30 jalur lainnya');
+    /**
+     * Angka yang dikirim klien hanya menambah, tidak pernah mengurangi di bawah sepuluh
+     * atau melewati jumlah yang ada.
+     */
+    public function test_the_reveal_count_is_clamped(): void
+    {
+        [$user, $run] = $this->hikerWithTrails(12);
 
-        $page->call('tampilkanLagi');
+        $this->actingAs($user)->get(route('recommendations.show', ['run' => $run, 'tampil' => -5]))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('eligible', 10)->where('sisaEligible', 2));
 
-        $this->assertSame(
-            20,
-            $this->barisTerender($page->html()),
-            'Setiap penekanan menambah sepuluh jalur berikutnya.'
-        );
+        $this->actingAs($user)->get(route('recommendations.show', ['run' => $run, 'tampil' => 999]))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('eligible', 12)->where('sisaEligible', 0));
     }
 
     /**
@@ -126,9 +125,9 @@ class ResultListBudgetTest extends TestCase
     {
         [$user, $run] = $this->hikerWithTrails(4);
 
-        $page = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run]);
-
-        $this->assertSame(4, $this->barisTerender($page->html()));
-        $page->assertDontSee('jalur lainnya');
+        $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('eligible', 4)
+                ->where('sisaEligible', 0));
     }
 }

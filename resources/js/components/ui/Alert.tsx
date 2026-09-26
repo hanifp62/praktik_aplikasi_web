@@ -1,0 +1,34 @@
+import type { ReactNode } from 'react';
+import { kelas } from '@/lib/kelas';
+
+type Varian = 'info' | 'warning' | 'danger' | 'success';
+
+interface AlertProps {
+    variant?: Varian;
+    title?: string;
+    className?: string;
+    children: ReactNode;
+}
+
+/** Makna tidak pernah lewat warna saja: simbol dan awalan teks ikut dibacakan. */
+export function Alert({ variant = 'info', title, className, children }: AlertProps) {
+    const gaya: Record<Varian, [string, string, string]> = {
+        warning: ['border-warn-300 bg-warn-100 text-warn-900', '!', 'Peringatan:'],
+        danger: ['border-danger-300 bg-danger-100 text-danger-900', '×', 'Perhatian penting:'],
+        success: ['border-brand-300 bg-brand-100 text-brand-900', '✓', 'Berhasil:'],
+        info: ['border-subtle bg-surface-sunken text-primary', 'i', 'Informasi:'],
+    };
+    const [warna, simbol, awalan] = gaya[variant];
+    const role = variant === 'warning' || variant === 'danger' ? 'alert' : 'status';
+
+    return (
+        <div role={role} className={kelas('flex gap-3 rounded-control border p-4 text-sm', warna, className)}>
+            <span aria-hidden="true" className="font-semibold">{simbol}</span>
+            <div className="space-y-1">
+                <span className="sr-only">{awalan}</span>
+                {title ? <p className="font-medium">{title}</p> : null}
+                <div>{children}</div>
+            </div>
+        </div>
+    );
+}

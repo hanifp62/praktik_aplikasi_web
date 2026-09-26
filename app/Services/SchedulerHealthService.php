@@ -35,6 +35,10 @@ class SchedulerHealthService
      * menyala merah setiap beberapa hari tanpa ada yang rusak, dan penanda yang sering
      * menyala palsu berhenti dibaca.
      *
+     * trips:kirim-pengingat berjalan tiap jam, jadi toleransinya tiga jam: satu atau dua
+     * jam yang terlewat masih wajar, tetapi pengingat yang jatuh tempo baru terkirim
+     * ketika penjadwal berjalan lagi, dan pada hari keberangkatan tidak dikirim sama sekali.
+     *
      * @var array<string, array{judul: string, jadwal: string, toleransi_jam: int}>
      */
     public const TUGAS = [
@@ -47,6 +51,11 @@ class SchedulerHealthService
             'judul' => 'Pemeriksaan kesegaran status resmi',
             'jadwal' => 'Setiap hari pukul 07:00 WIB',
             'toleransi_jam' => 26,
+        ],
+        'trips:kirim-pengingat' => [
+            'judul' => 'Pengiriman pengingat perjalanan',
+            'jadwal' => 'Setiap jam, pada menit ke-0',
+            'toleransi_jam' => 3,
         ],
     ];
 

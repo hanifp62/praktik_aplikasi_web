@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Validator;
-use Livewire\Volt\Volt;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -29,21 +29,27 @@ class IndonesianInterfaceTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string, 2: string}>
+     * @return array<string, array{0: string, 1: string, 2: string, 3: string}>
      */
     public static function halamanTamu(): array
     {
         return [
-            'login' => ['/login', 'Masuk', 'Log in'],
-            'register' => ['/register', 'Daftar', 'Register'],
-            'lupa kata sandi' => ['/forgot-password', 'Kirim Tautan Atur Ulang Kata Sandi', 'Email Password Reset Link'],
+            'login' => ['/login', 'Auth/Login', 'Masuk', 'Log in'],
+            'register' => ['/register', 'Auth/Register', 'Daftar', 'Register'],
+            'lupa kata sandi' => ['/forgot-password', 'Auth/ForgotPassword', 'Kirim Tautan Atur Ulang Kata Sandi', 'Email Password Reset Link'],
         ];
     }
 
+    /**
+     * Halaman tamu kini React: teksnya dirender klien, jadi yang diperiksa adalah bahwa
+     * rute merender komponen itu dan sumber komponennya berbahasa Indonesia.
+     */
     #[DataProvider('halamanTamu')]
-    public function test_a_guest_page_speaks_indonesian(string $url, string $indonesia, string $inggris): void
+    public function test_a_guest_page_speaks_indonesian(string $url, string $komponen, string $indonesia, string $inggris): void
     {
-        $isi = $this->get($url)->assertOk()->getContent();
+        $this->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->component($komponen));
+
+        $isi = File::get(resource_path("js/pages/{$komponen}.tsx"));
 
         $this->assertStringContainsString($indonesia, $isi);
         $this->assertStringNotContainsString(
@@ -55,7 +61,7 @@ class IndonesianInterfaceTest extends TestCase
 
     public function test_the_profile_page_speaks_indonesian(): void
     {
-        $isi = $this->actingAs(User::factory()->create())->get('/profile')->assertOk()->getContent();
+        $isi = $this->sumberProfil();
 
         foreach (['Informasi Profil', 'Perbarui Kata Sandi', 'Hapus Akun'] as $teks) {
             $this->assertStringContainsString($teks, $isi);
@@ -66,8 +72,12 @@ class IndonesianInterfaceTest extends TestCase
     {
         $isi = $this->actingAs(User::factory()->create())->get('/dashboard')->assertOk()->getContent();
 
+        // Judul dirender server dari prop halaman; navigasinya dirender layout React di
+        // klien, jadi labelnya diperiksa dari sumber layout.
         $this->assertStringContainsString('Dasbor', $isi);
-        $this->assertStringContainsString('Keluar', $isi);
+
+        $layout = collect(File::files(resource_path('js/layouts')))->map(fn ($f) => $f->getContents())->implode("\n");
+        $this->assertStringContainsString('Keluar', $layout);
     }
 
     /**
@@ -122,13 +132,8 @@ class IndonesianInterfaceTest extends TestCase
     {
         User::factory()->create(['email' => 'pendaki@contoh.id']);
 
-        Volt::test('pages.auth.login')
-            ->set('form.email', 'pendaki@contoh.id')
-            ->set('form.password', 'salah-sekali')
-            ->call('login')
-            ->assertHasErrors('form.email');
-
-        $this->assertSame('Email atau kata sandi tidak cocok.', trans('auth.failed'));
+        $this->post(route('login.store'), ['email' => 'pendaki@contoh.id', 'password' => 'salah-sekali'])
+            ->assertSessionHasErrors(['email' => 'Email atau kata sandi tidak cocok.']);
     }
 
     /**
@@ -138,8 +143,21 @@ class IndonesianInterfaceTest extends TestCase
      */
     public function test_the_account_deletion_copy_matches_what_actually_happens(): void
     {
-        $isi = $this->actingAs(User::factory()->create())->get('/profile')->assertOk()->getContent();
+        $this->assertStringContainsString('tetap disimpan tanpa nama Anda', $this->sumberProfil());
+    }
 
-        $this->assertStringContainsString('tetap disimpan tanpa nama Anda', $isi);
+    /**
+     * Halaman Profil kini React: rutenya harus merender komponen itu, dan teksnya
+     * tinggal di sumber halaman beserta komponen bagian-bagiannya.
+     */
+    private function sumberProfil(): string
+    {
+        $this->actingAs(User::factory()->create())->get('/profile')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Profile/Edit'));
+
+        return collect([resource_path('js/pages/Profile/Edit.tsx'), ...File::files(resource_path('js/components/akun'))])
+            ->map(fn ($berkas) => File::get((string) $berkas))
+            ->implode("\n");
     }
 }

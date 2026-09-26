@@ -73,12 +73,30 @@ class IconSystemTest extends TestCase
      */
     public function test_no_icon_decorates_a_heading(): void
     {
-        foreach (['page-header', 'card'] as $komponen) {
-            $this->assertStringNotContainsString(
-                'x-ui.icon',
-                File::get(resource_path("views/components/ui/{$komponen}.blade.php")),
-                "Komponen {$komponen} memakai ikon sebagai hiasan judul."
-            );
+        foreach (['PageHeader', 'Card'] as $komponen) {
+            $isi = File::get(resource_path("js/components/ui/{$komponen}.tsx"));
+
+            $this->assertStringNotContainsString('<Icon', $isi, "Komponen {$komponen} memakai ikon sebagai hiasan judul.");
+            $this->assertStringNotContainsString('<svg', $isi, "Komponen {$komponen} menggambar hiasan di samping judul.");
         }
+    }
+
+    /**
+     * Ikon React mengikuti aturan yang sama dengan ikon Blade di halaman publik: yang
+     * menyertai teks disembunyikan dari pembaca layar, yang berdiri sendiri membawa
+     * namanya, dan nama yang tidak dikenal tidak menggambar apa pun. Navigasi bawah
+     * ponsel memakainya di setiap halaman, selalu bersama labelnya.
+     */
+    public function test_the_react_icon_follows_the_same_rules(): void
+    {
+        $ikon = File::get(resource_path('js/components/ui/Icon.tsx'));
+
+        $this->assertStringContainsString("role={label ? 'img' : undefined}", $ikon);
+        $this->assertStringContainsString('aria-hidden={label ? undefined : true}', $ikon);
+        $this->assertStringContainsString('{label ? <title>{label}</title> : null}', $ikon);
+        $this->assertMatchesRegularExpression('/if \(!d\) \{\s*return null;\s*\}/', $ikon);
+
+        $tab = File::get(resource_path('js/layouts/NavLinks.tsx'));
+        $this->assertMatchesRegularExpression('/<Icon name=\{ikon\} className="[^"]*" \/>\s*<span[^>]*>\{children\}<\/span>/', $tab, 'Ikon navigasi bawah harus berdampingan dengan labelnya.');
     }
 }

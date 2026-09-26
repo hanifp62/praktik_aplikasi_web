@@ -14,9 +14,9 @@
         <!--
             Suite spasial membutuhkan Postgres dengan PostGIS. Tanpa SPATIAL_TEST_DSN
             ia melewati dirinya sendiri dengan pesan yang jelas, bukan gagal, sehingga
-            kontributor tanpa Postgres lokal tetap dapat menjalankan seluruh suite —
+            kontributor tanpa Postgres lokal tetap dapat menjalankan seluruh suite,
             dan tetap diingatkan bahwa suite ini ada. Cara menjalankannya penuh ada di
-            docs/CONTRIBUTING.md.
+            CONTRIBUTING.md, bagian "Suite spasial di mesin sendiri".
         -->
         <testsuite name="Spatial">
             <directory>tests/Spatial</directory>

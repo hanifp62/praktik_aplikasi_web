@@ -2,14 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Livewire\Trips\TripShow;
 use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -74,16 +72,22 @@ class TripPermitWindowTest extends TestCase
         ]);
     }
 
-    private function halaman(TripPlan $trip)
+    /**
+     * Kalimat izin yang dikirim server ke halaman trip (React), atau string kosong bila
+     * halaman tidak menyebut izin sama sekali.
+     */
+    private function izin(TripPlan $trip): string
     {
-        return Livewire::actingAs($trip->user)->test(TripShow::class, ['trip' => $trip]);
+        $props = $this->actingAs($trip->user)->get(route('trips.show', $trip))->assertOk()->viewData('page')['props'];
+
+        return $props['izin']['pesan'] ?? '';
     }
 
     public function test_it_says_when_booking_has_not_opened_yet(): void
     {
-        $this->halaman($this->tripBerjarak(40))
-            ->assertSee('Pemesanan izin')
-            ->assertSee('belum dibuka');
+        $pesan = $this->izin($this->tripBerjarak(40));
+        $this->assertStringContainsString('Pemesanan izin', $pesan);
+        $this->assertStringContainsString('belum dibuka', $pesan);
     }
 
     /**
@@ -92,15 +96,15 @@ class TripPermitWindowTest extends TestCase
      */
     public function test_it_says_when_booking_is_open_and_names_the_deadline(): void
     {
-        $this->halaman($this->tripBerjarak(10))
-            ->assertSee('sedang dibuka')
-            ->assertSee('H-2');
+        $pesan = $this->izin($this->tripBerjarak(10));
+        $this->assertStringContainsString('sedang dibuka', $pesan);
+        $this->assertStringContainsString('H-2', $pesan);
     }
 
     public function test_it_says_when_booking_has_closed(): void
     {
-        $this->halaman($this->tripBerjarak(1))
-            ->assertSee('sudah ditutup');
+        $pesan = $this->izin($this->tripBerjarak(1));
+        $this->assertStringContainsString('sudah ditutup', $pesan);
     }
 
     /**
@@ -109,14 +113,14 @@ class TripPermitWindowTest extends TestCase
      */
     public function test_it_names_the_authority(): void
     {
-        $this->halaman($this->tripBerjarak(10))
-            ->assertSee('Balai Besar TN Bromo Tengger Semeru');
+        $pesan = $this->izin($this->tripBerjarak(10));
+        $this->assertStringContainsString('Balai Besar TN Bromo Tengger Semeru', $pesan);
     }
 
     public function test_a_trail_without_a_permit_requirement_says_nothing(): void
     {
-        $this->halaman($this->tripBerjarak(10, denganIzin: false))
-            ->assertDontSee('Pemesanan izin');
+        $pesan = $this->izin($this->tripBerjarak(10, denganIzin: false));
+        $this->assertStringNotContainsString('Pemesanan izin', $pesan);
     }
 
     /**
@@ -146,8 +150,8 @@ class TripPermitWindowTest extends TestCase
             'planned_date' => '2026-09-12',
         ]);
 
-        $this->halaman($trip)
-            ->assertSee('sudah ditutup')
-            ->assertDontSee('sedang dibuka');
+        $pesan = $this->izin($trip);
+        $this->assertStringContainsString('sudah ditutup', $pesan);
+        $this->assertStringNotContainsString('sedang dibuka', $pesan);
     }
 }

@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\Blade;
+use App\Support\FaktorKategori;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
@@ -17,16 +18,14 @@ use Tests\TestCase;
  * pengguna. Karena itu lebar batang memakai tiga kategori kasar yang berasal dari ambang
  * yang sudah dipakai aplikasi sendiri, bukan persentase skor. Batang selebar 73% dapat
  * dibaca balik sebagai angka, dan tiga kategori tidak.
+ *
+ * Di halaman React pembagiannya dua: server (FaktorKategori) mengubah skor menjadi
+ * kategori sebelum apa pun dikirim ke klien, dan FactorBars.tsx hanya menggambar
+ * kategorinya. Test ini menjaga keduanya.
  */
 class FactorBarsTest extends TestCase
 {
-    /**
-     * @param  array<int, array<string, mixed>>  $faktor
-     */
-    private function render(array $faktor): string
-    {
-        return Blade::render('<x-ui.factor-bars :factors="$factors" />', ['factors' => $faktor]);
-    }
+    use SumberReact;
 
     /**
      * @return array<string, mixed>
@@ -43,12 +42,21 @@ class FactorBarsTest extends TestCase
         ];
     }
 
+    private function batang(): string
+    {
+        return File::get(resource_path('js/components/ui/FactorBars.tsx'));
+    }
+
     public function test_each_factor_is_named_with_its_reason(): void
     {
-        $html = $this->render([$this->faktor(0.9)]);
+        $baris = FaktorKategori::dari([$this->faktor(0.9)]);
 
-        $this->assertStringContainsString('Elevation gain', $html);
-        $this->assertStringContainsString('sesuai dengan pengalaman Anda', $html);
+        $this->assertSame('Elevation gain', $baris[0]['label']);
+        $this->assertStringContainsString('sesuai dengan pengalaman Anda', (string) $baris[0]['detail']);
+
+        $batang = $this->batang();
+        $this->assertStringContainsString('{f.label}', $batang);
+        $this->assertStringContainsString('{f.detail ? <p', $batang);
     }
 
     /**
@@ -57,12 +65,22 @@ class FactorBarsTest extends TestCase
      */
     public function test_the_score_never_reaches_the_page_in_any_form(): void
     {
-        $html = $this->render([$this->faktor(0.7312)]);
+        $baris = FaktorKategori::dari([$this->faktor(0.7312)]);
+        $json = (string) json_encode($baris);
 
-        $this->assertStringNotContainsString('0.7312', $html);
-        $this->assertStringNotContainsString('73.12', $html);
-        $this->assertStringNotContainsString('73%', $html);
-        $this->assertStringNotContainsString('internal_score', $html);
+        $this->assertSame(['label', 'detail', 'kategori'], array_keys($baris[0]), 'Hanya label, alasan, dan kategori yang boleh keluar dari server.');
+        $this->assertStringNotContainsString('0.7312', $json);
+        $this->assertStringNotContainsString('73.12', $json);
+        $this->assertStringNotContainsString('73%', $json);
+        $this->assertStringNotContainsString('score', $json);
+
+        // Lebar batang adalah salah satu dari tiga kelas tetap, bukan angka dari data.
+        // Komentarnya boleh menyebut "73%" untuk menjelaskan mengapa; kodenya tidak.
+        $batang = $this->batang();
+        $kode = $this->tanpaKomentarJs($batang);
+        $this->assertStringNotContainsString('style=', $kode);
+        $this->assertStringNotContainsString('%', $kode);
+        $this->assertStringContainsString("const lebar: Record<KategoriFaktor, string> = { kuat: 'w-full', cukup: 'w-2/3', lemah: 'w-1/3', 'tak-diketahui': 'w-full' };", $batang);
     }
 
     /**
@@ -71,9 +89,10 @@ class FactorBarsTest extends TestCase
      */
     public function test_the_weight_is_not_published_either(): void
     {
-        $html = $this->render([$this->faktor(0.9)]);
+        $json = (string) json_encode(FaktorKategori::dari([$this->faktor(0.9)]));
 
-        $this->assertStringNotContainsString('0.2', $html);
+        $this->assertStringNotContainsString('weight', $json);
+        $this->assertStringNotContainsString('0.2', $json);
     }
 
     /**
@@ -82,26 +101,31 @@ class FactorBarsTest extends TestCase
      */
     public function test_the_three_categories_follow_the_thresholds_the_engine_already_uses(): void
     {
-        $kuat = $this->render([$this->faktor(config('hiking.route_fit.strong_factor_threshold'))]);
-        $cukup = $this->render([$this->faktor(0.60)]);
-        $lemah = $this->render([$this->faktor(0.10)]);
+        $kuat = config('hiking.route_fit.strong_factor_threshold');
+        $lemah = config('hiking.route_fit.weak_factor_threshold');
 
-        $this->assertStringContainsString('Mendukung', $kuat);
-        $this->assertStringContainsString('Cukup', $cukup);
-        $this->assertStringContainsString('Menahan', $lemah);
+        $this->assertSame('kuat', FaktorKategori::dari([$this->faktor($kuat)])[0]['kategori']);
+        $this->assertSame('cukup', FaktorKategori::dari([$this->faktor($lemah)])[0]['kategori']);
+        $this->assertSame('cukup', FaktorKategori::dari([$this->faktor(0.60)])[0]['kategori']);
+        $this->assertSame('lemah', FaktorKategori::dari([$this->faktor(0.10)])[0]['kategori']);
+
+        $this->assertStringContainsString("const kata: Record<KategoriFaktor, string> = { kuat: 'Mendukung', cukup: 'Cukup', lemah: 'Menahan', 'tak-diketahui': 'Belum diketahui' };", $this->batang());
     }
 
     /**
-     * PRD §95. Faktor yang datanya belum ada tidak boleh digambar sebagai batang pendek,
-     * karena batang pendek terbaca sebagai "jalur ini buruk pada faktor itu" padahal
-     * yang benar adalah "belum ada yang tahu".
+     * PRD §95, R-006, R-007. Faktor yang datanya belum ada tidak boleh digambar sebagai
+     * batang pendek, karena batang pendek terbaca sebagai "jalur ini buruk pada faktor
+     * itu" padahal yang benar adalah "belum ada yang tahu". Skornya yang nol pun tidak
+     * boleh menurunkannya menjadi lemah.
      */
     public function test_an_unknown_factor_is_admitted_not_drawn_as_weak(): void
     {
-        $html = $this->render([$this->faktor(0.0, takDiketahui: true)]);
+        $this->assertSame('tak-diketahui', FaktorKategori::dari([$this->faktor(0.0, takDiketahui: true)])[0]['kategori']);
 
-        $this->assertStringContainsString('Belum diketahui', $html);
-        $this->assertStringNotContainsString('Menahan', $html);
+        $batang = $this->batang();
+        $this->assertStringContainsString("'tak-diketahui': 'Belum diketahui'", $batang);
+        $this->assertStringNotContainsString("'tak-diketahui': 'w-1/3'", $batang);
+        $this->assertStringNotContainsString("'tak-diketahui': 'Menahan'", $batang);
     }
 
     /**
@@ -111,16 +135,18 @@ class FactorBarsTest extends TestCase
      */
     public function test_meaning_is_carried_by_words_not_only_by_colour(): void
     {
-        $html = $this->render([$this->faktor(0.1)]);
+        $batang = $this->batang();
 
         // Katanya ada sebagai teks, dan batangnya sendiri disembunyikan dari pembaca
         // layar karena ia hanya mengulang kata yang sudah terbaca di sebelahnya.
-        $this->assertStringContainsString('Menahan', $html);
-        $this->assertStringContainsString('aria-hidden="true"', $html);
+        $this->assertStringContainsString('{kata[f.kategori]}</span>', $batang);
+        $this->assertMatchesRegularExpression('/<div className="[^"]*" aria-hidden="true">\s*<div className=\{`h-full rounded-full \$\{lebar\[f\.kategori\]\}/', $batang);
     }
 
     public function test_nothing_is_drawn_without_factors(): void
     {
-        $this->assertSame('', trim($this->render([])));
+        $this->assertSame([], FaktorKategori::dari([]));
+        $this->assertSame([], FaktorKategori::dari(null));
+        $this->assertMatchesRegularExpression('/if \(factors\.length === 0\) \{\s*return null;\s*\}/', $this->batang());
     }
 }

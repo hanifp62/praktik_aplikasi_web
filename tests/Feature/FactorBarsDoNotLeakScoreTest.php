@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\ExperienceLevel;
 use App\Enums\NavigationExperience;
-use App\Livewire\Recommendations\RecommendationResults;
 use App\Models\HikingGoal;
 use App\Models\RecommendationResult;
 use App\Models\RecommendationRun;
@@ -12,19 +11,25 @@ use App\Models\Trail;
 use App\Models\User;
 use App\Services\RouteFitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\File;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
- * BR-09 pada halaman yang sungguhan, dengan panel penjelasannya terbuka.
+ * BR-09 pada halaman yang sungguhan.
  *
- * Uji komponen terisolasi tidak cukup di sini. Batang faktor membawa matched_factors ke
- * dalam halaman, dan kebocoran skor dapat terjadi lewat muatan Livewire tanpa satu pun
- * angka tampak di teks yang terbaca mata.
+ * Halaman hasil kini React: faktor dan penjelasan setiap jalur dikirim di props supaya
+ * "Kenapa?" terbuka tanpa menunggu server. Karena itu pintu kebocorannya adalah props
+ * itu sendiri, terlihat atau tidak di layar. Yang boleh keluar hanya kategori faktor
+ * (kuat/cukup/lemah/tak-diketahui); skor, bobot, dan skor internal berhenti di server.
  */
 class FactorBarsDoNotLeakScoreTest extends TestCase
 {
     use RefreshDatabase;
+
+    /** Kunci yang tidak boleh ada di mana pun dalam props halaman hasil. */
+    private const KUNCI_TERLARANG = ['score', 'internal_score', 'internalScore', 'weight', 'weights'];
 
     /**
      * @return array{0: User, 1: RecommendationRun}
@@ -50,15 +55,39 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
         return [$user, app(RouteFitService::class)->recommend($user, $goal)];
     }
 
-    public function test_opening_the_panel_shows_the_bars(): void
+    private function halaman(User $user, RecommendationRun $run): TestResponse
+    {
+        return $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk();
+    }
+
+    /**
+     * Panel "Kenapa?" membawa batang faktor, dan batangnya hanya tahu kategori.
+     */
+    public function test_the_page_ships_the_factor_categories_for_the_panel(): void
     {
         [$user, $run] = $this->runDenganHasil();
-        $hasil = RecommendationResult::firstOrFail();
+        $jumlahFaktor = count(RecommendationResult::firstOrFail()->matched_factors);
 
-        Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->call('toggleExplanation', $hasil->id)
-            ->assertSee('Penilaian per faktor');
+        $this->halaman($user, $run)->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Recommendations/Show')
+            ->has('eligible.0.faktor', $jumlahFaktor, fn (AssertableInertia $faktor) => $faktor
+                ->whereType('label', 'string')
+                ->where('kategori', fn (string $k) => in_array($k, ['kuat', 'cukup', 'lemah', 'tak-diketahui'], true))
+                ->etc()));
+
+        $this->assertStringContainsString('Penilaian per faktor', File::get(resource_path('js/components/discovery/PanelAlasan.tsx')));
+    }
+
+    public function test_no_score_or_weight_key_reaches_the_props(): void
+    {
+        [$user, $run] = $this->runDenganHasil();
+
+        $props = $this->halaman($user, $run)->viewData('page')['props'];
+
+        $bocor = array_values(array_intersect(self::KUNCI_TERLARANG, $this->semuaKunci($props)));
+
+        $this->assertSame([], $bocor, 'Kunci skor bocor ke props: '.implode(', ', $bocor));
+        $this->assertStringNotContainsString('"score"', (string) json_encode($props));
     }
 
     /**
@@ -70,10 +99,7 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
         [$user, $run] = $this->runDenganHasil();
         $hasil = RecommendationResult::firstOrFail();
 
-        $html = Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->call('toggleExplanation', $hasil->id)
-            ->html();
+        $isi = $this->halaman($user, $run)->getContent();
 
         $diperiksa = 0;
 
@@ -88,32 +114,19 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
 
             $diperiksa++;
 
-            $this->assertStringNotContainsString(
-                $skor,
-                $html,
-                "Skor faktor {$faktor['factor']} ({$skor}) bocor ke halaman."
-            );
+            $this->assertStringNotContainsString($skor, $isi, "Skor faktor {$faktor['factor']} ({$skor}) bocor ke halaman.");
         }
 
-        // Penjaga terhadap test yang lolos tanpa memeriksa apa pun. Kalau seluruh skor
-        // kebetulan bulat, perulangan di atas dilewati seluruhnya dan testnya hijau
-        // tanpa pernah menyentuh halaman.
-        $this->assertGreaterThan(
-            0,
-            $diperiksa,
-            'Tidak ada satu pun skor berkoma untuk diperiksa, jadi test ini belum membuktikan apa-apa.'
-        );
+        // Penjaga terhadap test yang lolos tanpa memeriksa apa pun.
+        $this->assertGreaterThan(0, $diperiksa, 'Tidak ada satu pun skor berkoma untuk diperiksa, jadi test ini belum membuktikan apa-apa.');
     }
 
     /**
-     * Hasil yang skornya bulat sengaja dilewati.
-     *
-     * Skor teratas hampir selalu 100, dan "100" muncul di HALAMAN mana pun secara
-     * kebetulan, misalnya di dalam "1000 m" atau nama kelas. Versi pertama test ini
-     * memeriksanya apa adanya lalu menyala merah untuk kebocoran yang tidak pernah ada.
-     * Yang dicari adalah skor berkoma yang tidak mungkin muncul karena kebetulan.
+     * Skor teratas hampir selalu 100, dan "100" muncul di halaman mana pun secara
+     * kebetulan. Yang dicari adalah skor berkoma yang tidak mungkin muncul karena
+     * kebetulan.
      */
-    public function test_the_internal_score_and_weights_stay_out_of_the_page(): void
+    public function test_the_internal_score_stays_out_of_the_page(): void
     {
         [$user, $run] = $this->runDenganHasil();
 
@@ -121,15 +134,34 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
             ->whereRaw('internal_score <> round(internal_score)')
             ->first() ?? RecommendationResult::firstOrFail();
 
-        $html = Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->call('toggleExplanation', $hasil->id)
-            ->html();
+        $isi = $this->halaman($user, $run)->getContent();
 
-        $this->assertStringNotContainsString('internal_score', $html);
+        $this->assertStringNotContainsString('internal_score', $isi);
+        $this->assertStringNotContainsString('internalScore', $isi);
 
         if (fmod((float) $hasil->internal_score, 1.0) !== 0.0) {
-            $this->assertStringNotContainsString((string) $hasil->internal_score, $html);
+            $this->assertStringNotContainsString((string) $hasil->internal_score, $isi);
         }
+    }
+
+    /**
+     * @param  array<mixed>  $data
+     * @return array<int, string>
+     */
+    private function semuaKunci(array $data): array
+    {
+        $kunci = [];
+
+        foreach ($data as $k => $v) {
+            if (is_string($k)) {
+                $kunci[] = $k;
+            }
+
+            if (is_array($v)) {
+                $kunci = [...$kunci, ...$this->semuaKunci($v)];
+            }
+        }
+
+        return $kunci;
     }
 }

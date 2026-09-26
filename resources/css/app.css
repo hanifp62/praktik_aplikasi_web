@@ -69,7 +69,30 @@
          */
         --control-border: 133 137 143;
 
-        --radius-control: 0.375rem;
+        /*
+         * Bentuk: radius konsentris (arah desain v2, riset 2026-09-25-uiux/01 §5.1).
+         * Kontrol, kartu, dan lapisan luar (lembar bawah, panel) punya radius sendiri;
+         * yang bersarang di dalam lapisan lain memakai radius luar dikurangi padding
+         * supaya sudutnya sejajar. Chip dan kontrol segmen memakai rounded-full.
+         */
+        --radius-control: 0.75rem;
+        --radius-kartu: 1rem;
+        --radius-luar: 1.5rem;
+
+        /*
+         * Gerak (DK-26). Hanya transform dan opacity yang dianimasikan. Kurva pegas
+         * dihitung dari osilator teredam, bukan ditebak: redaman 0,9 untuk perpindahan
+         * posisi (lonjakan 0,14%), 1,0 untuk warna dan opasitas (tanpa lonjakan), 0,75
+         * hanya sesudah gestur seperti melepas lembar bawah (lonjakan 2,8%). Durasi
+         * pendek karena pengguna sedang bekerja, bukan menonton (mode Operate).
+         */
+        --dur-sentuh: 120ms;
+        --dur-cepat: 200ms;
+        --dur-sedang: 280ms;
+        --dur-lambat: 420ms;
+        --ease-gerak: linear(0, 0.034, 0.115, 0.22, 0.331, 0.44, 0.541, 0.63, 0.707, 0.771, 0.824, 0.867, 0.901, 0.928, 0.948, 0.964, 0.975, 0.984, 0.99, 0.994, 0.997, 0.999, 1, 1.001, 1);
+        --ease-pudar: linear(0, 0.066, 0.202, 0.354, 0.494, 0.614, 0.711, 0.786, 0.844, 0.887, 0.919, 0.942, 0.959, 0.971, 0.98, 0.986, 0.99, 0.993, 0.995, 0.997, 0.998, 0.998, 0.999, 0.999, 1);
+        --ease-lentur: linear(0, 0.059, 0.195, 0.359, 0.521, 0.665, 0.783, 0.873, 0.938, 0.981, 1.008, 1.022, 1.028, 1.028, 1.025, 1.021, 1.016, 1.012, 1.008, 1.005, 1.003, 1.001, 1, 1, 1);
 
         /*
          * Lapisan semantik.
@@ -100,6 +123,206 @@
         --surface-sunken: 245 245 243;
 
         --border-subtle: 233 232 228;
+
+        /*
+         * Hijau merek sebagai LATAR DEPAN: tautan, teks penekanan, garis grafik.
+         *
+         * Dipisahkan dari brand-700 yang menjadi ISIAN tombol karena keduanya berpisah
+         * jalan di tema gelap: isian tetap brand-700 (putih di atasnya tetap 5.48:1),
+         * sedangkan latar depan harus menerang (brand-700 hanya 2.77:1 di atas
+         * permukaan gelap). Satu token untuk dua peran berarti salah satunya gagal.
+         */
+        --brand-ink: 4 120 87;
+
+        /* Tanda dan wordmark logo, mengikuti aturan yang sama dengan brand-ink. */
+        --logo-mark: 4 120 87;
+        --logo-type: 28 25 23;
+
+        --scrollbar-thumb: 156 163 175;
+        --scrollbar-thumb-hover: 107 114 128;
+
+        color-scheme: light;
+    }
+
+    /*
+     * Tema gelap (DK-17, keputusan pemilik D5).
+     *
+     * Dua blok yang isinya identik, dan itu disengaja: blok pertama berlaku ketika
+     * sistem gelap dan pengguna tidak memaksa terang; blok kedua ketika pengguna
+     * memilih gelap lewat cookie yang dirender server sebagai data-theme. Format token
+     * "R G B" tidak dapat memakai light-dark(), jadi duplikasinya tidak terhindarkan.
+     * ColourContrastTest menjaga keduanya tetap sama dan menghitung ulang setiap
+     * pasangan di tema ini.
+     *
+     * Kanvas stone-900, bukan hitam: bayangan dan elevasi tetap terbaca, dan netral
+     * hangat yang sama dengan tema terang hanya dibalik. Karena beda surface dan canvas
+     * hanya 1.15:1, kartu dan lapisan melayang mengandalkan garis border-subtle, bukan
+     * bayangan.
+     *
+     * Skala warna dipetakan ulang menurut PERAN, bukan nilainya: bg-brand-100 tetap
+     * "latar lembut" dan text-brand-900 tetap "teks pekat di atasnya", sehingga pasangan
+     * yang sudah dihitung di view terus berfungsi tanpa satu pun kelas dark: di view.
+     * Isian tombol (brand-700/800, danger-600/700) tidak berubah: teks putih di atasnya
+     * sudah lolos di kedua tema.
+     */
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+            --brand-50: 15 46 38;
+            --brand-100: 2 44 34;
+            --brand-200: 6 78 59;
+            --brand-300: 4 120 87;
+            --brand-500: 16 185 129;
+            --brand-600: 52 211 153;
+            --brand-700: 4 120 87;
+            --brand-800: 6 95 70;
+            --brand-900: 167 243 208;
+
+            --warn-50: 45 24 8;
+            --warn-100: 69 26 3;
+            --warn-300: 180 83 9;
+            --warn-600: 217 119 6;
+            --warn-900: 253 230 138;
+
+            --community-50: 8 47 73;
+            --community-500: 14 165 233;
+            --community-900: 186 230 253;
+
+            --danger-50: 50 8 20;
+            --danger-100: 76 5 25;
+            --danger-300: 190 18 60;
+            --danger-600: 225 29 72;
+            --danger-700: 190 18 60;
+            --danger-900: 254 205 211;
+
+            --control-border: 168 162 158;
+
+            --text-primary: 245 245 244;
+            --text-secondary: 214 211 209;
+            --text-muted: 168 162 158;
+
+            --canvas: 28 25 23;
+            --surface: 41 37 36;
+            --surface-sunken: 22 20 18;
+
+            --border-subtle: 68 64 60;
+
+            --brand-ink: 52 211 153;
+            --logo-mark: 16 185 129;
+            --logo-type: 250 250 248;
+
+            --scrollbar-thumb: 87 83 78;
+            --scrollbar-thumb-hover: 120 113 108;
+
+            color-scheme: dark;
+        }
+    }
+
+    :root[data-theme='dark'] {
+        --brand-50: 15 46 38;
+        --brand-100: 2 44 34;
+        --brand-200: 6 78 59;
+        --brand-300: 4 120 87;
+        --brand-500: 16 185 129;
+        --brand-600: 52 211 153;
+        --brand-700: 4 120 87;
+        --brand-800: 6 95 70;
+        --brand-900: 167 243 208;
+
+        --warn-50: 45 24 8;
+        --warn-100: 69 26 3;
+        --warn-300: 180 83 9;
+        --warn-600: 217 119 6;
+        --warn-900: 253 230 138;
+
+        --community-50: 8 47 73;
+        --community-500: 14 165 233;
+        --community-900: 186 230 253;
+
+        --danger-50: 50 8 20;
+        --danger-100: 76 5 25;
+        --danger-300: 190 18 60;
+        --danger-600: 225 29 72;
+        --danger-700: 190 18 60;
+        --danger-900: 254 205 211;
+
+        --control-border: 168 162 158;
+
+        --text-primary: 245 245 244;
+        --text-secondary: 214 211 209;
+        --text-muted: 168 162 158;
+
+        --canvas: 28 25 23;
+        --surface: 41 37 36;
+        --surface-sunken: 22 20 18;
+
+        --border-subtle: 68 64 60;
+
+        --brand-ink: 52 211 153;
+        --logo-mark: 16 185 129;
+        --logo-type: 250 250 248;
+
+        --scrollbar-thumb: 87 83 78;
+        --scrollbar-thumb-hover: 120 113 108;
+
+        color-scheme: dark;
+    }
+
+    /*
+     * Latar dan warna teks dipasang pada html dan body, bukan hanya pada wadah dalam.
+     * Safari mewarnai bilah alat dari latar html, dan area di luar wadah (overscroll,
+     * ruang di bawah halaman pendek) mengambil warna html; tanpa ini tema gelap
+     * menampilkan pita putih di tepi layar.
+     */
+    html,
+    body {
+        background-color: rgb(var(--canvas));
+        color: rgb(var(--text-primary));
+    }
+
+    /*
+     * Offset cincin fokus mengikuti kanvas. Bawaan Tailwind adalah putih, dan cincin
+     * fokus berhalo putih di atas kanvas gelap terbaca sebagai kesalahan render.
+     */
+    *,
+    ::before,
+    ::after {
+        --tw-ring-offset-color: rgb(var(--canvas));
+    }
+
+    /*
+     * Kontrol formulir dari @tailwindcss/forms membawa latar putih dan teks hitam yang
+     * ditulis langsung, bukan lewat token. Di sini keduanya diarahkan ke permukaan dan
+     * teks tema supaya isian tidak menjadi kotak putih di halaman gelap.
+     */
+    input:not([type]),
+    [type='text'],
+    [type='email'],
+    [type='url'],
+    [type='password'],
+    [type='number'],
+    [type='date'],
+    [type='datetime-local'],
+    [type='month'],
+    [type='search'],
+    [type='tel'],
+    [type='time'],
+    [type='week'],
+    [multiple],
+    textarea,
+    select {
+        background-color: rgb(var(--surface));
+        color: rgb(var(--text-primary));
+        border-color: rgb(var(--control-border));
+    }
+
+    [type='checkbox'],
+    [type='radio'] {
+        background-color: rgb(var(--surface));
+        border-color: rgb(var(--control-border));
+    }
+
+    ::placeholder {
+        color: rgb(var(--text-muted));
     }
 
     /*
@@ -193,7 +416,7 @@
         accent-color: rgb(var(--brand-700));
 
         /* Firefox. Ibu jari lalu alurnya. */
-        scrollbar-color: rgb(156 163 175) transparent;
+        scrollbar-color: rgb(var(--scrollbar-thumb)) transparent;
     }
 
     ::-webkit-scrollbar {
@@ -206,13 +429,13 @@
     }
 
     ::-webkit-scrollbar-thumb {
-        background-color: rgb(156 163 175);
-        border: 3px solid rgb(249 250 251);
+        background-color: rgb(var(--scrollbar-thumb));
+        border: 3px solid rgb(var(--canvas));
         border-radius: 9999px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background-color: rgb(107 114 128);
+        background-color: rgb(var(--scrollbar-thumb-hover));
     }
 
     /*
@@ -263,5 +486,71 @@
             transition-duration: 1ms !important;
             scroll-behavior: auto !important;
         }
+    }
+}
+
+/*
+| Material v2 (DK-26; riset docs/riset/2026-09-25-uiux/01 §4.1)
+|
+| Kanvas dan isi selalu solid. "Chrome" adalah lapisan yang melayang di atas isi:
+| bilah tab, bilah atas, strip pendakian aktif, kendali peta. Chrome solid sebagai
+| bawaan. Kaca hanya peningkatan bersyarat: pengguna tidak memilih Solid, perangkat
+| lolos petunjuk kemampuan (dasar.js memasang data-efek="penuh"), peramban mendukung
+| backdrop-filter, dan elemennya tidak berada di atas peta (kanvas WebGL membuat blur
+| dihitung ulang setiap bingkai). Paling banyak dua elemen kaca per layar; tidak pernah
+| pada kartu, status resmi, laporan komunitas, atau dialog. Aturan penurun ditulis
+| terakhir supaya selalu menang.
+*/
+@layer components {
+    .chrome {
+        background-color: rgb(var(--surface));
+        border-color: rgb(var(--border-subtle));
+    }
+
+    @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        :where(:root[data-efek='penuh']) .chrome:where(:not([data-di-atas-peta])) {
+            background-color: rgb(var(--surface) / 0.8);
+            -webkit-backdrop-filter: blur(16px) saturate(1.2);
+            backdrop-filter: blur(16px) saturate(1.2);
+        }
+    }
+
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+        .chrome {
+            background-color: rgb(var(--surface));
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+    }
+
+    @media (prefers-contrast: more) {
+        .chrome {
+            border-color: rgb(var(--text-primary));
+        }
+    }
+}
+
+/*
+| Kurangi gerak dari pengaturan aplikasi (Profil, Tampilan), bukan hanya dari sistem.
+| Sebagian pengguna tidak tahu letak setelan sistemnya, dan peramban lama tidak
+| meneruskannya. Nilainya dirender server sebagai data-gerak di <html>, sama dengan tema.
+*/
+:root[data-gerak='kurangi'] *,
+:root[data-gerak='kurangi'] *::before,
+:root[data-gerak='kurangi'] *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+}
+
+/*
+ * Kontras tinggi: batas yang tadinya hampir tak terlihat menjadi tegas. `:root:root`
+ * (spesifisitas dua kelas) sengaja: blok tema gelap memakai :root[data-theme="dark"]
+ * dan :root:not([data-theme="light"]), dan aturan ini harus menang di kedua tema.
+ */
+@media (prefers-contrast: more) {
+    :root:root {
+        --border-subtle: var(--control-border);
     }
 }

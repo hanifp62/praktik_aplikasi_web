@@ -75,12 +75,14 @@ class TrailFactory extends Factory
     /**
      * Jalur yang benar-benar melewati gerbang publikasi.
      *
-     * Ia tidak menyalakan kolomnya langsung. Ia melengkapi sumber, satu checkpoint
-     * sementara, dan status resmi lebih dulu, menerbitkan lewat jalur yang sama dengan
-     * admin, lalu membuang checkpoint sementaranya. Itu bukan tipuan: gerbangnya memang
-     * berlaku pada saat transisi, dan apa yang terjadi pada data sesudahnya adalah
-     * urusan penandaan di daftar admin, bukan urusan gerbang. Membuangnya membuat test
-     * bebas menyusun checkpointnya sendiri tanpa bentrok urutan.
+     * Ia tidak menyalakan kolomnya langsung. Ia melengkapi sumber, satu checkpoint, dan
+     * status resmi lebih dulu, lalu menerbitkan lewat jalur yang sama dengan admin.
+     *
+     * Checkpoint itu tetap ada sesudahnya: sejak gerbang menjadi invariant data,
+     * checkpoint terakhir jalur terbit tidak dapat dihapus. Urutan 32000 menaruhnya di
+     * ujung. Namanya dibuat khas karena nama acak bawaan pabrik ("Pos 1" sampai
+     * "Pos 5") bisa sama dengan nama yang disusun test, dan test yang mengindeks pos
+     * menurut nama lalu gagal secara acak.
      *
      * Statusnya sengaja UNKNOWN, bukan OPEN, supaya resolusi status tidak berubah bagi
      * test yang sudah ada.
@@ -93,7 +95,7 @@ class TrailFactory extends Factory
             }
 
             if ($trail->checkpoints()->count() === 0) {
-                Checkpoint::factory()->for($trail)->create(['sequence' => 32000]);
+                Checkpoint::factory()->for($trail)->create(['sequence' => 32000, 'name' => 'Checkpoint gerbang publikasi']);
             }
 
             if ($trail->officialStatuses()->count() === 0) {

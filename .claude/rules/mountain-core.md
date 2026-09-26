@@ -4,7 +4,7 @@ Berkas ini adalah **canonical owner** untuk R-001–R-014 dan R-022.
 
 - **Provenance:** USER-PROVIDED CANONICAL SOURCE. Isi Statement, Scope, dan Invariant
   disalin dari sumber canonical pemilik produk, bukan diturunkan dari CLAUDE.md,
-  DESIGN.md, PRD.md, riwayat sesi, atau inferensi agen.
+  DESIGN.md, docs/PRD.md, riwayat sesi, atau inferensi agen.
 - **Transitional duplication:** CLAUDE.md §11–§25 masih memuat representasi lama untuk
   rule-rule ini. Representasi tersebut berstatus PRESENT_NONCANONICAL / transitional
   dan berlaku sampai reachability `.claude/rules/` terbukti pada sesi baru. Ketika

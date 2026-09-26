@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\PreparationService;
 use App\Services\RouteFitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -35,24 +36,27 @@ class PermitVisibilityTest extends TestCase
             'guide_required' => true,
         ]);
 
-        $html = $this->actingAs(User::factory()->create())
+        $izin = $this->actingAs(User::factory()->create())
             ->get(route('trails.show', $trail))
-            ->getContent();
+            ->assertOk()
+            ->viewData('page')['props']['perizinan'];
 
-        $this->assertStringContainsString('Perizinan pendakian', $html);
-        $this->assertStringContainsString('TN Bromo Tengger Semeru', $html);
-        $this->assertStringContainsString('Wajib pemandu terdaftar', $html);
+        $this->assertSame('TN Bromo Tengger Semeru', $izin['authority']);
+        $this->assertSame('200 pendaki', $izin['kuotaHarian']);
+        $this->assertSame('Wajib pemandu terdaftar', $izin['pemandu']);
+        $this->assertStringContainsString('Perizinan pendakian', file_get_contents(resource_path('js/components/trails/rinci/Kondisi.tsx')));
     }
 
     public function test_a_trail_without_permit_rules_shows_no_permit_section(): void
     {
         $trail = Trail::factory()->published()->create();
 
-        $html = $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->create())
             ->get(route('trails.show', $trail))
-            ->getContent();
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('perizinan', null));
 
-        $this->assertStringNotContainsString('Perizinan pendakian', $html);
+        $this->assertStringContainsString('{perizinan ? <PerizinanKartu', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     public function test_a_recommendation_warns_when_the_booking_window_has_closed(): void

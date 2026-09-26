@@ -4,14 +4,10 @@ namespace Tests\Feature;
 
 use App\Enums\ExperienceLevel;
 use App\Enums\NavigationExperience;
-use App\Livewire\Goals\GoalForm;
-use App\Livewire\Reports\ConditionReportForm;
-use App\Livewire\Trips\TripForm;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -77,26 +73,23 @@ class IndonesianDateFloorTest extends TestCase
      */
     public function test_a_goal_cannot_be_planned_for_a_date_already_past_in_indonesia(): void
     {
-        Livewire::actingAs($this->hiker())
-            ->test(GoalForm::class)
-            ->set('trip_type', 'CAMPING')
-            ->set('target_date', self::KEMARIN_DI_INDONESIA)
-            ->call('save')
-            ->assertHasErrors('target_date');
+        $this->actingAs($this->hiker())
+            ->post(route('goals.store'), ['trip_type' => 'CAMPING', 'target_date' => self::KEMARIN_DI_INDONESIA])
+            ->assertSessionHasErrors('target_date');
     }
 
     public function test_a_trip_cannot_be_planned_for_a_date_already_past_in_indonesia(): void
     {
         $trail = Trail::factory()->easy()->create();
 
-        Livewire::actingAs($this->hiker())
-            ->test(TripForm::class)
-            ->set('trail_id', $trail->id)
-            ->set('name', 'Pendakian uji')
-            ->set('trip_type', 'CAMPING')
-            ->set('planned_date', self::KEMARIN_DI_INDONESIA)
-            ->call('save')
-            ->assertHasErrors('planned_date');
+        $this->actingAs($this->hiker())
+            ->post(route('trips.store'), [
+                'trail_id' => $trail->id,
+                'name' => 'Pendakian uji',
+                'trip_type' => 'CAMPING',
+                'planned_date' => self::KEMARIN_DI_INDONESIA,
+            ])
+            ->assertSessionHasErrors('planned_date');
     }
 
     /**
@@ -108,13 +101,13 @@ class IndonesianDateFloorTest extends TestCase
     {
         $trail = Trail::factory()->easy()->create();
 
-        Livewire::actingAs($this->hiker())
-            ->test(ConditionReportForm::class)
-            ->set('trail_id', $trail->id)
-            ->set('hike_date', self::HARI_INI_DI_INDONESIA)
-            ->set('condition_tags', ['MUDDY'])
-            ->call('save')
-            ->assertHasNoErrors('hike_date');
+        $this->actingAs($this->hiker())
+            ->post(route('reports.store'), [
+                'trail_id' => $trail->id,
+                'hike_date' => self::HARI_INI_DI_INDONESIA,
+                'condition_tags' => ['MUDDY'],
+            ])
+            ->assertSessionHasNoErrors();
     }
 
     /**
@@ -125,13 +118,13 @@ class IndonesianDateFloorTest extends TestCase
     {
         $trail = Trail::factory()->easy()->create();
 
-        Livewire::actingAs($this->hiker())
-            ->test(ConditionReportForm::class)
-            ->set('trail_id', $trail->id)
-            ->set('hike_date', '2026-09-25')
-            ->set('condition_tags', ['MUDDY'])
-            ->call('save')
-            ->assertHasErrors('hike_date');
+        $this->actingAs($this->hiker())
+            ->post(route('reports.store'), [
+                'trail_id' => $trail->id,
+                'hike_date' => '2026-09-25',
+                'condition_tags' => ['MUDDY'],
+            ])
+            ->assertSessionHasErrors('hike_date');
     }
 
     /**
@@ -139,11 +132,8 @@ class IndonesianDateFloorTest extends TestCase
      */
     public function test_a_goal_for_a_clearly_future_date_is_still_accepted(): void
     {
-        Livewire::actingAs($this->hiker())
-            ->test(GoalForm::class)
-            ->set('trip_type', 'CAMPING')
-            ->set('target_date', '2026-10-15')
-            ->call('save')
-            ->assertHasNoErrors('target_date');
+        $this->actingAs($this->hiker())
+            ->post(route('goals.store'), ['trip_type' => 'CAMPING', 'target_date' => '2026-10-15'])
+            ->assertSessionDoesntHaveErrors('target_date');
     }
 }

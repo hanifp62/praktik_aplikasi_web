@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CompletionState;
+use App\Enums\PreparationStatus;
+use App\Enums\TripStatus;
 use App\Models\TripPlan;
 use App\Models\User;
+use App\Services\PreparationService;
 use Database\Seeders\PreparationTemplateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -71,5 +75,57 @@ class TripOwnershipTest extends TestCase
         $trip = TripPlan::factory()->create();
 
         $this->get(route('trips.show', $trip))->assertRedirect(route('login'));
+    }
+
+    /**
+     * Aksi halaman trip kini rute POST biasa. Menebak id trip orang lain tidak boleh
+     * mengubah apa pun: setiap aksi memeriksa Policy yang sama dengan halamannya.
+     */
+    public function test_another_user_cannot_act_on_someone_elses_trip(): void
+    {
+        $this->seed(PreparationTemplateSeeder::class);
+
+        $trip = TripPlan::factory()->create(['status' => TripStatus::IN_PROGRESS->value]);
+        app(PreparationService::class)->generateFor($trip);
+        $butir = $trip->preparationItems()->firstOrFail();
+        $intruder = User::factory()->create();
+
+        $aksi = [
+            route('trips.start', $trip) => [],
+            route('trips.cancel', $trip) => [],
+            route('trips.complete', $trip) => ['completion_state' => CompletionState::COMPLETED->value],
+            route('trips.preparation.regenerate', $trip) => [],
+            route('trips.preparation.update', ['trip' => $trip, 'item' => $butir->id]) => ['status' => PreparationStatus::CONFIRMED->value],
+            route('trips.readiness.recompute', $trip) => [],
+            route('trips.readiness.confirm', $trip) => [],
+            route('trips.hike.position', $trip) => ['latitude' => -7.99, 'longitude' => 112.95],
+        ];
+
+        foreach ($aksi as $url => $isian) {
+            $this->actingAs($intruder)->post($url, $isian)->assertForbidden();
+        }
+
+        $this->assertSame(TripStatus::IN_PROGRESS, $trip->fresh()->status);
+        $this->assertSame(PreparationStatus::NOT_CONFIRMED, $butir->fresh()->status);
+    }
+
+    /**
+     * Pemilik satu trip tidak dapat mengubah butir persiapan trip lain dengan
+     * menyelipkan id butirnya ke URL tripnya sendiri.
+     */
+    public function test_a_preparation_item_is_only_found_within_its_own_trip(): void
+    {
+        $this->seed(PreparationTemplateSeeder::class);
+
+        $milikku = TripPlan::factory()->create();
+        $milikOrang = TripPlan::factory()->create();
+        app(PreparationService::class)->generateFor($milikOrang);
+        $butirOrang = $milikOrang->preparationItems()->firstOrFail();
+
+        $this->actingAs($milikku->user)
+            ->post(route('trips.preparation.update', ['trip' => $milikku, 'item' => $butirOrang->id]), ['status' => PreparationStatus::CONFIRMED->value])
+            ->assertNotFound();
+
+        $this->assertSame(PreparationStatus::NOT_CONFIRMED, $butirOrang->fresh()->status);
     }
 }

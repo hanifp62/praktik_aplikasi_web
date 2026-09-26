@@ -4,13 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\AuthorityType;
 use App\Enums\UserRole;
-use App\Livewire\Admin\AuthorityManager;
 use App\Models\Authority;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -19,6 +18,7 @@ use Tests\TestCase;
  * menyunting yang diwarisi pemandu bersertifikat.
  *
  * Karena itu mengubahnya adalah tindakan admin yang tercatat, bukan penyuntingan biasa.
+ * Halamannya kini React (Inertia); aksi tulis lewat POST/PUT biasa.
  */
 class AuthorityManagerTest extends TestCase
 {
@@ -27,21 +27,39 @@ class AuthorityManagerTest extends TestCase
     public function test_only_an_admin_may_open_the_page(): void
     {
         $this->actingAs(User::factory()->create())->get('/admin/authorities')->assertForbidden();
-        $this->actingAs($this->admin())->get('/admin/authorities')->assertOk();
+
+        $this->actingAs($this->admin())
+            ->get('/admin/authorities')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Admin/Authorities')
+                ->where('title', 'Kelola Badan Resmi'));
+    }
+
+    /**
+     * Penjagaan tulis tidak bergantung pada halaman: pendaki yang mengirim langsung ke
+     * endpoint-nya tetap ditolak dan tidak ada yang tersimpan.
+     */
+    public function test_a_hiker_cannot_register_an_authority_directly(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('admin.authorities.store'), $this->isian())
+            ->assertForbidden();
+
+        $this->assertSame(0, Authority::count());
     }
 
     public function test_an_admin_can_register_an_authority_and_its_area(): void
     {
         $gunung = Mountain::factory()->create();
 
-        Livewire::actingAs($this->admin())
-            ->test(AuthorityManager::class)
-            ->call('create')
-            ->set('name', 'Balai Taman Nasional Gunung Ciremai')
-            ->set('type', AuthorityType::NATIONAL_PARK->value)
-            ->set('jurisdiction', 'Jawa Barat')
-            ->set('mountain_ids', [$gunung->id])
-            ->call('save');
+        $this->actingAs($this->admin())
+            ->post(route('admin.authorities.store'), $this->isian([
+                'jurisdiction' => 'Jawa Barat',
+                'mountain_ids' => [$gunung->id],
+            ]))
+            ->assertRedirect(route('admin.authorities'))
+            ->assertSessionHas('status', 'Badan resmi tersimpan.');
 
         $badan = Authority::where('name', 'Balai Taman Nasional Gunung Ciremai')->firstOrFail();
 
@@ -60,13 +78,9 @@ class AuthorityManagerTest extends TestCase
 
         $this->assertNull($gunung->fresh()->responsibleAuthority());
 
-        Livewire::actingAs($this->admin())
-            ->test(AuthorityManager::class)
-            ->call('create')
-            ->set('name', 'Balai Taman Nasional Gunung Ciremai')
-            ->set('type', AuthorityType::NATIONAL_PARK->value)
-            ->set('mountain_ids', [$gunung->id])
-            ->call('save');
+        $this->actingAs($this->admin())
+            ->post(route('admin.authorities.store'), $this->isian(['mountain_ids' => [$gunung->id]]))
+            ->assertSessionHasNoErrors();
 
         $this->actingAs(User::factory()->create())
             ->get('/trails/'.$jalur->slug)
@@ -86,15 +100,20 @@ class AuthorityManagerTest extends TestCase
         ]);
         $badan->mountains()->attach($lama->id);
 
-        Livewire::actingAs($this->admin())
-            ->test(AuthorityManager::class)
-            ->call('edit', $badan->id)
-            ->set('mountain_ids', [$baru->id])
-            ->call('save');
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->put(route('admin.authorities.update', $badan), $this->isian([
+                'name' => 'Balai uji',
+                'mountain_ids' => [$baru->id],
+            ]))
+            ->assertRedirect(route('admin.authorities'));
 
         $segar = $badan->fresh('mountains');
         $this->assertTrue($segar->mountains->contains('id', $baru->id));
         $this->assertFalse($segar->mountains->contains('id', $lama->id));
+        $this->assertSame(1, Authority::count(), 'Mengubah tidak boleh membuat badan kedua.');
+        $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'authority.updated']);
     }
 
     /**
@@ -104,12 +123,7 @@ class AuthorityManagerTest extends TestCase
     {
         $admin = $this->admin();
 
-        Livewire::actingAs($admin)
-            ->test(AuthorityManager::class)
-            ->call('create')
-            ->set('name', 'Balai uji audit')
-            ->set('type', AuthorityType::NATIONAL_PARK->value)
-            ->call('save');
+        $this->actingAs($admin)->post(route('admin.authorities.store'), $this->isian(['name' => 'Balai uji audit']));
 
         $this->assertDatabaseHas('audit_logs', [
             'actor_id' => $admin->id,
@@ -119,14 +133,41 @@ class AuthorityManagerTest extends TestCase
 
     public function test_a_malformed_website_is_refused(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(AuthorityManager::class)
-            ->call('create')
-            ->set('name', 'Balai uji')
-            ->set('type', AuthorityType::NATIONAL_PARK->value)
-            ->set('website', 'bukan-url')
-            ->call('save')
-            ->assertHasErrors('website');
+        $this->actingAs($this->admin())
+            ->post(route('admin.authorities.store'), $this->isian(['website' => 'bukan-url']))
+            ->assertSessionHasErrors('website');
+
+        $this->assertSame(0, Authority::count());
+    }
+
+    /**
+     * Isian form untuk mengubah dibawa setiap baris, termasuk kawasan yang sudah
+     * dikaitkan, supaya form ubah tidak membuang kaitan lama tanpa sengaja.
+     */
+    public function test_each_row_carries_its_current_area_for_editing(): void
+    {
+        $gunung = Mountain::factory()->create();
+        $badan = Authority::create(['name' => 'Balai isian', 'slug' => 'balai-isian', 'type' => AuthorityType::NATIONAL_PARK->value]);
+        $badan->mountains()->attach($gunung->id);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.authorities'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('badan.data.0.isian.mountain_ids', [$gunung->id])
+                ->where('badan.data.0.jumlahKawasan', 1));
+    }
+
+    /**
+     * @param  array<string, mixed>  $ganti
+     * @return array<string, mixed>
+     */
+    private function isian(array $ganti = []): array
+    {
+        return array_merge([
+            'name' => 'Balai Taman Nasional Gunung Ciremai',
+            'type' => AuthorityType::NATIONAL_PARK->value,
+            'mountain_ids' => [],
+        ], $ganti);
     }
 
     private function admin(): User

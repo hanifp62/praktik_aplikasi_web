@@ -161,6 +161,108 @@ return [
     'rate_limits' => [
         'report_submissions_per_hour' => 5,
         'recommendation_runs_per_hour' => 20,
+
+        // Aksi tulis data pribadi (rencana, pengingat, catatan pendakian, target,
+        // perlengkapan). Tiap kelompok punya hitungannya sendiri lewat awalan kunci,
+        // sehingga menandai perlengkapan tidak menghabiskan jatah mengubah rencana.
+        'personal_writes_per_minute' => 30,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Simpanan dan Banding Jalur (DK-05, DK-29)
+    |--------------------------------------------------------------------------
+    |
+    | Simpanan longgar, banding sempit. Dulu keduanya satu batas lima, sehingga
+    | menyimpan jalur keenam ditolak padahal yang sebenarnya tidak terbaca adalah
+    | kolom banding keenam, bukan daftar simpanannya.
+    |
+    */
+    'saved_trails' => [
+        // Batas teknis daftar simpanan, bukan batas keputusan: keputusan dijaga batas
+        // banding di bawah. Angka ini hanya menahan satu akun menumpuk baris tanpa
+        // ujung. Lima puluh cukup untuk mengumpulkan pilihan beberapa musim pendakian,
+        // dan halaman Tersimpan masih memuat seluruhnya tanpa paginasi.
+        'max' => 50,
+
+        // Jalur yang dibandingkan berdampingan sekaligus, juga isi satu tautan bagikan.
+        // Lebih dari tiga kolom tidak terbaca di layar 360 px, dan beban memutuskan naik
+        // ketika pilihan yang ditimbang bersamaan menumpuk.
+        'compare_max' => 3,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tautan Bagikan Tanpa Akun (features/03, DK-07)
+    |--------------------------------------------------------------------------
+    */
+    'share_links' => [
+        // Umur tautan: cukup untuk merundingkan satu rencana dengan teman, cukup pendek
+        // sehingga tautan yang tercecer di grup percakapan tidak hidup selamanya.
+        // Status resmi dan cuaca di halamannya dibaca ulang setiap kali dibuka, jadi
+        // umur ini tidak membuat isinya basi.
+        'ttl_days' => 30,
+
+        // Tautan aktif per akun. Menahan pembuatan tanpa ujung tanpa mengganggu pemakaian
+        // wajar. Yang lama dicabut pemiliknya, tidak pernah digeser diam-diam, karena
+        // orang lain mungkin sedang membukanya.
+        'max_active_per_user' => 20,
+
+        // Halaman publik dibuka tanpa akun, jadi dibatasi per alamat IP.
+        'views_per_minute' => 60,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rencana Trip (features/04, DK-07)
+    |--------------------------------------------------------------------------
+    */
+    'trips' => [
+        // Batas peserta satu rencana. Rombongan yang lebih besar diurus lewat
+        // pengelola kawasan, bukan lewat satu rencana pribadi.
+        'max_participants' => 30,
+
+        // Tanggal selesai paling lambat sekian hari setelah tanggal mulai. Rentang
+        // yang lebih panjang hampir selalu salah ketik bulan atau tahun.
+        'max_span_days' => 30,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pengingat Perjalanan (FR-24)
+    |--------------------------------------------------------------------------
+    |
+    | Jam dibaca dalam zona gunungnya (WIB/WITA/WIT), lalu disimpan sebagai UTC.
+    |
+    */
+    'reminders' => [
+        // H-3 memberi waktu mengurus yang masih kurang; H-1 mengingatkan hari
+        // keberangkatan. Mengubah daftar ini hanya berlaku untuk jadwal baru.
+        'days_before' => [3, 1],
+
+        'local_hour' => 7,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Target Pribadi (Progres: Target)
+    |--------------------------------------------------------------------------
+    */
+    'personal_targets' => [
+        'max_per_user' => 20,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Perlengkapan Pribadi (Profil: Perlengkapan)
+    |--------------------------------------------------------------------------
+    |
+    | Hanya kategori berupa barang yang dapat dimiliki. Pemahaman jalur, logistik,
+    | cuaca, dan status resmi adalah tindakan per trip, bukan barang di lemari.
+    |
+    */
+    'equipment' => [
+        'ownable_categories' => ['EQUIPMENT'],
     ],
 
 ];

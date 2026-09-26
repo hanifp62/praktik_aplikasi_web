@@ -50,20 +50,27 @@ class TypographySystemTest extends TestCase
      * Halaman depan memakai layoutnya sendiri dan tertinggal memuat huruf lama, sehingga
      * orang yang pertama kali datang melihat huruf yang berbeda dari seluruh aplikasi.
      * Ditemukan test ini, bukan oleh membaca ulang.
+     *
+     * Huruf kini dimuat di satu tempat, kepala dokumen bersama, dan templat akar React
+     * memanggilnya dengan huruf. Yang disapu adalah seluruh view: berkas mana pun yang
+     * memuat huruf sendiri harus memuat huruf yang sama.
      */
     public function test_every_layout_loads_the_same_faces(): void
     {
         $berbeda = [];
 
-        foreach (['layouts/app', 'layouts/guest', 'welcome'] as $berkas) {
-            $isi = File::get(resource_path("views/{$berkas}.blade.php"));
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            $isi = $berkas->getContents();
 
             if (str_contains($isi, 'fonts.bunny.net/css') && ! str_contains($isi, 'plus-jakarta-sans')) {
-                $berbeda[] = $berkas;
+                $berbeda[] = $berkas->getRelativePathname();
             }
         }
 
         $this->assertSame([], $berbeda, 'Memuat huruf yang berbeda: '.implode(', ', $berbeda));
+
+        $this->assertStringContainsString('plus-jakarta-sans', File::get(resource_path('views/components/brand/head.blade.php')));
+        $this->assertStringContainsString('<x-brand.head />', File::get(resource_path('views/inertia.blade.php')), 'Templat akar React harus memuat huruf lewat kepala dokumen bersama.');
     }
 
     /**
@@ -91,8 +98,9 @@ class TypographySystemTest extends TestCase
     {
         $csp = File::get(app_path('Http/Middleware/SecurityHeaders.php'));
 
-        foreach (['app', 'guest'] as $layout) {
-            $isi = File::get(resource_path("views/layouts/{$layout}.blade.php"));
+        // Huruf kini dimuat kepala dokumen bersama; templat akar React memanggilnya.
+        foreach (['components/brand/head', 'inertia'] as $layout) {
+            $isi = File::get(resource_path("views/{$layout}.blade.php"));
 
             preg_match_all('/href="https:\/\/([^\/"]+)/', $isi, $host);
 
@@ -153,7 +161,8 @@ class TypographySystemTest extends TestCase
      */
     public function test_no_webfont_is_loaded_for_a_handful_of_lines(): void
     {
-        $layout = File::get(resource_path('views/layouts/app.blade.php'));
+        // Huruf dimuat satu kali di komponen head bersama, bukan di tiap layout.
+        $layout = File::get(resource_path('views/components/brand/head.blade.php'));
 
         preg_match('/css\?family=([^"&]+)/', $layout, $m);
 

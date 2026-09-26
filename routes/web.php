@@ -1,45 +1,76 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\AuthorityController;
+use App\Http\Controllers\Admin\CheckpointController;
+use App\Http\Controllers\Admin\CredentialController;
+use App\Http\Controllers\Admin\DataSourceController;
+use App\Http\Controllers\Admin\MountainController;
+use App\Http\Controllers\Admin\OfficialStatusController;
+use App\Http\Controllers\Admin\PermitController;
+use App\Http\Controllers\Admin\SystemHealthController;
+use App\Http\Controllers\Admin\TrailController;
+use App\Http\Controllers\Admin\TrailGeometryController;
+use App\Http\Controllers\Admin\UsabilityStudyController;
+use App\Http\Controllers\Community\ConditionReportController;
+use App\Http\Controllers\Community\HikerProgressController;
+use App\Http\Controllers\Community\HikeSummaryController;
+use App\Http\Controllers\Community\HikingHistoryController;
+use App\Http\Controllers\Community\TrailContributionController;
+use App\Http\Controllers\Community\TrailNewsController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DisplayPreferenceController;
+use App\Http\Controllers\Goals\GoalController;
 use App\Http\Controllers\HikeTrackController;
+use App\Http\Controllers\Moderation\ModerationQueueController;
+use App\Http\Controllers\Onboarding\ProfileSetupController;
+use App\Http\Controllers\Profile\ProfileController;
 use App\Http\Controllers\ProgressiveWebAppController;
 use App\Http\Controllers\PublicTrailController;
+use App\Http\Controllers\Recommendations\RecommendationController;
 use App\Http\Controllers\ReportPhotoController;
-use App\Livewire\Admin\AnalyticsDashboard;
-use App\Livewire\Admin\AuditLogViewer;
-use App\Livewire\Admin\AuthorityManager;
-use App\Livewire\Admin\CheckpointManager;
-use App\Livewire\Admin\CredentialManager;
-use App\Livewire\Admin\DataSourceManager;
-use App\Livewire\Admin\MountainManager;
-use App\Livewire\Admin\OfficialStatusManager;
-use App\Livewire\Admin\PermitManager;
-use App\Livewire\Admin\SystemHealth;
-use App\Livewire\Admin\TrailGeometryImport;
-use App\Livewire\Admin\TrailManager;
-use App\Livewire\Admin\UsabilityStudy;
-use App\Livewire\Contribute\TrailContribution;
-use App\Livewire\Dashboard;
-use App\Livewire\Feed\TrailNews;
-use App\Livewire\Goals\GoalForm;
-use App\Livewire\History\HikerProgress;
-use App\Livewire\History\HikeSummary;
-use App\Livewire\History\HikingHistoryPage;
-use App\Livewire\Moderation\ModerationQueue;
-use App\Livewire\Onboarding\ProfileSetup;
-use App\Livewire\Recommendations\RecommendationResults;
-use App\Livewire\Reports\ConditionReportForm;
-use App\Livewire\Trails\RouteComparison;
-use App\Livewire\Trails\TrailDetail;
-use App\Livewire\Trails\TrailIndex;
-use App\Livewire\Trips\HikeMode;
-use App\Livewire\Trips\PreparationChecklist;
-use App\Livewire\Trips\ReadinessDashboard;
-use App\Livewire\Trips\TripForm;
-use App\Livewire\Trips\TripIndex;
-use App\Livewire\Trips\TripShow;
+use App\Http\Controllers\ThemePreferenceController;
+use App\Http\Controllers\Trails\ConsiderationController;
+use App\Http\Controllers\Trails\MountainFollowController;
+use App\Http\Controllers\Trails\ReportThanksController;
+use App\Http\Controllers\Trails\RouteComparisonController;
+use App\Http\Controllers\Trails\SavedRoutesController;
+use App\Http\Controllers\Trails\SavedTrailNoteController;
+use App\Http\Controllers\Trails\TrailDetailController;
+use App\Http\Controllers\Trails\TrailIndexController;
+use App\Http\Controllers\Trips\HikeModeController;
+use App\Http\Controllers\Trips\PreparationController;
+use App\Http\Controllers\Trips\ReadinessController;
+use App\Http\Controllers\Trips\TrackController;
+use App\Http\Controllers\Trips\TripController;
+use App\Http\Controllers\Trips\TripLifecycleController;
+use App\Http\Controllers\Trips\TripReminderController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+/*
+ * Halaman depan: halaman React pertama (jalur C, 24 September 2026). Judul dan
+ * ringkasan dikirim sebagai prop supaya templat akar merender <title> dan meta
+ * description di server, sebelum React berjalan.
+ */
+Route::inertia('/', 'Welcome', [
+    'title' => config('app.name').': '.config('brand.tagline'),
+    'description' => config('brand.description'),
+])->name('welcome');
+
+/*
+ * Pilihan tema tampilan, untuk tamu maupun pengguna masuk. Hanya menulis cookie milik
+ * peramban yang mengirimnya, jadi tidak ada yang perlu diotorisasi; dibatasi laju
+ * supaya tidak menjadi endpoint gratis untuk membanjiri server dengan redirect.
+ */
+Route::post('tema', [ThemePreferenceController::class, 'store'])
+    ->middleware('throttle:60,1')
+    ->name('tema.simpan');
+
+// Preferensi Tampilan (Efek transparan, Gerak): sama dengan tema, hanya cookie milik peramban.
+Route::post('tampilan', [DisplayPreferenceController::class, 'store'])
+    ->middleware('throttle:60,1')
+    ->name('tampilan.simpan');
 
 /*
  * Halaman jalur publik.
@@ -56,24 +87,62 @@ Route::get('pendakian/{trail:slug}', [PublicTrailController::class, 'show'])->na
 Route::get('sitemap.xml', [PublicTrailController::class, 'sitemap'])->name('public.sitemap');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('dashboard', Dashboard::class)->middleware('verified')->name('dashboard');
-    Route::view('profile', 'profile', ['title' => 'Profil Akun'])->name('profile');
+    Route::get('dashboard', DashboardController::class)->middleware('verified')->name('dashboard');
+    Route::get('profile', [ProfileController::class, 'edit'])->name('profile');
+    Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('profile/password', [ProfileController::class, 'password'])->name('profile.password');
+    Route::put('profile/preference', [ProfileController::class, 'preference'])->name('profile.preference');
+    Route::delete('profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Profile -> goal -> route fit -> plan -> prepare -> check -> hike -> report -> history.
-    Route::get('onboarding', ProfileSetup::class)->name('onboarding');
-    Route::get('goals/create', GoalForm::class)->name('goals.create');
-    Route::get('recommendations/{run}', RecommendationResults::class)->name('recommendations.show');
+    Route::get('onboarding', [ProfileSetupController::class, 'show'])->name('onboarding');
+    Route::post('onboarding', [ProfileSetupController::class, 'store'])->name('onboarding.store');
+    Route::get('goals/create', [GoalController::class, 'create'])->name('goals.create');
+    Route::post('goals', [GoalController::class, 'store'])->name('goals.store');
+    Route::get('recommendations/{run}', [RecommendationController::class, 'show'])->name('recommendations.show');
+    Route::post('recommendations/{run}/pilih', [RecommendationController::class, 'pilih'])->name('recommendations.pilih');
 
-    Route::get('trails', TrailIndex::class)->name('trails.index');
-    Route::get('trails/compare', RouteComparison::class)->name('trails.compare');
-    Route::get('trails/{trail:slug}', TrailDetail::class)->name('trails.show');
+    Route::get('trails', TrailIndexController::class)->name('trails.index');
+    Route::post('trails/{trail}/timbang', [ConsiderationController::class, 'toggle'])->name('trails.timbang');
+    Route::get('trails/saved', SavedRoutesController::class)->name('trails.saved');
+    // Simpanan dan banding (DK-05): menghapus dari simpanan di sini; halaman banding
+    // hanya membaca, jadi tidak punya aksi hapus sendiri.
+    Route::delete('trails/saved/{trail}', [ConsiderationController::class, 'destroy'])->whereNumber('trail')->name('trails.saved.remove');
+    // Catatan pribadi pada jalur tersimpan (FR-22). Jalur dari rute dan pemilik dari sesi,
+    // tidak pernah dari badan permintaan; dibatasi laju seperti tulisan pribadi lain.
+    Route::put('trails/saved/{trail}/catatan', [SavedTrailNoteController::class, 'update'])->whereNumber('trail')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-simpanan')->name('trails.saved.note.update');
+    Route::delete('trails/saved/{trail}/catatan', [SavedTrailNoteController::class, 'destroy'])->whereNumber('trail')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-simpanan')->name('trails.saved.note.destroy');
+    Route::get('trails/compare', [RouteComparisonController::class, 'show'])->name('trails.compare');
+    Route::get('trails/{trail:slug}', TrailDetailController::class)->name('trails.show');
 
-    Route::get('trips', TripIndex::class)->name('trips.index');
-    Route::get('trips/create', TripForm::class)->name('trips.create');
-    Route::get('trips/{trip}', TripShow::class)->name('trips.show');
-    Route::get('trips/{trip}/preparation', PreparationChecklist::class)->name('trips.preparation');
-    Route::get('trips/{trip}/readiness', ReadinessDashboard::class)->name('trips.readiness');
-    Route::get('trips/{trip}/hike', HikeMode::class)->name('trips.hike');
+    // Aksi halaman rinci jalur. Dibatasi laju: keduanya sinyal antarpendaki, dan
+    // penulisan berulang tidak menambah arti apa pun.
+    Route::post('reports/{report}/thanks', [ReportThanksController::class, 'store'])->middleware('throttle:60,1')->name('reports.thanks');
+    Route::post('mountains/{mountain}/follow', [MountainFollowController::class, 'store'])->middleware('throttle:60,1')->name('mountains.follow');
+
+    Route::get('trips', [TripController::class, 'index'])->name('trips.index');
+    Route::get('trips/create', [TripController::class, 'create'])->name('trips.create');
+    // Aksi tulis data pribadi dibatasi laju per pengguna; awalan kunci memberi tiap
+    // kelompok aksi hitungannya sendiri (config hiking.rate_limits).
+    Route::post('trips', [TripController::class, 'store'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,rencana-trip')->name('trips.store');
+    Route::get('trips/{trip}', [TripController::class, 'show'])->name('trips.show');
+    Route::get('trips/{trip}/edit', [TripController::class, 'edit'])->name('trips.edit');
+    Route::put('trips/{trip}', [TripController::class, 'update'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,rencana-trip')->name('trips.update');
+    Route::delete('trips/{trip}', [TripController::class, 'destroy'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,rencana-trip')->name('trips.destroy');
+    Route::put('trips/{trip}/pengingat', [TripReminderController::class, 'update'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,pengingat-trip')->name('trips.reminders.update');
+    Route::post('trips/{trip}/start', [TripLifecycleController::class, 'start'])->name('trips.start');
+    Route::post('trips/{trip}/complete', [TripLifecycleController::class, 'complete'])->name('trips.complete');
+    Route::post('trips/{trip}/cancel', [TripLifecycleController::class, 'cancel'])->name('trips.cancel');
+    Route::get('trips/{trip}/preparation', [PreparationController::class, 'show'])->name('trips.preparation');
+    Route::post('trips/{trip}/preparation/regenerate', [PreparationController::class, 'regenerate'])->name('trips.preparation.regenerate');
+    Route::post('trips/{trip}/preparation/{item}', [PreparationController::class, 'update'])->whereNumber('item')->name('trips.preparation.update');
+    Route::get('trips/{trip}/readiness', [ReadinessController::class, 'show'])->name('trips.readiness');
+    Route::post('trips/{trip}/readiness/recompute', [ReadinessController::class, 'recompute'])->name('trips.readiness.recompute');
+    Route::post('trips/{trip}/readiness/confirm', [ReadinessController::class, 'confirm'])->name('trips.readiness.confirm');
+    // Tab Mendaki (IA v2): membuka pendakian yang berjalan, atau menawarkan trip yang dapat dimulai.
+    Route::get('mendaki', TrackController::class)->name('track');
+    Route::get('trips/{trip}/hike', [HikeModeController::class, 'show'])->name('trips.hike');
+    Route::post('trips/{trip}/hike/position', [HikeModeController::class, 'position'])->name('trips.hike.position');
 
     /*
      * Jejak dikirim setelah pendaki turun dan mendapat sinyal, ketika halaman hike mode
@@ -82,15 +151,17 @@ Route::middleware(['auth'])->group(function () {
     Route::post('hike/{session}/track', [HikeTrackController::class, 'store'])->name('hike.track');
     Route::delete('hike/{session}/track', [HikeTrackController::class, 'destroy'])->name('hike.track.destroy');
 
-    Route::get('reports/create', ConditionReportForm::class)->name('reports.create');
+    Route::get('reports/create', [ConditionReportController::class, 'create'])->name('reports.create');
+    Route::post('reports', [ConditionReportController::class, 'store'])->name('reports.store');
     Route::get('reports/{report}/photo', ReportPhotoController::class)->name('reports.photo');
-    Route::get('kabar', TrailNews::class)->name('news');
-    Route::get('progres', HikerProgress::class)->name('progress');
-    Route::get('history', HikingHistoryPage::class)->name('history');
-    Route::get('history/{trip}', HikeSummary::class)->name('history.summary');
+    Route::get('kabar', TrailNewsController::class)->name('news');
+    Route::get('progres', HikerProgressController::class)->name('progress');
+    Route::get('history', HikingHistoryController::class)->name('history');
+    Route::get('history/{trip}', HikeSummaryController::class)->name('history.summary');
 
-    // Terbuka untuk pemegang kredensial yang berlaku; komponennya menolak yang lain.
-    Route::get('kontribusi', TrailContribution::class)->name('contribute');
+    // Terbuka untuk pemegang kredensial yang berlaku; controllernya menolak yang lain.
+    Route::get('kontribusi', [TrailContributionController::class, 'index'])->name('contribute');
+    Route::post('kontribusi/{trail}', [TrailContributionController::class, 'store'])->name('contribute.store');
 
     /*
      * Geometri jalur dan koordinat pos dahulu terkunci di grup admin, padahal kedua
@@ -103,26 +174,69 @@ Route::middleware(['auth'])->group(function () {
      * pada middleware, sehingga batas per-kawasan dan masa berlaku sertifikat tetap
      * berlaku utuh.
      */
-    Route::get('jalur/{trail}/geometri', TrailGeometryImport::class)->name('trails.geometry');
-    Route::get('jalur/{trail}/pos', CheckpointManager::class)->name('trails.checkpoints');
+    Route::get('jalur/{trail}/geometri', [TrailGeometryController::class, 'show'])->name('trails.geometry');
+    Route::post('jalur/{trail}/geometri', [TrailGeometryController::class, 'store'])->name('trails.geometry.store');
+    Route::post('jalur/{trail}/geometri/berkas', [TrailGeometryController::class, 'preview'])
+        ->middleware('throttle:30,1')
+        ->name('trails.geometry.preview');
+    // OpenStreetMap (Overpass) adalah layanan bersama pihak lain; dibatasi laju.
+    Route::post('jalur/{trail}/geometri/osm', [TrailGeometryController::class, 'search'])
+        ->middleware('throttle:10,1')
+        ->name('trails.geometry.search');
+    Route::post('jalur/{trail}/geometri/osm/{osm}', [TrailGeometryController::class, 'choose'])
+        ->whereNumber('osm')
+        ->name('trails.geometry.choose');
+    Route::post('jalur/{trail}/geometri/tanjakan', [TrailGeometryController::class, 'applyElevation'])->name('trails.geometry.elevation');
+
+    Route::get('jalur/{trail}/pos', [CheckpointController::class, 'index'])->name('trails.checkpoints');
+    Route::post('jalur/{trail}/pos', [CheckpointController::class, 'store'])->name('trails.checkpoints.store');
+    // scopeBindings: checkpoint harus milik jalur di URL-nya, sehingga izin atas satu
+    // jalur tidak pernah menjadi izin atas checkpoint jalur lain.
+    Route::scopeBindings()->group(function () {
+        Route::put('jalur/{trail}/pos/{checkpoint}', [CheckpointController::class, 'update'])->name('trails.checkpoints.update');
+        Route::post('jalur/{trail}/pos/{checkpoint}/pindah', [CheckpointController::class, 'move'])->name('trails.checkpoints.move');
+        Route::delete('jalur/{trail}/pos/{checkpoint}', [CheckpointController::class, 'destroy'])->name('trails.checkpoints.destroy');
+    });
 });
 
 Route::middleware(['auth', 'role:moderator'])->prefix('moderation')->name('moderation.')->group(function () {
-    Route::get('/', ModerationQueue::class)->name('queue');
+    Route::get('/', [ModerationQueueController::class, 'index'])->name('queue');
+    Route::post('reports/{report}', [ModerationQueueController::class, 'act'])->name('act');
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('mountains', MountainManager::class)->name('mountains');
-    Route::get('trails', TrailManager::class)->name('trails');
-    Route::get('sources', DataSourceManager::class)->name('sources');
-    Route::get('official-statuses', OfficialStatusManager::class)->name('statuses');
-    Route::get('permits', PermitManager::class)->name('permits');
-    Route::get('authorities', AuthorityManager::class)->name('authorities');
-    Route::get('credentials', CredentialManager::class)->name('credentials');
-    Route::get('audit-logs', AuditLogViewer::class)->name('audit');
-    Route::get('analytics', AnalyticsDashboard::class)->name('analytics');
-    Route::get('usability', UsabilityStudy::class)->name('usability');
-    Route::get('health', SystemHealth::class)->name('health');
+    Route::get('mountains', [MountainController::class, 'index'])->name('mountains');
+    Route::post('mountains', [MountainController::class, 'store'])->name('mountains.store');
+    Route::put('mountains/{mountain}', [MountainController::class, 'update'])->name('mountains.update');
+    Route::post('mountains/{mountain}/arsip', [MountainController::class, 'toggleArchive'])->name('mountains.archive');
+    Route::get('trails', [TrailController::class, 'index'])->name('trails');
+    Route::post('trails', [TrailController::class, 'store'])->name('trails.store');
+    Route::put('trails/{trail}', [TrailController::class, 'update'])->name('trails.update');
+    Route::post('trails/{trail}/publikasi', [TrailController::class, 'togglePublish'])->name('trails.publish');
+    Route::post('trails/{trail}/arsip', [TrailController::class, 'toggleArchive'])->name('trails.archive');
+    Route::get('sources', [DataSourceController::class, 'index'])->name('sources');
+    Route::post('sources', [DataSourceController::class, 'store'])->name('sources.store');
+    Route::put('sources/{source}', [DataSourceController::class, 'update'])->name('sources.update');
+    Route::post('sources/{source}/verifikasi', [DataSourceController::class, 'verify'])->name('sources.verify');
+    Route::post('sources/{source}/perdebatkan', [DataSourceController::class, 'dispute'])->name('sources.dispute');
+    Route::get('official-statuses', [OfficialStatusController::class, 'index'])->name('statuses');
+    Route::post('official-statuses', [OfficialStatusController::class, 'store'])->name('statuses.store');
+    Route::get('permits', [PermitController::class, 'index'])->name('permits');
+    Route::post('permits', [PermitController::class, 'store'])->name('permits.store');
+    Route::put('permits/{permit}', [PermitController::class, 'update'])->name('permits.update');
+    Route::delete('permits/{permit}', [PermitController::class, 'destroy'])->name('permits.destroy');
+    Route::get('authorities', [AuthorityController::class, 'index'])->name('authorities');
+    Route::post('authorities', [AuthorityController::class, 'store'])->name('authorities.store');
+    Route::put('authorities/{authority}', [AuthorityController::class, 'update'])->name('authorities.update');
+    Route::get('credentials', [CredentialController::class, 'index'])->name('credentials');
+    Route::post('credentials/{credential}/{keputusan}', [CredentialController::class, 'keputusan'])
+        ->whereIn('keputusan', CredentialController::keputusanTersedia())
+        ->name('credentials.decide');
+    Route::get('audit-logs', AuditLogController::class)->name('audit');
+    Route::get('analytics', AnalyticsController::class)->name('analytics');
+    Route::get('usability', [UsabilityStudyController::class, 'index'])->name('usability');
+    Route::post('usability', [UsabilityStudyController::class, 'store'])->name('usability.store');
+    Route::get('health', SystemHealthController::class)->name('health');
 });
 
 require __DIR__.'/auth.php';

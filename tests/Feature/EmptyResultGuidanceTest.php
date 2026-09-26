@@ -4,14 +4,15 @@ namespace Tests\Feature;
 
 use App\Enums\ExperienceLevel;
 use App\Enums\NavigationExperience;
-use App\Livewire\Recommendations\RecommendationResults;
 use App\Models\HikingGoal;
 use App\Models\Mountain;
+use App\Models\RecommendationRun;
 use App\Models\Trail;
 use App\Models\User;
 use App\Services\RouteFitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,9 @@ use Tests\TestCase;
  * Saran yang salah pada layar kosong lebih buruk daripada tidak ada saran: pendaki
  * mengubah hal yang tidak mungkin menolongnya, gagal lagi, lalu menyimpulkan
  * sistemnya rusak.
+ *
+ * Server menentukan sebabnya (`penyebabKosong`); halaman React memilih kalimatnya dari
+ * sebab itu, jadi keduanya diuji: sebabnya lewat HTTP, kalimatnya dari sumber halaman.
  */
 class EmptyResultGuidanceTest extends TestCase
 {
@@ -42,7 +46,10 @@ class EmptyResultGuidanceTest extends TestCase
         return $user->fresh();
     }
 
-    private function runFor(User $user, array $atribut)
+    /**
+     * @param  array<string, mixed>  $atribut
+     */
+    private function runFor(User $user, array $atribut): RecommendationRun
     {
         $goal = HikingGoal::factory()->create(['user_id' => $user->id] + $atribut);
 
@@ -61,10 +68,14 @@ class EmptyResultGuidanceTest extends TestCase
 
         $run = $this->runFor($user, ['region' => 'Jawa Timur', 'trip_type' => 'CAMPING']);
 
-        $page = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run]);
+        $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('penyebabKosong', 'wilayah')
+                ->where('wilayah', 'Jawa Timur')
+                ->has('eligible', 0));
 
-        $page->assertSee('Jawa Timur');
-        $page->assertDontSee('melonggarkan');
+        $this->assertStringNotContainsString('melonggarkan', $this->kalimatSebab("penyebabKosong === 'wilayah'"));
+        $this->assertStringContainsString('{wilayah}', $this->kalimatSebab("penyebabKosong === 'wilayah'"));
     }
 
     /**
@@ -82,9 +93,18 @@ class EmptyResultGuidanceTest extends TestCase
             'max_elevation_gain_m' => 100,
         ]);
 
-        $page = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run]);
+        // Hasilnya tidak kosong (jalurnya tersingkir, bukan tidak pernah diuji), jadi
+        // halaman jatuh ke cabang terakhir: saran melonggarkan batas.
+        $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('penyebabKosong', null)
+                ->has('eligible', 0)
+                ->has('excluded', 1));
 
-        $page->assertSee('melonggarkan');
+        $sumber = File::get(resource_path('js/pages/Recommendations/Show.tsx'));
+        $cabangTerakhir = substr($sumber, (int) strpos($sumber, ') : (', (int) strpos($sumber, "penyebabKosong === 'wilayah'")));
+
+        $this->assertStringContainsString('melonggarkan', $cabangTerakhir);
     }
 
     /**
@@ -97,9 +117,27 @@ class EmptyResultGuidanceTest extends TestCase
 
         $run = $this->runFor($user, ['region' => null, 'trip_type' => 'CAMPING']);
 
-        $page = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run]);
+        $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('penyebabKosong', 'katalog'));
 
-        $page->assertSee('belum dimasukkan');
-        $page->assertDontSee('melonggarkan');
+        $kalimat = $this->kalimatSebab("penyebabKosong === 'katalog'");
+
+        $this->assertStringContainsString('belum dimasukkan', $kalimat);
+        $this->assertStringNotContainsString('melonggarkan', $kalimat);
+    }
+
+    /**
+     * Kalimat pada cabang sebab tertentu di halaman React: dari penanda cabangnya
+     * sampai cabang berikutnya.
+     */
+    private function kalimatSebab(string $penanda): string
+    {
+        $sumber = File::get(resource_path('js/pages/Recommendations/Show.tsx'));
+        $mulai = strpos($sumber, $penanda);
+        $this->assertNotFalse($mulai, "Cabang {$penanda} tidak ada di halaman hasil.");
+
+        $akhir = strpos($sumber, ') : ', $mulai);
+
+        return substr($sumber, $mulai, $akhir - $mulai);
     }
 }

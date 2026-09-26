@@ -4,15 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
- * Pintu depan produk masih halaman bawaan Laravel: pengunjung yang datang ke platform
- * pendakian disambut tautan dokumentasi Laravel dan Laracasts. Halaman itu juga yang
- * dituju setelah pengguna keluar.
- *
- * Kriteria clarity dan relevan keduanya gagal di halaman yang paling banyak dilihat
- * orang asing.
+ * Pintu depan produk. Dulu halaman bawaan Laravel dengan tautan Laracasts; kini
+ * halaman React pertama (jalur C). Yang dirender server: judul, meta description, dan
+ * props; isinya sendiri diperiksa dari sumber komponen karena dirender di klien.
  */
 class LandingPageTest extends TestCase
 {
@@ -20,23 +19,29 @@ class LandingPageTest extends TestCase
 
     public function test_a_visitor_learns_what_the_product_does(): void
     {
-        $isi = $this->get('/')->assertOk()->getContent();
+        $respons = $this->get('/')->assertOk();
+        $isi = $respons->getContent();
 
-        $this->assertStringContainsString('pendakian', strtolower($isi));
+        $this->assertStringContainsString('pendaki', strtolower($isi));
         $this->assertStringNotContainsString('Laracasts', $isi);
         $this->assertStringNotContainsString('laravel.com', $isi);
+
+        $respons->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Welcome')
+            ->where('title', config('app.name').': '.config('brand.tagline'))
+            ->where('description', config('brand.description')));
+
+        $this->assertStringContainsString('<title>'.config('app.name').': '.config('brand.tagline').'</title>', $isi);
+        $this->assertStringContainsString('<meta name="description" content="'.config('brand.description').'">', $isi);
     }
 
     public function test_the_page_has_exactly_one_first_level_heading(): void
     {
-        $isi = $this->get('/')->assertOk()->getContent();
-
-        $this->assertSame(1, substr_count($isi, '<h1'), 'Satu h1 per halaman agar strukturnya terbaca pembaca layar.');
+        $this->assertSame(1, substr_count($this->sumber(), '<h1'), 'Satu h1 per halaman agar strukturnya terbaca pembaca layar.');
     }
 
     /**
-     * CSP menolak gambar dari luar asal sendiri. Halaman bawaan Laravel memuat latar dari
-     * laravel.com, sehingga kini rusak tanpa pesan apa pun.
+     * CSP menolak gambar dari luar asal sendiri.
      */
     public function test_nothing_is_loaded_from_an_outside_host(): void
     {
@@ -56,24 +61,26 @@ class LandingPageTest extends TestCase
 
     public function test_a_guest_is_offered_a_way_in(): void
     {
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('Masuk')
-            ->assertSee(route('register'), escape: false)
-            ->assertSee(route('login'), escape: false);
+        $this->get('/')->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('auth.user', null));
+
+        $sumber = $this->sumber();
+
+        $this->assertStringContainsString('register.url()', $sumber);
+        $this->assertStringContainsString('login.url()', $sumber);
+        $this->assertStringContainsString('Masuk', $sumber);
     }
 
     /**
      * Pengguna yang sudah masuk tidak perlu ditawari mendaftar lagi; ia butuh jalan
-     * kembali ke pekerjaannya.
+     * kembali ke pekerjaannya. Komponen memilih cabangnya dari auth.user.
      */
     public function test_a_signed_in_user_is_pointed_at_their_dashboard(): void
     {
-        $this->actingAs(User::factory()->create())
-            ->get('/')
-            ->assertOk()
-            ->assertSee(route('dashboard'), escape: false)
-            ->assertDontSee(route('register'), escape: false);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/')->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('auth.user.id', $user->id));
+
+        $this->assertMatchesRegularExpression('/auth\.user \? \(\s*<>\s*<Button href=\{dashboard\.url\(\)\}/s', $this->sumber());
     }
 
     /**
@@ -82,9 +89,14 @@ class LandingPageTest extends TestCase
      */
     public function test_the_page_names_its_data_sources_without_overclaiming(): void
     {
-        $isi = $this->get('/')->assertOk()->getContent();
+        $sumber = $this->sumber();
 
-        $this->assertStringContainsString('BMKG', $isi);
-        $this->assertStringNotContainsString('cuaca puncak', strtolower($isi));
+        $this->assertStringContainsString('BMKG', $sumber);
+        $this->assertStringNotContainsString('cuaca puncak', strtolower($sumber));
+    }
+
+    private function sumber(): string
+    {
+        return File::get(resource_path('js/pages/Welcome.tsx'));
     }
 }

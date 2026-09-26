@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\TechnicalDemand;
 use App\Enums\WaterAvailability;
+use App\Http\Resources\TrailRowResource;
 use App\Models\Mountain;
 use App\Models\Trail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Blade;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
@@ -17,10 +19,15 @@ use Tests\TestCase;
  * Tanjakan, dan Teknis. Sepuluh kolom tersedia pada sebuah jalur dan kartunya memakai
  * tiga, dan yang tidak ikut justru estimasi durasi, yaitu angka yang paling menentukan
  * ketika orang memutuskan jalur mana yang akan didaki akhir pekan ini.
+ *
+ * Di halaman React pembagiannya dua: TrailRowResource memformat angka di server (koma
+ * desimal, ketiadaan sebagai tanda strip), dan TrailRow.tsx hanya menggambarnya. Test
+ * ini menjaga keduanya: apa yang dikirim, dan bagaimana ia digambar.
  */
 class TrailRowTest extends TestCase
 {
     use RefreshDatabase;
+    use SumberReact;
 
     private function jalur(array $ubah = []): Trail
     {
@@ -37,9 +44,19 @@ class TrailRowTest extends TestCase
         ], $ubah));
     }
 
-    private function render(Trail $trail): string
+    /**
+     * Baris sebagaimana dikirim ke halaman Jelajah dan daftar simpanan.
+     *
+     * @return array<string, mixed>
+     */
+    private function baris(Trail $trail): array
     {
-        return Blade::render('<x-ui.trail-row :trail="$trail" />', ['trail' => $trail]);
+        return (new TrailRowResource($trail->fresh()))->resolve(Request::create('/trails'));
+    }
+
+    private function komponen(): string
+    {
+        return $this->tanpaKomentarJs(File::get(resource_path('js/components/trails/TrailRow.tsx')));
     }
 
     /**
@@ -50,18 +67,32 @@ class TrailRowTest extends TestCase
      */
     public function test_the_duration_is_present_and_carries_the_most_weight(): void
     {
-        $html = $this->render($this->jalur());
+        $this->assertSame('5 j', $this->baris($this->jalur())['durasi']);
 
-        $this->assertStringContainsString('5 j', $html);
-        $this->assertMatchesRegularExpression('/text-(?:lg|xl|2xl)[^"]*"[^>]*>\s*5 j/', $html);
+        preg_match_all('/<dd data-angka className="([^"]*)">\{trail\.(\w+)\}<\/dd>/', $this->komponen(), $angka, PREG_SET_ORDER);
+        $kelas = array_column($angka, 1, 2);
+
+        $this->assertSame(['durasi', 'jarak', 'tanjakan', 'curam'], array_keys($kelas));
+        $this->assertMatchesRegularExpression('/\btext-(?:lg|xl|2xl)\b/', $kelas['durasi']);
+
+        foreach (['jarak', 'tanjakan', 'curam'] as $lain) {
+            $this->assertDoesNotMatchRegularExpression('/\btext-(?:lg|xl|2xl)\b/', $kelas[$lain], "{$lain} tidak boleh seberat durasi.");
+        }
     }
 
     public function test_it_shows_everything_a_hiker_decides_on(): void
     {
-        $html = $this->render($this->jalur());
+        $baris = $this->baris($this->jalur());
 
-        foreach (['Jalur Patak Banteng', 'Prau', 'Jawa Tengah', '4,2', '700', 'Sedang'] as $bagian) {
-            $this->assertStringContainsString($bagian, $html, "Baris tidak menyebut {$bagian}.");
+        $this->assertSame('Jalur Patak Banteng', $baris['name']);
+        $this->assertSame('Prau', $baris['mountain']);
+        $this->assertSame('Jawa Tengah', $baris['province']);
+        $this->assertSame('4,2 km', $baris['jarak']);
+        $this->assertSame('700 m', $baris['tanjakan']);
+        $this->assertSame('Sedang', $baris['technical']);
+
+        foreach (['{trail.name}', '{trail.mountain}', '{trail.province}', '{trail.durasi}', '{trail.jarak}', '{trail.tanjakan}', '{trail.technical}'] as $bagian) {
+            $this->assertStringContainsString($bagian, $this->komponen(), "Baris tidak menggambar {$bagian}.");
         }
     }
 
@@ -72,7 +103,7 @@ class TrailRowTest extends TestCase
      */
     public function test_it_derives_steepness_from_the_two_numbers_it_already_has(): void
     {
-        $this->assertStringContainsString('167 m/km', $this->render($this->jalur()));
+        $this->assertSame('167 m/km', $this->baris($this->jalur())['curam']);
     }
 
     /**
@@ -82,25 +113,30 @@ class TrailRowTest extends TestCase
      */
     public function test_steepness_stays_away_when_either_number_is_missing(): void
     {
-        $html = $this->render($this->jalur(['distance_km' => null]));
+        $this->assertNull($this->baris($this->jalur(['distance_km' => null]))['curam']);
+        $this->assertNull($this->baris($this->jalur(['elevation_gain_m' => null]))['curam']);
 
-        $this->assertStringNotContainsString('m/km', $html);
+        $this->assertStringContainsString('{trail.curam ? (', $this->komponen(), 'Kecuraman yang tidak ada tidak boleh digambar.');
     }
 
     /**
-     * Ketiadaan ditulis sebagai ketiadaan, bukan sebagai nol.
+     * R-007: ketiadaan ditulis sebagai ketiadaan, bukan sebagai nol. Durasi nol berarti
+     * tidak ada yang pernah mengisinya, dan ikut diperlakukan sama.
      */
     public function test_a_missing_number_never_renders_as_zero(): void
     {
-        $html = $this->render($this->jalur([
-            'distance_km' => null,
-            'elevation_gain_m' => null,
-            'estimated_duration_minutes' => null,
-        ]));
+        foreach ([null, 0] as $durasi) {
+            $baris = $this->baris($this->jalur([
+                'distance_km' => null,
+                'elevation_gain_m' => null,
+                'estimated_duration_minutes' => $durasi,
+            ]));
 
-        $this->assertStringNotContainsString('0 km', $html);
-        $this->assertStringNotContainsString('0 m<', $html);
-        $this->assertStringNotContainsString('0 j', $html);
+            $this->assertSame('-', $baris['jarak']);
+            $this->assertSame('-', $baris['tanjakan']);
+            $this->assertSame('-', $baris['durasi']);
+            $this->assertNull($baris['curam']);
+        }
     }
 
     /**
@@ -111,19 +147,20 @@ class TrailRowTest extends TestCase
      */
     public function test_an_affordance_chip_appears_only_when_it_is_true(): void
     {
-        $ada = $this->render($this->jalur(['camping_available' => true]));
-        $tidak = $this->render($this->jalur(['camping_available' => false]));
+        $this->assertContains('Bisa berkemah', $this->baris($this->jalur(['camping_available' => true]))['kemudahan']);
+        $this->assertNotContains('Bisa berkemah', $this->baris($this->jalur(['camping_available' => false]))['kemudahan']);
 
-        $this->assertStringContainsString('berkemah', $ada);
-        $this->assertStringNotContainsString('berkemah', $tidak);
+        $this->assertStringContainsString('{trail.kemudahan.length > 0 ? <p', $this->komponen());
     }
 
     /**
-     * Tingkat teknis tidak pernah dibawa warna saja (WCAG 1.4.1).
+     * Tingkat teknis tidak pernah dibawa warna saja (WCAG 1.4.1): labelnya dikirim dan
+     * digambar sebagai kata.
      */
     public function test_the_difficulty_is_never_carried_by_colour_alone(): void
     {
-        $this->assertStringContainsString('Sedang', $this->render($this->jalur()));
+        $this->assertSame('Sedang', $this->baris($this->jalur())['technical']);
+        $this->assertMatchesRegularExpression('/<span className="[^"]*">\{trail\.technical\}<\/span>/', $this->komponen());
     }
 
     /**
@@ -135,10 +172,11 @@ class TrailRowTest extends TestCase
      */
     public function test_the_whole_row_is_the_link_target(): void
     {
-        $html = $this->render($this->jalur());
+        $komponen = $this->komponen();
 
-        $this->assertStringContainsString('after:absolute', $html);
-        $this->assertSame(1, substr_count($html, '<a '), 'Baris hanya boleh punya satu tautan.');
+        $this->assertSame(1, substr_count($komponen, '<Tautan'), 'Baris hanya boleh punya satu tautan.');
+        $this->assertMatchesRegularExpression('/<Tautan\s+href=\{trail\.url\}\s+className="[^"]*\bafter:absolute after:inset-0\b/', $komponen);
+        $this->assertStringContainsString('<article className="group relative', $komponen);
     }
 
     /**
@@ -150,11 +188,11 @@ class TrailRowTest extends TestCase
      */
     public function test_unknown_water_is_not_shown_as_an_affordance(): void
     {
-        $html = $this->render($this->jalur([
+        $baris = $this->baris($this->jalur([
             'water_availability' => WaterAvailability::UNKNOWN->value,
             'camping_available' => false,
         ]));
 
-        $this->assertStringNotContainsString('Belum diketahui', $html);
+        $this->assertSame([], $baris['kemudahan']);
     }
 }

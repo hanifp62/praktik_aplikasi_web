@@ -73,7 +73,7 @@ antislop is used one of two ways. At the start of a session, ask the user which 
 > Which one, 1 or 2?
 
 - **Mode 1 (During):** follow the rules while generating. This prevents slop from the start and ends with the Delivery Gate. Use it when building new UI.
-- **Mode 2 (After):** audit an already-finished project. Produce a numbered findings list in `anti-slop/audit-001-YYYY-MM-DD.md` (numbers keep rising). Each finding cites the violated rule (R-XX) and a one-line reason. Priority follows the rule tier: Hard Gate = HIGH, Purpose-Gate = MEDIUM, Quality Locks = LOW. Do not modify anything until the user approves specific numbers; numbers not mentioned are not touched. Then fix the approved items and write a follow-up report.
+- **Mode 2 (After):** audit an already-finished project. Produce a numbered findings list in `docs/audit/anti-slop/audit-001-YYYY-MM-DD.md` (numbers keep rising; read the existing files there first). Each finding cites the violated rule (R-XX) and a one-line reason. Priority follows the rule tier: Hard Gate = HIGH, Purpose-Gate = MEDIUM, Quality Locks = LOW. Do not modify anything until the user approves specific numbers; numbers not mentioned are not touched. Then fix the approved items and write a follow-up report.
 
 > **Three steps run in both modes, whatever else is driving the session.** Another skill or planning workflow, a brainstorm or a spec, may lead the work, but it never replaces these: settle direction before building (R-37), ask before creating any asset (R-23), and run the Delivery Gate before delivering. Naming a process is not the same as running it.
 

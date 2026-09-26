@@ -5,14 +5,18 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
  * Menu desktop dan menu ponsel harus menyajikan hal yang sama dalam urutan yang sama.
  *
- * Keduanya ditulis terpisah di berkas yang sama, jadi mudah bergeser tanpa ada yang
- * menyadarinya. Sebelum test ini, item kedua dan ketiga tertukar: pengguna yang
- * berpindah dari ponsel ke laptop menemukan menunya di tempat berbeda.
+ * Pada navigasi Blade lama keduanya ditulis terpisah di berkas yang sama, dan item
+ * kedua dan ketiga sempat tertukar: pengguna yang berpindah dari ponsel ke laptop
+ * menemukan menunya di tempat berbeda. Navigasi React menutup kelas cacat itu dengan
+ * satu daftar, `permukaan` di NavLinks.tsx, yang digambar oleh tab atas dan navigasi
+ * bawah ponsel. Isi daftarnya mengikuti arsitektur informasi v2 pemilik (DK-25,
+ * 25 September 2026): Home, Explore, Trips, Track, Progress; Profil dan Community bukan tab.
  */
 class NavigationConsistencyTest extends TestCase
 {
@@ -20,114 +24,153 @@ class NavigationConsistencyTest extends TestCase
 
     public function test_both_menus_list_the_same_destinations_in_the_same_order(): void
     {
-        $isi = File::get(resource_path('views/livewire/layout/navigation.blade.php'));
+        $layout = File::get(resource_path('js/layouts/AppLayout.tsx'));
 
-        preg_match_all("/<x-nav-link :href=\"route\('([a-z.]+)'\)/", $isi, $desktop);
-        preg_match_all("/<x-responsive-nav-link :href=\"route\('([a-z.]+)'\)/", $isi, $ponsel);
+        $this->assertMatchesRegularExpression('/permukaan\.map\(\(p\) => \(\s*<TautanTab\b/', $layout, 'Tab desktop tidak lagi digambar dari daftar permukaan.');
+        $this->assertMatchesRegularExpression('/permukaan\.map\(\(p\) => \(\s*<TabBawah\b/', $layout, 'Navigasi bawah ponsel tidak lagi digambar dari daftar permukaan.');
+        $this->assertSame(2, substr_count($layout, 'permukaan.map('), 'Ada menu permukaan ketiga yang dirakit sendiri.');
 
-        $this->assertNotEmpty($desktop[1], 'Menu desktop tidak terbaca.');
-
-        // Menu ponsel membawa satu entri tambahan di bagian akun: profil, yang di desktop
-        // berada di dropdown dengan komponen berbeda. Yang dibandingkan adalah menu
-        // utamanya, dan desktop harus menjadi awalan persis dari daftar ponsel.
-        $this->assertSame(
-            $desktop[1],
-            array_slice($ponsel[1], 0, count($desktop[1])),
-            'Urutan menu desktop dan ponsel berbeda.'
-        );
-
-        $this->assertContains('profile', $ponsel[1], 'Profil harus terjangkau dari menu ponsel.');
+        // Profil bukan tab; di ponsel ia tinggal di menu akun.
+        $this->assertStringContainsString('<TautanResponsif href={profile.url()}>Profil</TautanResponsif>', $layout, 'Profil harus terjangkau dari menu ponsel.');
     }
 
     /**
-     * Alur produknya menjelajah, menimbang, lalu berjalan. Urutan menunya mengikuti itu.
-     *
-     * Dua yang pertama adalah menemukan dan memilih, yang ketiga menjalankannya, dan dua
-     * yang terakhir permukaan kembali, yaitu alasan membuka aplikasi ketika alurnya sudah
-     * selesai. Keduanya berkelompok di ujung alih-alih menyela alurnya.
-     *
-     * Dua kali percobaan menempatkan permukaan kembali di tengah lolos ke dalam kode dan
-     * ditangkap test ini, jadi urutannya bukan kerapian belaka.
+     * Urutan tab adalah urutan pemilik: Beranda dulu karena ia pintu personal, lalu
+     * menemukan, merencanakan, mendaki, dan melihat perkembangan diri.
      */
-    public function test_the_order_follows_the_product_flow(): void
+    public function test_the_order_follows_the_owners_information_architecture(): void
     {
-        $isi = File::get(resource_path('views/livewire/layout/navigation.blade.php'));
+        $isi = $this->daftarPermukaan();
 
-        preg_match_all("/<x-nav-link :href=\"route\('([a-z.]+)'\)/", $isi, $cocok);
+        preg_match_all('/href: ([A-Za-z]+)\.url\(\)/', $isi, $tujuan);
 
-        $this->assertSame(
-            ['trails.index', 'trails.compare', 'trips.index', 'progress', 'news'],
-            array_slice($cocok[1], 0, 5)
-        );
+        $this->assertSame(['dashboard', 'trailsIndex', 'tripsIndex', 'track', 'progress'], $tujuan[1]);
+
+        // Nama lokal di atas harus menunjuk rute yang dimaksud, bukan sekadar bernama mirip.
+        $navigasi = File::get(resource_path('js/layouts/NavLinks.tsx'));
+        $this->assertStringContainsString("import { dashboard, progress, track } from '@/routes';", $navigasi);
+        $this->assertStringContainsString("import { index as trailsIndex } from '@/routes/trails';", $navigasi);
+        $this->assertStringContainsString("import { index as tripsIndex } from '@/routes/trips';", $navigasi);
     }
 
     /**
-     * Item G tinjauan akhir: Jelajah dijaga routeIs('trails.*'), yang juga mencocokkan
-     * trails.compare -- jadi di halaman Pertimbangkan, KEDUA tab menyala bersamaan, dan
-     * pembaca tidak tahu tab mana yang sesungguhnya sedang ia buka.
+     * Label berbahasa Indonesia untuk lima tab pemilik (spec 2026-09-25, asumsi A1).
      */
-    public function test_jelajah_is_not_active_on_the_compare_page(): void
+    public function test_the_react_navigation_lists_the_same_five_surfaces_in_order(): void
     {
-        $isi = $this->actingAs(User::factory()->create())
+        preg_match_all("/label: '([^']+)'/", $this->daftarPermukaan(), $cocok);
+
+        $this->assertSame(['Beranda', 'Jelajah', 'Trip', 'Mendaki', 'Progres'], $cocok[1]);
+    }
+
+    /**
+     * Banding milik tab Trip (TRIPS > Compare). Path-nya di bawah /trails, jadi tanpa
+     * pengecualian Jelajah ikut menyala dan pembaca tidak tahu tab mana yang ia buka.
+     */
+    public function test_the_compare_page_lights_trip_not_jelajah(): void
+    {
+        $this->actingAs(User::factory()->create())
             ->get(route('trails.compare'))
-            ->getContent();
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Trails/Compare'));
 
-        preg_match('/<a class="([^"]*)"[^>]*>\s*Jelajah/s', $isi, $jelajah);
-        preg_match('/<a class="([^"]*)"[^>]*>\s*Pertimbangkan/s', $isi, $pertimbangkan);
-
-        $this->assertNotEmpty($jelajah, 'Tautan Jelajah tidak ditemukan di halaman perbandingan.');
-        $this->assertNotEmpty($pertimbangkan, 'Tautan Pertimbangkan tidak ditemukan di halaman perbandingan.');
-
-        $this->assertStringNotContainsString('border-brand-600', $jelajah[1], 'Jelajah ikut menyala padahal pembaca sedang di halaman Pertimbangkan.');
-        $this->assertStringContainsString('border-brand-600', $pertimbangkan[1], 'Pertimbangkan seharusnya menyala di halamannya sendiri.');
+        $this->assertStringContainsString("!p.startsWith('/trails/compare')", $this->aturan('Jelajah'), 'Jelajah ikut menyala di halaman banding.');
+        $this->assertStringContainsString("p.startsWith('/trails/compare')", $this->aturan('Trip'), 'Tab Trip seharusnya menyala di halaman banding.');
     }
 
+    /**
+     * Daftar tersimpan milik Jelajah (EXPLORE > Saved), bukan tab Trip.
+     */
+    public function test_the_saved_list_belongs_to_jelajah(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('trails.saved'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Trails/Saved'));
+
+        $this->assertStringNotContainsString('/trails/saved', $this->aturan('Jelajah'), 'Jelajah tidak boleh mengecualikan daftar tersimpan.');
+        $this->assertStringNotContainsString('/trails/saved', $this->aturan('Trip'), 'Daftar tersimpan bukan bagian tab Trip.');
+    }
+
+    /**
+     * Mode pendakian satu trip tinggal di /trips/{id}/hike, di bawah path tab Trip. Tanpa
+     * pengecualian, dua tab menyala ketika pendaki sedang di jalur.
+     */
+    public function test_hike_mode_lights_mendaki_not_trip(): void
+    {
+        $this->assertStringContainsString('!modePendakian(p)', $this->aturan('Trip'));
+        $this->assertStringContainsString('modePendakian(p)', $this->aturan('Mendaki'));
+        $this->assertStringContainsString("p.startsWith('/mendaki')", $this->aturan('Mendaki'));
+    }
+
+    /**
+     * Pendaki tidak pernah melihat pintu Admin maupun Moderasi.
+     *
+     * Menu profil React menampilkan keduanya hanya bila props bersama menyatakan
+     * perannya, jadi yang dijaga adalah props yang dikirim server untuk pendaki biasa
+     * dan syarat di layoutnya.
+     */
     public function test_a_hiker_never_sees_the_admin_entry(): void
     {
         $this->actingAs(User::factory()->create())
             ->get('/dashboard')
             ->assertOk()
-            ->assertDontSee(route('admin.trails'), escape: false);
+            ->assertDontSee(route('admin.trails'), escape: false)
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('auth.user.isAdmin', false)
+                ->where('auth.user.isModerator', false));
+
+        $layout = File::get(resource_path('js/layouts/AppLayout.tsx'));
+
+        preg_match_all('/\{([^{}]*)\?\s*<Tautan(?:Menu|Responsif) href="\/admin\/trails">Admin</', $layout, $admin);
+        preg_match_all('/\{([^{}]*)\?\s*<Tautan(?:Menu|Responsif) href="\/moderation">Moderasi</', $layout, $moderasi);
+
+        $this->assertSame(['pengguna.isAdmin ', 'pengguna.isAdmin '], $admin[1], 'Pintu Admin harus dijaga peran di kedua menu.');
+        $this->assertSame(['pengguna.isModerator ', 'pengguna.isModerator '], $moderasi[1], 'Pintu Moderasi harus dijaga peran di kedua menu.');
     }
 
     /**
-     * Menu adalah perjalanan, bukan daftar tabel.
-     *
-     * Diukur sebelum diubah: sembilan kata benda di menu utama, sementara §7 menetapkan
-     * satu loop delapan tahap. AllTrails memakai lima tab, Strava lima, Traveloka empat,
-     * dan semuanya campuran satu permukaan temuan, satu milik-saya, satu tindakan, satu
-     * identitas. Sembilan kata benda adalah struktur basis data yang bocor ke menu.
-     *
-     * Sebelum diperbaiki, test ini tidak pernah menghitung apa pun: assertStringContainsString
-     * lolos meski ada tautan keenam yang menyelip, dan test_the_order_follows_the_product_flow
-     * di atas juga tidak menangkapnya karena ia hanya menegaskan lima elemen PERTAMA lewat
-     * array_slice, bukan jumlah totalnya. "Lima permukaan" wajib berarti TEPAT lima, bukan
-     * "lima ini ada, mungkin ditemani yang lain".
+     * Menu adalah perjalanan, bukan daftar tabel: TEPAT lima tab. Peran (Moderasi,
+     * Admin) bukan tahap perjalanan dan tinggal di menu akun.
      */
     public function test_the_main_menu_is_five_surfaces_not_nine_nouns(): void
     {
-        $isi = File::get(
-            resource_path('views/livewire/layout/navigation.blade.php')
-        );
+        $isi = $this->daftarPermukaan();
 
-        // Peran, bukan tahap perjalanan: keduanya pindah ke menu profil.
-        $this->assertStringNotContainsString("routeIs('admin.*')", $isi);
-        $this->assertStringNotContainsString("routeIs('moderation.*')", $isi);
+        $this->assertSame(5, preg_match_all('/label: \'/', $isi), 'Menu utama wajib berisi tepat lima tab.');
+        $this->assertStringNotContainsString('admin', $isi);
+        $this->assertStringNotContainsString('moderation', $isi);
 
-        foreach (['Jelajah', 'Pertimbangkan', 'Perjalanan', 'Progres', 'Kabar'] as $permukaan) {
-            $this->assertStringContainsString($permukaan, $isi, "Permukaan {$permukaan} hilang dari menu.");
-        }
+        // Menu akun ponsel tidak mengulang tab; dimulai dari Profil.
+        $layout = File::get(resource_path('js/layouts/AppLayout.tsx'));
+        $mulai = strpos($layout, '{terbuka ? (');
+        $this->assertNotFalse($mulai, 'Menu akun ponsel tidak ditemukan.');
+        $menuAkun = substr($layout, $mulai, strpos($layout, '</nav>', $mulai) - $mulai);
 
-        preg_match_all("/<x-nav-link :href=\"route\('([a-z.]+)'\)/", $isi, $desktop);
-        preg_match_all("/<x-responsive-nav-link :href=\"route\('([a-z.]+)'\)/", $isi, $ponsel);
+        $this->assertStringNotContainsString('permukaan.map', $menuAkun);
+        $this->assertMatchesRegularExpression('/^[^<]*(?:<(?!TautanResponsif)[^<]*)*<TautanResponsif href=\{profile\.url\(\)\}>Profil</s', $menuAkun, 'Entri pertama menu akun ponsel harus Profil.');
+    }
 
-        $this->assertCount(5, $desktop[1], 'Menu desktop wajib berisi tepat lima permukaan, bukan lebih atau kurang.');
+    /**
+     * Blok `permukaan` di NavLinks.tsx saja, dari deklarasinya sampai penutup lariknya.
+     */
+    private function daftarPermukaan(): string
+    {
+        $isi = File::get(resource_path('js/layouts/NavLinks.tsx'));
+        $mulai = strpos($isi, 'export const permukaan = [');
 
-        // Menu ponsel membawa satu entri tambahan sesudah lima permukaan utama (profil,
-        // lihat test_both_menus_... di atas). Posisi "profile" wajib tepat di indeks ke-5:
-        // kalau bukan, ada permukaan keenam yang menyelip di antara lima utama dan profil.
-        $posisiProfil = array_search('profile', $ponsel[1], true);
-        $this->assertNotFalse($posisiProfil, 'Profil harus terjangkau dari menu ponsel.');
-        $this->assertSame(5, $posisiProfil, 'Menu ponsel wajib berisi tepat lima permukaan utama sebelum Profil.');
+        $this->assertNotFalse($mulai, 'Daftar permukaan tidak ditemukan di NavLinks.tsx.');
+
+        return substr($isi, $mulai, strpos($isi, "\n];", $mulai) - $mulai);
+    }
+
+    /**
+     * Seluruh objek satu tab di daftar permukaan, dari labelnya sampai label berikutnya.
+     */
+    private function aturan(string $label): string
+    {
+        preg_match("/label: '".preg_quote($label, '/')."'(.*?)(?=label: '|$)/s", $this->daftarPermukaan(), $cocok);
+
+        $this->assertNotEmpty($cocok, "Tab {$label} tidak ditemukan.");
+
+        return $cocok[1];
     }
 }

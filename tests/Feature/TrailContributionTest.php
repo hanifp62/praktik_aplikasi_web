@@ -7,22 +7,24 @@ use App\Enums\CredentialLevel;
 use App\Enums\SourceType;
 use App\Enums\UserRole;
 use App\Enums\VerificationStatus;
-use App\Livewire\Contribute\TrailContribution;
 use App\Models\Authority;
+use App\Models\DataSource;
 use App\Models\ExpertCredential;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
  * Pintu masuk bagi pemandu bersertifikat untuk mengisi data jalur.
  *
- * Sampai putaran lalu haknya sudah ada tetapi pintunya belum: policy mengizinkan, namun
- * tidak ada halaman tempat mengisi. Yang dijaga di sini bukan hanya bahwa pintunya
- * terbuka, melainkan bahwa yang lain tetap tertutup.
+ * Yang dijaga di sini bukan hanya bahwa pintunya terbuka, melainkan bahwa yang lain
+ * tetap tertutup: pendaki biasa, sertifikat kedaluwarsa atau belum diverifikasi, kawasan
+ * orang lain, dan penerbitan yang tetap milik admin.
  */
 class TrailContributionTest extends TestCase
 {
@@ -32,7 +34,11 @@ class TrailContributionTest extends TestCase
     {
         [$ahli] = $this->ahliDan();
 
-        $this->actingAs($ahli)->get('/kontribusi')->assertOk();
+        $this->actingAs($ahli)->get('/kontribusi')->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Community/TrailContribution')
+            ->where('title', 'Kontribusi Data Jalur')
+            ->where('kredensial.0.jenjang', CredentialLevel::AHLI->label())
+            ->where('isian', null));
     }
 
     public function test_an_ordinary_hiker_cannot(): void
@@ -58,20 +64,36 @@ class TrailContributionTest extends TestCase
 
     public function test_the_page_only_lists_trails_in_the_covered_area(): void
     {
-        [$ahli, $trail] = $this->ahliDan();
-        $lain = Trail::factory()->for(Mountain::factory())->create(['name' => 'Jalur Kawasan Lain']);
+        [$ahli] = $this->ahliDan();
+        Trail::factory()->for(Mountain::factory())->create(['name' => 'Jalur Kawasan Lain']);
 
-        Livewire::actingAs($ahli)
-            ->test(TrailContribution::class)
-            ->assertSee($trail->name)
-            ->assertDontSee($lain->name);
+        $this->actingAs($ahli)->get('/kontribusi')->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('trails', 1)
+            ->where('trails.0.nama', 'Jalur Kawasan Saya'));
+    }
+
+    /**
+     * Formulir dibuka lewat ?isi= dan diotorisasi di server dengan policy yang sama
+     * dengan penyimpanan; jalur di luar kawasan ditolak sebelum isiannya dikirim.
+     */
+    public function test_the_form_opens_only_for_a_trail_the_expert_may_update(): void
+    {
+        [$ahli, $trail] = $this->ahliDan();
+        $lain = Trail::factory()->for(Mountain::factory())->create();
+
+        $this->actingAs($ahli)->get('/kontribusi?isi='.$trail->id)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('isian.id', $trail->id)
+            ->where('isian.nama', 'Jalur Kawasan Saya')
+            ->where('isian.catatan_sumber', ''));
+
+        $this->actingAs($ahli)->get('/kontribusi?isi='.$lain->id)->assertForbidden();
     }
 
     public function test_saving_fills_the_trail_characteristics(): void
     {
         [$ahli, $trail] = $this->ahliDan();
 
-        $this->isi($ahli, $trail);
+        $this->simpan($ahli, $trail)->assertRedirect(route('contribute'))->assertSessionHasNoErrors();
 
         $segar = $trail->fresh();
         $this->assertSame('11.50', $segar->distance_km);
@@ -87,7 +109,7 @@ class TrailContributionTest extends TestCase
     {
         [$ahli, $trail] = $this->ahliDan();
 
-        $this->isi($ahli, $trail);
+        $this->simpan($ahli, $trail);
         $segar = $trail->fresh();
 
         $this->assertSame($ahli->id, $segar->contributed_by);
@@ -98,13 +120,13 @@ class TrailContributionTest extends TestCase
 
     /**
      * §92: data ahli bersertifikat bukan pernyataan pengelola. Menandainya OFFICIAL akan
-     * melebihkan otoritasnya.
+     * melebihkan otoritasnya (R-009).
      */
     public function test_the_source_is_never_marked_official(): void
     {
         [$ahli, $trail] = $this->ahliDan();
 
-        $this->isi($ahli, $trail);
+        $this->simpan($ahli, $trail);
 
         $this->assertNotSame(SourceType::OFFICIAL, $trail->fresh()->dataSource->source_type);
     }
@@ -116,13 +138,7 @@ class TrailContributionTest extends TestCase
     {
         [$ahli, $trail] = $this->ahliDan();
 
-        Livewire::actingAs($ahli)
-            ->test(TrailContribution::class)
-            ->call('edit', $trail->id)
-            ->set('distance_km', 11.5)
-            ->set('catatan_sumber', null)
-            ->call('simpan')
-            ->assertHasErrors('catatan_sumber');
+        $this->simpan($ahli, $trail, ['catatan_sumber' => ''])->assertSessionHasErrors('catatan_sumber');
 
         // Factory sudah mengisi jaraknya, jadi yang dibuktikan adalah nilainya tidak
         // berubah menjadi angka yang diisikan tanpa catatan sumber.
@@ -131,28 +147,24 @@ class TrailContributionTest extends TestCase
 
     /**
      * Inti pembatasannya. Gerbang §110 tidak berpindah tangan: mengisi data tidak pernah
-     * berarti menerbitkannya.
+     * berarti menerbitkannya, termasuk ketika klien menyelipkan is_published.
      */
     public function test_contributing_never_publishes_the_trail(): void
     {
         [$ahli, $trail] = $this->ahliDan(published: false);
 
-        $this->isi($ahli, $trail);
+        $this->simpan($ahli, $trail, ['is_published' => true, 'contributed_by' => 999]);
 
-        $this->assertFalse($trail->fresh()->is_published);
+        $segar = $trail->fresh();
+        $this->assertFalse($segar->is_published);
+        $this->assertSame($ahli->id, $segar->contributed_by);
     }
 
     public function test_the_expert_is_told_that_publishing_is_not_theirs(): void
     {
         [$ahli, $trail] = $this->ahliDan();
 
-        Livewire::actingAs($ahli)
-            ->test(TrailContribution::class)
-            ->call('edit', $trail->id)
-            ->set('distance_km', 11.5)
-            ->set('catatan_sumber', 'Pengukuran lapangan Agustus 2026 bersama basecamp.')
-            ->call('simpan')
-            ->assertSee('admin yang memutuskan');
+        $this->simpan($ahli, $trail)->assertSessionHas('status', fn (string $pesan) => str_contains($pesan, 'admin yang memutuskan'));
     }
 
     /**
@@ -162,24 +174,34 @@ class TrailContributionTest extends TestCase
     {
         [$ahli, $trail] = $this->ahliDan();
 
-        $component = Livewire::actingAs($ahli)
-            ->test(TrailContribution::class)
-            ->call('edit', $trail->id)
-            ->set('distance_km', 11.5)
-            ->set('catatan_sumber', 'Pengukuran lapangan Agustus 2026 bersama basecamp.');
+        $this->actingAs($ahli)->get('/kontribusi?isi='.$trail->id)->assertOk();
 
         ExpertCredential::query()->update(['verification_status' => VerificationStatus::DISPUTED->value]);
 
-        $component->call('simpan');
+        $this->simpan($ahli, $trail)->assertForbidden();
 
         $this->assertNotSame('11.50', $trail->fresh()->distance_km, 'Kredensial yang dicabut tidak boleh sempat menyimpan.');
+    }
+
+    /**
+     * Kredensial disahkan per kawasan. Id jalur kawasan lain yang ditebak tetap ditolak.
+     */
+    public function test_an_expert_cannot_save_a_trail_outside_their_area(): void
+    {
+        [$ahli] = $this->ahliDan();
+        $lain = Trail::factory()->for(Mountain::factory())->create();
+        $jarakAwal = $lain->distance_km;
+
+        $this->simpan($ahli, $lain)->assertForbidden();
+
+        $this->assertSame($jarakAwal, $lain->fresh()->distance_km);
     }
 
     public function test_every_contribution_lands_in_the_audit_trail(): void
     {
         [$ahli, $trail] = $this->ahliDan();
 
-        $this->isi($ahli, $trail);
+        $this->simpan($ahli, $trail);
 
         $this->assertDatabaseHas('audit_logs', [
             'actor_id' => $ahli->id,
@@ -187,16 +209,79 @@ class TrailContributionTest extends TestCase
         ]);
     }
 
-    private function isi(User $ahli, Trail $trail): void
+    /**
+     * Versi Livewire menanyakan jumlah pos dan status resmi satu per jalur. Kini dimuat
+     * sekaligus, jadi jumlah query tidak tumbuh bersama jumlah jalur di kawasannya.
+     */
+    public function test_the_page_does_not_grow_with_the_number_of_trails(): void
     {
-        Livewire::actingAs($ahli)
-            ->test(TrailContribution::class)
-            ->call('edit', $trail->id)
-            ->set('distance_km', 11.5)
-            ->set('elevation_gain_m', 1300)
-            ->set('estimated_duration_minutes', 600)
-            ->set('catatan_sumber', 'Pengukuran lapangan Agustus 2026 bersama basecamp.')
-            ->call('simpan');
+        [$ahli, $trail] = $this->ahliDan();
+        $this->actingAs($ahli)->get('/kontribusi');
+        $sedikit = $this->hitungQuery('/kontribusi');
+
+        Trail::factory()->count(6)->for($trail->mountain)->create();
+
+        $this->assertSame($sedikit, $this->hitungQuery('/kontribusi'));
+    }
+
+    /**
+     * Regresi 25 September 2026: ahli yang mengosongkan data kritis jalur yang sudah
+     * terbit memicu PublicationGateViolation, yang lolos sebagai galat 500. Kini ahli
+     * mendapat galat formulir yang menyebut apa yang kurang, jalurnya tidak berubah,
+     * dan tidak ada sumber data yatim yang tertinggal (satu transaksi).
+     */
+    public function test_emptying_critical_data_of_a_published_trail_is_refused_not_a_server_error(): void
+    {
+        [$ahli, $draf] = $this->ahliDan();
+        $trail = Trail::factory()->published()->for($draf->mountain)->create([
+            'name' => 'Jalur Terbit Kawasan Saya',
+            'distance_km' => 9,
+            'elevation_gain_m' => 900,
+            'estimated_duration_minutes' => 480,
+        ]);
+        $sumberSebelum = DataSource::count();
+
+        $this->from(route('contribute'))
+            ->simpan($ahli, $trail, ['distance_km' => null])
+            ->assertRedirect(route('contribute'))
+            ->assertSessionHasErrors('form');
+
+        $this->assertStringContainsString('Karakteristik dasar belum lengkap', session('errors')->first('form'));
+        $this->assertEquals(9, (float) $trail->fresh()->distance_km);
+        $this->assertTrue($trail->fresh()->is_published);
+        $this->assertSame($sumberSebelum, DataSource::count(), 'Sumber data yatim tertinggal setelah penolakan.');
+    }
+
+    private function hitungQuery(string $url): int
+    {
+        $jumlah = 0;
+        DB::listen(function () use (&$jumlah) {
+            $jumlah++;
+        });
+
+        $this->get($url)->assertOk();
+
+        DB::getEventDispatcher()->forget('Illuminate\Database\Events\QueryExecuted');
+
+        return $jumlah;
+    }
+
+    /**
+     * @param  array<string, mixed>  $ubah
+     */
+    private function simpan(User $ahli, Trail $trail, array $ubah = []): TestResponse
+    {
+        return $this->actingAs($ahli)->post(route('contribute.store', $trail), array_merge([
+            'distance_km' => 11.5,
+            'elevation_gain_m' => 1300,
+            'estimated_duration_minutes' => 600,
+            'technical_demand' => 'MODERATE',
+            'navigation_complexity' => 'MODERATE',
+            'water_availability' => 'UNKNOWN',
+            'terrain_character' => [],
+            'camping_available' => false,
+            'catatan_sumber' => 'Pengukuran lapangan Agustus 2026 bersama basecamp.',
+        ], $ubah));
     }
 
     /**

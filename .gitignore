@@ -1,8 +1,8 @@
 *.log
 .DS_Store
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 /.codex
@@ -18,6 +18,10 @@
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+# Rute bertipe hasil Wayfinder, dibangkitkan ulang oleh plugin Vite setiap build.
+/resources/js/actions
+/resources/js/routes
+/resources/js/wayfinder
 /storage/*.key
 /storage/pail
 /vendor
@@ -29,10 +33,12 @@ Thumbs.db
 # Skill yang dipasang lewat npx (emilkowalski, impeccable, taste-skill).
 #
 # Berkas aslinya ada di .agents/skills dan itu yang dilacak. Salinan di
-# .claude/skills berupa symlink berjalur absolut yang hanya berlaku di mesin
-# pemasangnya, dan .github/skills salinan ketiga dari isi yang sama. Skill
-# antislop yang sudah lebih dulu dilacak tidak terpengaruh aturan ini.
+# .claude/skills berupa symlink berjalur absolut atau salinan penuh yang hanya
+# berlaku di mesin pemasangnya, dan .github/skills salinan ketiga dari isi yang sama. Skill
+# antislop milik proyek dikecualikan, jadi berkas baru di foldernya ikut
+# terlacak.
 /.claude/skills/*
+!/.claude/skills/antislop*/
 /.github/skills/
 /.claude/agents/impeccable-*.md
 /.claude/settings.local.json
@@ -43,7 +49,37 @@ Thumbs.db
 */skills/impeccable/scripts/bin/
 
 # Basis data lokal untuk menjalankan aplikasi tanpa menyentuh Supabase produksi.
+# Data contoh database/demo.sqlite (DK-35) ikut tertutup aturan ini dan
+# database/.gitignore (*.sqlite*).
 /database/*.sqlite
+
+# Dump basis data tidak pernah masuk repo: isinya dapat memuat data pengguna
+# sungguhan. Skema kanonis adalah database/migrations. Aturan ini tidak memengaruhi
+# berkas yang sudah dilacak; berkas SQL yang memang harus dilacak ditambahkan
+# dengan `git add -f` atas keputusan pemilik.
+*.sql
+*.sql.gz
+*.dump
 
 # Ruang kerja subagent-driven-development, bukan bagian produk.
 /.superpowers/
+
+# Ruang kerja NgodingPakeAI (DK-56). Spesifikasi fitur kanonis ada di docs/fitur/
+# dan PRD di docs/PRD.md; features/, .ngodingpakeai/, dan PRD.md di root adalah
+# keluaran CLI (`sync --plan`, `plan get`) yang dapat dibangkitkan ulang.
+/.ngodingpakeai/
+/features/
+/PRD.md
+
+# Konfigurasi lokal yang dinonaktifkan dan cache alat lokal. Tiga berkas impeccable
+# sama dengan yang ditulis pemasangnya ke .git/info/exclude, yang tidak ikut ke clone
+# anggota tim lain.
+*.disabled
+/.ruff_cache/
+/.impeccable/hook.cache.json
+/.impeccable/hook.pending.json
+/.impeccable/config.local.json
+
+# Ekspor NgodingPakeAI milik pemilik (PRD versi server dan delapan features/).
+# Menunggu keputusan pemilik: diarsipkan ke docs/arsip/ lalu dihapus, atau tetap di sini.
+/jelajah-gunung.zip

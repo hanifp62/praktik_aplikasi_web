@@ -1,0 +1,13 @@
+{
+    "keterangan": "Path yang tidak dilayani halaman Inertia. Dibaca resources/js/lib/halamanReact.ts; tests/Feature/InertiaLinkRegistryTest.php mencocokkannya dengan rute GET sungguhan.",
+    "pola": [
+        "^/pendakian(/|$)",
+        "^/sitemap[.]xml$",
+        "^/offline$",
+        "^/sw[.]js$",
+        "^/manifest[.]webmanifest$",
+        "^/reports/[^/]+/photo$",
+        "^/storage/",
+        "^/up$"
+    ]
+}

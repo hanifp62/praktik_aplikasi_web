@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\ModerationAction as ModerationActionType;
 use App\Enums\ModerationStatus;
 use App\Enums\UserRole;
-use App\Livewire\Moderation\ModerationQueue;
 use App\Models\HikingHistory;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
@@ -13,8 +12,9 @@ use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Livewire;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -44,15 +44,18 @@ class ModerationFlowTest extends TestCase
         $laporan = $this->laporan();
         $riwayat = $this->riwayat($laporan);
 
-        Livewire::actingAs($this->moderator())
-            ->test(ModerationQueue::class)
-            ->set('reasons.'.$laporan->id, 'Fotonya tidak menunjukkan kondisi jalur.')
-            ->call('act', $laporan->id, ModerationActionType::REJECT->value);
+        $this->actingAs($this->moderator())
+            ->post(route('moderation.act', $laporan), [
+                'action' => ModerationActionType::REJECT->value,
+                'reason' => 'Fotonya tidak menunjukkan kondisi jalur.',
+            ])
+            ->assertSessionHasNoErrors();
 
         $this->actingAs($riwayat->user)
             ->get('/history')
             ->assertOk()
-            ->assertSee('Fotonya tidak menunjukkan kondisi jalur.');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('entri.data.0.laporan.alasanDitolak', 'Fotonya tidak menunjukkan kondisi jalur.'));
     }
 
     public function test_an_approved_report_needs_no_explanation_to_its_author(): void
@@ -60,15 +63,19 @@ class ModerationFlowTest extends TestCase
         $laporan = $this->laporan();
         $riwayat = $this->riwayat($laporan);
 
-        Livewire::actingAs($this->moderator())
-            ->test(ModerationQueue::class)
-            ->set('reasons.'.$laporan->id, 'Catatan internal moderator.')
-            ->call('act', $laporan->id, ModerationActionType::APPROVE->value);
+        $this->actingAs($this->moderator())
+            ->post(route('moderation.act', $laporan), [
+                'action' => ModerationActionType::APPROVE->value,
+                'reason' => 'Catatan internal moderator.',
+            ])
+            ->assertSessionHasNoErrors();
 
         $this->actingAs($riwayat->user)
             ->get('/history')
             ->assertOk()
-            ->assertDontSee('Catatan internal moderator.');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('entri.data.0.laporan.status', ModerationStatus::APPROVED->label())
+                ->where('entri.data.0.laporan.alasanDitolak', null));
     }
 
     /**
@@ -79,10 +86,11 @@ class ModerationFlowTest extends TestCase
     {
         $laporan = $this->laporan();
 
-        Livewire::actingAs($this->moderator())
-            ->test(ModerationQueue::class)
-            ->call('act', $laporan->id, ModerationActionType::APPROVE->value)
-            ->assertSee('Laporan disetujui');
+        $this->actingAs($this->moderator())
+            ->from(route('moderation.queue'))
+            ->post(route('moderation.act', $laporan), ['action' => ModerationActionType::APPROVE->value])
+            ->assertRedirect(route('moderation.queue'))
+            ->assertSessionHas('status', 'Laporan disetujui dan kini tampil untuk pendaki lain.');
     }
 
     /**
@@ -96,24 +104,28 @@ class ModerationFlowTest extends TestCase
         $this->actingAs($this->moderator())
             ->get('/moderation')
             ->assertOk()
-            ->assertSee('wire:confirm', escape: false);
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Moderation/Queue')
+                ->where('actions.1.value', ModerationActionType::REJECT->value)
+                ->where('actions.1.konfirmasi', fn (?string $teks) => $teks !== null && str_contains($teks, 'tidak dapat diambil ulang'))
+                ->where('actions.3.value', ModerationActionType::REMOVE->value)
+                ->where('actions.3.konfirmasi', fn (?string $teks) => $teks !== null));
+
+        $this->assertStringContainsString('window.confirm(t.konfirmasi)', File::get(resource_path('js/pages/Moderation/Queue.tsx')));
     }
 
     public function test_approving_never_asks_for_confirmation(): void
     {
         $this->laporan();
 
-        $isi = $this->actingAs($this->moderator())->get('/moderation')->assertOk()->getContent();
-
-        // wire:confirm dirender sebelum wire:click, jadi tiap tombol diperiksa sebagai
-        // satu blok utuh, bukan dari posisi salah satu atributnya.
-        $tombol = array_values(array_filter(
-            explode('<button', $isi),
-            fn (string $blok) => str_contains($blok, 'APPROVE')
-        ));
-
-        $this->assertNotEmpty($tombol, 'Tombol setujui harus ada.');
-        $this->assertStringNotContainsString('wire:confirm', $tombol[0]);
+        $this->actingAs($this->moderator())
+            ->get('/moderation')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('actions.0.value', ModerationActionType::APPROVE->value)
+                ->where('actions.0.konfirmasi', null)
+                ->where('actions.2.value', ModerationActionType::FLAG->value)
+                ->where('actions.2.konfirmasi', null));
     }
 
     /**
@@ -124,10 +136,12 @@ class ModerationFlowTest extends TestCase
     {
         $this->laporan();
 
-        $this->actingAs($this->moderator())
-            ->get('/moderation')
-            ->assertOk()
-            ->assertDontSee('border-gray-300 text-sm', escape: false);
+        $this->actingAs($this->moderator())->get('/moderation')->assertOk();
+
+        // Kotak alasan memakai TextInput bersama (batas border-control), bukan kelas sendiri.
+        $sumber = File::get(resource_path('js/pages/Moderation/Queue.tsx'));
+        $this->assertMatchesRegularExpression('/<TextInput\s+id=\{`reason-/', $sumber);
+        $this->assertStringNotContainsString('border-gray', $sumber);
     }
 
     public function test_the_queue_does_not_grow_with_the_number_of_reports(): void
@@ -142,6 +156,48 @@ class ModerationFlowTest extends TestCase
         }
 
         $this->assertSame($sedikit, $this->hitungQuery());
+    }
+
+    /**
+     * Yang dibutuhkan moderator untuk memutuskan sampai ke halaman: jalur, teks,
+     * pelapor, umur laporan, dan foto (§67). Tanpa parameter yang tampil adalah yang
+     * menunggu; `?filter=` kosong berarti semua.
+     */
+    public function test_the_queue_shows_the_evidence_and_defaults_to_pending(): void
+    {
+        $menunggu = $this->laporan();
+        $menunggu->update(['note' => 'Licin di pos dua.', 'photo_path' => 'laporan/uji.jpg']);
+        $this->laporan()->update(['moderation_status' => ModerationStatus::APPROVED->value]);
+
+        $moderator = $this->moderator();
+
+        $this->actingAs($moderator)->get('/moderation')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('filter', ModerationStatus::PENDING->value)
+            ->has('reports.data', 1)
+            ->where('reports.data.0.jalur', $menunggu->trail->name)
+            ->where('reports.data.0.catatan', 'Licin di pos dua.')
+            ->where('reports.data.0.pelapor', $menunggu->user->name)
+            ->where('reports.data.0.foto.url', route('reports.photo', $menunggu))
+            ->has('reports.data.0.dikirim'));
+
+        $this->actingAs($moderator)->get('/moderation?filter=')->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('reports.data', 2));
+    }
+
+    /**
+     * Tindakan di luar daftar ditolak sebagai galat isian, dan laporannya tidak
+     * berubah (dulu ModerationAction::from() meledak menjadi halaman 500).
+     */
+    public function test_an_unknown_action_is_refused_and_changes_nothing(): void
+    {
+        $laporan = $this->laporan();
+
+        $this->actingAs($this->moderator())
+            ->post(route('moderation.act', $laporan), ['action' => 'PUBLISH'])
+            ->assertSessionHasErrors('action');
+
+        $this->assertSame(ModerationStatus::PENDING, $laporan->fresh()->moderation_status);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'report.moderated']);
     }
 
     private function hitungQuery(): int

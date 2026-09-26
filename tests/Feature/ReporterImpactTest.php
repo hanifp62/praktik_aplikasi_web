@@ -12,6 +12,8 @@ use App\Models\TripPlan;
 use App\Models\User;
 use App\Services\HikerProgressService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -54,6 +56,11 @@ class ReporterImpactTest extends TestCase
     private function progres(User $user): array
     {
         return app(HikerProgressService::class)->forUser($user);
+    }
+
+    private function sumber(): string
+    {
+        return File::get(resource_path('js/pages/Community/HikerProgress.tsx'));
     }
 
     public function test_it_counts_published_reports_and_the_thanks_they_received(): void
@@ -130,8 +137,11 @@ class ReporterImpactTest extends TestCase
         $this->actingAs($pelapor)
             ->get(route('progress'))
             ->assertOk()
-            ->assertSee('Laporan kondisi')
-            ->assertSee('2 pendaki menyatakan laporan Anda menolong');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('laporan.terbit', 1)
+                ->where('laporan.terimaKasih', 2));
+
+        $this->assertStringContainsString('pendaki menyatakan laporan Anda menolong mereka.', $this->sumber());
     }
 
     /**
@@ -156,9 +166,14 @@ class ReporterImpactTest extends TestCase
             'completed_at' => now()->subDay(),
         ]);
 
-        $halaman = $this->actingAs($pendaki)->get(route('progress'));
+        $this->actingAs($pendaki)->get(route('progress'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('laporan.terbit', 0)
+            ->where('laporan.terimaKasih', 0));
 
-        $halaman->assertSee('Belum ada laporan kondisi');
-        $halaman->assertDontSee('0 pendaki menyatakan');
+        // Nol tidak pernah dirender sebagai angka: kalimat terima kasih hanya muncul di
+        // atas nol, dan yang belum pernah melapor mendapat ajakan.
+        $sumber = $this->sumber();
+        $this->assertStringContainsString('Belum ada laporan kondisi dari Anda.', $sumber);
+        $this->assertStringContainsString('laporan.terimaKasih > 0 ?', $sumber);
     }
 }

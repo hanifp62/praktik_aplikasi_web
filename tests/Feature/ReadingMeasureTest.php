@@ -53,10 +53,18 @@ class ReadingMeasureTest extends TestCase
      */
     public function test_the_shared_components_bound_their_prose(): void
     {
-        foreach (['page-header', 'card'] as $komponen) {
-            $this->assertStringContainsString(
-                'max-w-prose',
-                File::get(resource_path("views/components/ui/{$komponen}.blade.php")),
+        $pola = [
+            // Deskripsi di bawah judul halaman dan anak judul kartu: kalimat yang
+            // menentukan apakah pembaca meneruskan.
+            'PageHeader' => '/\{description \? <p className="[^"]*\bmax-w-prose\b/',
+            'Card' => '/\{subtitle \? <p className="[^"]*\bmax-w-prose\b/',
+            'EmptyState' => '/\{description \? <p className="[^"]*\bmax-w-prose\b/',
+        ];
+
+        foreach ($pola as $komponen => $regex) {
+            $this->assertMatchesRegularExpression(
+                $regex,
+                File::get(resource_path("js/components/ui/{$komponen}.tsx")),
                 "Komponen {$komponen} membiarkan teksnya membentang penuh."
             );
         }

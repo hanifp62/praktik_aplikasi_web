@@ -4,11 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\TaskOutcome;
 use App\Enums\UserRole;
-use App\Livewire\Admin\UsabilityStudy;
 use App\Models\UsabilitySession;
 use App\Models\User;
+use App\Services\UsabilityStudyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -41,18 +42,30 @@ class UsabilityStudyPageTest extends TestCase
         return $jawaban;
     }
 
+    /**
+     * @param  array<string, mixed>  $isian
+     */
+    private function simpan(array $isian): TestResponse
+    {
+        return $this->actingAs($this->admin())->post(route('admin.usability.store'), array_merge([
+            'participant_code' => 'P01',
+            'kind' => 'TASK',
+        ], $isian));
+    }
+
     public function test_a_session_is_recorded_with_its_score_computed(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(UsabilityStudy::class)
-            ->set('participant_code', 'P01')
-            ->set('kind', 'TASK')
-            ->set('tasks.T3.outcome', TaskOutcome::STRUGGLED->value)
-            ->set('tasks.T3.seconds', 95)
-            ->set('tasks.T3.note', 'Mencari alasannya di halaman jalur, bukan di hasil.')
-            ->set('sus', $this->susSempurna())
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->simpan([
+            'tasks' => ['T3' => [
+                'outcome' => TaskOutcome::STRUGGLED->value,
+                'seconds' => 95,
+                'note' => 'Mencari alasannya di halaman jalur, bukan di hasil.',
+            ]],
+            'sus' => $this->susSempurna(),
+        ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('admin.usability'))
+            ->assertSessionHas('status', 'Sesi tersimpan. Skor SUS peserta ini 100.0.');
 
         $sesi = UsabilitySession::firstOrFail();
 
@@ -69,12 +82,12 @@ class UsabilityStudyPageTest extends TestCase
      */
     public function test_tasks_that_were_not_run_are_not_stored_as_observations(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(UsabilityStudy::class)
-            ->set('participant_code', 'P01')
-            ->set('tasks.T1.outcome', TaskOutcome::SUCCESS->value)
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->simpan([
+            'tasks' => [
+                'T1' => ['outcome' => TaskOutcome::SUCCESS->value, 'seconds' => '', 'note' => ''],
+                'T2' => ['outcome' => '', 'seconds' => '', 'note' => ''],
+            ],
+        ])->assertSessionHasNoErrors();
 
         $sesi = UsabilitySession::firstOrFail();
 
@@ -88,36 +101,40 @@ class UsabilityStudyPageTest extends TestCase
      */
     public function test_an_incomplete_questionnaire_is_kept_but_scores_nothing(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(UsabilityStudy::class)
-            ->set('participant_code', 'P01')
-            ->set('tasks.T1.outcome', TaskOutcome::SUCCESS->value)
-            ->set('sus.1', 5)
-            ->set('sus.2', 2)
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->simpan([
+            'tasks' => ['T1' => ['outcome' => TaskOutcome::SUCCESS->value]],
+            'sus' => [1 => 5, 2 => 2, 3 => '', 4 => ''],
+        ])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', 'Sesi tersimpan. Jawaban SUS belum lengkap, jadi sesi ini belum menyumbang skor.');
 
         $sesi = UsabilitySession::firstOrFail();
 
         $this->assertNull($sesi->sus_score);
+        $this->assertNull($sesi->sus_answers);
         $this->assertNotEmpty($sesi->task_results);
     }
 
     public function test_an_answer_outside_the_scale_is_refused(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(UsabilityStudy::class)
-            ->set('participant_code', 'P01')
-            ->set('sus.1', 9)
-            ->call('save')
-            ->assertHasErrors('sus.1');
+        $this->simpan(['sus' => [1 => 9]])->assertSessionHasErrors('sus.1');
+
+        $this->assertSame(0, UsabilitySession::count());
     }
 
+    /**
+     * Berapa peserta lagi yang dibutuhkan dihitung server dari ambang layanan; halaman
+     * hanya menampilkannya. Ambang SUS (12 responden) tidak diubah di sini.
+     */
     public function test_the_page_says_how_many_participants_are_still_needed(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(UsabilityStudy::class)
-            ->assertSee('5 peserta lagi');
+        $this->actingAs($this->admin())
+            ->get(route('admin.usability'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('ringkasan.pesertaKurang', UsabilityStudyService::TARGET_PESERTA_TUGAS)
+                ->where('ringkasan.respondenSusKurang', UsabilityStudyService::MINIMUM_RESPONDEN_SUS)
+                ->where('ringkasan.susDapatDiandalkan', false)
+                ->where('kodeBerikutnya', 'P01'));
     }
 
     /**
@@ -126,9 +143,14 @@ class UsabilityStudyPageTest extends TestCase
      */
     public function test_a_hiker_cannot_read_the_research_notes(): void
     {
-        $this->actingAs(User::factory()->create())
-            ->get(route('admin.usability'))
+        $pendaki = User::factory()->create();
+
+        $this->actingAs($pendaki)->get(route('admin.usability'))->assertForbidden();
+        $this->actingAs($pendaki)
+            ->post(route('admin.usability.store'), ['participant_code' => 'P01', 'kind' => 'TASK'])
             ->assertForbidden();
+
+        $this->assertSame(0, UsabilitySession::count());
     }
 
     public function test_an_admin_can_open_it(): void
@@ -136,6 +158,10 @@ class UsabilityStudyPageTest extends TestCase
         $this->actingAs($this->admin())
             ->get(route('admin.usability'))
             ->assertOk()
-            ->assertSee('Studi Kegunaan');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Admin/Usability')
+                ->where('title', 'Studi Kegunaan')
+                ->has('daftarTugas', count(UsabilityStudyService::TUGAS))
+                ->has('pernyataanSus', 10));
     }
 }

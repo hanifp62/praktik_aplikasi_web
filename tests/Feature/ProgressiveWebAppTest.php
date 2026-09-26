@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -40,11 +41,15 @@ class ProgressiveWebAppTest extends TestCase
 
     public function test_both_layouts_link_the_manifest(): void
     {
-        foreach (['app', 'guest'] as $layout) {
-            $isi = file_get_contents(resource_path('views/layouts/'.$layout.'.blade.php'));
+        // Diperiksa dari halaman yang dirender, bukan dari isi berkas layout: tautannya
+        // kini datang dari komponen head bersama, dan yang penting adalah peramban
+        // menemukannya di halaman tamu maupun halaman masuk.
+        $this->assertStringContainsString('manifest.webmanifest', $this->get('/login')->assertOk()->getContent());
 
-            $this->assertStringContainsString('manifest.webmanifest', $isi, $layout.' belum menautkan manifest.');
-        }
+        $user = User::factory()->create();
+        $user->profile()->create(['experience_level' => 'INTERMEDIATE', 'completed_at' => now()]);
+
+        $this->assertStringContainsString('manifest.webmanifest', $this->actingAs($user)->get('/trails')->assertOk()->getContent());
     }
 
     public function test_the_service_worker_is_served_from_the_root(): void

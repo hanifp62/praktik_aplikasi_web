@@ -40,7 +40,8 @@ class LongInputLayoutTest extends TestCase
     {
         $terpanjang = 0;
 
-        foreach (File::allFiles(app_path('Livewire')) as $berkas) {
+        // Aturan validasi tinggal di FormRequest sejak halaman pindah ke React.
+        foreach (File::allFiles(app_path('Http/Requests')) as $berkas) {
             if (preg_match_all('/max:(\d{3,})/', $berkas->getContents(), $cocok)) {
                 $terpanjang = max($terpanjang, ...array_map('intval', $cocok[1]));
             }

@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Livewire\Profile\TrackRecordingPreference;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -36,12 +36,13 @@ class TrackPreferenceTest extends TestCase
     {
         $user = $this->pendaki();
 
-        Livewire::actingAs($user)
-            ->test(TrackRecordingPreference::class)
-            ->assertSet('record_track', false)
-            ->set('record_track', true)
-            ->call('simpan')
-            ->assertHasNoErrors();
+        $this->actingAs($user)->get('/profile')
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('rekamJejak', false));
+
+        $this->actingAs($user)->put(route('profile.preference'), ['record_track' => true])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile'))
+            ->assertSessionHas('status-jejak', 'Perekaman jejak dinyalakan untuk pendakian berikutnya.');
 
         $this->assertTrue($user->fresh()->preference->record_track);
     }
@@ -50,10 +51,8 @@ class TrackPreferenceTest extends TestCase
     {
         $user = $this->pendaki(merekam: true);
 
-        Livewire::actingAs($user)
-            ->test(TrackRecordingPreference::class)
-            ->set('record_track', false)
-            ->call('simpan');
+        $this->actingAs($user)->put(route('profile.preference'), ['record_track' => false])
+            ->assertSessionHas('status-jejak', 'Perekaman jejak dimatikan. Jejak yang sudah tersimpan tidak ikut terhapus.');
 
         $this->assertFalse($user->fresh()->preference->record_track);
     }
@@ -66,37 +65,49 @@ class TrackPreferenceTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Livewire::actingAs($user)
-            ->test(TrackRecordingPreference::class)
-            ->set('record_track', true)
-            ->call('simpan');
+        $this->actingAs($user)->put(route('profile.preference'), ['record_track' => true])
+            ->assertSessionHasNoErrors();
 
         $this->assertTrue($user->fresh()->preference->record_track);
     }
 
+    public function test_a_value_that_is_not_a_yes_or_no_is_refused(): void
+    {
+        $user = $this->pendaki();
+
+        $this->actingAs($user)->put(route('profile.preference'), ['record_track' => 'kadang'])
+            ->assertSessionHasErrors('record_track');
+
+        $this->assertFalse($user->fresh()->preference->record_track);
+    }
+
     /**
      * Persetujuan tanpa keterangan bukan persetujuan. Halaman ini harus menyebut apa
-     * yang direkam, kapan dikirim, dan bahwa jejaknya dapat dihapus, sebelum pendaki
-     * menyalakannya.
+     * yang direkam, kapan dikirim, bahwa jejaknya dapat dihapus, dan biayanya pada
+     * baterai, sebelum pendaki menyalakannya. Kalimatnya dirender klien, jadi yang
+     * dijaga adalah sumber komponennya.
      */
     public function test_the_hiker_is_told_what_they_are_agreeing_to(): void
     {
-        $halaman = Livewire::actingAs($this->pendaki())->test(TrackRecordingPreference::class);
+        $sumber = File::get(resource_path('js/components/akun/FormRekamJejak.tsx'));
 
-        $halaman->assertSee('hanya di perangkat Anda');
-        $halaman->assertSee('setelah Anda turun');
-        $halaman->assertSee('dapat dihapus');
+        foreach (['hanya di perangkat Anda', 'setelah Anda turun', 'dapat dihapus', 'memakai baterai lebih cepat'] as $kalimat) {
+            $this->assertStringContainsString($kalimat, $sumber);
+        }
+
+        $this->assertStringContainsString('<FormRekamJejak', File::get(resource_path('js/pages/Profile/Edit.tsx')));
     }
 
+    /**
+     * Yang diubah selalu preferensi pengguna yang sedang masuk. Id pengguna lain yang
+     * disisipkan ke payload tidak dipakai.
+     */
     public function test_it_never_touches_another_hikers_preference(): void
     {
         $saya = $this->pendaki();
         $orangLain = $this->pendaki();
 
-        Livewire::actingAs($saya)
-            ->test(TrackRecordingPreference::class)
-            ->set('record_track', true)
-            ->call('simpan');
+        $this->actingAs($saya)->put(route('profile.preference'), ['record_track' => true, 'user_id' => $orangLain->id]);
 
         $this->assertTrue($saya->fresh()->preference->record_track);
         $this->assertFalse($orangLain->fresh()->preference->record_track);

@@ -4,7 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Volt\Volt;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class PasswordConfirmationTest extends TestCase
@@ -13,44 +13,42 @@ class PasswordConfirmationTest extends TestCase
 
     public function test_confirm_password_screen_can_be_rendered(): void
     {
-        $user = User::factory()->create();
-
-        $response = $this->actingAs($user)->get('/confirm-password');
-
-        $response
-            ->assertSeeVolt('pages.auth.confirm-password')
-            ->assertStatus(200);
+        $this->actingAs(User::factory()->create())->get('/confirm-password')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Auth/ConfirmPassword'));
     }
 
     public function test_password_can_be_confirmed(): void
     {
-        $user = User::factory()->create();
+        $this->actingAs(User::factory()->create());
 
-        $this->actingAs($user);
-
-        $component = Volt::test('pages.auth.confirm-password')
-            ->set('password', 'password');
-
-        $component->call('confirmPassword');
-
-        $component
+        $this->post(route('password.confirm.store'), ['password' => 'password'])
+            ->assertSessionHasNoErrors()
             ->assertRedirect('/dashboard')
-            ->assertHasNoErrors();
+            ->assertSessionHas('auth.password_confirmed_at');
     }
 
     public function test_password_is_not_confirmed_with_invalid_password(): void
     {
+        $this->actingAs(User::factory()->create());
+
+        $this->post(route('password.confirm.store'), ['password' => 'wrong-password'])
+            ->assertSessionHasErrors(['password' => 'Kata sandi salah.'])
+            ->assertSessionMissing('auth.password_confirmed_at');
+    }
+
+    /**
+     * Konfirmasi sandi dulu tanpa batas percobaan: sesi yang tertinggal terbuka dapat
+     * dipakai menebak sandi pemiliknya tanpa henti.
+     */
+    public function test_password_confirmation_is_rate_limited(): void
+    {
         $user = User::factory()->create();
 
-        $this->actingAs($user);
+        foreach (range(1, 6) as $_) {
+            $this->actingAs($user)->post(route('password.confirm.store'), ['password' => 'salah-'.$_]);
+        }
 
-        $component = Volt::test('pages.auth.confirm-password')
-            ->set('password', 'wrong-password');
-
-        $component->call('confirmPassword');
-
-        $component
-            ->assertNoRedirect()
-            ->assertHasErrors('password');
+        $this->actingAs($user)->post(route('password.confirm.store'), ['password' => 'salah-lagi'])->assertStatus(429);
     }
 }

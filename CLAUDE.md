@@ -19,7 +19,7 @@ dokumentasi yang memengaruhi perilaku produk:
 
 1. Baca `CLAUDE.md` ini sampai selesai.
 2. Baca `HANDOVER.md` untuk keadaan kode terakhir, dan `AGENTS.md` bila ada.
-3. Baca `PRD.md` sebelum perubahan produk, domain, atau UX.
+3. Baca `docs/PRD.md` sebelum perubahan produk, domain, atau UX.
 4. Baca berkas canonical yang relevan menurut peta di §2.
 5. Periksa keadaan repositori dan runtime yang sebenarnya. Dokumentasi adalah konteks;
    runtime adalah kebenaran implementasi.
@@ -52,7 +52,7 @@ pekerjaan UI/UX/desain, baca `DESIGN.md`**; isinya tidak disalin ke sini.
 
 **Berkas ini.** R-018 git, R-019 Supabase, dan R-021 arah produk ada di §3; R-023 tingkat
 bukti dan R-024 paritas PostgreSQL di §5; R-020 versi framework di §6. Aturan bisnis
-produk BR-01–BR-16 ada di `PRD.md` §132.
+produk BR-01–BR-16 ada di `docs/PRD.md` §132.
 
 ---
 
@@ -75,8 +75,8 @@ mengubah versi framework, mengubah semantik penyedia eksternal, atau memperkenal
 monetisasi dan kompetisi sosial.
 
 Untuk perubahan berdampak produk, nyatakan: aturan sekarang, alasan, bukti, alternatif,
-dampak, risiko, rekomendasi, dan kebutuhan persetujuan. Perubahan `PRD.md` wajib punya
-governance record sesuai `PRD.md` §130, dicatat di `PRD.md` §146.
+dampak, risiko, rekomendasi, dan kebutuhan persetujuan. Perubahan `docs/PRD.md` wajib punya
+governance record sesuai `docs/PRD.md` §130, dicatat di `docs/PRD.md` §146.
 
 ---
 
@@ -187,7 +187,8 @@ manusia, lingkaran komunitas berguna, nilai kembali lewat progresi, sumber jujur
 
 | Berkas | Isi |
 |---|---|
-| `PRD.md` | Requirement, domain, enum, BR-01–BR-16, batas MVP, arsitektur informasi §145, governance record §146 |
+| `docs/PRD.md` | Requirement, domain, enum, BR-01–BR-16, batas MVP, arsitektur informasi §145, governance record §146 |
+| `docs/AGENTS.md` | Kesepakatan kerja tim untuk manusia dan agen: izin, alur riset lebih dulu, cara audit, definisi selesai, format rekap, urutan wewenang skill |
 | `PRODUCT.md` | Definisi produk, positioning, konteks operasi, growth, prioritas dan peran, ATM, rujukan, model kerja IMK, hasil UX |
 | `DESIGN.md` | Arah desain dan R-015–R-017 |
 | `docs/ARCHITECTURE.md` | Peta kode, aturan yang tidak boleh dilanggar, kontrak SEO teknis, catatan operasional |

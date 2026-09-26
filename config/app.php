@@ -13,7 +13,13 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    /*
+     * Nama merek: Memount, ditetapkan pemilik 24 September 2026 ("tetapkan Memount
+     * sebagai nama brand app web ini"). Ini satu-satunya tempat nama produk hidup;
+     * wordmark, judul halaman, manifest PWA, kartu sosial, dan email membacanya dari sini.
+     * Riset yang mendasarinya: docs/riset/2026-09-23-konsolidasi/riset-nama-mendaki-memount.md.
+     */
+    'name' => env('APP_NAME', 'Memount'),
 
     /*
     |--------------------------------------------------------------------------
@@ -80,7 +86,7 @@ return [
 
     'locale' => env('APP_LOCALE', 'id'),
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'id'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 

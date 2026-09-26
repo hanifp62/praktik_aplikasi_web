@@ -13,14 +13,13 @@ use Tests\TestCase;
 /**
  * Pos sebagai perjalanan, bukan daftar.
  *
- * Pos menyimpan ketinggian dan koordinat, tetapi keduanya hanya ditampilkan per baris.
- * Yang tidak pernah disebut adalah apa yang terjadi di antara dua pos, padahal justru
- * di situlah pertanyaan pendaki berada: bagian mana yang curam, dan seberapa jauh
- * sampai pos berikutnya.
+ * Yang tidak pernah disebut daftar biasa adalah apa yang terjadi di antara dua pos,
+ * padahal justru di situlah pertanyaan pendaki berada: bagian mana yang curam, dan
+ * seberapa jauh sampai pos berikutnya.
  *
- * Angkanya diturunkan dari data yang sudah ada, bukan ditambahkan sebagai kolom baru:
- * selisih ketinggian dari elevation_m, dan jarak dari koordinat lewat haversine yang
- * sudah dipakai mode pendakian.
+ * Angkanya diturunkan dari data yang sudah ada (selisih elevation_m, dan jarak dari
+ * koordinat lewat haversine yang sudah dipakai mode pendakian) dan disusun di server
+ * oleh Services\Trails\CheckpointJourney; halaman React hanya menggambarnya.
  */
 class CheckpointJourneyTest extends TestCase
 {
@@ -38,23 +37,29 @@ class CheckpointJourneyTest extends TestCase
         ]);
     }
 
-    private function buka(Trail $trail)
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function perjalanan(Trail $trail): array
     {
-        return $this->actingAs(User::factory()->create())->get(route('trails.show', $trail));
+        return $this->actingAs(User::factory()->create())
+            ->get(route('trails.show', $trail))
+            ->assertOk()
+            ->viewData('page')['props']['pos'];
     }
 
-    /**
-     * Pertanyaan yang tidak pernah dijawab daftar: bagian mana yang curam.
-     */
+    private function antara(Trail $trail): string
+    {
+        return implode(' | ', array_filter(array_column($this->perjalanan($trail), 'antara')));
+    }
+
     public function test_the_climb_between_two_posts_is_named(): void
     {
         $trail = Trail::factory()->published()->easy()->create();
         $this->pos($trail, 1, 'Basecamp', 1200);
         $this->pos($trail, 2, 'Pos 1', 1520);
 
-        $this->buka($trail)
-            ->assertOk()
-            ->assertSee('naik 320 m');
+        $this->assertStringContainsString('naik 320 m', $this->antara($trail));
     }
 
     public function test_a_descent_between_two_posts_is_named_as_a_descent(): void
@@ -63,12 +68,11 @@ class CheckpointJourneyTest extends TestCase
         $this->pos($trail, 1, 'Puncak Bayangan', 2800);
         $this->pos($trail, 2, 'Sabana', 2650);
 
-        $this->buka($trail)->assertSee('turun 150 m');
+        $this->assertStringContainsString('turun 150 m', $this->antara($trail));
     }
 
     /**
-     * Jarak antarpos dihitung dari koordinat dengan haversine yang sudah dipakai mode
-     * pendakian, bukan rumus baru yang ditulis khusus untuk halaman ini.
+     * Satu derajat lintang kira-kira 111 km, jadi 0,01 derajat kira-kira 1,1 km.
      */
     public function test_the_distance_between_two_posts_is_computed_from_their_coordinates(): void
     {
@@ -76,8 +80,7 @@ class CheckpointJourneyTest extends TestCase
         $this->pos($trail, 1, 'Basecamp', 1200, -7.4500, 110.4400);
         $this->pos($trail, 2, 'Pos 1', 1520, -7.4600, 110.4400);
 
-        // Satu derajat lintang kira-kira 111 km, jadi 0,01 derajat kira-kira 1,1 km.
-        $this->buka($trail)->assertSee('1,1 km');
+        $this->assertStringContainsString('1,1 km · naik 320 m', $this->antara($trail));
     }
 
     /**
@@ -90,10 +93,10 @@ class CheckpointJourneyTest extends TestCase
         $this->pos($trail, 1, 'Basecamp', 1200);
         $this->pos($trail, 2, 'Pos 1', null);
 
-        $halaman = $this->buka($trail);
+        $pos = collect($this->perjalanan($trail))->keyBy('name');
 
-        $halaman->assertDontSee('naik 0 m');
-        $halaman->assertDontSee('turun 0 m');
+        $this->assertNull($pos['Pos 1']['antara']);
+        $this->assertNull($pos['Pos 1']['elevasi']);
     }
 
     public function test_a_missing_coordinate_produces_no_distance_claim(): void
@@ -102,14 +105,13 @@ class CheckpointJourneyTest extends TestCase
         $this->pos($trail, 1, 'Basecamp', 1200, -7.45, 110.44);
         $this->pos($trail, 2, 'Pos 1', 1520);
 
-        $this->buka($trail)
-            ->assertSee('naik 320 m')
-            ->assertDontSee('0,0 km');
+        $pos = collect($this->perjalanan($trail))->keyBy('name');
+
+        $this->assertSame('naik 320 m', $pos['Pos 1']['antara']);
     }
 
     /**
-     * Urutannya mengikuti sequence, dan itu sudah dijamin relasinya. Test ini menjaga
-     * jaminan itu tetap ada ketika tampilannya diubah.
+     * Urutannya mengikuti sequence, bukan urutan penyisipan.
      */
     public function test_the_posts_follow_their_sequence(): void
     {
@@ -117,26 +119,25 @@ class CheckpointJourneyTest extends TestCase
         $this->pos($trail, 2, 'Pos Kedua', 1500);
         $this->pos($trail, 1, 'Pos Pertama', 1200);
 
-        $html = $this->buka($trail)->getContent();
+        $nama = array_column($this->perjalanan($trail), 'name');
 
         $this->assertLessThan(
-            strpos($html, 'Pos Kedua'),
-            strpos($html, 'Pos Pertama'),
+            array_search('Pos Kedua', $nama, true),
+            array_search('Pos Pertama', $nama, true),
             'Pos pertama harus tampil lebih dulu meski disisipkan belakangan.'
         );
     }
 
     /**
-     * Garis penghubungnya hiasan: ia mengulang urutan yang sudah terbaca dari nomor dan
-     * dari struktur daftar, jadi pembaca layar tidak perlu mendengarnya.
+     * Garis penghubungnya hiasan yang mengulang urutan, jadi disembunyikan dari pembaca
+     * layar; padanan teksnya ("Dari pos sebelumnya: ...") tetap dibacakan.
      */
     public function test_the_connecting_line_is_hidden_from_screen_readers(): void
     {
-        $trail = Trail::factory()->published()->easy()->create();
-        $this->pos($trail, 1, 'Basecamp', 1200);
-        $this->pos($trail, 2, 'Pos 1', 1520);
+        $komponen = file_get_contents(resource_path('js/components/ui/CheckpointJourney.tsx'));
 
-        $this->buka($trail)->assertSee('aria-hidden="true"', escape: false);
+        $this->assertStringContainsString('aria-hidden="true"', $komponen);
+        $this->assertStringContainsString('Dari pos sebelumnya:', $komponen);
     }
 
     public function test_a_single_post_has_no_between_to_describe(): void
@@ -153,9 +154,10 @@ class CheckpointJourneyTest extends TestCase
         ]);
         $trail->refresh()->update(['is_published' => true]);
 
-        $this->buka($trail)
-            ->assertOk()
-            ->assertSee('Basecamp')
-            ->assertDontSee('naik');
+        $pos = $this->perjalanan($trail);
+
+        $this->assertCount(1, $pos);
+        $this->assertSame('Basecamp', $pos[0]['name']);
+        $this->assertNull($pos[0]['antara']);
     }
 }

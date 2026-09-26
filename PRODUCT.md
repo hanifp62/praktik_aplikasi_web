@@ -42,7 +42,7 @@ tidak pernah ditampilkan sebagai angka (BR-09).
 
 Pemasaran adalah bagian dari rancangan produk, bukan lapisan yang ditempel setelahnya.
 Kontrak SEO teknisnya ada di `docs/ARCHITECTURE.md`; struktur URL publiknya ada di
-`PRD.md` §145.2. Bagian ini hanya soal strategi.
+`docs/PRD.md` §145.2. Bagian ini hanya soal strategi.
 
 **Corong.**
 
@@ -108,7 +108,7 @@ mengorbankan kepercayaan data atau melunakkan bahasa keselamatan.
 
 ## Evidence on Hand
 
-- `PRD.md` (3365 baris): sumber kebenaran produk, termasuk 15 aturan bisnis terkunci.
+- `docs/PRD.md`: sumber kebenaran produk, termasuk 16 aturan bisnis terkunci (BR-01 sampai BR-16).
 - `docs/superpowers/specs/2026-09-20-pengalaman-pendaki-design.md`: analisis ATM terhadap
   AllTrails, Strava, Traveloka beserta aturan adaptasinya.
 - `docs/PROTOKOL-UJI-KEGUNAAN.md`: protokol uji dengan delapan tugas dan SUS berbahasa

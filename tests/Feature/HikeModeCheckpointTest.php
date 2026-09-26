@@ -5,14 +5,14 @@ namespace Tests\Feature;
 use App\Enums\HikingSessionStatus;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
-use App\Livewire\Trips\HikeMode;
 use App\Models\Checkpoint;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -24,6 +24,9 @@ use Tests\TestCase;
  * mengarah ke pos yang salah.
  *
  * Posisi juga diterima tanpa pemeriksaan rentang sama sekali.
+ *
+ * Mode pendakian kini React: posisi dikirim lewat POST, lalu halaman menampilkan
+ * pos berikutnya dari jawaban server.
  */
 class HikeModeCheckpointTest extends TestCase
 {
@@ -34,26 +37,21 @@ class HikeModeCheckpointTest extends TestCase
         $trip = $this->tripWithCheckpoints();
 
         // Posisi tepat sebelum Pos 3, di luar radius kedatangan 75 m.
-        $component = Livewire::actingAs($trip->user)
-            ->test(HikeMode::class, ['trip' => $trip])
-            ->call('updatePosition', -7.9938, 112.9500);
-
-        $this->assertSame(
-            3,
-            $component->get('nextCheckpoint')['sequence'],
-            'Pos yang sedang dituju tidak boleh dilewati.'
-        );
+        $this->kirimPosisi($trip, -7.9938, 112.9500)
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Hike')
+                ->where('berikutnya.sequence', 3)
+                ->where('berikutnya.name', 'Pos 3')
+                ->where('berikutnya.jarak', '89 m'));
     }
 
     public function test_a_checkpoint_within_the_arrival_radius_counts_as_reached(): void
     {
         $trip = $this->tripWithCheckpoints();
 
-        $component = Livewire::actingAs($trip->user)
-            ->test(HikeMode::class, ['trip' => $trip])
-            ->call('updatePosition', -7.9930, 112.9500); // tepat di Pos 3
+        $this->kirimPosisi($trip, -7.9930, 112.9500) // tepat di Pos 3
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('berikutnya.sequence', 4));
 
-        $this->assertSame(4, $component->get('nextCheckpoint')['sequence']);
         $this->assertSame(3, $trip->hikingSession->fresh()->reached_checkpoint_sequence);
     }
 
@@ -61,10 +59,8 @@ class HikeModeCheckpointTest extends TestCase
     {
         $trip = $this->tripWithCheckpoints();
 
-        $component = Livewire::actingAs($trip->user)->test(HikeMode::class, ['trip' => $trip]);
-
-        $component->call('updatePosition', -7.9930, 112.9500);   // mencapai Pos 3
-        $component->call('updatePosition', -7.9960, 112.9500);   // mundur ke arah Pos 1
+        $this->kirimPosisi($trip, -7.9930, 112.9500);   // mencapai Pos 3
+        $this->kirimPosisi($trip, -7.9960, 112.9500);   // mundur ke arah Pos 1
 
         $this->assertSame(
             3,
@@ -73,27 +69,79 @@ class HikeModeCheckpointTest extends TestCase
         );
     }
 
+    /**
+     * Setelah dimuat ulang, pos yang tercatat pada sesi tetap ditampilkan, tanpa jarak:
+     * posisinya tidak disimpan sebagai riwayat, jadi jaraknya tidak dapat dihitung.
+     */
+    public function test_a_reload_keeps_the_recorded_next_checkpoint_without_a_distance(): void
+    {
+        $trip = $this->tripWithCheckpoints();
+        $this->kirimPosisi($trip, -7.9938, 112.9500);
+
+        $this->get(route('trips.hike', $trip))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('berikutnya.sequence', 3)
+                ->where('berikutnya.jarak', null)
+                ->where('posisi', null));
+    }
+
     public function test_an_out_of_range_position_is_rejected(): void
     {
         $trip = $this->tripWithCheckpoints();
 
-        Livewire::actingAs($trip->user)
-            ->test(HikeMode::class, ['trip' => $trip])
-            ->call('updatePosition', 999.0, 999.0)
-            ->assertHasErrors(['latitude', 'longitude']);
+        $this->actingAs($trip->user)
+            ->post(route('trips.hike.position', $trip), ['latitude' => 999.0, 'longitude' => 999.0])
+            ->assertSessionHasErrors(['latitude', 'longitude']);
+
+        $this->assertNull($trip->hikingSession->fresh()->location_updated_at);
     }
 
     public function test_a_valid_position_is_accepted(): void
     {
         $trip = $this->tripWithCheckpoints();
 
-        Livewire::actingAs($trip->user)
-            ->test(HikeMode::class, ['trip' => $trip])
-            ->call('updatePosition', -7.9950, 112.9500)
-            ->assertSet('latitude', -7.9950);
+        $this->kirimPosisi($trip, -7.9950, 112.9500)
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('posisi.lat', -7.995)
+                ->where('posisi.koordinat', '-7.99500, 112.95000'));
+
+        $this->assertNotNull($trip->hikingSession->fresh()->location_updated_at);
     }
 
-    private function tripWithCheckpoints(): TripPlan
+    /**
+     * Tanpa koordinat pos, halaman mengakuinya alih-alih menebak jarak.
+     */
+    public function test_checkpoints_without_coordinates_are_admitted_not_guessed(): void
+    {
+        $trip = $this->tripWithCheckpoints(berkoordinat: false);
+
+        $this->kirimPosisi($trip, -7.9950, 112.9500)
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('posBerkoordinat', 0)
+                ->where('berikutnya.jarak', null)
+                ->has('penanda', 0));
+    }
+
+    public function test_another_user_cannot_send_a_position(): void
+    {
+        $trip = $this->tripWithCheckpoints();
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trips.hike.position', $trip), ['latitude' => -7.9950, 'longitude' => 112.9500])
+            ->assertForbidden();
+
+        $this->assertNull($trip->hikingSession->fresh()->location_updated_at);
+    }
+
+    private function kirimPosisi(TripPlan $trip, float $lat, float $lng): TestResponse
+    {
+        return $this->actingAs($trip->user)
+            ->followingRedirects()
+            ->post(route('trips.hike.position', $trip), ['latitude' => $lat, 'longitude' => $lng])
+            ->assertOk();
+    }
+
+    private function tripWithCheckpoints(bool $berkoordinat = true): TripPlan
     {
         $user = User::factory()->create();
         $mountain = Mountain::factory()->create();
@@ -104,8 +152,8 @@ class HikeModeCheckpointTest extends TestCase
             Checkpoint::factory()->for($trail)->create([
                 'sequence' => $sequence,
                 'name' => 'Pos '.$sequence,
-                'latitude' => $latitude,
-                'longitude' => 112.9500,
+                'latitude' => $berkoordinat ? $latitude : null,
+                'longitude' => $berkoordinat ? 112.9500 : null,
             ]);
         }
 

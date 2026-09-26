@@ -5,7 +5,6 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Livewire\Volt\Volt;
 use Tests\TestCase;
 
 class PasswordUpdateTest extends TestCase
@@ -16,17 +15,11 @@ class PasswordUpdateTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user);
-
-        $component = Volt::test('profile.update-password-form')
-            ->set('current_password', 'password')
-            ->set('password', 'new-password')
-            ->set('password_confirmation', 'new-password')
-            ->call('updatePassword');
-
-        $component
-            ->assertHasNoErrors()
-            ->assertNoRedirect();
+        $this->actingAs($user)->from('/profile')->put(route('profile.password'), [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])->assertSessionHasNoErrors()->assertRedirect('/profile');
 
         $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
     }
@@ -35,16 +28,12 @@ class PasswordUpdateTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user);
+        $this->actingAs($user)->from('/profile')->put(route('profile.password'), [
+            'current_password' => 'wrong-password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])->assertSessionHasErrors(['current_password' => 'Kata sandi salah.'])->assertRedirect('/profile');
 
-        $component = Volt::test('profile.update-password-form')
-            ->set('current_password', 'wrong-password')
-            ->set('password', 'new-password')
-            ->set('password_confirmation', 'new-password')
-            ->call('updatePassword');
-
-        $component
-            ->assertHasErrors(['current_password'])
-            ->assertNoRedirect();
+        $this->assertTrue(Hash::check('password', $user->refresh()->password));
     }
 }

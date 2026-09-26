@@ -31,11 +31,15 @@ class AuditLogService
 
     /**
      * Records a model mutation, capturing only the attributes that actually changed.
+     *
+     * Dipanggil sesudah save(). Saat itu Eloquent sudah menyelaraskan original dengan
+     * nilai baru, jadi getOriginal() mengembalikan nilai sesudah dan "sebelum" di log
+     * menjadi salinan "sesudah". Nilai lama yang benar ada di getPrevious().
      */
     public function recordChange(?User $actor, string $action, Model $entity): AuditLog
     {
         $changes = $entity->getChanges();
-        $before = array_intersect_key($entity->getOriginal(), $changes);
+        $before = array_intersect_key($entity->getPrevious(), $changes);
 
         return $this->record($actor, $action, $entity, $before ?: null, $changes ?: null);
     }

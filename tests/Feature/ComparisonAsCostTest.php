@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserExperience;
 use App\Services\ConsiderationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -62,7 +63,7 @@ class ComparisonAsCostTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('trails.index'))
-            ->assertSee('Bandingkan 2 jalur');
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('ditimbang', 2));
     }
 
     /**
@@ -77,14 +78,16 @@ class ComparisonAsCostTest extends TestCase
         $a = $this->jalur();
         $b = $this->jalur();
 
-        $halaman = $this->actingAs($user)
-            ->get(route('trails.compare', ['trails' => $a->id.','.$b->id]));
+        $baris = $this->actingAs($user)
+            ->get(route('trails.compare', ['trails' => $a->id.','.$b->id]))
+            ->assertOk()
+            ->viewData('page')['props']['baris'];
 
-        $halaman->assertOk();
-
-        foreach (['Waktu', 'Tanjakan', 'Kecuraman', 'Tuntutan teknis', 'Air'] as $dimensi) {
-            $halaman->assertSee($dimensi);
-        }
+        $this->assertSame(
+            ['Waktu', 'Jarak', 'Tanjakan', 'Kecuraman', 'Tuntutan teknis', 'Kerumitan navigasi', 'Air', 'Berkemah', 'Medan'],
+            array_column($baris, 'label'),
+            'Urutannya mengikuti ongkos: waktu dan tenaga lebih dulu.'
+        );
     }
 
     /**
@@ -100,9 +103,18 @@ class ComparisonAsCostTest extends TestCase
         $a = $this->jalur();
         $b = $this->jalur();
 
-        $this->actingAs($user)
+        $jalur = $this->actingAs($user)
             ->get(route('trails.compare', ['trails' => $a->id.','.$b->id]))
-            ->assertSee('data-fit-label', escape: false);
+            ->assertOk()
+            ->viewData('page')['props']['jalur'];
+
+        foreach ($jalur as $kolom) {
+            $this->assertNotNull($kolom['fit'], $kolom['name'].' tanpa kecocokan.');
+            $this->assertNotSame('', trim($kolom['fit']['alasan']), $kolom['name'].' berlabel tanpa alasan.');
+        }
+
+        // Label ditampilkan lewat FitLine yang sama dengan baris daftar (penanda data-fit-label).
+        $this->assertStringContainsString('<FitLine', file_get_contents(resource_path('js/components/trails/banding/TabelBanding.tsx')));
     }
 
     /**
@@ -122,10 +134,15 @@ class ComparisonAsCostTest extends TestCase
             ->published()->create(['distance_km' => 0, 'elevation_gain_m' => 500]);
         $b = $this->jalur();
 
-        $halaman = $this->actingAs($user)
-            ->get(route('trails.compare', ['trails' => $a->id.','.$b->id]));
+        $props = $this->actingAs($user)
+            ->get(route('trails.compare', ['trails' => $a->id.','.$b->id]))
+            ->assertOk()
+            ->viewData('page')['props'];
 
-        $halaman->assertOk();
-        $halaman->assertSee('Kecuraman');
+        // Kecuraman jalur berjarak nol tidak dapat dihitung, dan itu dikatakan apa adanya.
+        $kolomA = array_search($a->id, array_column($props['jalur'], 'id'), true);
+        $kecuraman = collect($props['baris'])->firstWhere('label', 'Kecuraman');
+
+        $this->assertSame('Belum tersedia', $kecuraman['nilai'][$kolomA]);
     }
 }

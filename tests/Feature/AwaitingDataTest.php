@@ -9,6 +9,7 @@ use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -88,14 +89,17 @@ class AwaitingDataTest extends TestCase
         $gunung = $this->gunungBerbadan('Balai Taman Nasional Gunung Lawu');
         $jalur = Trail::factory()->for($gunung)->unpublished()->create(['name' => 'Jalur Cemoro Sewu']);
 
-        $isi = $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->create())
             ->get('/trails/'.$jalur->slug)
             ->assertOk()
-            ->assertSee('Jalur Cemoro Sewu')
-            ->assertSee('Balai Taman Nasional Gunung Lawu')
-            ->getContent();
-
-        $this->assertStringContainsString('belum', mb_strtolower($isi));
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trails/Awaiting')
+                ->where('trail.name', 'Jalur Cemoro Sewu')
+                ->where('badan.nama', 'Balai Taman Nasional Gunung Lawu')
+                ->where('menunggu', fn ($butir) => count($butir) > 0)
+                ->missing('fit')
+                ->missing('angkaKunci')
+                ->missing('komunitas'));
     }
 
     /**
@@ -109,7 +113,11 @@ class AwaitingDataTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get('/trails/'.$jalur->slug)
             ->assertOk()
-            ->assertDontSee('Buat rencana trip');
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Trails/Awaiting'));
+
+        $halaman = file_get_contents(resource_path('js/pages/Trails/Awaiting.tsx'));
+        $this->assertStringNotContainsString('Buat rencana trip', $halaman);
+        $this->assertStringNotContainsString('trips', $halaman);
     }
 
     public function test_a_published_trail_still_shows_its_full_detail(): void
@@ -123,7 +131,13 @@ class AwaitingDataTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get('/trails/'.$jalur->slug)
             ->assertOk()
-            ->assertSee('Buat rencana trip');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trails/Show')
+                ->where('angkaKunci.0.nilai', '9,4 km')
+                ->where('angkaKunci.1.nilai', '10 jam')
+                ->where('angkaKunci.2.nilai', '1.100 m'));
+
+        $this->assertStringContainsString('Buat rencana trip', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     /**
@@ -141,16 +155,16 @@ class AwaitingDataTest extends TestCase
         Trail::factory()->for($gunung)->unpublished()->create(['name' => 'Jalur Draft']);
         Trail::factory()->published()->for($gunung)->create(['name' => 'Jalur Terbit']);
 
-        $isi = $this->actingAs(User::factory()->create())
+        $props = $this->actingAs(User::factory()->create())
             ->get('/trails?search=Rahasia')
             ->assertOk()
-            ->assertSee('Jalur Terbit')
-            ->getContent();
+            ->viewData('page')['props'];
 
-        [$hasil] = explode('Jalur yang datanya belum tersedia', $isi, 2);
+        $hasil = array_column($props['trails']['data'], 'name');
 
-        $this->assertStringNotContainsString('Jalur Draft', $hasil, 'Draft bocor ke daftar hasil.');
-        $this->assertStringContainsString('Jalur Terbit', $hasil);
+        $this->assertNotContains('Jalur Draft', $hasil, 'Draft bocor ke daftar hasil.');
+        $this->assertContains('Jalur Terbit', $hasil);
+        $this->assertSame(['Jalur Draft'], array_column($props['menunggu'], 'name'));
     }
 
     /**
@@ -165,13 +179,11 @@ class AwaitingDataTest extends TestCase
             'distance_km' => 12.5,
         ]);
 
-        $isi = $this->actingAs(User::factory()->create())->get('/trails')->assertOk()->getContent();
+        $menunggu = $this->actingAs(User::factory()->create())->get('/trails')->assertOk()->viewData('page')['props']['menunggu'];
 
-        $bagian = explode('Jalur yang datanya belum tersedia', $isi, 2)[1] ?? '';
-
-        $this->assertStringContainsString('Jalur Draft', $bagian);
-        $this->assertStringNotContainsString('12.5', $bagian, 'Karakteristik tidak boleh ikut tampil.');
-        $this->assertStringNotContainsString('Buat rencana trip', $bagian);
+        $this->assertCount(1, $menunggu);
+        $this->assertSame('Jalur Draft', $menunggu[0]['name']);
+        $this->assertSame(['id', 'name', 'url', 'mountain', 'province'], array_keys($menunggu[0]), 'Karakteristik tidak boleh ikut dikirim.');
     }
 
     private function gunungBerbadan(string $nama = 'Balai Taman Nasional uji'): Mountain

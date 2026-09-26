@@ -2,15 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AnalyticsEvent;
 use App\Enums\ExperienceLevel;
 use App\Enums\NavigationExperience;
-use App\Livewire\Recommendations\RecommendationResults;
+use App\Models\AnalyticsEvent as AnalyticsEventModel;
 use App\Models\HikingGoal;
+use App\Models\RecommendationRun;
 use App\Models\Trail;
 use App\Models\User;
 use App\Services\RouteFitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -28,6 +32,9 @@ class ArchivedTrailInOldRunTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * @return array{0: User, 1: RecommendationRun, 2: Trail}
+     */
     private function runDenganSatuJalur(): array
     {
         $user = User::factory()->create();
@@ -51,24 +58,30 @@ class ArchivedTrailInOldRunTest extends TestCase
         [$user, $run, $trail] = $this->runDenganSatuJalur();
         $trail->update(['archived_at' => now()]);
 
-        $html = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run])->html();
+        $respons = $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk();
 
-        $this->assertStringNotContainsString(
+        $respons->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('eligible.0.url', null)
+            ->where('eligible.0.ditarik', true));
+
+        $this->assertNotContains(
             route('trails.show', $trail),
-            $html,
-            'Halaman jalur terarsip menjawab 404, jadi tautannya tidak boleh tersisa.'
+            Arr::flatten($respons->viewData('page')['props']),
+            'Halaman jalur terarsip menjawab 404, jadi tautannya tidak boleh tersisa di props mana pun.'
         );
     }
 
+    /**
+     * Kartu tanpa URL tidak bertaut, dan tombol "Pilih jalur ini" hanya ada untuk jalur
+     * yang belum ditarik; keduanya diputuskan halaman dari props di atas.
+     */
     public function test_a_withdrawn_trail_cannot_still_be_chosen(): void
     {
-        [$user, $run, $trail] = $this->runDenganSatuJalur();
-        $trail->update(['archived_at' => now()]);
+        $kartu = File::get(resource_path('js/components/discovery/KartuHasil.tsx'));
 
-        $page = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run]);
-
-        $page->assertDontSee('Pilih jalur ini');
-        $page->assertSee('ditarik dari katalog');
+        $this->assertMatchesRegularExpression('/\{!hasil\.ditarik \? \(\s*<Button[^>]*>Pilih jalur ini<\/Button>/s', $kartu);
+        $this->assertStringContainsString('Jalur ini ditarik dari katalog setelah penilaian ini dibuat.', $kartu);
+        $this->assertMatchesRegularExpression('/\{hasil\.url \? \(\s*<Tautan href=\{hasil\.url\}/s', $kartu);
     }
 
     /**
@@ -80,27 +93,51 @@ class ArchivedTrailInOldRunTest extends TestCase
         [$user, $run, $trail] = $this->runDenganSatuJalur();
         $trail->update(['archived_at' => now()]);
 
-        Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->assertSee($trail->name);
+        $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('eligible', 1)
+                ->where('eligible.0.name', $trail->name));
     }
 
     /**
-     * Penjaga: jalur yang masih sehat tetap tertaut dan tetap dapat dipilih.
+     * Penjaga: jalur yang masih sehat tetap tertaut dan tetap dapat dipilih, dan
+     * memilihnya mengantar ke pembuatan trip dengan rencana yang sama.
      */
-    public function test_a_healthy_trail_keeps_its_link_and_its_button(): void
+    public function test_a_healthy_trail_keeps_its_link_and_can_be_chosen(): void
     {
         [$user, $run, $trail] = $this->runDenganSatuJalur();
 
-        $html = Livewire::actingAs($user)->test(RecommendationResults::class, ['run' => $run])->html();
+        $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('eligible.0.url', route('trails.show', $trail))
+                ->where('eligible.0.ditarik', false));
 
-        $this->assertStringContainsString(route('trails.show', $trail), $html);
-        $this->assertStringContainsString('Pilih jalur ini', $html);
+        $this->actingAs($user)
+            ->post(route('recommendations.pilih', $run), ['trail' => $trail->id])
+            ->assertRedirect(route('trips.create', ['trail' => $trail->id, 'goal' => $run->hiking_goal_id]));
+
+        $this->assertDatabaseHas('analytics_events', [
+            'user_id' => $user->id,
+            'event_name' => AnalyticsEvent::ROUTE_SELECTED->value,
+        ]);
+    }
+
+    /**
+     * Formulir trip kini halaman React: memilih jalur adalah pengalihan Inertia biasa
+     * ke formulir itu, dengan jalur dan rencananya terbawa.
+     */
+    public function test_choosing_a_trail_leads_to_the_trip_form_with_trail_and_goal(): void
+    {
+        [$user, $run, $trail] = $this->runDenganSatuJalur();
+
+        $this->actingAs($user)
+            ->post(route('recommendations.pilih', $run), ['trail' => $trail->id], ['X-Inertia' => 'true'])
+            ->assertRedirect(route('trips.create', ['trail' => $trail->id, 'goal' => $run->hiking_goal_id]));
     }
 
     /**
      * Pertahanan lapis kedua: tombolnya hilang dari tampilan, tetapi aksinya tetap
-     * dapat dipanggil langsung oleh klien yang sudah memuat halaman sebelum jalurnya
+     * dapat dikirim langsung oleh klien yang sudah memuat halaman sebelum jalurnya
      * diarsipkan.
      */
     public function test_choosing_it_directly_is_refused_by_the_action(): void
@@ -108,9 +145,12 @@ class ArchivedTrailInOldRunTest extends TestCase
         [$user, $run, $trail] = $this->runDenganSatuJalur();
         $trail->update(['archived_at' => now()]);
 
-        Livewire::actingAs($user)
-            ->test(RecommendationResults::class, ['run' => $run])
-            ->call('selectTrail', $trail->id)
-            ->assertNoRedirect();
+        $this->actingAs($user)
+            ->from(route('recommendations.show', $run))
+            ->post(route('recommendations.pilih', $run), ['trail' => $trail->id])
+            ->assertRedirect(route('recommendations.show', $run))
+            ->assertSessionHasErrors(['trail' => 'Jalur ini sudah ditarik dari katalog dan tidak dapat dipilih lagi.']);
+
+        $this->assertSame(0, AnalyticsEventModel::where('event_name', AnalyticsEvent::ROUTE_SELECTED->value)->count());
     }
 }

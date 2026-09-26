@@ -67,9 +67,17 @@ class CheckpointPaceDisplayTest extends TestCase
         }
     }
 
-    private function buka()
+    /**
+     * Seluruh teks tempo yang dikirim ke halaman, disambung.
+     */
+    private function tempo(): string
     {
-        return $this->actingAs(User::factory()->create())->get(route('trails.show', $this->trail));
+        $pos = $this->actingAs(User::factory()->create())
+            ->get(route('trails.show', $this->trail))
+            ->assertOk()
+            ->viewData('page')['props']['pos'];
+
+        return implode(' | ', array_filter(array_column($pos, 'tempo')));
     }
 
     public function test_the_typical_time_is_shown_with_its_range_and_sample_size(): void
@@ -78,11 +86,11 @@ class CheckpointPaceDisplayTest extends TestCase
             $this->rekam($menit);
         }
 
-        $halaman = $this->buka();
+        $tempo = $this->tempo();
 
-        $halaman->assertSee('Biasanya 1 jam');
-        $halaman->assertSee('terentang 40 menit sampai 1 jam 20 menit');
-        $halaman->assertSee('menurut 5 rekaman pendaki');
+        $this->assertStringContainsString('Biasanya 1 jam', $tempo);
+        $this->assertStringContainsString('terentang 40 menit sampai 1 jam 20 menit', $tempo);
+        $this->assertStringContainsString('menurut 5 rekaman pendaki', $tempo);
     }
 
     /**
@@ -96,7 +104,7 @@ class CheckpointPaceDisplayTest extends TestCase
             $this->rekam($menit);
         }
 
-        $this->buka()->assertSee('menurut 6 rekaman pendaki');
+        $this->assertStringContainsString('menurut 6 rekaman pendaki', $this->tempo());
     }
 
     /**
@@ -109,11 +117,7 @@ class CheckpointPaceDisplayTest extends TestCase
             $this->rekam($menit);
         }
 
-        $halaman = $this->buka();
-
-        $halaman->assertOk();
-        $halaman->assertDontSee('Biasanya');
-        $halaman->assertDontSee('rekaman pendaki');
+        $this->assertSame('', $this->tempo());
     }
 
     /**
@@ -121,10 +125,13 @@ class CheckpointPaceDisplayTest extends TestCase
      */
     public function test_the_journey_still_works_without_any_recordings(): void
     {
-        $this->buka()
+        $pos = $this->actingAs(User::factory()->create())
+            ->get(route('trails.show', $this->trail))
             ->assertOk()
-            ->assertSee('Pos 1')
-            ->assertSee('Pos 2')
-            ->assertDontSee('rekaman pendaki');
+            ->viewData('page')['props']['pos'];
+
+        $this->assertContains('Pos 1', array_column($pos, 'name'));
+        $this->assertContains('Pos 2', array_column($pos, 'name'));
+        $this->assertSame([], array_filter(array_column($pos, 'tempo')));
     }
 }

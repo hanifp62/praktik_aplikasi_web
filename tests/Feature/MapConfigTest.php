@@ -11,6 +11,9 @@ use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -40,20 +43,15 @@ class MapConfigTest extends TestCase
     {
         config()->set('hiking.map.raster_tiles', ['https://contoh.test/{z}/{x}/{y}.png']);
 
-        // URL tertanam sebagai JSON sehingga garis miringnya ter-escape; yang diperiksa
-        // adalah hostnya, bukan bentuk literalnya.
-        $this->assertStringContainsString('contoh.test', $this->mapScript());
-    }
+        // Mode pendakian kini React: konfigurasi peta datang dari props bersama `peta`,
+        // dan dasar peta bersama yang dipakai komponennya membaca sumber tile dari sana,
+        // bukan menuliskannya.
+        $this->hikeModeResponse()->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Trips/Hike')
+            ->where('peta.rasterTiles.0', 'https://contoh.test/{z}/{x}/{y}.png'));
 
-    /**
-     * Hanya blok skrip peta, bukan seluruh halaman. Kegagalan test yang membuang
-     * dua puluh ribu karakter HTML tidak dapat dibaca siapa pun.
-     */
-    private function mapScript(): string
-    {
-        preg_match('/const konfigurasi = (.*?);/s', $this->renderHikeMode(), $matches);
-
-        return $matches[1] ?? '';
+        $this->assertStringContainsString('konfigurasi.rasterTiles', File::get(resource_path('js/components/peta/usePetaDasar.ts')));
+        $this->assertStringContainsString('usePetaDasar(', File::get(resource_path('js/components/trips/PetaPendakian.tsx')));
     }
 
     public function test_the_attribution_is_rendered(): void
@@ -66,24 +64,48 @@ class MapConfigTest extends TestCase
 
     public function test_the_map_container_is_not_announced_as_an_image(): void
     {
-        $html = $this->renderHikeMode();
+        $sumber = File::get(resource_path('js/components/trips/PetaPendakian.tsx'));
+        $wadah = File::get(resource_path('js/components/peta/WadahPeta.tsx'));
 
         // role="img" menyembunyikan isi interaktif dari pembaca layar dan menuntut
         // teks alternatif yang tidak mungkin diberikan untuk peta yang dapat digeser.
-        $this->assertStringNotContainsString('id="hike-map" class="h-80 w-full" role="img"', $html);
-        $this->assertStringContainsString('role="region"', $html);
+        // Perannya dipegang WadahPeta, jadi komponen ini wajib menggambar lewat sana.
+        $this->assertStringContainsString('<WadahPeta', $sumber);
+        $this->assertStringNotContainsString('role="img"', $sumber);
+        $this->assertStringContainsString('role="region"', $wadah);
+        $this->assertStringNotContainsString('role="img"', $wadah);
+    }
+
+    /**
+     * Teks bawaan MapLibre berbahasa Inggris ("Zoom in", "Map marker", "Close popup").
+     * Di halaman berbahasa Indonesia pembaca layar melafalkannya dengan keliru.
+     * AttributionControl dimatikan (CVE-2026-85061) dan tidak perlu dilokalisasi.
+     */
+    public function test_the_map_controls_speak_the_page_language(): void
+    {
+        $dasar = File::get(resource_path('js/components/peta/usePetaDasar.ts'));
+
+        $this->assertStringContainsString('locale: TEKS_PETA', $dasar);
+
+        foreach (['Map.Title', 'Marker.Title', 'Popup.Close', 'NavigationControl.ZoomIn', 'NavigationControl.ZoomOut', 'NavigationControl.ResetBearing'] as $kunci) {
+            $this->assertMatchesRegularExpression("/'".preg_quote($kunci, '/')."': '[^']+'/", $dasar, $kunci.' belum dilokalkan.');
+        }
     }
 
     public function test_a_text_alternative_to_the_map_exists(): void
     {
-        $html = $this->renderHikeMode();
-
         // Pendaki yang tidak dapat melihat peta tetap harus tahu urutan posnya.
-        $this->assertStringContainsString('Pos 1', $html);
-        $this->assertStringContainsString('Daftar checkpoint', $html);
+        $this->hikeModeResponse()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('checkpoints.0.name', 'Pos 1'));
+        $this->assertStringContainsString('Daftar checkpoint', File::get(resource_path('js/pages/Trips/Hike.tsx')));
     }
 
     private function renderHikeMode(): string
+    {
+        return $this->hikeModeResponse()->getContent();
+    }
+
+    private function hikeModeResponse(): TestResponse
     {
         $user = User::factory()->create();
         $mountain = Mountain::factory()->create();
@@ -111,6 +133,6 @@ class MapConfigTest extends TestCase
             'started_at' => now(),
         ]);
 
-        return $this->actingAs($user)->get(route('trips.hike', $trip))->getContent();
+        return $this->actingAs($user)->get(route('trips.hike', $trip))->assertOk();
     }
 }

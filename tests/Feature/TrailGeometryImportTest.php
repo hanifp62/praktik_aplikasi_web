@@ -3,14 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use App\Livewire\Admin\TrailGeometryImport;
+use App\Models\AuditLog;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\User;
+use App\Services\Admin\GeometryDraft;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
-use Livewire\Livewire;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -18,7 +20,8 @@ use Tests\TestCase;
  *
  * Penulisan geometrinya sendiri butuh PostGIS dan diuji di tests/Spatial. Yang diuji di
  * sini adalah lapisan yang berjalan di mana saja: izin akses, pembacaan berkas, pratinjau
- * sebelum menyimpan, dan penolakan berkas yang keliru.
+ * sebelum menyimpan, dan penolakan berkas yang keliru. Halamannya kini React: setiap
+ * langkah adalah rute POST, dan drafnya tinggal di server di antara langkah-langkahnya.
  */
 class TrailGeometryImportTest extends TestCase
 {
@@ -31,7 +34,11 @@ class TrailGeometryImportTest extends TestCase
         $this->actingAs($this->admin())
             ->get(route('trails.geometry', $trail))
             ->assertOk()
-            ->assertSee('Impor Geometri Jalur');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Admin/TrailGeometry')
+                ->where('title', 'Impor Geometri Jalur')
+                ->where('trail.id', $trail->id)
+                ->where('pratinjau', null));
     }
 
     public function test_a_hiker_cannot_open_the_import_page(): void
@@ -43,44 +50,79 @@ class TrailGeometryImportTest extends TestCase
             ->assertForbidden();
     }
 
+    /**
+     * Pintu GET dijaga ExpertGeometryAccessTest; aksi tulisnya dijaga di sini. Setiap
+     * langkah memanggil authorize('update', $trail) sendiri, bukan mengandalkan halaman.
+     */
+    public function test_a_hiker_cannot_run_any_import_step(): void
+    {
+        $trail = Trail::factory()->create();
+        $this->actingAs(User::factory()->create());
+
+        $this->post(route('trails.geometry.preview', $trail), ['berkas' => $this->gpx()])->assertForbidden();
+        $this->post(route('trails.geometry.search', $trail))->assertForbidden();
+        $this->post(route('trails.geometry.choose', [$trail, 555]))->assertForbidden();
+        $this->post(route('trails.geometry.elevation', $trail))->assertForbidden();
+        $this->post(route('trails.geometry.store', $trail))->assertForbidden();
+    }
+
     public function test_a_valid_track_is_previewed_before_anything_is_written(): void
     {
-        $component = Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => Trail::factory()->create()])
-            ->set('berkas', $this->gpx());
+        $admin = $this->admin();
+        $trail = Trail::factory()->create();
 
-        $component->assertSet('galat', null);
-        $this->assertCount(3, $component->get('pratinjau'));
-        $this->assertGreaterThan(0, $component->get('panjangKm'));
+        $this->pratinjau($admin, $trail, $this->gpx())
+            ->assertRedirect(route('trails.geometry', $trail))
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)->get(route('trails.geometry', $trail))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pratinjau.titik', '3')
+            ->where('pratinjau.panjang', fn (string $panjang) => $panjang !== '0,00 km' && str_ends_with($panjang, ' km'))
+            ->where('pratinjau.asal', null));
+
+        $this->assertNull($trail->fresh()->elevation_profile);
+        $this->assertSame(0, AuditLog::where('action', 'trail.geometry_imported')->count());
     }
 
     public function test_the_preview_keeps_geojson_coordinate_order(): void
     {
-        $pratinjau = Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => Trail::factory()->create()])
-            ->set('berkas', $this->gpx())
-            ->get('pratinjau');
+        $admin = $this->admin();
+        $trail = Trail::factory()->create();
+
+        $this->pratinjau($admin, $trail, $this->gpx());
+
+        $pratinjau = GeometryDraft::untuk($admin, $trail)->baca()['pratinjau'];
 
         $this->assertEqualsWithDelta(112.9500, $pratinjau[0][0], 0.0001);
         $this->assertEqualsWithDelta(-7.9970, $pratinjau[0][1], 0.0001);
     }
 
+    /**
+     * Berkas yang gagal dibaca juga membuang pratinjau sebelumnya, supaya yang tersimpan
+     * nanti tidak pernah jejak dari berkas lain.
+     */
     public function test_a_file_that_is_not_gpx_is_rejected_with_a_reason(): void
     {
-        $component = Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => Trail::factory()->create()])
-            ->set('berkas', UploadedFile::fake()->createWithContent('jalur.gpx', 'bukan xml'));
+        $admin = $this->admin();
+        $trail = Trail::factory()->create();
+        $this->pratinjau($admin, $trail, $this->gpx());
 
-        $this->assertStringContainsString('bukan berkas GPX', (string) $component->get('galat'));
-        $this->assertSame([], $component->get('pratinjau'));
+        $this->pratinjau($admin, $trail, UploadedFile::fake()->createWithContent('jalur.gpx', 'bukan xml'))
+            ->assertRedirect(route('trails.geometry', $trail))
+            ->assertSessionHasErrors('berkas');
+
+        $this->assertStringContainsString('bukan berkas GPX', session('errors')->first('berkas'));
+        $this->assertSame([], GeometryDraft::untuk($admin, $trail)->baca()['pratinjau']);
     }
 
     public function test_nothing_is_saved_before_a_file_is_read(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => Trail::factory()->create()])
-            ->call('simpan')
-            ->assertSet('galat', 'Belum ada jejak yang siap disimpan.');
+        $trail = Trail::factory()->create();
+
+        $this->actingAs($this->admin())
+            ->post(route('trails.geometry.store', $trail))
+            ->assertRedirect()
+            ->assertSessionHas('galat', 'Belum ada jejak yang siap disimpan.');
     }
 
     /**
@@ -92,13 +134,16 @@ class TrailGeometryImportTest extends TestCase
     {
         $this->assertFalse(Trail::spatialSupported(), 'Suite ini memang berjalan tanpa PostGIS.');
 
-        $component = Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => Trail::factory()->create()])
-            ->set('berkas', $this->gpx())
-            ->call('simpan');
+        $admin = $this->admin();
+        $trail = Trail::factory()->create();
+        $this->pratinjau($admin, $trail, $this->gpx());
 
-        $this->assertStringContainsString('tidak mendukung PostGIS', (string) $component->get('galat'));
-        $this->assertNull(session('status'));
+        $this->actingAs($admin)
+            ->post(route('trails.geometry.store', $trail))
+            ->assertSessionHas('galat', fn (string $galat) => str_contains($galat, 'tidak mendukung PostGIS'))
+            ->assertSessionMissing('status');
+
+        $this->assertSame(0, AuditLog::where('action', 'trail.geometry_imported')->count());
     }
 
     public function test_the_trail_list_links_to_the_importer(): void
@@ -108,7 +153,8 @@ class TrailGeometryImportTest extends TestCase
         $this->actingAs($this->admin())
             ->get('/admin/trails')
             ->assertOk()
-            ->assertSee(route('trails.geometry', $trail), escape: false);
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('trails.data.0.tautan.geometri', route('trails.geometry', $trail)));
     }
 
     /**
@@ -117,23 +163,59 @@ class TrailGeometryImportTest extends TestCase
      */
     public function test_a_curator_can_search_openstreetmap_and_preview_a_candidate(): void
     {
-        Http::fake(['*' => Http::response(['elements' => [[
-            'type' => 'way',
-            'id' => 555,
-            'tags' => ['highway' => 'path', 'name' => 'Jalur Pendakian Uji'],
-            'geometry' => $this->simpul(30),
-        ]]])]);
+        $this->osmMenjawab();
+        $admin = $this->admin();
+        $trail = $this->trailBerkoordinat();
 
-        $component = Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => $this->trailBerkoordinat()])
-            ->call('cariDiOsm');
+        $this->actingAs($admin)->post(route('trails.geometry.search', $trail))->assertRedirect(route('trails.geometry', $trail));
 
-        $this->assertCount(1, $component->get('kandidat'));
+        $this->actingAs($admin)->get(route('trails.geometry', $trail))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('kandidat.jumlah', 1)
+            ->where('kandidat.tampil.0.id', 555)
+            ->where('pratinjau', null));
 
-        $component->call('pilihKandidat', 555);
+        $this->actingAs($admin)->post(route('trails.geometry.choose', [$trail, 555]))->assertRedirect();
 
-        $this->assertCount(30, $component->get('pratinjau'));
-        $this->assertStringContainsString('OpenStreetMap way 555', (string) $component->get('asal'));
+        $this->actingAs($admin)->get(route('trails.geometry', $trail))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pratinjau.titik', '30')
+            ->where('pratinjau.asal', 'OpenStreetMap way 555 (Jalur Pendakian Uji)'));
+    }
+
+    public function test_the_candidate_list_can_be_narrowed_by_name(): void
+    {
+        $this->osmMenjawab();
+        $admin = $this->admin();
+        $trail = $this->trailBerkoordinat();
+        $this->actingAs($admin)->post(route('trails.geometry.search', $trail));
+
+        $this->actingAs($admin)->get(route('trails.geometry', ['trail' => $trail, 'saringan' => 'pendakian']))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('kandidat.tampil', 1));
+
+        $this->actingAs($admin)->get(route('trails.geometry', ['trail' => $trail, 'saringan' => 'Kledung']))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('kandidat.tampil', 0)->where('kandidat.jumlah', 1));
+    }
+
+    /**
+     * Komponen lama tidak mengosongkan ketinggian ketika kandidat OSM dipilih, sehingga
+     * profil elevasi dari berkas GPX dapat tersimpan bersama geometri OSM. OSM tidak
+     * membawa ketinggian; taksirannya harus ikut hilang bersama berkasnya.
+     */
+    public function test_choosing_a_candidate_drops_elevation_read_from_an_earlier_file(): void
+    {
+        $this->osmMenjawab();
+        $admin = $this->admin();
+        $trail = $this->trailBerkoordinat();
+
+        $this->actingAs($admin)->post(route('trails.geometry.search', $trail));
+        $this->pratinjau($admin, $trail, $this->gpxBerketinggian());
+        $this->assertNotNull(GeometryDraft::untuk($admin, $trail)->baca()['tanjakan']);
+
+        $this->actingAs($admin)->post(route('trails.geometry.choose', [$trail, 555]));
+
+        $draf = GeometryDraft::untuk($admin, $trail)->baca();
+        $this->assertNull($draf['tanjakan']);
+        $this->assertSame([], $draf['profil']);
+        $this->assertNull($draf['berkas']);
     }
 
     /**
@@ -142,11 +224,14 @@ class TrailGeometryImportTest extends TestCase
      */
     public function test_the_search_refuses_when_the_mountain_has_no_coordinates(): void
     {
-        Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => Trail::factory()->create()])
-            ->call('cariDiOsm')
-            ->assertSet('kandidat', [])
-            ->assertSee('belum dicatat');
+        $admin = $this->admin();
+        $trail = Trail::factory()->create();
+
+        $this->actingAs($admin)
+            ->post(route('trails.geometry.search', $trail))
+            ->assertSessionHas('galatOsm', fn (string $galat) => str_contains($galat, 'belum dicatat'));
+
+        $this->assertSame([], GeometryDraft::untuk($admin, $trail)->baca()['kandidat']);
     }
 
     /**
@@ -156,11 +241,48 @@ class TrailGeometryImportTest extends TestCase
     {
         Http::fake(['*' => Http::response('gagal', 503)]);
 
-        $component = Livewire::actingAs($this->admin())
-            ->test(TrailGeometryImport::class, ['trail' => $this->trailBerkoordinat()])
-            ->call('cariDiOsm');
+        $this->actingAs($this->admin())
+            ->post(route('trails.geometry.search', $this->trailBerkoordinat()))
+            ->assertSessionHas('galatOsm', fn (string $galat) => str_contains($galat, 'GPX'));
+    }
 
-        $this->assertStringContainsString('GPX', (string) $component->get('galat'));
+    /**
+     * Taksiran tanjakan ditulis hanya atas persetujuan kurator, dan asalnya tercatat di
+     * jejak audit sebagai taksiran, bukan angka resmi.
+     */
+    public function test_applying_the_elevation_estimate_is_audited(): void
+    {
+        $admin = $this->admin();
+        $trail = Trail::factory()->create(['elevation_gain_m' => null, 'elevation_loss_m' => null]);
+        $this->pratinjau($admin, $trail, $this->gpxBerketinggian());
+
+        $this->actingAs($admin)
+            ->post(route('trails.geometry.elevation', $trail))
+            ->assertSessionHas('status', 'Elevation gain dan loss diperbarui dari berkas GPX.');
+
+        $this->assertSame(150, $trail->fresh()->elevation_gain_m);
+        $this->assertSame(0, $trail->fresh()->elevation_loss_m);
+
+        $jejak = AuditLog::where('action', 'trail.elevation_applied')->sole();
+        $this->assertSame('taksiran dari berkas GPX', $jejak->after['sumber']);
+        $this->assertSame($admin->id, $jejak->actor_id);
+    }
+
+    private function pratinjau(User $admin, Trail $trail, UploadedFile $berkas): TestResponse
+    {
+        return $this->actingAs($admin)
+            ->from(route('trails.geometry', $trail))
+            ->post(route('trails.geometry.preview', $trail), ['berkas' => $berkas]);
+    }
+
+    private function osmMenjawab(): void
+    {
+        Http::fake(['*' => Http::response(['elements' => [[
+            'type' => 'way',
+            'id' => 555,
+            'tags' => ['highway' => 'path', 'name' => 'Jalur Pendakian Uji'],
+            'geometry' => $this->simpul(30),
+        ]]])]);
     }
 
     /**
@@ -195,6 +317,18 @@ class TrailGeometryImportTest extends TestCase
             .'</trkseg></trk></gpx>';
 
         return UploadedFile::fake()->createWithContent('jalur.gpx', $xml);
+    }
+
+    private function gpxBerketinggian(): UploadedFile
+    {
+        $xml = '<?xml version="1.0"?><gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1">'
+            .'<trk><trkseg>'
+            .'<trkpt lat="-7.9970" lon="112.9500"><ele>2000</ele></trkpt>'
+            .'<trkpt lat="-7.9950" lon="112.9505"><ele>2100</ele></trkpt>'
+            .'<trkpt lat="-7.9930" lon="112.9510"><ele>2150</ele></trkpt>'
+            .'</trkseg></trk></gpx>';
+
+        return UploadedFile::fake()->createWithContent('jalur-berketinggian.gpx', $xml);
     }
 
     private function admin(): User

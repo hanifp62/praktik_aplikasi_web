@@ -4,15 +4,13 @@ namespace Tests\Feature;
 
 use App\Enums\ExperienceLevel;
 use App\Enums\TripType;
-use App\Livewire\Goals\GoalForm;
-use App\Livewire\Reports\ConditionReportForm;
 use App\Models\RecommendationRun;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
-use Livewire\Livewire;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
@@ -42,12 +40,7 @@ class RateLimitTest extends TestCase
         $limit = (int) config('hiking.rate_limits.report_submissions_per_hour');
 
         for ($attempt = 0; $attempt < $limit + 3; $attempt++) {
-            Livewire::actingAs($user)
-                ->test(ConditionReportForm::class)
-                ->set('trail_id', $trail->id)
-                ->set('hike_date', now()->subDay()->toDateString())
-                ->set('condition_tags', ['MUDDY'])
-                ->call('save');
+            $this->lapor($user, $trail);
         }
 
         $this->assertSame(
@@ -64,21 +57,11 @@ class RateLimitTest extends TestCase
         $limit = (int) config('hiking.rate_limits.report_submissions_per_hour');
 
         for ($attempt = 0; $attempt < $limit; $attempt++) {
-            Livewire::actingAs($user)
-                ->test(ConditionReportForm::class)
-                ->set('trail_id', $trail->id)
-                ->set('hike_date', now()->subDay()->toDateString())
-                ->set('condition_tags', ['MUDDY'])
-                ->call('save');
+            $this->lapor($user, $trail);
         }
 
-        Livewire::actingAs($user)
-            ->test(ConditionReportForm::class)
-            ->set('trail_id', $trail->id)
-            ->set('hike_date', now()->subDay()->toDateString())
-            ->set('condition_tags', ['MUDDY'])
-            ->call('save')
-            ->assertHasErrors('form');
+        $this->lapor($user, $trail)
+            ->assertSessionHasErrors(['form' => sprintf('Anda sudah mengirim %d laporan dalam satu jam terakhir. Coba lagi dalam 60 menit.', $limit)]);
     }
 
     public function test_recommendation_runs_are_capped_per_hour(): void
@@ -90,13 +73,15 @@ class RateLimitTest extends TestCase
         $limit = (int) config('hiking.rate_limits.recommendation_runs_per_hour');
 
         for ($attempt = 0; $attempt < $limit + 2; $attempt++) {
-            Livewire::actingAs($user)
-                ->test(GoalForm::class)
-                ->set('trip_type', TripType::CAMPING->value)
-                ->call('save');
+            $this->actingAs($user)->post(route('goals.store'), ['trip_type' => TripType::CAMPING->value]);
         }
 
         $this->assertSame($limit, RecommendationRun::where('user_id', $user->id)->count());
+
+        // Penolakan disebut beserta kapan boleh mencoba lagi, bukan didiamkan.
+        $this->actingAs($user)
+            ->post(route('goals.store'), ['trip_type' => TripType::CAMPING->value])
+            ->assertSessionHasErrors('form');
     }
 
     public function test_the_limit_is_per_user_not_global(): void
@@ -107,22 +92,21 @@ class RateLimitTest extends TestCase
         $limit = (int) config('hiking.rate_limits.report_submissions_per_hour');
 
         for ($attempt = 0; $attempt < $limit; $attempt++) {
-            Livewire::actingAs($first)
-                ->test(ConditionReportForm::class)
-                ->set('trail_id', $trail->id)
-                ->set('hike_date', now()->subDay()->toDateString())
-                ->set('condition_tags', ['MUDDY'])
-                ->call('save');
+            $this->lapor($first, $trail);
         }
 
-        Livewire::actingAs($second)
-            ->test(ConditionReportForm::class)
-            ->set('trail_id', $trail->id)
-            ->set('hike_date', now()->subDay()->toDateString())
-            ->set('condition_tags', ['MUDDY'])
-            ->call('save')
-            ->assertHasNoErrors();
+        $this->lapor($second, $trail)
+            ->assertSessionHasNoErrors();
 
         $this->assertSame(1, TrailConditionReport::where('user_id', $second->id)->count());
+    }
+
+    private function lapor(User $user, Trail $trail): TestResponse
+    {
+        return $this->actingAs($user)->post(route('reports.store'), [
+            'trail_id' => $trail->id,
+            'hike_date' => now()->subDay()->toDateString(),
+            'condition_tags' => ['MUDDY'],
+        ]);
     }
 }

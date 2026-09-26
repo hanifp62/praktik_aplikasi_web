@@ -5,15 +5,12 @@ namespace Tests\Feature;
 use App\Enums\ExperienceLevel;
 use App\Enums\NavigationExperience;
 use App\Enums\ReadinessState;
-use App\Livewire\Trips\ReadinessDashboard;
-use App\Livewire\Trips\TripShow;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use App\Services\ReadinessService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -31,6 +28,8 @@ use Tests\TestCase;
  * "Data jalur ini belum dipublikasikan". Itu keliru: jalurnya justru pernah terbit lalu
  * ditarik. Pendaki dibiarkan menyangka datanya sedang disiapkan, padahal yang terjadi
  * kebalikannya, dan menunggu tidak akan mengubah apa pun.
+ *
+ * Halaman trip dan kesiapan kini React; yang diperiksa adalah props dari server.
  */
 class ArchivedTrailWithActiveTripTest extends TestCase
 {
@@ -85,6 +84,26 @@ class ArchivedTrailWithActiveTripTest extends TestCase
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    private function langkahKesiapan(TripPlan $trip): array
+    {
+        $props = $this->actingAs($trip->user)->get(route('trips.show', $trip))->assertOk()->viewData('page')['props'];
+
+        return collect($props['langkah'])->firstWhere('kunci', 'kesiapan');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function alasanKesiapan(TripPlan $trip): array
+    {
+        $props = $this->actingAs($trip->user)->get(route('trips.readiness', $trip))->assertOk()->viewData('page')['props'];
+
+        return collect($props['check']['penjelasan'])->pluck('baris')->flatten()->all();
+    }
+
+    /**
      * Yang terpenting: pemilik trip diberi tahu di halaman tripnya, bukan hanya kalau
      * ia kebetulan membuka halaman kesiapan.
      */
@@ -93,10 +112,12 @@ class ArchivedTrailWithActiveTripTest extends TestCase
         $trip = $this->tripKeJalurTerbit();
         $this->arsipkan($trip);
 
-        $page = Livewire::actingAs($trip->user)->test(TripShow::class, ['trip' => $trip->fresh()]);
+        $kesiapan = $this->langkahKesiapan($trip);
 
-        $page->assertSee('ditarik dari katalog');
-        $page->assertDontSee(ReadinessState::READY->label());
+        $this->assertSame('Jalur ditarik dari katalog', $kesiapan['keterangan']);
+        $this->assertTrue($kesiapan['peringatan']);
+        $this->assertNotSame(ReadinessState::READY->label(), $kesiapan['keterangan']);
+        $this->assertNotSame('selesai', $kesiapan['keadaan'], 'Langkah kesiapan tidak boleh tampak selesai untuk jalur yang ditarik.');
     }
 
     /**
@@ -109,9 +130,7 @@ class ArchivedTrailWithActiveTripTest extends TestCase
         $trip = $this->tripKeJalurTerbit();
         $this->arsipkan($trip);
 
-        Livewire::actingAs($trip->user)
-            ->test(TripShow::class, ['trip' => $trip->fresh()])
-            ->assertDontSee('perlu dinilai ulang');
+        $this->assertStringNotContainsString('perlu dinilai ulang', $this->langkahKesiapan($trip)['keterangan']);
     }
 
     public function test_the_readiness_page_names_the_withdrawal_instead_of_calling_it_unpublished(): void
@@ -119,10 +138,10 @@ class ArchivedTrailWithActiveTripTest extends TestCase
         $trip = $this->tripKeJalurTerbit();
         $this->arsipkan($trip);
 
-        $page = Livewire::actingAs($trip->user)->test(ReadinessDashboard::class, ['trip' => $trip->fresh()]);
+        $alasan = implode(' ', $this->alasanKesiapan($trip));
 
-        $page->assertDontSee('belum dipublikasikan');
-        $page->assertSee('ditarik dari katalog');
+        $this->assertStringNotContainsString('belum dipublikasikan', $alasan);
+        $this->assertStringContainsString('ditarik dari katalog', $alasan);
     }
 
     /**
@@ -134,10 +153,10 @@ class ArchivedTrailWithActiveTripTest extends TestCase
         $trip = $this->tripKeJalurTerbit();
         $trip->trail->update(['is_published' => false]);
 
-        Livewire::actingAs($trip->user)
-            ->test(ReadinessDashboard::class, ['trip' => $trip->fresh()])
-            ->assertSee('belum dipublikasikan')
-            ->assertDontSee('ditarik dari katalog');
+        $alasan = implode(' ', $this->alasanKesiapan($trip));
+
+        $this->assertStringContainsString('belum dipublikasikan', $alasan);
+        $this->assertStringNotContainsString('ditarik dari katalog', $alasan);
     }
 
     /**
@@ -145,10 +164,9 @@ class ArchivedTrailWithActiveTripTest extends TestCase
      */
     public function test_a_healthy_trip_says_nothing_about_withdrawal(): void
     {
-        $trip = $this->tripKeJalurTerbit();
+        $kesiapan = $this->langkahKesiapan($this->tripKeJalurTerbit());
 
-        Livewire::actingAs($trip->user)
-            ->test(TripShow::class, ['trip' => $trip])
-            ->assertDontSee('ditarik dari katalog');
+        $this->assertStringNotContainsString('ditarik dari katalog', $kesiapan['keterangan']);
+        $this->assertFalse($kesiapan['peringatan']);
     }
 }

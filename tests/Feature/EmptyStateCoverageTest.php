@@ -2,115 +2,143 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
  * Daftar yang kosong harus menjelaskan dirinya.
  *
- * Terukur sebelum diperbaiki: 39 halaman Livewire, satu memakai x-ui.empty-state, dan
- * dua belas perulangan menampilkan koleksi tanpa cabang apa pun untuk keadaan kosong.
- * Halaman yang datanya belum ada menampilkan judul, lalu kekosongan, lalu tidak ada
- * apa-apa lagi.
+ * Terukur sebelum diperbaiki: 39 halaman Livewire, satu memakai komponen keadaan kosong,
+ * dan dua belas perulangan menampilkan koleksi tanpa cabang apa pun untuk keadaan
+ * kosong. Halaman yang datanya belum ada menampilkan judul, lalu kekosongan, lalu tidak
+ * ada apa-apa lagi.
  *
  * PRD §104 menuntut sistem menjelaskan penyebabnya, bukan sekadar menampilkan daftar
  * kosong. Bagi pengelola, daftar kosong dan permintaan yang gagal terlihat persis sama,
  * dan keduanya menuntut tindakan yang berlawanan.
+ *
+ * Seluruh halaman kini React, jadi yang disapu adalah sumber resources/js/pages.
  */
 class EmptyStateCoverageTest extends TestCase
 {
+    use SumberReact;
+
     /**
-     * Komentar dibuang tanpa menggeser penomoran baris.
+     * Daftar yang tidak pernah kosong karena cara server membangunnya.
      *
-     * Versi pertama mengganti komentar multi-baris dengan satu spasi, dan nomor baris
-     * yang dilaporkannya lalu meleset di setiap berkas yang memuat komentar panjang,
-     * yaitu hampir semuanya. Laporan yang menunjuk baris yang salah lebih menyesatkan
-     * daripada laporan yang tidak menunjuk sama sekali.
+     * Padanan penanda "daftar tetap" pada versi Blade: dinyatakan beserta alasannya,
+     * bukan disembunyikan. Cabang keadaan kosong untuk keadaan yang mustahil adalah
+     * kode mati. Entri yang perulangannya sudah tidak ada ikut menggagalkan test, supaya
+     * daftar ini tidak menjadi tempat pengecualian yang terlupakan.
+     *
+     * @var array<string, array<string, string>>
      */
-    private function tanpaKomentar(string $isi): string
-    {
-        return preg_replace_callback(
-            '/\{\{--.*?--\}\}/s',
-            fn (array $m) => str_repeat("\n", substr_count($m[0], "\n")),
-            $isi
-        );
-    }
+    private const DAFTAR_TETAP = [
+        'pages/Admin/Usability.tsx' => [
+            'ringkasan.tugas' => 'satu baris per tugas di UsabilityStudyService::TUGAS',
+            'daftarTugas' => 'konstanta UsabilityStudyService::TUGAS',
+            'pernyataanSus' => 'sepuluh pernyataan UsabilityStudyService::PERNYATAAN_SUS',
+        ],
+        'pages/Community/ConditionReport.tsx' => [
+            'tags' => 'seluruh ConditionTag::cases()',
+        ],
+        'pages/Community/TrailContribution.tsx' => [
+            'kredensial' => 'halamannya menjawab 403 bagi pengguna tanpa kredensial berlaku',
+        ],
+        'pages/Community/TrailNews.tsx' => [
+            'cuaca' => 'satu entri per gunung yang diikuti, dan bagiannya hanya tampil bila ada yang diikuti',
+        ],
+        'pages/Onboarding/ProfileSetup.tsx' => [
+            'ringkasan' => 'sebelas baris tetap ringkasan profil, tampil hanya bila profilnya lengkap',
+        ],
+        'pages/Trails/Show.tsx' => [
+            'angkaKunci' => 'empat angka tetap dari TrailDetailPage; nilai yang hilang ditulis belum diketahui',
+            'rincian' => 'lima baris tetap dari TrailDetailPage',
+        ],
+        'pages/Trips/Preparation.tsx' => [
+            'kategori' => 'daftar persiapan dibangkitkan ketika trip belum punya item',
+        ],
+        'pages/Trips/Readiness.tsx' => [
+            'check.penjelasan' => 'kelompok tetap TripReadinessResource::penjelasan(); versi Blade melewatinya sebagai larik harfiah',
+        ],
+    ];
 
     /**
      * Diperiksa per perulangan, bukan per berkas.
      *
-     * Versi pertama memeriksa seluruh berkas sekaligus dan menuduh tiga view yang
-     * sebenarnya sudah dijaga @if beberapa baris di atas perulangannya, sekaligus
-     * membebaskan tiga perulangan lain hanya karena ada satu isEmpty() di berkas yang
-     * sama. Satu daftar yang dijaga tidak membuat daftar lain di berkas itu ikut aman.
+     * Satu daftar yang dijaga tidak membuat daftar lain di berkas yang sama ikut aman.
+     * Yang diperiksa hanya perulangan terluar yang menggambar elemen: perulangan di
+     * dalamnya menelusuri isi satu item yang sudah ada, dan <option> di dalam <select>
+     * adalah urusan placeholder dan validasi, bukan keadaan kosong §104.
      *
-     * Dua hal tidak ikut diperiksa, dan keduanya dinyatakan bukan disembunyikan:
-     * pengulangan atas larik harfiah, dan perulangan yang diberi penanda "daftar tetap".
-     * Keduanya koleksi yang ditetapkan di kode dan tidak pernah kosong, dan cabang untuk
-     * keadaan yang mustahil adalah kode mati.
+     * Perulangan dianggap terjaga bila panjang koleksinya diperiksa lebih dulu di berkas
+     * yang sama (`x.length === 0 ? ... : x.map(...)`), bila koleksinya larik harfiah di
+     * berkas itu, atau bila ia tercatat di DAFTAR_TETAP.
      */
     public function test_every_list_says_something_when_it_has_nothing(): void
     {
         $pelanggar = [];
+        $terpakai = [];
+        $diperiksa = 0;
 
-        foreach (File::allFiles(resource_path('views/livewire')) as $berkas) {
-            $mentah = explode("\n", $berkas->getContents());
-            $baris = explode("\n", $this->tanpaKomentar($berkas->getContents()));
-            $kedalaman = 0;
+        foreach ($this->berkasTsx('pages') as $berkas) {
+            $nama = 'pages/'.str_replace('\\', '/', $berkas->getRelativePathname());
+            $isi = $this->tanpaKomentarJs($berkas->getContents());
 
-            foreach ($baris as $nomor => $satu) {
-                $buka = preg_match_all('/@(?:foreach|forelse)\b/', $satu);
-                $tutup = preg_match_all('/@(?:endforeach|endforelse)\b/', $satu);
+            preg_match_all('/([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\.map\(/', $isi, $cocok, PREG_OFFSET_CAPTURE);
 
-                if (! preg_match('/@foreach\s*\(\s*(\$[\w>()\[\]\'-]+)/', $satu, $m)) {
-                    $kedalaman += $buka - $tutup;
+            $rentang = [];
+
+            foreach ($cocok[0] as $i => [$teks, $posisi]) {
+                $rentang[$i] = [$posisi, $this->penutupKurung($isi, $posisi + strlen($teks) - 1)];
+            }
+
+            foreach ($cocok[1] as $i => [$ekspresi, $posisi]) {
+                [$awal, $akhir] = $rentang[$i];
+
+                foreach ($rentang as $j => [$a, $b]) {
+                    if ($j !== $i && $a < $awal && $awal < $b) {
+                        continue 2;
+                    }
+                }
+
+                $tubuh = substr($isi, $awal, $akhir - $awal);
+
+                if (! str_contains($tubuh, '=>') || ! preg_match('/<([A-Za-z][\w.]*)/', $tubuh, $elemen) || $elemen[1] === 'option') {
+                    continue;
+                }
+
+                $diperiksa++;
+                $akar = explode('.', $ekspresi)[0];
+
+                if (isset(self::DAFTAR_TETAP[$nama][$ekspresi])) {
+                    $terpakai[$nama][$ekspresi] = true;
 
                     continue;
                 }
 
-                $terluar = $kedalaman === 0;
-                $kedalaman += $buka - $tutup;
-
-                // Hanya daftar utama halaman yang diperiksa. Perulangan di dalamnya
-                // menelusuri isi satu item yang sudah ada, dan item yang ada tidak
-                // pernah kosong seluruhnya; menambahkan keadaan kosong di sana adalah
-                // cabang untuk keadaan yang tidak dapat terjadi.
-                if (! $terluar) {
-                    continue;
-                }
-
-                $nama = preg_quote(explode('[', explode('-', $m[1])[0])[0], '/');
-
-                $sebelum = implode(' ', array_slice($baris, 0, $nomor));
-                $sesudah = implode(' ', array_slice($baris, $nomor, 40));
-
-                // Penanda dibaca dari berkas mentah: di salinan tanpa komentar ia sudah
-                // hilang, dan itu persis yang membuat versi sebelumnya melewatkannya.
-                $penanda = implode(' ', array_slice($mentah, max(0, $nomor - 4), 5));
-
-                // Perulangan yang menghasilkan <option> tidak ikut. Select yang kosong
-                // adalah urusan validasi formulir dan teks placeholder-nya, bukan urusan
-                // keadaan kosong §104, dan menyisipkan paragraf penjelas di dalam <select>
-                // menghasilkan markup yang tidak sah.
-                if (preg_match('/<option/', $sesudah)) {
-                    continue;
-                }
-
-                $terjaga = str_contains($penanda, 'daftar tetap')
-                    || preg_match('/@if\s*\([^)]*'.$nama.'/', $sebelum)
-                    || preg_match('/@(?:forelse|empty)/', $sesudah);
+                // Pemeriksaan kekosongan yang sungguhan, bukan sekadar menyebut .length:
+                // `x.length === -1` membaca panjangnya tetapi tidak pernah benar.
+                $x = preg_quote($ekspresi, '/');
+                $terjaga = preg_match('/!\s*'.$x.'\.length\b|\b'.$x.'\.length\s*(?:===\s*0\b|!==\s*0\b|>\s*0\b|>=\s*1\b|\?|&&)/', substr($isi, 0, $posisi))
+                    || preg_match('/\bconst\s+'.preg_quote($akar, '/').'\b[^=]*=\s*\[/', $isi);
 
                 if (! $terjaga) {
-                    $pelanggar[] = $berkas->getRelativePathname().':'.($nomor + 1);
+                    $pelanggar[] = $nama.':'.(substr_count(substr($isi, 0, $posisi), "\n") + 1).' ('.$ekspresi.')';
                 }
             }
         }
 
-        $this->assertSame(
-            [],
-            $pelanggar,
-            'Daftar tanpa keadaan kosong di: '.implode(', ', $pelanggar)
-        );
+        $this->assertGreaterThan(30, $diperiksa, 'Sapuan tidak menemukan daftar untuk diperiksa.');
+        $this->assertSame([], $pelanggar, 'Daftar tanpa keadaan kosong di: '.implode(', ', $pelanggar));
+
+        foreach (self::DAFTAR_TETAP as $nama => $daftar) {
+            foreach (array_keys($daftar) as $ekspresi) {
+                $this->assertTrue(
+                    isset($terpakai[$nama][$ekspresi]),
+                    "DAFTAR_TETAP menyebut {$ekspresi} di {$nama}, tetapi perulangannya tidak ditemukan lagi."
+                );
+            }
+        }
     }
 
     /**
@@ -122,27 +150,54 @@ class EmptyStateCoverageTest extends TestCase
     public function test_an_empty_state_explains_itself(): void
     {
         $telanjang = [];
+        $diperiksa = 0;
 
-        foreach (File::allFiles(resource_path('views')) as $berkas) {
-            $isi = $berkas->getContents();
+        foreach ($this->berkasTsx() as $berkas) {
+            foreach ($this->tagBernama($berkas->getContents(), 'EmptyState') as [$tag, $baris]) {
+                $diperiksa++;
 
-            if (! str_contains($isi, 'x-ui.empty-state')) {
-                continue;
-            }
-
-            preg_match_all('/<x-ui\.empty-state\b(.*?)\/>/s', $isi, $m);
-
-            foreach ($m[1] as $atribut) {
-                if (! str_contains($atribut, 'description')) {
-                    $telanjang[] = $berkas->getRelativePathname();
+                if (! preg_match('/\bdescription=(?:"[^"]*\S[^"]*"|\{)/', $tag)) {
+                    $telanjang[] = $berkas->getRelativePathname().':'.$baris;
                 }
             }
         }
 
-        $this->assertSame(
-            [],
-            $telanjang,
-            'Keadaan kosong tanpa penjelasan di: '.implode(', ', $telanjang)
-        );
+        $this->assertGreaterThan(3, $diperiksa, 'Sapuan tidak menemukan keadaan kosong untuk diperiksa.');
+        $this->assertSame([], $telanjang, 'Keadaan kosong tanpa penjelasan di: '.implode(', ', $telanjang));
+    }
+
+    /**
+     * Posisi ')' pasangan dari '(' di $buka. Untaian dilewati, supaya kurung di dalam
+     * teks tidak menggeser pasangannya.
+     */
+    private function penutupKurung(string $isi, int $buka): int
+    {
+        $kedalaman = 0;
+        $kutip = null;
+        $panjang = strlen($isi);
+
+        for ($i = $buka; $i < $panjang; $i++) {
+            $c = $isi[$i];
+
+            if ($kutip !== null) {
+                if ($c === '\\') {
+                    $i++;
+                } elseif ($c === $kutip) {
+                    $kutip = null;
+                }
+
+                continue;
+            }
+
+            if ($c === "'" || $c === '"' || $c === '`') {
+                $kutip = $c;
+            } elseif ($c === '(') {
+                $kedalaman++;
+            } elseif ($c === ')' && --$kedalaman === 0) {
+                return $i;
+            }
+        }
+
+        return $panjang;
     }
 }

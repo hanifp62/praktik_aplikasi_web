@@ -10,6 +10,7 @@ use App\Models\Trail;
 use App\Models\User;
 use App\Models\UserExperience;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -66,7 +67,8 @@ class ProgressLadderOnTrailDetailTest extends TestCase
         $this->actingAs($user)
             ->get(route('trails.show', $kandidat))
             ->assertOk()
-            ->assertSee('di atas tanjakan terberat yang pernah Anda tuntaskan');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('fit.tangga', fn ($kalimat) => str_contains((string) $kalimat, 'di atas tanjakan terberat yang pernah Anda tuntaskan')));
     }
 
     /**
@@ -83,6 +85,6 @@ class ProgressLadderOnTrailDetailTest extends TestCase
         $this->actingAs($user)
             ->get(route('trails.show', $kandidat))
             ->assertOk()
-            ->assertDontSee('tuntaskan');
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('fit.tangga', null));
     }
 }

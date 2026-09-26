@@ -3,14 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\ModerationStatus;
-use App\Livewire\Trails\TrailDetail;
 use App\Models\ReportThank;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Livewire\Livewire;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
@@ -23,7 +22,7 @@ use Tests\TestCase;
  *
  * Yang dihargai di sini kegunaannya, dan yang menilainya pendaki lain yang membacanya
  * sebelum berangkat. Karena itu seluruh test di bawah menjaga satu hal yang sama:
- * angkanya tidak boleh dapat dinaikkan sendiri.
+ * angkanya tidak boleh dapat dinaikkan sendiri. Aksinya kini rute POST reports.thanks.
  */
 class ReportThanksTest extends TestCase
 {
@@ -35,29 +34,38 @@ class ReportThanksTest extends TestCase
     {
         parent::setUp();
 
-        $this->trail = Trail::factory()->easy()->create();
+        $this->trail = Trail::factory()->easy()->published()->create();
     }
 
-    private function laporan(ModerationStatus $status = ModerationStatus::APPROVED, ?User $pelapor = null): TrailConditionReport
+    private function laporan(ModerationStatus $status = ModerationStatus::APPROVED, ?User $pelapor = null, ?Trail $trail = null): TrailConditionReport
     {
-        return TrailConditionReport::factory()->for($this->trail)->create([
+        return TrailConditionReport::factory()->for($trail ?? $this->trail)->create([
             'user_id' => ($pelapor ?? User::factory()->create())->id,
             'moderation_status' => $status->value,
             'hike_date' => now()->subDays(2)->toDateString(),
         ]);
     }
 
-    private function halaman(User $sebagai)
+    private function terimaKasih(User $sebagai, TrailConditionReport $laporan, bool $ya = true): TestResponse
     {
-        return Livewire::actingAs($sebagai)->test(TrailDetail::class, ['trail' => $this->trail]);
+        return $this->actingAs($sebagai)
+            ->from(route('trails.show', $this->trail))
+            ->post(route('reports.thanks', $laporan), ['ya' => $ya]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function halaman(User $sebagai): array
+    {
+        return $this->actingAs($sebagai)->get(route('trails.show', $this->trail))->assertOk()->viewData('page')['props'];
     }
 
     public function test_a_hiker_can_thank_a_report_that_helped_them(): void
     {
         $laporan = $this->laporan();
-        $pembaca = User::factory()->create();
 
-        $this->halaman($pembaca)->call('berterimaKasih', $laporan->id);
+        $this->terimaKasih(User::factory()->create(), $laporan)->assertRedirect(route('trails.show', $this->trail));
 
         $this->assertSame(1, ReportThank::where('trail_condition_report_id', $laporan->id)->count());
     }
@@ -70,8 +78,8 @@ class ReportThanksTest extends TestCase
         $laporan = $this->laporan();
         $pembaca = User::factory()->create();
 
-        $this->halaman($pembaca)->call('berterimaKasih', $laporan->id);
-        $this->halaman($pembaca->fresh())->call('berterimaKasih', $laporan->id);
+        $this->terimaKasih($pembaca, $laporan);
+        $this->terimaKasih($pembaca, $laporan);
 
         $this->assertSame(1, ReportThank::count());
     }
@@ -81,8 +89,8 @@ class ReportThanksTest extends TestCase
         $laporan = $this->laporan();
         $pembaca = User::factory()->create();
 
-        $this->halaman($pembaca)->call('berterimaKasih', $laporan->id);
-        $this->halaman($pembaca->fresh())->call('berterimaKasih', $laporan->id, false);
+        $this->terimaKasih($pembaca, $laporan);
+        $this->terimaKasih($pembaca, $laporan, false);
 
         $this->assertSame(0, ReportThank::count());
     }
@@ -96,51 +104,62 @@ class ReportThanksTest extends TestCase
         $pelapor = User::factory()->create();
         $laporan = $this->laporan(pelapor: $pelapor);
 
-        $this->halaman($pelapor)->call('berterimaKasih', $laporan->id);
+        $this->terimaKasih($pelapor, $laporan)->assertForbidden();
 
         $this->assertSame(0, ReportThank::count());
     }
 
     /**
      * Laporan yang belum lolos moderasi belum terlihat siapa pun, jadi tidak ada yang
-     * dapat menyatakan laporan itu menolongnya.
+     * dapat menyatakan laporan itu menolongnya. 404: keberadaannya tidak dikonfirmasi.
      */
     public function test_an_unmoderated_report_cannot_be_thanked(): void
     {
-        $laporan = $this->laporan(ModerationStatus::PENDING);
-
-        $this->halaman(User::factory()->create())->call('berterimaKasih', $laporan->id);
+        $this->terimaKasih(User::factory()->create(), $this->laporan(ModerationStatus::PENDING))->assertNotFound();
 
         $this->assertSame(0, ReportThank::count());
     }
 
     public function test_a_rejected_report_cannot_be_thanked(): void
     {
-        $laporan = $this->laporan(ModerationStatus::REJECTED);
-
-        $this->halaman(User::factory()->create())->call('berterimaKasih', $laporan->id);
+        $this->terimaKasih(User::factory()->create(), $this->laporan(ModerationStatus::REJECTED))->assertNotFound();
 
         $this->assertSame(0, ReportThank::count());
     }
 
     /**
-     * Laporan di jalur lain tidak dapat disentuh dari halaman ini.
+     * Jalur terarsip ditarik dari peredaran (halamannya 404), jadi laporannya juga tidak
+     * lagi terlihat untuk diberi terima kasih.
      */
-    public function test_a_report_from_another_trail_cannot_be_thanked_from_here(): void
+    public function test_a_report_on_an_archived_trail_cannot_be_thanked(): void
     {
-        $lain = TrailConditionReport::factory()->for(Trail::factory()->easy()->create())->create([
-            'user_id' => User::factory()->create()->id,
-            'moderation_status' => ModerationStatus::APPROVED->value,
-        ]);
+        $terarsip = Trail::factory()->easy()->published()->create(['archived_at' => now()]);
 
-        $this->halaman(User::factory()->create())->call('berterimaKasih', $lain->id);
+        $this->terimaKasih(User::factory()->create(), $this->laporan(trail: $terarsip))->assertNotFound();
 
         $this->assertSame(0, ReportThank::count());
     }
 
-    public function test_the_count_is_shown_on_the_report(): void
+    public function test_a_guest_cannot_thank_anything(): void
+    {
+        $this->post(route('reports.thanks', $this->laporan()), ['ya' => true])->assertRedirect(route('login'));
+
+        $this->assertSame(0, ReportThank::count());
+    }
+
+    public function test_the_intent_must_be_stated(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('reports.thanks', $this->laporan()), [])
+            ->assertSessionHasErrors('ya');
+
+        $this->assertSame(0, ReportThank::count());
+    }
+
+    public function test_the_count_and_the_readers_own_state_reach_the_page(): void
     {
         $laporan = $this->laporan();
+        $pembaca = User::factory()->create();
 
         foreach (range(1, 3) as $i) {
             ReportThank::create([
@@ -149,7 +168,25 @@ class ReportThanksTest extends TestCase
             ]);
         }
 
-        $this->halaman(User::factory()->create())->assertSee('3');
+        $this->terimaKasih($pembaca, $laporan);
+
+        $laporanDiHalaman = $this->halaman($pembaca)['komunitas']['reports'][0];
+
+        $this->assertSame(4, $laporanDiHalaman['thanksCount']);
+        $this->assertTrue($laporanDiHalaman['sudahTerimaKasih']);
+        $this->assertFalse($laporanDiHalaman['milikSaya']);
+    }
+
+    /**
+     * Pelapor tidak ditawari tombolnya pada laporannya sendiri.
+     */
+    public function test_the_reporter_sees_their_own_report_marked_as_theirs(): void
+    {
+        $pelapor = User::factory()->create();
+        $this->laporan(pelapor: $pelapor);
+
+        $this->assertTrue($this->halaman($pelapor)['komunitas']['reports'][0]['milikSaya']);
+        $this->assertStringContainsString('!r.milikSaya', file_get_contents(resource_path('js/components/trails/rinci/LaporanKomunitas.tsx')));
     }
 
     /**
@@ -164,18 +201,18 @@ class ReportThanksTest extends TestCase
             $this->laporan();
         }
 
-        // Render pemanasan: pemanggilan pertama mengisi cache snapshot status dan cuaca,
-        // sehingga tanpa ini yang terukur pemanasannya, bukan pengaruh jumlah laporan.
-        $this->halaman($pembaca)->html();
+        // Render pemanasan: pemanggilan pertama mengisi cache snapshot status dan cuaca.
+        $this->halaman($pembaca);
 
-        $sedikit = $this->hitungQuery(fn () => $this->halaman($pembaca)->html());
+        $sedikit = $this->hitungQuery(fn () => $this->halaman($pembaca));
 
         foreach (range(1, 8) as $i) {
             $this->laporan();
         }
 
-        $banyak = $this->hitungQuery(fn () => $this->halaman($pembaca)->html());
+        $banyak = $this->hitungQuery(fn () => $this->halaman($pembaca));
 
+        $this->assertGreaterThan(0, $sedikit);
         $this->assertSame($sedikit, $banyak, "Query tumbuh dari {$sedikit} menjadi {$banyak}.");
     }
 
@@ -188,6 +225,8 @@ class ReportThanksTest extends TestCase
         });
 
         $aksi();
+
+        DB::getEventDispatcher()->forget('Illuminate\Database\Events\QueryExecuted');
 
         return $jumlah;
     }

@@ -3,6 +3,7 @@
 @php
     /*
      * Ikon Phosphor berat regular, ditanam sebagai path.
+     * Lisensi: MIT, Copyright (c) 2023 Phosphor Icons; teks lengkap di resources/js/components/ui/LICENSE-phosphor.txt.
      *
      * Ditanam, bukan diimpor dari pustaka: yang dipakai aplikasi ini segelintir, dan
      * menambah dependensi demi lima bentuk menagih bita kepada setiap pengguna untuk

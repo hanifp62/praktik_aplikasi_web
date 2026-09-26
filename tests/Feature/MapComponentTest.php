@@ -2,135 +2,155 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
- * Komponen peta yang dapat dipakai ulang.
+ * Dasar peta bersama (resources/js/components/peta): hook usePetaDasar memegang pemuatan
+ * MapLibre, basemap, tema gelap, ukuran, dan kegagalan; WadahPeta memegang peran,
+ * nama, pesan gagal, dan atribusi. Keempat peta aplikasi (Jelajah, rincian jalur, mode
+ * pendakian, hasil pendakian) hanya menambahkan isinya.
  *
- * Sebelum ini MapLibre hanya dipakai sebagai kode sebaris di dalam hike mode, sehingga
- * halaman jalur menerima variabel geometry lalu tidak pernah menggambarnya, dan seluruh
- * pipeline GPX yang dibangun tidak punya satu pun konsumen di luar lapangan.
- *
- * Komponen ini dicabut dari kode hike mode yang sudah terbukti jalan, bukan ditulis
- * ulang, supaya perilaku peta di lapangan tidak bergeser diam-diam.
+ * Invarian di sini dulu dijaga pada komponen Blade x-ui.map. Halaman React tidak
+ * merender peta di server, jadi penjaganya membaca sumbernya dan props bersama.
  */
 class MapComponentTest extends TestCase
 {
+    /** @var list<string> */
+    private const PETA = [
+        'components/trails/PetaJelajah.tsx',
+        'components/trails/rinci/PetaJalur.tsx',
+        'components/trips/PetaPendakian.tsx',
+        'components/community/PetaGaris.tsx',
+    ];
+
     /**
-     * @param  array<string, mixed>  $data
+     * Setiap peta lewat dasar yang sama. Peta yang menulis ulang pemuatannya sendiri
+     * cepat atau lambat lupa satu dari hal yang dipegang dasar itu.
      */
-    private function render(array $data): string
+    public function test_every_map_draws_through_the_shared_base(): void
     {
-        return Blade::render(
-            '<x-ui.map :id="$id" :geometry="$geometry" :markers="$markers" :label="$label" />',
-            $data + ['id' => 'peta-uji', 'geometry' => null, 'markers' => [], 'label' => 'Peta jalur uji']
-        );
-    }
+        foreach (self::PETA as $berkas) {
+            $sumber = File::get(resource_path('js/'.$berkas));
 
-    private function garis(): array
-    {
-        return [
-            'type' => 'LineString',
-            'coordinates' => [[110.44, -7.45], [110.45, -7.46]],
-        ];
+            $this->assertStringContainsString('usePetaDasar(', $sumber, $berkas);
+            $this->assertStringContainsString('<WadahPeta', $sumber, $berkas);
+            $this->assertStringNotContainsString('new maplibregl.Map(', $sumber, $berkas);
+            $this->assertStringNotContainsString('role="img"', $sumber, $berkas);
+        }
     }
 
     /**
-     * Peta adalah wilayah interaktif, bukan gambar. role="img" menuntut teks alternatif
-     * yang tidak mungkin diberikan untuk peta yang dapat digeser, dan menyembunyikan
-     * isinya dari pembaca layar.
+     * Peta adalah wilayah interaktif yang bernama, bukan gambar. role="img" menuntut teks
+     * alternatif yang mustahil untuk peta yang dapat digeser.
      */
-    public function test_the_map_is_a_region_with_a_name_not_an_image(): void
+    public function test_the_map_is_a_named_region_not_an_image(): void
     {
-        $html = $this->render(['geometry' => $this->garis()]);
+        $wadah = File::get(resource_path('js/components/peta/WadahPeta.tsx'));
 
-        $this->assertStringContainsString('role="region"', $html);
-        $this->assertStringContainsString('aria-label="Peta jalur uji"', $html);
-        $this->assertStringNotContainsString('role="img"', $html);
+        $this->assertMatchesRegularExpression('/role="region" aria-label=[{]label[}]/', $wadah);
+        $this->assertStringNotContainsString('role="img"', $wadah);
     }
 
     /**
-     * Atribusi tile bukan hiasan: syarat pemakaian sumber petanya.
+     * Atribusi tile bukan hiasan: syarat pemakaian sumber petanya. Nilainya datang dari
+     * konfigurasi lewat props bersama, bukan ditulis di komponen.
      */
-    public function test_it_carries_the_tile_attribution(): void
+    public function test_it_carries_the_tile_attribution_from_config(): void
     {
-        $html = $this->render(['geometry' => $this->garis()]);
+        $this->assertStringContainsString('Peta: {peta.attribution}', File::get(resource_path('js/components/peta/WadahPeta.tsx')));
 
-        $this->assertStringContainsString(config('hiking.map.attribution'), $html);
+        $this->get('/')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('peta.attribution', config('hiking.map.attribution'))
+            ->where('peta.maxZoom', config('hiking.map.max_zoom')));
     }
 
     /**
-     * Wadah peta kosong lebih buruk daripada tidak ada peta: ia terbaca sebagai peta
-     * yang gagal dimuat, dan pendaki menyimpulkan aplikasinya rusak.
+     * CVE-2026-85061 (GHSA-jrc7-96c5-q579): kontrol atribusi bawaan MapLibre sampai 6.4.0
+     * merender HTML atribusi lewat innerHTML sesudah DOM.sanitize() yang dapat dilewati.
+     * Atribusi sudah tampil sebagai teks React di WadahPeta, jadi kontrol bawaan tidak
+     * dipasang dan tidak ada atribusi kustom. Peta hanya dibuat di usePetaDasar, sehingga
+     * satu opsi menutup keempat peta.
+     */
+    public function test_the_built_in_attribution_control_that_renders_html_stays_off(): void
+    {
+        $dasar = File::get(resource_path('js/components/peta/usePetaDasar.ts'));
+
+        $this->assertMatchesRegularExpression('/new maplibregl\.Map\(\{[^}]*?attributionControl: false/s', $dasar);
+
+        $pembuat = [];
+
+        foreach (File::allFiles(resource_path('js')) as $berkas) {
+            $isi = $berkas->getContents();
+            $jalur = str_replace('\\', '/', $berkas->getRelativePathname());
+
+            if (str_contains($isi, 'new maplibregl.Map(')) {
+                $pembuat[] = $jalur;
+            }
+
+            $this->assertStringNotContainsString('customAttribution', $isi, $jalur);
+            $this->assertStringNotContainsString('AttributionControl', $isi, $jalur);
+        }
+
+        $this->assertSame(['components/peta/usePetaDasar.ts'], $pembuat);
+    }
+
+    /**
+     * Konfigurasi dibaca dasar peta sendiri dari props bersama. Tanpa itu setiap peta
+     * mengulang blok konfigurasi yang sama, dan yang lupa menghasilkan peta kosong.
+     */
+    public function test_the_base_reads_its_own_configuration(): void
+    {
+        $dasar = File::get(resource_path('js/components/peta/usePetaDasar.ts'));
+
+        $this->assertStringContainsString('usePage<PropsBersama>().props', $dasar);
+        $this->assertStringContainsString('konfigurasi.rasterTiles', $dasar);
+        $this->assertStringContainsString('konfigurasi.maxZoom', $dasar);
+    }
+
+    /**
+     * Wadah peta kosong terbaca sebagai peta yang gagal dimuat. Hasil pendakian tanpa
+     * garis dan tanpa pos tidak menggambar kotak sama sekali.
      */
     public function test_nothing_is_drawn_when_there_is_nothing_to_draw(): void
     {
-        $html = $this->render([]);
+        $garis = File::get(resource_path('js/components/community/PetaGaris.tsx'));
 
-        $this->assertStringNotContainsString('role="region"', $html);
-        $this->assertSame('', trim($html));
-    }
-
-    public function test_markers_alone_are_enough_to_draw_a_map(): void
-    {
-        $html = $this->render([
-            'markers' => [['lng' => 110.44, 'lat' => -7.45, 'label' => 'Pos 1']],
-        ]);
-
-        $this->assertStringContainsString('role="region"', $html);
-        $this->assertStringContainsString('Pos 1', $html);
+        $this->assertMatchesRegularExpression('/if [(][^)]*[)] [{]\s*return null;/', $garis);
     }
 
     /**
-     * Dua peta dalam satu halaman adalah keadaan yang pasti terjadi begitu hasil
-     * rekomendasi ikut menggambar jalurnya. Id yang bertabrakan membuat peta kedua
-     * menimpa yang pertama.
-     */
-    public function test_two_maps_on_one_page_do_not_collide(): void
-    {
-        $pertama = $this->render(['id' => 'peta-satu', 'geometry' => $this->garis()]);
-        $kedua = $this->render(['id' => 'peta-dua', 'geometry' => $this->garis()]);
-
-        $this->assertStringContainsString('id="peta-satu"', $pertama);
-        $this->assertStringContainsString('id="peta-dua"', $kedua);
-        $this->assertStringNotContainsString('peta-satu', $kedua);
-    }
-
-    /**
-     * Konfigurasi dibaca komponen sendiri, bukan dioper tiap pemanggil. Tanpa itu setiap
-     * komponen Livewire yang memakai peta harus mengulang blok konfigurasi yang sama,
-     * dan yang lupa mengulangnya menghasilkan peta kosong tanpa pesan galat.
-     */
-    public function test_the_component_reads_its_own_configuration(): void
-    {
-        $html = $this->render(['geometry' => $this->garis()]);
-
-        $this->assertStringContainsString((string) config('hiking.map.max_zoom'), $html);
-    }
-
-    /**
-     * MapLibre dimuat malas. Memuatnya di setiap halaman mengembalikan beban 900 kB yang
-     * sudah pernah ditekan ke 57 kB.
+     * MapLibre (787 kB) dimuat malas lewat window.muatPeta. Impor statis di mana pun
+     * mengembalikan beban itu ke setiap halaman. Impor tipe tidak ikut terbundel.
      */
     public function test_maplibre_is_still_loaded_lazily(): void
     {
-        $html = $this->render(['geometry' => $this->garis()]);
+        foreach (File::allFiles(resource_path('js')) as $berkas) {
+            $isi = $berkas->getContents();
 
-        $this->assertStringContainsString('window.muatPeta', $html);
+            $this->assertDoesNotMatchRegularExpression("/^\s*import\s+(?!type\s)[^;]*from\s+'maplibre-gl'/m", $isi, $berkas->getRelativePathname());
+            $this->assertDoesNotMatchRegularExpression("/^\s*import\s+'maplibre-gl'/m", $isi, $berkas->getRelativePathname());
+        }
+
+        $this->assertStringContainsString("import('maplibre-gl')", File::get(resource_path('js/dasar.js')));
+        $this->assertMatchesRegularExpression('/window\s*[.]muatPeta[(][)]/', File::get(resource_path('js/components/peta/usePetaDasar.ts')));
     }
 
     /**
-     * Peta dibaca justru ketika sinyalnya paling tipis. Wadah abu-abu yang diam terbaca
-     * sebagai aplikasi rusak, sedangkan menyebut bahwa daftar pos tetap dapat dipakai
-     * mengubah kebuntuan menjadi keterangan. Pesan ini dibawa dari hike mode dan tidak
-     * boleh hilang dalam pencabutan komponen.
+     * Peta dibaca justru ketika sinyal paling tipis. Kegagalan diakui dengan kalimat yang
+     * menyebut apa yang tetap dapat dipakai, dan galatnya masuk konsol.
      */
     public function test_a_failure_to_load_the_map_is_admitted_not_left_silent(): void
     {
-        $html = $this->render(['geometry' => $this->garis()]);
+        $dasar = File::get(resource_path('js/components/peta/usePetaDasar.ts'));
+        $wadah = File::get(resource_path('js/components/peta/WadahPeta.tsx'));
 
-        $this->assertStringContainsString('Peta gagal dimuat', $html);
-        $this->assertStringContainsString('tetap dapat dipakai', $html);
+        $this->assertMatchesRegularExpression('/[.]catch[(].*console[.]error.*setGagal[(]true[)]/s', $dasar);
+        $this->assertStringContainsString('Peta gagal dimuat. {cadangan}', $wadah);
+
+        foreach (self::PETA as $berkas) {
+            $this->assertMatchesRegularExpression('/cadangan(=|\s*=\s*)/', File::get(resource_path('js/'.$berkas)), $berkas);
+        }
     }
 }

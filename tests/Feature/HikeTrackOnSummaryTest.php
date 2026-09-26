@@ -13,6 +13,8 @@ use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -75,7 +77,12 @@ class HikeTrackOnSummaryTest extends TestCase
         }
     }
 
-    public function test_the_recorded_track_is_drawn(): void
+    private function sumber(): string
+    {
+        return File::get(resource_path('js/pages/Community/HikeSummary.tsx'));
+    }
+
+    public function test_the_recorded_track_is_drawn_in_recording_order(): void
     {
         [$user, $trip, $sesi] = $this->pendakianSelesai();
         $this->rekamJejak($sesi);
@@ -83,23 +90,24 @@ class HikeTrackOnSummaryTest extends TestCase
         $this->actingAs($user)
             ->get(route('history.summary', $trip))
             ->assertOk()
-            ->assertSee('Jejak yang Anda tempuh');
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('jejak.geometri.type', 'LineString')
+                ->has('jejak.geometri.coordinates', 4)
+                // GeoJSON menulis bujur lebih dulu.
+                ->where('jejak.geometri.coordinates.0', [110.44, -7.45]));
     }
 
     /**
-     * Jejak dan jalur resmi tidak boleh tertukar. Jejak yang mirip jalur resmi membuat
-     * pendaki mengira aplikasi ini memverifikasi bahwa ia berjalan di jalur yang benar,
-     * dan aplikasi ini tidak melakukan itu.
+     * Jejak dan jalur resmi tidak boleh tertukar: masing-masing punya kartu dan
+     * kalimatnya sendiri.
      */
     public function test_the_track_is_never_confused_with_the_official_line(): void
     {
-        [$user, $trip, $sesi] = $this->pendakianSelesai();
-        $this->rekamJejak($sesi);
+        $sumber = $this->sumber();
 
-        $halaman = $this->actingAs($user)->get(route('history.summary', $trip));
-
-        $halaman->assertSee('Jejak yang Anda tempuh');
-        $halaman->assertSee('bukan penilaian apakah Anda berjalan di jalur yang benar');
+        $this->assertStringContainsString('Jejak yang Anda tempuh', $sumber);
+        $this->assertStringContainsString('bukan penilaian apakah Anda berjalan di jalur yang benar', $sumber);
+        $this->assertStringContainsString('Garis ini adalah jalur resmi, bukan rekaman GPS perjalanan Anda.', $sumber);
     }
 
     /**
@@ -113,7 +121,7 @@ class HikeTrackOnSummaryTest extends TestCase
         $this->actingAs($user)
             ->get(route('history.summary', $trip))
             ->assertOk()
-            ->assertDontSee('Jejak yang Anda tempuh');
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('jejak', null));
     }
 
     /**
@@ -127,30 +135,42 @@ class HikeTrackOnSummaryTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('history.summary', $trip))
-            ->assertDontSee('Jejak yang Anda tempuh');
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('jejak', null));
     }
 
     /**
-     * Hak menghapus harus terjangkau dari tempat jejaknya terlihat, bukan disembunyikan
-     * di halaman pengaturan yang terpisah.
+     * Hak menghapus terjangkau dari tempat jejaknya terlihat: halaman menerima sesi yang
+     * tepat, memanggil rute hapus yang sudah ada, dan setelahnya jejaknya hilang tanpa
+     * menghapus pendakiannya.
      */
-    public function test_the_delete_control_sits_where_the_track_is_shown(): void
+    public function test_the_track_can_be_deleted_from_where_it_is_shown(): void
     {
         [$user, $trip, $sesi] = $this->pendakianSelesai();
         $this->rekamJejak($sesi);
+        $halaman = route('history.summary', $trip);
 
-        $this->actingAs($user)
-            ->get(route('history.summary', $trip))
-            ->assertSee(route('hike.track.destroy', $sesi), escape: false);
+        $this->actingAs($user)->get($halaman)->assertInertia(fn (AssertableInertia $page) => $page->where('jejak.sesi', $sesi->id));
+        $this->assertStringContainsString('destroy.url(jejak.sesi)', $this->sumber());
+
+        $this->actingAs($user)->from($halaman)->delete(route('hike.track.destroy', $sesi))->assertRedirect($halaman);
+
+        $this->assertSame(0, HikeTrackPoint::where('hiking_session_id', $sesi->id)->count());
+        $this->assertNotNull($trip->fresh()->history, 'Pendakiannya sendiri tetap tersimpan.');
+
+        $this->actingAs($user)->get($halaman)->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('jejak', null)
+            ->where('flash.status', 'Jejak pendakian dihapus.'));
     }
 
-    public function test_another_hiker_cannot_see_the_track(): void
+    public function test_another_hiker_can_neither_see_nor_delete_the_track(): void
     {
         [, $trip, $sesi] = $this->pendakianSelesai();
         $this->rekamJejak($sesi);
+        $orangLain = User::factory()->create();
 
-        $this->actingAs(User::factory()->create())
-            ->get(route('history.summary', $trip))
-            ->assertForbidden();
+        $this->actingAs($orangLain)->get(route('history.summary', $trip))->assertForbidden();
+        $this->actingAs($orangLain)->delete(route('hike.track.destroy', $sesi))->assertForbidden();
+
+        $this->assertSame(4, HikeTrackPoint::where('hiking_session_id', $sesi->id)->count());
     }
 }

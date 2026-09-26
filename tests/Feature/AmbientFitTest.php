@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\RouteFitLabel;
 use App\Models\HikingGoal;
 use App\Models\Mountain;
 use App\Models\Profile;
@@ -11,6 +12,8 @@ use App\Models\User;
 use App\Models\UserExperience;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -52,29 +55,69 @@ class AmbientFitTest extends TestCase
     {
         $this->jalurTerbit();
 
-        $halaman = $this->actingAs($this->pendakiDenganProfil())->get(route('trails.index'));
+        $this->actingAs($this->pendakiDenganProfil())
+            ->get(route('trails.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('trails.data.0.fit.denganRencana', false)
+                ->whereNot('trails.data.0.fit.label', null));
+    }
 
-        $halaman->assertOk();
-        $halaman->assertSee('Kecocokan dasar');
+    /**
+     * R-004: label kecocokan yang boleh dilihat publik hanya tiga, COCOK, PERLU
+     * PERSIAPAN, dan KURANG COCOK.
+     *
+     * Dijaga di tiga lapis, karena label keempat dapat menyelinap di salah satunya:
+     * enum di server, teks yang dikirim ke halaman, dan tipe label di React yang
+     * menentukan warna dan simbolnya. Ketiadaan penilaian ditulis "Tidak dinilai",
+     * bukan label keempat.
+     */
+    public function test_only_the_three_public_fit_labels_reach_the_page(): void
+    {
+        $this->assertSame(['COCOK', 'PERLU_PERSIAPAN', 'KURANG_COCOK'], array_column(RouteFitLabel::cases(), 'value'));
+
+        Trail::factory()->count(3)->for(Mountain::factory()->create())->published()->create();
+
+        $baris = $this->actingAs($this->pendakiDenganProfil())
+            ->get(route('trails.index'))
+            ->viewData('page')['props']['trails']['data'];
+
+        $this->assertNotEmpty($baris);
+
+        $terbaca = array_map(fn (RouteFitLabel $l) => $l->label(), RouteFitLabel::cases());
+
+        foreach ($baris as $satu) {
+            $this->assertContains($satu['fit']['label'], ['COCOK', 'PERLU_PERSIAPAN', 'KURANG_COCOK', null]);
+            $this->assertContains($satu['fit']['labelText'], [...$terbaca, 'Tidak dinilai']);
+        }
+
+        $tipe = "'COCOK' | 'PERLU_PERSIAPAN' | 'KURANG_COCOK' | null";
+        $this->assertStringContainsString("export type LabelFit = {$tipe};", File::get(resource_path('js/components/ui/FitBadge.tsx')));
+        $this->assertStringContainsString("label: {$tipe};", File::get(resource_path('js/components/trails/types.ts')));
     }
 
     /**
      * Label tidak pernah berdiri sendiri. Label tanpa alasan adalah vonis, dan §90
      * menuntut pembacanya memahami sebabnya tanpa membuka dokumentasi teknis.
+     *
+     * Alasannya dikirim bersama barisnya; tombol "Kenapa?" membukanya di halaman React
+     * tanpa bolak-balik ke server, jadi yang dijaga di sini adalah alasannya ada dan
+     * tidak kosong untuk setiap baris yang berlabel.
      */
-    public function test_the_label_never_appears_without_its_reason(): void
+    public function test_the_browse_page_ships_a_fit_reason_with_every_label(): void
     {
         $this->jalurTerbit();
 
-        $isi = $this->actingAs($this->pendakiDenganProfil())
+        $data = $this->actingAs($this->pendakiDenganProfil())
             ->get(route('trails.index'))
-            ->getContent();
+            ->viewData('page')['props']['trails']['data'];
 
-        $this->assertSame(
-            substr_count($isi, 'data-fit-label'),
-            substr_count($isi, 'data-fit-reason'),
-            'Setiap label kecocokan wajib ditemani satu alasan.'
-        );
+        $this->assertNotEmpty($data);
+
+        foreach ($data as $baris) {
+            $this->assertNotNull($baris['fit']);
+            $this->assertNotSame('', trim($baris['fit']['alasan']), $baris['name'].' berlabel tanpa alasan.');
+        }
     }
 
     /**
@@ -87,11 +130,12 @@ class AmbientFitTest extends TestCase
     {
         $this->jalurTerbit();
 
-        $halaman = $this->actingAs(User::factory()->create())->get(route('trails.index'));
-
-        $halaman->assertOk();
-        $halaman->assertDontSee('data-fit-label', escape: false);
-        $halaman->assertSee('Lengkapi profil');
+        $this->actingAs(User::factory()->create())
+            ->get(route('trails.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('auth.user.hasCompletedProfile', false)
+                ->where('trails.data.0.fit', null));
     }
 
     /**
@@ -161,11 +205,14 @@ class AmbientFitTest extends TestCase
     {
         $trail = $this->jalurTerbit();
 
-        $halaman = $this->actingAs($this->pendakiDenganProfil())->get(route('trails.show', $trail));
+        $this->actingAs($this->pendakiDenganProfil())
+            ->get(route('trails.show', $trail))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trails/Show')
+                ->where('fit.faktor', fn ($faktor) => collect($faktor)->contains('label', 'Kesesuaian pengalaman')));
 
-        $halaman->assertOk();
-        $halaman->assertSee('Mengapa demikian');
-        $halaman->assertSee('Kesesuaian pengalaman');
+        $this->assertStringContainsString('Mengapa demikian', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     /**
@@ -181,10 +228,15 @@ class AmbientFitTest extends TestCase
     {
         $trail = $this->jalurTerbit();
 
-        $halaman = $this->actingAs($this->pendakiDenganProfil())->get(route('trails.show', $trail));
+        $this->actingAs($this->pendakiDenganProfil())
+            ->get(route('trails.show', $trail))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('fit.denganRencana', false));
 
-        $halaman->assertOk();
-        $halaman->assertSee('Kecocokan dasar');
+        $this->assertStringContainsString(
+            "fit.denganRencana ? 'untuk rencana ini' : 'Kecocokan dasar'",
+            file_get_contents(resource_path('js/pages/Trails/Show.tsx'))
+        );
     }
 
     /**
@@ -199,18 +251,17 @@ class AmbientFitTest extends TestCase
         $trail = $this->jalurTerbit();
         HikingGoal::factory()->for($user)->create();
 
-        $halaman = $this->actingAs($user)->get(route('trails.show', $trail));
-
-        $halaman->assertOk();
-        $halaman->assertSee('untuk rencana ini');
-        $halaman->assertDontSee('Kecocokan dasar');
+        $this->actingAs($user)
+            ->get(route('trails.show', $trail))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('fit.denganRencana', true));
     }
 
     /**
      * Halaman trip menampilkan kecocokan yang tajam, bukan yang dasar.
      *
      * Trip selalu punya goal (relasi hiking_goal_id), jadi variannya wajib
-     * denganRencana: true, yaitu baris "untuk rencana ini" pada fit-line, bukan
+     * denganRencana: true, yaitu baris "untuk rencana ini" pada FitTrip, bukan
      * "Kecocokan dasar" yang dipakai halaman jelajah tanpa rencana.
      */
     public function test_the_trip_page_shows_the_plan_aware_fit_for_its_trail(): void
@@ -223,11 +274,17 @@ class AmbientFitTest extends TestCase
             'hiking_goal_id' => $goal->id,
         ]);
 
-        $halaman = $this->actingAs($user)->get(route('trips.show', $trip));
+        $this->actingAs($user)->get(route('trips.show', $trip))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Show')
+                ->where('fit.denganRencana', true)
+                ->where('fit.alasan', fn (?string $alasan) => filled($alasan)));
 
-        $halaman->assertOk();
-        $halaman->assertSee('untuk rencana ini');
-        $halaman->assertSee('data-fit-reason', escape: false);
+        // Halaman trip React: alasannya selalu dirender di samping label (§89).
+        $komponen = File::get(resource_path('js/components/trips/FitTrip.tsx'));
+        $this->assertStringContainsString('untuk rencana ini', $komponen);
+        $this->assertStringContainsString('data-fit-reason', $komponen);
     }
 
     /**
@@ -249,32 +306,30 @@ class AmbientFitTest extends TestCase
             'hiking_goal_id' => $goal->id,
         ]);
 
-        $halaman = $this->actingAs($user)->get(route('trips.index'));
+        $this->actingAs($user)->get(route('trips.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Index')
+                ->where('trips.data.0.fit.denganRencana', false)
+                ->where('trips.data.0.fit.alasan', fn (?string $alasan) => filled($alasan)));
 
-        $halaman->assertOk();
-        $halaman->assertSee('data-fit-reason', escape: false);
-        $halaman->assertSee('Kecocokan dasar');
+        $this->assertStringContainsString('Kecocokan dasar', File::get(resource_path('js/components/trips/FitTrip.tsx')));
     }
 
     /**
-     * Item G tinjauan akhir: <x-ui.fit-line> tidak memakai $attributes->merge(), jadi
-     * class="mb-6" yang dipasang trip-show.blade.php di sekelilingnya dibuang diam-diam
-     * -- ruang antara ringkasan kecocokan dan kartu di bawahnya hilang tanpa siapa pun
-     * memberi tahu.
+     * Item G tinjauan akhir: komponen baris kecocokan versi Blade membuang kelas yang
+     * dipasang halaman trip di sekelilingnya (class="mb-6") diam-diam -- ruang antara
+     * ringkasan kecocokan dan kartu di bawahnya hilang tanpa siapa pun memberi tahu.
      */
     public function test_the_trip_pages_fit_line_keeps_its_wrapper_class(): void
     {
-        $user = $this->pendakiDenganProfil();
-        $trail = $this->jalurTerbit();
-        $trip = TripPlan::factory()->for($user)->create(['trail_id' => $trail->id]);
+        // Halaman trip kini React: ruang di bawah ringkasan kecocokan dioper sebagai
+        // className, dan komponennya wajib menggabungkannya, bukan membuangnya.
+        $halaman = File::get(resource_path('js/pages/Trips/Show.tsx'));
+        $komponen = File::get(resource_path('js/components/trips/FitTrip.tsx'));
 
-        $isi = $this->actingAs($user)->get(route('trips.show', $trip))->getContent();
-
-        $this->assertMatchesRegularExpression(
-            '/class="[^"]*\bmb-6\b[^"]*"[^>]*>\s*<span[^>]*data-fit-label/s',
-            $isi,
-            'class="mb-6" dari trip-show.blade.php dibuang oleh fit-line yang tidak memakai $attributes->merge().'
-        );
+        $this->assertStringContainsString('<FitTrip fit={fit} className="mb-6" />', $halaman);
+        $this->assertMatchesRegularExpression('/className=\{kelas\([^)]*,\s*className\)\}/', $komponen);
     }
 
     /**

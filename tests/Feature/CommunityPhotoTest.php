@@ -12,13 +12,10 @@ use Tests\TestCase;
 /**
  * Foto komunitas dikembalikan kepada pendaki.
  *
- * Foto yang diunggah pendaki selama ini hanya tampil di antrean moderasi. Aplikasi
- * mengumpulkan gambar gunung lalu menyembunyikannya dari orang yang paling
- * membutuhkannya, padahal foto kondisi terkini adalah satu-satunya hal yang dapat
- * menunjukkan bahwa jembatan di Pos 3 putus atau sabananya sedang terbakar.
- *
- * Aturan aksesnya sudah benar sejak awal: policy mengizinkan siapa pun melihat foto
- * laporan yang lolos moderasi. Yang belum ada hanya tempat menampilkannya.
+ * Foto kondisi terkini adalah satu-satunya hal yang dapat menunjukkan bahwa jembatan di
+ * Pos 3 putus atau sabananya sedang terbakar. Aturan aksesnya sudah benar sejak awal:
+ * policy mengizinkan siapa pun melihat foto laporan yang lolos moderasi. Yang dijaga di
+ * sini: hanya foto seperti itu yang sampai ke props halaman jalur.
  */
 class CommunityPhotoTest extends TestCase
 {
@@ -34,9 +31,23 @@ class CommunityPhotoTest extends TestCase
         ]);
     }
 
-    private function bukaJalur(Trail $trail)
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function laporanDiHalaman(Trail $trail): array
     {
-        return $this->actingAs(User::factory()->create())->get(route('trails.show', $trail));
+        return $this->actingAs(User::factory()->create())
+            ->get(route('trails.show', $trail))
+            ->assertOk()
+            ->viewData('page')['props']['komunitas']['reports'];
+    }
+
+    /**
+     * @return array<int, string|null>
+     */
+    private function foto(Trail $trail): array
+    {
+        return array_column($this->laporanDiHalaman($trail), 'photoUrl');
     }
 
     public function test_an_approved_photo_is_shown_to_hikers(): void
@@ -44,9 +55,7 @@ class CommunityPhotoTest extends TestCase
         $trail = Trail::factory()->published()->easy()->create();
         $laporan = $this->laporan($trail, ModerationStatus::APPROVED);
 
-        $this->bukaJalur($trail)
-            ->assertOk()
-            ->assertSee(route('reports.photo', $laporan), escape: false);
+        $this->assertSame([route('reports.photo', $laporan)], $this->foto($trail));
     }
 
     /**
@@ -58,9 +67,8 @@ class CommunityPhotoTest extends TestCase
         $trail = Trail::factory()->published()->easy()->create();
         $laporan = $this->laporan($trail, ModerationStatus::PENDING);
 
-        $this->bukaJalur($trail)
-            ->assertOk()
-            ->assertDontSee(route('reports.photo', $laporan), escape: false);
+        $this->assertNotContains(route('reports.photo', $laporan), $this->foto($trail));
+        $this->assertStringNotContainsString('laporan/uji.jpg', json_encode($this->laporanDiHalaman($trail)));
     }
 
     public function test_a_rejected_photo_never_appears(): void
@@ -68,9 +76,7 @@ class CommunityPhotoTest extends TestCase
         $trail = Trail::factory()->published()->easy()->create();
         $laporan = $this->laporan($trail, ModerationStatus::REJECTED);
 
-        $this->bukaJalur($trail)
-            ->assertOk()
-            ->assertDontSee(route('reports.photo', $laporan), escape: false);
+        $this->assertNotContains(route('reports.photo', $laporan), $this->foto($trail));
     }
 
     public function test_a_photo_from_another_trail_never_appears(): void
@@ -78,38 +84,38 @@ class CommunityPhotoTest extends TestCase
         $trail = Trail::factory()->published()->easy()->create();
         $lain = $this->laporan(Trail::factory()->published()->easy()->create(), ModerationStatus::APPROVED);
 
-        $this->bukaJalur($trail)
-            ->assertOk()
-            ->assertDontSee(route('reports.photo', $lain), escape: false);
+        $this->assertNotContains(route('reports.photo', $lain), $this->foto($trail));
     }
 
     /**
-     * Foto tanpa keterangan siapa dan kapan hanyalah gambar gunung. Yang membuatnya
-     * berguna justru tanggalnya: foto sabana hijau dari delapan bulan lalu menyesatkan
-     * pendaki yang berangkat musim kemarau.
+     * Foto tanpa keterangan siapa dan kapan hanyalah gambar gunung: foto sabana hijau dari
+     * delapan bulan lalu menyesatkan pendaki yang berangkat musim kemarau.
      */
     public function test_each_photo_carries_who_took_it_and_when(): void
     {
         $trail = Trail::factory()->published()->easy()->create();
         $this->laporan($trail, ModerationStatus::APPROVED);
 
-        $halaman = $this->bukaJalur($trail);
+        $laporan = $this->laporanDiHalaman($trail)[0];
 
-        $halaman->assertSee('Rina Pendaki');
-        $halaman->assertSee(now()->subDays(3)->translatedFormat('d M Y'));
+        $this->assertSame('Rina Pendaki', $laporan['pelapor']);
+        $this->assertSame(now()->subDays(3)->translatedFormat('d M Y'), $laporan['tanggalPendakian']);
+        $this->assertStringContainsString($laporan['tanggalPendakian'], $laporan['photoAlt']);
     }
 
     /**
-     * PRD §92: masukan komunitas tidak boleh terbaca sebagai keterangan resmi. Foto
-     * adalah bentuk masukan yang paling meyakinkan sekaligus paling mudah disalahartikan
-     * sebagai keterangan pengelola, jadi penandanya harus ikut.
+     * PRD §92: masukan komunitas tidak boleh terbaca sebagai keterangan resmi. Foto adalah
+     * bentuk masukan yang paling meyakinkan, jadi label "Komunitas" ikut di kartunya, dan
+     * foto tetap di dalam laporannya, bukan gambar utama halaman (R-017).
      */
     public function test_the_photos_are_marked_as_community_input_not_official(): void
     {
-        $trail = Trail::factory()->published()->easy()->create();
-        $this->laporan($trail, ModerationStatus::APPROVED);
+        $kartu = file_get_contents(resource_path('js/components/trails/rinci/LaporanKomunitas.tsx'));
 
-        $this->bukaJalur($trail)->assertSee('community-', escape: false);
+        $this->assertStringContainsString('<LabelKomunitas />', $kartu);
+        $this->assertStringContainsString('Laporan kondisi dari komunitas', $kartu);
+        $this->assertStringContainsString('bg-community-50', file_get_contents(resource_path('js/components/trails/rinci/LabelSumber.tsx')));
+        $this->assertStringNotContainsString('<img', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     /**
@@ -120,8 +126,7 @@ class CommunityPhotoTest extends TestCase
         $trail = Trail::factory()->published()->easy()->create();
         $this->laporan($trail, ModerationStatus::APPROVED, foto: null);
 
-        $this->bukaJalur($trail)
-            ->assertOk()
-            ->assertDontSee('<img', escape: false);
+        $this->assertSame([null], $this->foto($trail));
+        $this->assertStringContainsString('{r.photoUrl ? (', file_get_contents(resource_path('js/components/trails/rinci/LaporanKomunitas.tsx')));
     }
 }

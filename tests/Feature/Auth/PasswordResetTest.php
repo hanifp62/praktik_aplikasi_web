@@ -5,8 +5,9 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
-use Livewire\Volt\Volt;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
@@ -15,70 +16,65 @@ class PasswordResetTest extends TestCase
 
     public function test_reset_password_link_screen_can_be_rendered(): void
     {
-        $response = $this->get('/forgot-password');
-
-        $response
-            ->assertSeeVolt('pages.auth.forgot-password')
-            ->assertStatus(200);
+        $this->get('/forgot-password')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Auth/ForgotPassword'));
     }
 
     public function test_reset_password_link_can_be_requested(): void
     {
         Notification::fake();
-
         $user = User::factory()->create();
 
-        Volt::test('pages.auth.forgot-password')
-            ->set('email', $user->email)
-            ->call('sendPasswordResetLink');
+        $this->from('/forgot-password')->post(route('password.email'), ['email' => $user->email])
+            ->assertRedirect('/forgot-password')
+            ->assertSessionHas('status', 'Tautan atur ulang kata sandi sudah dikirim ke email Anda.');
 
         Notification::assertSentTo($user, ResetPassword::class);
     }
 
     public function test_reset_password_screen_can_be_rendered(): void
     {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        Volt::test('pages.auth.forgot-password')
-            ->set('email', $user->email)
-            ->call('sendPasswordResetLink');
-
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-            $response = $this->get('/reset-password/'.$notification->token);
-
-            $response
-                ->assertSeeVolt('pages.auth.reset-password')
-                ->assertStatus(200);
-
-            return true;
-        });
+        $this->get('/reset-password/token-contoh?email=rani@contoh.id')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Auth/ResetPassword')
+                ->where('token', 'token-contoh')
+                ->where('email', 'rani@contoh.id'));
     }
 
     public function test_password_can_be_reset_with_valid_token(): void
     {
         Notification::fake();
-
         $user = User::factory()->create();
 
-        Volt::test('pages.auth.forgot-password')
-            ->set('email', $user->email)
-            ->call('sendPasswordResetLink');
+        $this->post(route('password.email'), ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
-            $component = Volt::test('pages.auth.reset-password', ['token' => $notification->token])
-                ->set('email', $user->email)
-                ->set('password', 'password')
-                ->set('password_confirmation', 'password');
-
-            $component->call('resetPassword');
-
-            $component
-                ->assertRedirect('/login')
-                ->assertHasNoErrors();
+        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user) {
+            $this->post(route('password.store'), [
+                'token' => $notification->token,
+                'email' => $user->email,
+                'password' => 'kata-sandi-baru',
+                'password_confirmation' => 'kata-sandi-baru',
+            ])->assertSessionHasNoErrors()->assertRedirect('/login');
 
             return true;
         });
+
+        $this->assertTrue(Hash::check('kata-sandi-baru', $user->fresh()->password));
+    }
+
+    public function test_an_invalid_token_is_refused_and_the_password_stays(): void
+    {
+        $user = User::factory()->create();
+
+        $this->post(route('password.store'), [
+            'token' => 'token-palsu',
+            'email' => $user->email,
+            'password' => 'kata-sandi-baru',
+            'password_confirmation' => 'kata-sandi-baru',
+        ])->assertSessionHasErrors(['email' => 'Token atur ulang kata sandi ini tidak berlaku.']);
+
+        $this->assertTrue(Hash::check('password', $user->fresh()->password));
     }
 }
