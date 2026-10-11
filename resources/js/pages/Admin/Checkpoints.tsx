@@ -1,5 +1,5 @@
 import { router, useForm, usePage } from '@inertiajs/react';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { FormulirAdmin, PilihanAdmin, TeksPanjangAdmin, konfirmasiLalu, type Pilihan } from '@/components/admin/FormulirAdmin';
 import { Alert } from '@/components/ui/Alert';
@@ -40,6 +40,9 @@ interface Props extends PropsBersama {
     penolakan: string | null;
 }
 
+/** Id stabil tombol Naik (arah -1) dan Turun (arah 1) satu checkpoint, tujuan fokus sesudah pindah (ruling CC-3). */
+const idArah = (id: number, arah: -1 | 1): string => `${arah < 0 ? 'naik' : 'turun'}-checkpoint-${id}`;
+
 const kosong = (urutan: string): IsianCheckpoint => ({ name: '', sequence: urutan, checkpoint_type: 'POS', elevation_m: '', notes: '', latitude: '', longitude: '' });
 
 /**
@@ -50,6 +53,7 @@ const kosong = (urutan: string): IsianCheckpoint => ({ name: '', sequence: uruta
 export default function Checkpoints() {
     const { auth, flash, trail, checkpoints, nextSequence, types, penolakan } = usePage<Props>().props;
     const [sunting, setSunting] = useState<number | null>(null);
+    const sedangPindah = useRef(false);
     const form = useForm<IsianCheckpoint>(kosong(nextSequence));
     const admin = auth.user?.isAdmin ?? false;
 
@@ -81,7 +85,47 @@ export default function Checkpoints() {
         }
     };
 
-    const pindah = (id: number, arah: -1 | 1) => router.post(move.url({ trail: trail.id, checkpoint: id }), { arah }, { preserveScroll: true });
+    /**
+     * Ruling CC-3: sesudah pindah, baris daftar berurut ulang (React memindah simpul DOM-nya), dan
+     * tombol yang ditekan dapat menjadi `disabled` karena pos itu kini di ujung daftar. Keduanya
+     * menjatuhkan fokus ke body. Daftar baru sudah dirender sebelum onSuccess (swap Inertia memakai
+     * flushSync), maka fokus mengikuti pos yang dipindah lewat id stabilnya: tombol arah yang sama
+     * bila masih aktif, selain itu tombol arah lainnya pada pos yang sama. Fokus yang sudah dipindah
+     * pengguna, atau yang tetap di tombolnya, tidak direbut: pemindahan hanya terjadi selama fokus
+     * di body atau #konten (pola useFokusKembali).
+     */
+    const pindah = (id: number, arah: -1 | 1) => {
+        // Klik ganda selama kiriman berjalan diabaikan. Inertia hanya membatalkan kunjungan pertama
+        // di klien, sedangkan server tetap memproses kedua POST, jadi pos bergeser dua langkah.
+        // Tombolnya sengaja tidak dinonaktifkan, supaya fokus CC-3 tidak jatuh ke body.
+        if (sedangPindah.current) {
+            return;
+        }
+
+        sedangPindah.current = true;
+        router.post(
+            move.url({ trail: trail.id, checkpoint: id }),
+            { arah },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    const aktif = document.activeElement;
+
+                    if (aktif !== null && aktif !== document.body && aktif.id !== 'konten') {
+                        return;
+                    }
+
+                    const sama = document.getElementById(idArah(id, arah));
+                    const lain = document.getElementById(idArah(id, arah < 0 ? 1 : -1));
+
+                    (sama instanceof HTMLButtonElement && !sama.disabled ? sama : lain)?.focus();
+                },
+                onFinish: () => {
+                    sedangPindah.current = false;
+                },
+            },
+        );
+    };
 
     const hapus = (id: number) =>
         konfirmasiLalu('Hapus checkpoint ini?', () => router.delete(destroy.url({ trail: trail.id, checkpoint: id }), { preserveScroll: true }));
@@ -139,8 +183,8 @@ export default function Checkpoints() {
                                         {c.elevation ? <span className="text-secondary"> · {c.elevation}</span> : null}
                                     </span>
                                     <span className="flex flex-wrap gap-2">
-                                        <Button variant="secondary" size="sm" disabled={i === 0} onClick={() => pindah(c.id, -1)} aria-label={`Naikkan urutan ${c.name}`}>Naik</Button>
-                                        <Button variant="secondary" size="sm" disabled={i === checkpoints.length - 1} onClick={() => pindah(c.id, 1)} aria-label={`Turunkan urutan ${c.name}`}>Turun</Button>
+                                        <Button id={idArah(c.id, -1)} variant="secondary" size="sm" disabled={i === 0} onClick={() => pindah(c.id, -1)} aria-label={`Naikkan urutan ${c.name}`}>Naik</Button>
+                                        <Button id={idArah(c.id, 1)} variant="secondary" size="sm" disabled={i === checkpoints.length - 1} onClick={() => pindah(c.id, 1)} aria-label={`Turunkan urutan ${c.name}`}>Turun</Button>
                                         <Button variant="secondary" size="sm" onClick={() => ubah(c)} aria-label={`Ubah ${c.name}`}>Ubah</Button>
                                         <Button variant="danger" size="sm" onClick={() => hapus(c.id)} aria-label={`Hapus ${c.name}`}>Hapus</Button>
                                     </span>

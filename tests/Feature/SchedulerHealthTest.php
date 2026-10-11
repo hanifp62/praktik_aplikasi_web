@@ -139,6 +139,27 @@ class SchedulerHealthTest extends TestCase
         $this->assertNotNull($baris['terakhir_berhasil'], 'Keberhasilan sebelumnya tetap disebut agar terlihat sejak kapan rusaknya.');
     }
 
+    /**
+     * TA-m1 (tinjauan audit): jam dalam kalimat jadwal ditulis bertitik ("06.00"), bukan
+     * bertitik dua ("06:00"), sama dengan konvensi BF-5 di halaman lain. Halaman Kesehatan
+     * admin tidak terjangkau data contoh (tidak ada akun admin di DemoSeeder), sehingga
+     * cacat ini lolos dari audit E2E dan hanya tertangkap tinjauan kode.
+     */
+    public function test_the_task_schedule_sentence_uses_a_dotted_clock(): void
+    {
+        foreach (SchedulerHealthService::TUGAS as $tugas) {
+            $this->assertDoesNotMatchRegularExpression(
+                '/\b[0-2]?[0-9]:[0-5][0-9]\b/',
+                $tugas['jadwal'],
+                "Jadwal \"{$tugas['jadwal']}\" masih memakai jam bertitik dua."
+            );
+        }
+
+        $this->assertStringContainsString('06.00', SchedulerHealthService::TUGAS['weather:refresh']['jadwal']);
+        $this->assertStringContainsString('18.00', SchedulerHealthService::TUGAS['weather:refresh']['jadwal']);
+        $this->assertStringContainsString('07.00', SchedulerHealthService::TUGAS['data:freshness-check']['jadwal']);
+    }
+
     public function test_the_listener_records_a_finished_task(): void
     {
         $task = app(Schedule::class)->command('weather:refresh');

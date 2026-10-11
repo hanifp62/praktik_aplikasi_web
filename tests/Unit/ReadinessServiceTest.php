@@ -96,6 +96,28 @@ class ReadinessServiceTest extends TestCase
         $this->assertStringNotContainsString('%', implode(' ', $check->explanation['outstanding']));
     }
 
+    /**
+     * K4 (ruling audit-fix-A, TA-m4 tinjauan audit): trip tanpa satu pun butir persiapan
+     * belum punya daftar sama sekali, berbeda dari daftar yang ada tetapi belum
+     * terkonfirmasi (kasus B). Kalimatnya menyebut ketiadaan itu, tanpa persen (R-005).
+     */
+    public function test_case_b2_a_trip_without_any_preparation_item_names_the_missing_list(): void
+    {
+        $trail = Trail::factory()->published()->create();
+        OfficialStatus::factory()->create([
+            'statusable_id' => $trail->id,
+            'statusable_type' => $trail->getMorphClass(),
+        ]);
+
+        $trip = $this->tripFor($trail);
+        // Sengaja tanpa seedPreparation(): belum ada satu pun butir persiapan tergenerasi.
+
+        $check = app(ReadinessService::class)->evaluate($trip->fresh());
+
+        $this->assertContains('Daftar persiapan belum ada.', $check->explanation['outstanding']);
+        $this->assertStringNotContainsString('%', implode(' ', $check->explanation['outstanding']));
+    }
+
     public function test_case_c_closed_status_is_not_recommended(): void
     {
         $trail = Trail::factory()->published()->create();

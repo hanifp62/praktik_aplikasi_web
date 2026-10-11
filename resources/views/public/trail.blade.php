@@ -4,8 +4,12 @@
     // di sini berarti jalur berjarak nol tetap menulis "Jarak 0.00 km" di ringkasan
     // publik, seolah itu ukuran sungguhan. Dicast ke float dulu, baru diuji, sama seperti
     // pola yang dipakai trail-row.blade.php dan App\Http\Resources\TrailRowResource.
+    //
+    // Desimal jarak satu digit berkoma (TA-m6, tinjauan audit), sama dengan
+    // HikingHistoryController: koma untuk desimal, titik untuk ribuan (tanjakan di bawah),
+    // supaya satu kalimat tidak memakai titik untuk dua arti berbeda.
     $ringkas = $trail->name.' di '.$trail->mountain->name.', '.$trail->mountain->province.'. '
-        .((float) $trail->distance_km ? 'Jarak '.$trail->distance_km.' km. ' : '')
+        .((float) $trail->distance_km ? 'Jarak '.number_format((float) $trail->distance_km, 1, ',', '.').' km. ' : '')
         .($trail->elevation_gain_m ? 'Tanjakan '.number_format($trail->elevation_gain_m, 0, ',', '.').' m. ' : '')
         .'Karakteristik jalur, daftar pos, dan profil elevasi.';
 @endphp
@@ -89,7 +93,7 @@
                 <dl class="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
                     <div>
                         <dt class="text-muted">Jarak</dt>
-                        <dd class="font-medium text-primary">{{ $trail->distance_km ?? '-' }} km</dd>
+                        <dd class="font-medium text-primary">{{ $trail->distance_km !== null ? number_format((float) $trail->distance_km, 1, ',', '.') : '-' }} km</dd>
                     </div>
                     <div>
                         <dt class="text-muted">Tanjakan</dt>
@@ -100,7 +104,7 @@
                     <div>
                         <dt class="text-muted">Estimasi durasi</dt>
                         <dd class="font-medium text-primary">
-                            {{ $trail->estimated_duration_minutes ? round($trail->estimated_duration_minutes / 60, 1).' jam' : '-' }}
+                            {{ $trail->estimated_duration_minutes ? number_format($trail->estimated_duration_minutes / 60, 1, ',', '.').' jam' : '-' }}
                         </dd>
                     </div>
                     <div>

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 're
 import { KartuBelumDinilai } from '@/components/trails/jelajah/KartuBelumDinilai';
 import { KartuJalur } from '@/components/trails/jelajah/KartuJalur';
 import { KotakCari } from '@/components/trails/jelajah/KotakCari';
+import { jumlahTersembunyi as hitungTersembunyi, kalimatRingkasan, saringanPenyembunyi, type SaringanTersembunyi } from '@/components/trails/jelajah/ringkasan';
 import { drafDari, drafKosong, hitungLolos, kueriDari, STATUS_BAWAAN, type AtributJalur, type DrafSaringan, type FilterJelajah } from '@/components/trails/jelajah/saringan';
 import { SaringanJelajah, type OpsiSaringan } from '@/components/trails/jelajah/SaringanJelajah';
 import { TafsiranKalimat, type Tafsiran } from '@/components/trails/jelajah/TafsiranKalimat';
@@ -31,7 +32,7 @@ interface Props extends PropsBersama {
     trails: { data: DataKartu[]; total: number; links: TautanHalaman[] };
     ringkasan: {
         jumlah: number;
-        tersembunyi: Array<{ kunci: string; label: string; jumlah: number }>;
+        tersembunyi: SaringanTersembunyi[];
         terpotong: number | null;
         urutan: 'kecocokan' | 'nama';
     };
@@ -51,15 +52,6 @@ const pilihanTampilan = [
     { nilai: 'daftar' as const, label: 'Daftar', ikon: 'list' as const },
     { nilai: 'peta' as const, label: 'Peta', ikon: 'map-trifold' as const },
 ];
-
-/** "saringan status resmi", atau "saringan: status resmi (1), tanjakan (2)" bila lebih dari satu. */
-function saringanPenyembunyi(tersembunyi: Props['ringkasan']['tersembunyi']): string {
-    if (tersembunyi.length === 1) {
-        return `saringan ${tersembunyi[0]?.label ?? ''}`;
-    }
-
-    return `saringan: ${tersembunyi.map((s) => `${s.label} (${s.jumlah})`).join(', ')}`;
-}
 
 /**
  * Apakah kueri media cocok, mengikuti perubahan ukuran layar. Dipakai supaya peta Jelajah
@@ -208,7 +200,9 @@ export default function Index() {
     };
 
     const olehSaringan = saringanPenyembunyi(ringkasan.tersembunyi);
-    const jumlahTersembunyi = ringkasan.tersembunyi.reduce((n, s) => n + s.jumlah, 0);
+    const jumlahTersembunyi = hitungTersembunyi(ringkasan.tersembunyi);
+    // Ruling CF-1: angka depan sama dengan jumlah kartu yang tampil (trails.total) di setiap keadaan.
+    const kalimat = kalimatRingkasan(ringkasan, filter.tampilkanSemua);
 
     return (
         <div className="py-6">
@@ -256,14 +250,9 @@ export default function Index() {
                             </Button>
                             <p aria-live="polite" className="order-last min-w-0 basis-full text-kecil text-secondary sm:order-none sm:flex-1 sm:basis-auto">
                                 <span data-angka="" className="font-bold text-primary">
-                                    {ringkasan.jumlah}
-                                </span>{' '}
-                                jalur
-                                {jumlahTersembunyi > 0
-                                    ? filter.tampilkanSemua
-                                        ? `, termasuk ${jumlahTersembunyi} tampil karena Tampilkan juga meski tidak lolos ${olehSaringan}`
-                                        : `, ${jumlahTersembunyi} disembunyikan ${olehSaringan}`
-                                    : null}
+                                    {kalimat.angka}
+                                </span>
+                                {kalimat.sisa}
                             </p>
                             <p className="hidden text-kecil text-secondary sm:block">
                                 Urut: <span className="font-bold text-primary">{ringkasan.urutan}</span>

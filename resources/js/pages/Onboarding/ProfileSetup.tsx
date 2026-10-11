@@ -190,6 +190,7 @@ export default function ProfileSetup() {
                                         name="region_preference"
                                         label="Preferensi wilayah (opsional)"
                                         placeholder="Jawa Tengah"
+                                        autoComplete="off"
                                         value={form.data.region_preference}
                                         onChange={(ev) => form.setData('region_preference', ev.target.value)}
                                         error={galat.region_preference}

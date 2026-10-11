@@ -408,8 +408,9 @@ Lima tab Beranda, Jelajah, Trip, Mendaki, Progres (DK-25), dari satu daftar (`it
   menghitung bilah tab dan strip (`--nav-bawah`) dan bar aksi (ruling W2-2a);
   `scroll-padding-top` menghitung header layar lebar (`--kepala-atas`) dan pesan jaringan (ruling W2-5a), dan `<main>`
   memberi dirinya `padding-top` setinggi pesan jaringan. Toast tidak masuk hitungan itu: ia hilang sendiri sesudah
-  8 detik, hitungannya berhenti selama ia difokus atau diarahkan penunjuk, dan fokusnya pindah ke Urungkan bila aksinya
-  dari papan ketik. Selama tampil, toast dapat menutup unsur terfokus di dekat tepi bawah.
+  8 detik, hitungannya berhenti selama fokus papan ketik (`:focus-visible`) berada di dalamnya atau penunjuk berada
+  di atasnya, dan fokusnya pindah ke Urungkan bila aksinya dari papan ketik. Selama tampil, toast dapat menutup unsur
+  terfokus di dekat tepi bawah.
 
 **Pemilik tab** (spec v3 bagian 5.3, DK-25). Halaman gunung menyalakan Jelajah. Banding milik Trip, jadi tombol
 kembalinya ke Trip, dan Simpanan tetap terjangkau lewat "Lihat simpanan" di bawah judulnya. Tombol kembali tidak

@@ -181,6 +181,9 @@ class IndonesianInterfaceTest extends TestCase
      * sungguh tampil, bukan menolak penjelasan teknis berbahasa Inggris di balik kode.
      * Tanpa pengecualian: "Total elevation gain" di HikerProgress.tsx, yang sempat
      * dikecualikan selama Kelompok A bekerja di berkas itu, kini "Total tanjakan".
+     *
+     * TA-m9 (tinjauan audit): daftar ekstensi di resources/js memuat "js" juga, bukan
+     * hanya "tsx" dan "ts", supaya dasar.js dan jejak.js ikut tersapu.
      */
     public function test_the_english_elevation_phrase_does_not_appear_in_displayed_text(): void
     {
@@ -196,7 +199,7 @@ class IndonesianInterfaceTest extends TestCase
                 $namaBerkas = $berkas->getFilename();
                 $isBlade = str_ends_with($namaBerkas, '.blade.php');
 
-                if (! $isBlade && ! in_array($berkas->getExtension(), ['php', 'tsx', 'ts'], true)) {
+                if (! $isBlade && ! in_array($berkas->getExtension(), ['php', 'tsx', 'ts', 'js'], true)) {
                     continue;
                 }
 

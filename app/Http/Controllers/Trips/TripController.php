@@ -162,7 +162,8 @@ class TripController extends Controller
         // sudah jadi satu-satunya titik fokus. Predikat harinya sama dengan
         // KepalaTrip::hariMenuju() dan TripPlan::tanggalRencanaLewat() (Timezone::hariSampai),
         // bukan hitungan hari baru: <= 0 berarti hari ini sudah tanggal rencana atau lewat.
-        $hariBerangkat = Timezone::hariSampai($trip->planned_date, Timezone::forTrail($trip->trail)) <= 0;
+        // Predikatnya kini KepalaTrip::hariBerangkat(), yang juga dipakai tab Mendaki (ruling CF-3).
+        $hariBerangkat = KepalaTrip::hariBerangkat($trip);
 
         return Inertia::render('Trips/Show', [
             'title' => $trip->name,
@@ -173,6 +174,9 @@ class TripController extends Controller
                 'berlangsung' => $trip->status === TripStatus::IN_PROGRESS,
                 'catatan' => $trip->notes,
                 'hariBerangkat' => $hariBerangkat,
+                // Untuk "Tanggal rencana trip ini {tanggal}." di konfirmasi mulai (ruling CF-3),
+                // dari atribut yang sudah dimuat, tanpa kueri baru.
+                'tanggalRencana' => KepalaTrip::tanggalRencana($trip),
             ],
             'langkah' => $steps->for($trip, $statusJalur[$trip->trail->id] ?? null),
             'fit' => $fit === null ? null : [

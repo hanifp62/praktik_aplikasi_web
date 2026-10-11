@@ -296,6 +296,11 @@ class ComparisonShareTest extends TestCase
      * Dua tautan dari hari yang sama tidak berbagi nama tombol Cabut bagi pembaca layar: waktu
      * dibuat memuat jam dan zonanya, dan nama aksesibel tombol memakai waktu itu. Daftar berurut
      * dari yang terbaru.
+     *
+     * Asersi sumber diubah ruling CF-2 (audit E2E N-3, tinjauan TA-m8): waktu dibuat hanya
+     * beresolusi menit, jadi dua tautan yang dibuat dalam menit yang sama masih bernama sama.
+     * Teks sr-only kini " tautan ke-{nomor}, dibuat {t.dibuat}", dengan nomor urut di daftar mulai
+     * 1, yang selalu unik di satu lembar. Teks yang terlihat tidak berubah.
      */
     public function test_two_links_from_the_same_day_are_told_apart_by_their_time(): void
     {
@@ -314,7 +319,10 @@ class ComparisonShareTest extends TestCase
             ->has('tautanAktif', 2)
             ->where('tautanAktif.0.dibuat', '11 Okt 21.30 WIB')
             ->where('tautanAktif.1.dibuat', '11 Okt 08.05 WIB'));
-        $this->assertStringContainsString('Cabut<span className="sr-only"> tautan yang dibuat {t.dibuat}</span>', File::get(resource_path('js/components/trails/banding/LembarBagikan.tsx')));
+        $lembar = File::get(resource_path('js/components/trails/banding/LembarBagikan.tsx'));
+        $this->assertStringContainsString('{tautanAktif.map((t, urutan) => (', $lembar);
+        $this->assertStringContainsString('Cabut<span className="sr-only"> tautan ke-{urutan + 1}, dibuat {t.dibuat}</span>', $lembar);
+        $this->assertStringContainsString('{t.jumlahJalur} jalur, dibuat {t.dibuat}, berlaku sampai {t.berlakuSampai}', $lembar, 'Teks yang terlihat tidak berubah.');
     }
 
     /**

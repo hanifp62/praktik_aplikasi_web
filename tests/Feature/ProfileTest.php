@@ -161,4 +161,19 @@ class ProfileTest extends TestCase
         $rute = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri())->implode(' ');
         $this->assertDoesNotMatchRegularExpression('/ekspor|export|unduh-data|download-data/i', $rute, 'Bila rute ekspor data ditambahkan, kalimat kartu ini perlu ditinjau ulang.');
     }
+
+    /**
+     * TA-m5 (tinjauan audit): kunci terjemahan Breeze bawaan di lang/id.json tidak dipakai
+     * komponen mana pun saat ini (digrep terhadap resources/ dan app/), tetapi masih
+     * menyuruh "Unduh dahulu data yang ingin Anda simpan.", padahal Memount tidak punya
+     * rute unduh atau ekspor data (ruling AF-5). Kalimat yang mustahil itu dapat muncul
+     * lagi begitu kunci ini dipakai, jadi dijaga di sumbernya, bukan hanya di komponen
+     * HapusAkun.tsx yang sudah diperbaiki.
+     */
+    public function test_the_unused_breeze_translation_does_not_promise_a_download(): void
+    {
+        $isi = File::get(lang_path('id.json'));
+
+        $this->assertStringNotContainsString('Unduh dahulu data yang ingin Anda simpan.', $isi);
+    }
 }

@@ -271,4 +271,39 @@ class PratinjauHarnessTest extends TestCase
             $this->assertDoesNotMatchRegularExpression('/^\s+DB_[A-Z_]+\s*:/m', File::get($alur), basename($alur).' menyetel DB_*, yang akan ditimpa pagar ini.');
         }
     }
+
+    /**
+     * Pagar sakelar fitur dan mode contoh (TA-m10, tinjauan audit): perubahan ini sudah
+     * ada di phpunit.xml sejak audit-fix A/B, menutup kekhawatiran K1 laporan A, tetapi
+     * tanpa test yang menjaganya -- hanya pagar basis data di atas yang dijaga. Pola
+     * sama: <env force="true"> saja tidak cukup karena Laravel membaca $_SERVER lebih
+     * dulu, jadi setiap sakelar juga ditulis lewat <server>.
+     */
+    public function test_the_suite_fences_feature_switches_and_demo_mode_whatever_the_shell_holds(): void
+    {
+        $pagar = [
+            'FIELD_PACK_ENABLED' => 'false',
+            'FIELD_SAFETY_ENABLED' => 'false',
+            'APP_DEMO' => 'false',
+        ];
+
+        $konfigurasi = simplexml_load_file(base_path('phpunit.xml'));
+        $this->assertNotFalse($konfigurasi);
+
+        $env = [];
+        $server = [];
+
+        foreach ($konfigurasi->php->env as $satu) {
+            $env[(string) $satu['name']] = [(string) $satu['value'], (string) $satu['force']];
+        }
+
+        foreach ($konfigurasi->php->server as $satu) {
+            $server[(string) $satu['name']] = (string) $satu['value'];
+        }
+
+        foreach ($pagar as $nama => $nilai) {
+            $this->assertSame([$nilai, 'true'], $env[$nama] ?? null, "<env name=\"{$nama}\"> harus bernilai '{$nilai}' dengan force=\"true\".");
+            $this->assertSame($nilai, $server[$nama] ?? null, "<server name=\"{$nama}\"> harus bernilai '{$nilai}'.");
+        }
+    }
 }

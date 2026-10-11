@@ -226,4 +226,30 @@ class PublicTrailPageTest extends TestCase
         $halaman->assertDontSee('Jarak 0');
         $halaman->assertDontSee('Jarak 0,00', escape: false);
     }
+
+    /**
+     * TA-m6 (tinjauan audit): desimal jarak dan durasi memakai titik Inggris dalam
+     * kalimat yang juga memakai titik sebagai ribuan pada tanjakan (number_format 0
+     * desimal), sehingga satu kalimat memakai titik untuk dua arti berbeda sekaligus.
+     * BF-7 pernah menyentuh baris-baris ini tetapi hanya untuk sapuan prosa "elevation
+     * gain/loss" berbahasa Inggris, bukan format desimalnya.
+     */
+    public function test_distance_and_duration_use_indonesian_decimal_style(): void
+    {
+        $gunung = Mountain::factory()->create(['name' => 'Merbabu', 'province' => 'Jawa Tengah']);
+        $trail = Trail::factory()->published()->easy()->for($gunung)->create([
+            'name' => 'Jalur Selo',
+            'distance_km' => 9.7,
+            'elevation_gain_m' => 1650,
+            'estimated_duration_minutes' => 450,
+        ]);
+
+        $halaman = $this->get(route('public.trail', $trail));
+
+        $halaman->assertSee('9,7 km');
+        $halaman->assertSee('7,5 jam');
+        $halaman->assertSee('1.650');
+        $halaman->assertDontSee('9.70');
+        $halaman->assertDontSee('7.5 jam');
+    }
 }

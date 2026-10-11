@@ -332,9 +332,14 @@ class RouteFitService
             ->dataComplete()
             ->withPublishabilityData()
             ->with('mountain')
+            // Dicocokkan tanpa membedakan huruf besar/kecil (DF-1, audit-e2e-ulang N-1):
+            // isian bebas "jawa barat" harus menemukan gunung yang tersimpan "Jawa Barat".
+            // lower() aman untuk SQLite maupun PostgreSQL (R-024), sama dengan pola
+            // TrailSearch::cocokKataKunci().
             ->when($goal->region, fn ($query, $region) => $query->whereHas(
                 'mountain',
-                fn ($q) => $q->where('region', $region)->orWhere('province', $region)
+                fn ($q) => $q->whereRaw('lower(region) = ?', [mb_strtolower($region)])
+                    ->orWhereRaw('lower(province) = ?', [mb_strtolower($region)])
             ))
             ->get();
 

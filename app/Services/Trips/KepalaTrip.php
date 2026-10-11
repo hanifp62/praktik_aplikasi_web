@@ -69,6 +69,29 @@ final class KepalaTrip
     }
 
     /**
+     * Hari ini di zona gunung sudah tanggal rencana atau sesudahnya (ruling W4-G1). Predikat
+     * harinya sama dengan hariMenuju() dan TripPlan::tanggalRencanaLewat() (Timezone::hariSampai),
+     * bukan hitungan hari baru: <= 0. Satu sumber untuk variant "Mulai pendakian" di ruang kerja
+     * dan untuk kalimat tanggal di konfirmasi mulai, di ruang kerja maupun tab Mendaki (ruling
+     * CF-3). Membutuhkan relasi trail.mountain sudah dimuat, jadi tanpa kueri tambahan.
+     */
+    public static function hariBerangkat(TripPlan $trip): bool
+    {
+        return Timezone::hariSampai($trip->planned_date, Timezone::forTrail($trip->trail)) <= 0;
+    }
+
+    /**
+     * Tanggal mulai rencana, misalnya "14 Nov 2026", untuk kalimat "Tanggal rencana trip ini
+     * {tanggal}." di konfirmasi mulai (ruling CF-3). planned_date adalah tanggal kalender di zona
+     * gunungnya, bukan instan UTC, jadi ditulis apa adanya seperti rentang() di bawah, tanpa
+     * konversi zona yang dapat menggeser harinya.
+     */
+    public static function tanggalRencana(TripPlan $trip): string
+    {
+        return $trip->planned_date->translatedFormat('j M Y');
+    }
+
+    /**
      * Tanggal rencana; rentang ditulis dengan kata "sampai" (spec v3 bagian 8.8), tahunnya
      * sekali di akhir.
      */

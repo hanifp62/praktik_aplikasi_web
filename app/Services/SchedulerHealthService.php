@@ -44,12 +44,14 @@ class SchedulerHealthService
     public const TUGAS = [
         'weather:refresh' => [
             'judul' => 'Pembaruan prakiraan BMKG',
-            'jadwal' => 'Dua kali sehari, pukul 06:00 dan 18:00 WIB',
+            // Jam bertitik (TA-m1, tinjauan audit): sapuan BF-5 menyisir kode format
+            // ("H:i"), bukan jam yang ditulis sebagai teks seperti ini.
+            'jadwal' => 'Dua kali sehari, pukul 06.00 dan 18.00 WIB',
             'toleransi_jam' => 14,
         ],
         'data:freshness-check' => [
             'judul' => 'Pemeriksaan kesegaran status resmi',
-            'jadwal' => 'Setiap hari pukul 07:00 WIB',
+            'jadwal' => 'Setiap hari pukul 07.00 WIB',
             'toleransi_jam' => 26,
         ],
         'trips:kirim-pengingat' => [

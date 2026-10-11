@@ -389,6 +389,20 @@ class TripWorkspaceTest extends TestCase
     }
 
     /**
+     * Ruling CF-3 (audit E2E N-4): konfirmasi mulai di ruang kerja menyebut tanggal rencana bila
+     * hari ini belum tanggal itu. Tanggalnya tanggal mulai rencana, bukan rentang, ditulis dari
+     * planned_date yang sudah dimuat (anggaran kueri ruang kerja dijaga
+     * test_the_workspace_does_not_grow_with_preparation_items_or_reminders).
+     */
+    public function test_the_workspace_sends_the_planned_start_date_for_the_start_confirmation(): void
+    {
+        $props = $this->props($this->trip());
+
+        $this->assertSame('10 Okt 2026', $props['trip']['tanggalRencana']);
+        $this->assertFalse($props['trip']['hariBerangkat'], 'H-15: kalimat tanggal ikut tampil di konfirmasi.');
+    }
+
+    /**
      * Ruling W4-G1 (Delivery Gate G2): kartu Tindakan dan "Hapus rencana" (terpisah di bawah
      * seperti penghapusan akun) tidak lagi bersaing dengan satu titik fokus. "Mulai pendakian"
      * ganti variant menurut trip.hariBerangkat; "Hapus rencana" bukan lagi tombol danger penuh,
@@ -396,13 +410,18 @@ class TripWorkspaceTest extends TestCase
      *
      * Diubah ruling W6-FE: tombol mulai kini ber-id "mulai-ruang-kerja", tujuan fokus sesudah galat
      * HTTP; variant-nya tidak berubah.
+     *
+     * Diubah ruling CF-3 (audit E2E N-4): tombol mulai kini komponen bersama MulaiPendakian
+     * dengan konfirmasi sebaris. Variant-nya tetap mengikuti trip.hariBerangkat, kini lewat prop
+     * `utama`, yang dipetakan komponen ke primary atau secondary.
      */
     public function test_the_start_hike_and_delete_buttons_are_not_second_focal_points(): void
     {
         $halaman = File::get(resource_path('js/pages/Trips/Show.tsx'));
+        $this->assertMatchesRegularExpression('/<MulaiPendakian\s[^>]*\butama=\{trip\.hariBerangkat\}[^>]*\/>/s', $halaman);
         $this->assertStringContainsString(
-            "<Button id=\"mulai-ruang-kerja\" onClick={mulai} processing={memulai} variant={trip.hariBerangkat ? 'primary' : 'secondary'}>",
-            $halaman,
+            "<Button id={idMulai} onClick={buka} className={ukuran} variant={utama ? 'primary' : 'secondary'}>",
+            File::get(resource_path('js/components/mendaki/MulaiPendakian.tsx')),
         );
 
         $hapusRencana = File::get(resource_path('js/components/trips/rencana/HapusRencana.tsx'));

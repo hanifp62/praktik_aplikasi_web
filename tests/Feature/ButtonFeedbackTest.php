@@ -94,6 +94,70 @@ class ButtonFeedbackTest extends TestCase
     }
 
     /**
+     * Ruling CF-6 (audit E2E CU-1): sesudah Urungkan berhasil pada bentuk hapus, fokus pindah ke
+     * tombol hapus kartu Simpanan yang dipulihkan, bukan tertinggal di #konten. Kartu itu instans
+     * baru, jadi tujuannya id stabil per jalur pada tombol hapus. Pemindahan ada di onSuccess
+     * kiriman simpan ulang (halaman baru sudah dirender karena swap Inertia memakai flushSync), hanya
+     * bila fokus masih di body atau #konten, jadi fokus yang sudah dipindah pengguna tidak direbut.
+     * Bila kartunya tidak ada, getElementById kosong dan cadangan #konten dari toast tetap.
+     */
+    public function test_undoing_a_removal_in_saved_returns_focus_to_the_restored_card(): void
+    {
+        $simpan = File::get(resource_path('js/components/trails/TombolSimpan.tsx'));
+
+        $this->assertStringContainsString('const idHapus = `hapus-simpanan-${jalur.id}`;', $simpan);
+        $this->assertStringContainsString('<Button id={idHapus} variant="ghost" size="sm" processing={memproses} onClick={tekan}>', $simpan);
+        $this->assertMatchesRegularExpression(
+            "/if \(!urungkan && !ditolak && bentuk === 'hapus'\) \{\s*const aktif = document\.activeElement;\s*if \(aktif === null \|\| aktif === document\.body \|\| aktif\.id === 'konten'\) \{\s*document\.getElementById\(idHapus\)\?\.focus\(\);\s*\}\s*\}/",
+            $simpan,
+        );
+        // Urungkan pada bentuk hapus memanggil simpan dengan urungkan false; tanpa itu cabang di atas mati.
+        $this->assertMatchesRegularExpression('/\(\) => \{\s*fokusKembali\.tandai\(\);\s*simpan\(terhapus\?\.catatan \?\? null, false\);\s*\}/', $simpan);
+    }
+
+    /**
+     * Ruling CF-5 (tinjauan TA-m7, daftar periksa butir 7): tombol yang menonaktifkan dirinya
+     * sendiri karena aksinya sedang berjalan memakai `processing`, bukan `disabled` saja, karena
+     * useFokusKembali di Button hanya mengikuti `processing`. Tanpa itu tombol yang difokus
+     * menjadi nonaktif dan fokusnya jatuh ke body.
+     *
+     * Kelas yang disapu: deretan tombol aksi yang berbagi satu keadaan sibuk
+     * (`disabled={sibuk !== null}`, `disabled={sedang !== null}`). Tombol yang ditekan memegang
+     * `processing`, tombol lain tetap `disabled`. Sapuan, bukan daftar: Pratinjau kandidat OSM di
+     * Impor Geometri dahulu hanya `disabled` (TA-m7).
+     *
+     * Sengaja tidak termasuk: tombol Batal atau Kembali yang `disabled` selama aksi tombol LAIN
+     * berjalan (bukan aksinya sendiri), dan tombol yang `disabled` oleh keadaan data, bukan
+     * keadaan sibuk. Daftar lengkapnya di laporan audit-fix-C.
+     */
+    public function test_a_button_disabled_by_a_shared_busy_state_holds_its_own_processing(): void
+    {
+        $tanpaStatus = [];
+        $diperiksa = 0;
+
+        foreach ($this->berkasTsx() as $berkas) {
+            foreach ($this->tagBernama($berkas->getContents(), 'Button') as [$tag, $baris]) {
+                if (! preg_match('/\bdisabled=\{\w+ !== null\}/', $tag)) {
+                    continue;
+                }
+
+                $diperiksa++;
+
+                if (! preg_match('/\bprocessing=\{/', $tag)) {
+                    $tanpaStatus[] = $berkas->getRelativePathname().':'.$baris;
+                }
+            }
+        }
+
+        $this->assertGreaterThanOrEqual(5, $diperiksa, 'Sapuan tidak menemukan deretan tombol bersibuk-bersama untuk diperiksa.');
+        $this->assertSame([], $tanpaStatus, 'Tombol yang menonaktifkan dirinya tanpa processing: '.implode(', ', $tanpaStatus));
+
+        $geometri = File::get(resource_path('js/pages/Admin/TrailGeometry.tsx'));
+        $this->assertStringContainsString("processing={sibuk === 'pilih' && dipratinjau === c.id}", $geometri, 'Hanya Pratinjau kandidat yang ditekan yang memproses.');
+        $this->assertMatchesRegularExpression("/onClick=\{\(\) => \{\s*setDipratinjau\(c\.id\);\s*kirim\('pilih', choose\.url\(\{ trail: trail\.id, osm: c\.id \}\)\);\s*\}\}/", $geometri);
+    }
+
+    /**
      * Setiap tombol kirim menunggu formulirnya sendiri.
      *
      * Tombol yang tidak diberi status formulirnya tetap dapat ditekan berulang selama

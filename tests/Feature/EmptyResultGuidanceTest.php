@@ -60,11 +60,17 @@ class EmptyResultGuidanceTest extends TestCase
      * Wilayah yang seluruh jalurnya belum berdata menghasilkan nol kandidat. Pesan
      * lama menyuruh melonggarkan durasi dan batas elevation gain, padahal tidak satu
      * pun jalur pernah diuji terhadap dua batas itu.
+     *
+     * DF-1 (tinjauan audit TA-m... / audit-e2e-ulang N-1): sesudah perbaikan, "wilayah"
+     * hanya berlaku bila wilayahnya memang dikenal (ada gunungnya di data), sehingga
+     * gunung Jawa Timur ditambahkan di sini supaya skenario "dikenal tetapi belum
+     * berdata" ini tidak ikut berubah menjadi 'wilayahTakDikenal'.
      */
     public function test_a_region_with_no_published_trail_is_named_as_the_reason(): void
     {
         $user = $this->userWithProfile();
         Trail::factory()->published()->easy()->for(Mountain::factory()->create(['province' => 'Jawa Tengah']))->create();
+        Mountain::factory()->create(['province' => 'Jawa Timur', 'region' => 'Jawa Timur']);
 
         $run = $this->runFor($user, ['region' => 'Jawa Timur', 'trip_type' => 'CAMPING']);
 
@@ -76,6 +82,50 @@ class EmptyResultGuidanceTest extends TestCase
 
         $this->assertStringNotContainsString('melonggarkan', $this->kalimatSebab("penyebabKosong === 'wilayah'"));
         $this->assertStringContainsString('{wilayah}', $this->kalimatSebab("penyebabKosong === 'wilayah'"));
+    }
+
+    /**
+     * DF-1 (audit-e2e-ulang N-1): teks wilayah yang tidak cocok dengan satu pun gunung di
+     * data sama sekali -- misalnya isian bawaan data contoh "Jawa Barat, Jawa Tengah",
+     * yang dibandingkan persis terhadap kolom region/province gunung -- mendapat sebab
+     * dan saran yang berbeda dari wilayah yang dikenal tetapi belum berdata (test di
+     * atas), supaya pendaki tidak disuruh mengosongkan wilayah yang sebenarnya sudah
+     * punya jalur.
+     */
+    public function test_a_region_matching_no_mountain_at_all_is_named_as_unrecognized(): void
+    {
+        $user = $this->userWithProfile();
+        Trail::factory()->published()->easy()->for(Mountain::factory()->create(['province' => 'Jawa Barat', 'region' => 'Jawa Barat']))->create();
+
+        $run = $this->runFor($user, ['region' => 'Jawa Barat, Jawa Tengah', 'trip_type' => 'CAMPING']);
+
+        $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('penyebabKosong', 'wilayahTakDikenal')
+                ->where('wilayah', 'Jawa Barat, Jawa Tengah')
+                ->has('eligible', 0));
+
+        $kalimat = $this->kalimatSebab("penyebabKosong === 'wilayahTakDikenal'");
+        $this->assertStringContainsString('tidak cocok dengan nama provinsi', $kalimat);
+        $this->assertStringContainsString('goalsCreate', $kalimat);
+    }
+
+    /**
+     * DF-1 (audit-e2e-ulang N-1): penyaring wilayah membandingkan tanpa membedakan huruf
+     * besar/kecil, karena isian bebas pendaki tidak selalu memakai kapitalisasi yang sama
+     * dengan data gunung ("jawa barat" lawan "Jawa Barat").
+     */
+    public function test_a_region_is_matched_regardless_of_letter_case(): void
+    {
+        $user = $this->userWithProfile();
+        Trail::factory()->published()->easy()->for(Mountain::factory()->create(['province' => 'Jawa Barat', 'region' => 'Jawa Barat']))->create();
+
+        $run = $this->runFor($user, ['region' => 'jawa barat', 'trip_type' => 'CAMPING']);
+
+        $this->actingAs($user)->get(route('recommendations.show', $run))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('penyebabKosong', null)
+                ->has('eligible', 1));
     }
 
     /**

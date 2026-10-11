@@ -66,7 +66,9 @@ class TimestampZoneTest extends TestCase
         foreach (File::allFiles(resource_path('views')) as $berkas) {
             $isi = $berkas->getContents();
 
-            if (! preg_match('/(?:translatedFormat|format)\([\'"][^\'"]*H:i/', $isi)) {
+            // TA-m2 (tinjauan audit): BF-1 membuat seluruh jam tampil memakai "H.i"
+            // bertitik, jadi pola yang hanya mengenali "H:i" buta terhadap konvensi baru.
+            if (! preg_match('/(?:translatedFormat|format)\([\'"][^\'"]*H[.:]i/', $isi)) {
                 continue;
             }
 

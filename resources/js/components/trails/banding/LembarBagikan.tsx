@@ -163,13 +163,15 @@ export function LembarBagikan({ terbuka, onTutup, pemicu, jalur, tautanAktif, ha
                             Tautan yang masih berlaku
                         </h3>
                         <ul className="divide-y divide-subtle rounded-lg border border-subtle">
-                            {tautanAktif.map((t) => (
+                            {tautanAktif.map((t, urutan) => (
                                 <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                                     <span className="text-kecil text-secondary">
                                         {t.jumlahJalur} jalur, dibuat {t.dibuat}, berlaku sampai {t.berlakuSampai}
                                     </span>
+                                    {/* Ruling CF-2 (audit E2E N-3): waktu dibuat beresolusi menit dapat kembar,
+                                        jadi nama tombol memuat nomor urut di daftar, mulai 1. */}
                                     <Button variant="ghost" size="sm" processing={memproses} onClick={() => cabut(t.id)}>
-                                        Cabut<span className="sr-only"> tautan yang dibuat {t.dibuat}</span>
+                                        Cabut<span className="sr-only"> tautan ke-{urutan + 1}, dibuat {t.dibuat}</span>
                                     </Button>
                                 </li>
                             ))}

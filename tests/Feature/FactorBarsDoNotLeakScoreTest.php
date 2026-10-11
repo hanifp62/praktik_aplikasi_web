@@ -114,7 +114,7 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
 
             $diperiksa++;
 
-            $this->assertStringNotContainsString($skor, $isi, "Skor faktor {$faktor['factor']} ({$skor}) bocor ke halaman.");
+            $this->assertFalse($this->angkaMuncul($skor, $isi), "Skor faktor {$faktor['factor']} ({$skor}) bocor ke halaman.");
         }
 
         // Penjaga terhadap test yang lolos tanpa memeriksa apa pun.
@@ -140,8 +140,18 @@ class FactorBarsDoNotLeakScoreTest extends TestCase
         $this->assertStringNotContainsString('internalScore', $isi);
 
         if (fmod((float) $hasil->internal_score, 1.0) !== 0.0) {
-            $this->assertStringNotContainsString((string) $hasil->internal_score, $isi);
+            $this->assertFalse($this->angkaMuncul((string) $hasil->internal_score, $isi), 'Skor internal bocor ke halaman.');
         }
+    }
+
+    /**
+     * Apakah angka itu muncul di halaman sebagai angka yang berdiri sendiri, juga dengan nol di
+     * belakangnya ("0.4" atau "0.40"). Pencocokan substring mentah menemukan "0.4" di dalam jam
+     * bertitik "00.40 WIB", sehingga test gagal hanya pada menit tertentu.
+     */
+    private function angkaMuncul(string $angka, string $isi): bool
+    {
+        return preg_match('/(?<![\d.])'.preg_quote($angka, '/').'0*(?!\d)/', $isi) === 1;
     }
 
     /**

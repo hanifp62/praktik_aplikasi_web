@@ -147,7 +147,11 @@ class DemoSeeder extends Seeder
             'preferred_duration' => PreferredDuration::TWO_DAY->value,
             'preferred_trip_type' => TripType::CAMPING->value,
             'preferred_challenge' => PreferredChallenge::MODERATE->value,
-            'region_preference' => 'Jawa Barat, Jawa Tengah',
+            // Sama dengan profile.region_preference di atas (DF-1, audit-e2e-ulang N-1):
+            // dua kolom yang berbeda untuk preferensi wilayah yang sama membuat isian
+            // bawaan "Cari jalur yang sesuai" berakhir di teks wilayah yang tidak cocok
+            // dengan gunung mana pun.
+            'region_preference' => 'Jawa Barat',
             'record_track' => false,
         ]);
 

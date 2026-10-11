@@ -1,12 +1,12 @@
-import { router, usePage } from '@inertiajs/react';
-import { useState, type ReactNode } from 'react';
+import { usePage } from '@inertiajs/react';
+import type { ReactNode } from 'react';
+import { MulaiPendakian } from '@/components/mendaki/MulaiPendakian';
 import { PintuPaket } from '@/components/mendaki/PintuPaket';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Lencana } from '@/components/ui/Lencana';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Tautan } from '@/components/ui/Tautan';
-import { useFokusSesudahRender } from '@/components/ui/ToastUrungkan';
 import { AppLayout } from '@/layouts/AppLayout';
 import { kelas } from '@/lib/kelas';
 import { create as goalsCreate } from '@/routes/goals';
@@ -25,6 +25,10 @@ interface TripHariH {
     jam: string | null;
     peserta: string | null;
     cek: string;
+    /** Hari ini di zona gunung sudah tanggal rencana atau sesudahnya (KepalaTrip::hariBerangkat()). */
+    hariBerangkat: boolean;
+    /** Tanggal mulai rencana, misalnya "14 Nov 2026", untuk peringatan konfirmasi mulai (ruling CF-3). */
+    tanggalRencana: string;
     urls: { mulai: string; ruangKerja: string; cek: string; lapangan: string };
 }
 
@@ -36,6 +40,8 @@ interface TripLain {
     tanggal: string;
     hari: string | null;
     lewat: string | null;
+    hariBerangkat: boolean;
+    tanggalRencana: string;
     urls: { mulai: string; ruangKerja: string };
 }
 
@@ -111,7 +117,7 @@ export default function TrackIndex() {
                             </Butir>
                         </dl>
 
-                        <MulaiPendakian id={hariH.id} nama={hariH.nama} gunung={hariH.gunung} url={hariH.urls.mulai} besar />
+                        <MulaiPendakian id={hariH.id} nama={hariH.nama} gunung={hariH.gunung} url={hariH.urls.mulai} tanggalRencana={hariH.hariBerangkat ? null : hariH.tanggalRencana} besar />
                         <Tautan href={hariH.urls.lapangan} className={kelas(tautanTeks, 'mt-2')}>
                             Tinjau peta dan pos sebelum mulai
                         </Tautan>
@@ -138,7 +144,7 @@ export default function TrackIndex() {
                                             </Lencana>
                                         ) : null}
                                     </p>
-                                    <MulaiPendakian id={trip.id} nama={trip.nama} gunung={trip.gunung} url={trip.urls.mulai} />
+                                    <MulaiPendakian id={trip.id} nama={trip.nama} gunung={trip.gunung} url={trip.urls.mulai} tanggalRencana={trip.hariBerangkat ? null : trip.tanggalRencana} />
                                 </li>
                             ))}
                         </ul>
@@ -163,109 +169,6 @@ function Butir({ judul, children }: { judul: string; children: ReactNode }) {
         <div>
             <dt className="text-kecil font-bold text-primary">{judul}</dt>
             <dd className="text-kecil text-secondary">{children}</dd>
-        </div>
-    );
-}
-
-/**
- * Memulai tidak dapat dikembalikan ke rencana, jadi tombolnya meminta konfirmasi sebaris, bukan
- * dialog (T1/ruling W6-4e): "Mulai pendakian" hanya membuka konfirmasi lewat buka(), dan hanya
- * tombol konfirmasi berid idKonfirmasi yang memanggil mulai().
- *
- * Fokus tidak pernah jatuh ke body (DESIGN.md, pola W6-3o): buka() memindah fokus ke "Ya, mulai
- * sekarang" dan mengaitkan peringatannya lewat aria-describedby; batal() mengembalikannya ke
- * "Mulai pendakian" (putaran perbaikan 1 I-2/ruling W6-4c). Cabang galat jaringan juga
- * mengembalikan fokus ke "Ya, mulai sekarang" sesudah tombolnya aktif lagi (`memproses` kembali
- * false membuat Button tidak lagi `disabled`; memanggil fokus lebih awal, saat tombol masih
- * nonaktif, tidak berefek): tanpa ini tombol yang sempat `disabled` menjatuhkan fokus ke body
- * begitu `onFinish` berjalan, karena peramban tidak mengembalikan fokus sendiri ke elemen yang
- * baru aktif lagi (putaran perbaikan 2 R-1/ruling W6-4q). Ketiga tombol menyebut nama dan gunung
- * trip lewat sr-only berpemisah tekstual, supaya pembaca layar membedakan baris mana yang akan
- * dimulai saat beberapa konfirmasi dapat terbuka sekaligus, termasuk saat dua trip bernama sama
- * di gunung berbeda (putaran perbaikan 1 M-4/ruling W6-4i, putaran perbaikan 2 N-1); label yang
- * terlihat tidak berubah.
- *
- * Tanpa sinyal, permintaan gagal di jaringan sebelum jawaban server diterima: server mungkin
- * sudah memulai pendakiannya (`TripLifecycle::start()` commit lebih dulu), jadi kalimatnya tidak
- * lagi menyatakan "belum dimulai" begitu saja, melainkan mengajak membuka tab ini lagi, yang
- * langsung membuka mode lapangan bila pendakian memang sudah berjalan (`TrackController.php`;
- * putaran perbaikan 1 M-6/ruling W6-4k, titipan W2-5j). Wilayah status selalu terpasang (T4),
- * hanya isinya yang bersyarat.
- *
- * Galat HTTP tanpa header Inertia, misalnya 419 sesudah sesi berakhir, ditulis di wilayah status
- * yang sama lewat `onHttpException` yang mengembalikan false (ruling W6-FE, pola W6-11c), bukan
- * dialog galat bawaan Inertia, dan juga "belum pasti", karena server bisa sudah memulai.
- */
-function MulaiPendakian({ id, nama, gunung, url, besar = false }: { id: number; nama: string; gunung: string; url: string; besar?: boolean }) {
-    const [yakin, setYakin] = useState(false);
-    const [memproses, setMemproses] = useState(false);
-    const [pesan, setPesan] = useState<string | null>(null);
-    const fokusKe = useFokusSesudahRender();
-
-    const idMulai = `mulai-${id}`;
-    const idKonfirmasi = `konfirmasi-${id}`;
-    const idPeringatan = `peringatan-${id}`;
-
-    const buka = () => {
-        setYakin(true);
-        fokusKe(idKonfirmasi);
-    };
-
-    const batal = () => {
-        setYakin(false);
-        fokusKe(idMulai);
-    };
-
-    const mulai = () => {
-        setMemproses(true);
-        setPesan(null);
-        router.post(
-            url,
-            {},
-            {
-                onNetworkError: () => {
-                    setPesan('Sambungan terputus sebelum jawaban server diterima, jadi belum pasti pendakian sudah dimulai. Buka lagi tab Mendaki saat ada sinyal; bila sudah dimulai, mode lapangan langsung terbuka.');
-
-                    return false;
-                },
-                onHttpException: () => {
-                    setPesan('Belum pasti dimulai: jawaban server tidak dapat dibaca. Muat ulang halaman, lalu periksa apakah pendakian sudah berjalan sebelum mencoba lagi.');
-
-                    return false;
-                },
-                onFinish: () => {
-                    setMemproses(false);
-                    fokusKe(idKonfirmasi);
-                },
-            },
-        );
-    };
-
-    const ukuran = besar ? 'mt-5 min-h-[66px] w-full py-4' : 'mt-3';
-
-    return (
-        <div>
-            {yakin ? (
-                <div className={kelas('flex flex-wrap items-center gap-2', besar ? 'mt-5' : 'mt-3')}>
-                    <Button id={idKonfirmasi} aria-describedby={idPeringatan} onClick={mulai} processing={memproses} className={besar ? 'min-h-[66px] flex-1 py-4' : undefined}>
-                        {besar ? <span className="text-bagian">Ya, mulai sekarang</span> : 'Ya, mulai sekarang'}
-                        <span className="sr-only">, {nama}, {gunung}</span>
-                    </Button>
-                    <Button variant="secondary" onClick={batal} disabled={memproses}>
-                        Batal
-                        <span className="sr-only">, {nama}, {gunung}</span>
-                    </Button>
-                    <p id={idPeringatan} className="basis-full text-kecil text-secondary">Pendakian yang sudah dimulai tidak dapat dikembalikan menjadi rencana. Satu pendakian dapat berlangsung pada satu waktu.</p>
-                </div>
-            ) : (
-                <Button id={idMulai} onClick={buka} className={ukuran} variant={besar ? 'primary' : 'secondary'}>
-                    {besar ? <span className="text-bagian">Mulai pendakian</span> : 'Mulai pendakian'}
-                    <span className="sr-only">, {nama}, {gunung}</span>
-                </Button>
-            )}
-            <p role="status" className="mt-2 text-kecil font-bold text-primary">
-                {pesan}
-            </p>
         </div>
     );
 }

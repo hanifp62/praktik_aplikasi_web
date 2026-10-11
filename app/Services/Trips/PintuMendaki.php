@@ -20,7 +20,9 @@ use Illuminate\Support\Arr;
  * baris trip lain (putaran perbaikan 1 M-7, putaran perbaikan 2 N-2). Kalimat kartu rekam jejak
  * tidak mengulang waktu kirim yang sudah disebut `lokasi` (putaran perbaikan 2 S-1); angka batas
  * trip di `potong.kalimat` diambil dari `BATAS_TRIP`, bukan ditulis mati (putaran perbaikan 2
- * N-3).
+ * N-3). Hari-H dan setiap baris trip lain membawa `hariBerangkat` dan `tanggalRencana`, supaya
+ * konfirmasi mulai menyebut tanggal rencana bila hari ini belum tanggal itu, dengan predikat yang
+ * sama dengan ruang kerja trip (KepalaTrip::hariBerangkat(), ruling CF-3).
  *
  * Kueri tetap berapa pun jumlah trip: satu kueri trip berbatas dengan relasi yang dimuat
  * sekaligus. Batasnya diberi tahu, bukan dipotong diam-diam (putaran perbaikan 1 M-1): sebaris
@@ -67,6 +69,8 @@ final class PintuMendaki
                 'tanggal' => KepalaTrip::rentang($trip->planned_date, $trip->end_date),
                 'hari' => KepalaTrip::hariMenuju($trip->planned_date, Timezone::forTrail($trip->trail)),
                 'lewat' => $trip->tanggalRencanaLewat() ? KepalaTrip::TANGGAL_LEWAT : null,
+                'hariBerangkat' => KepalaTrip::hariBerangkat($trip),
+                'tanggalRencana' => KepalaTrip::tanggalRencana($trip),
                 'urls' => ['mulai' => route('trips.start', $trip), 'ruangKerja' => route('trips.show', $trip)],
             ])->values()->all(),
             // Lokasi baru diminta di mode lapangan (PRD §145.1), bukan di tab ini: kalimat ini
@@ -109,6 +113,8 @@ final class PintuMendaki
             'cek' => $cek === null
                 ? 'Cek kesiapan belum dilakukan untuk trip ini.'
                 : 'Cek kesiapan terakhir '.$cek->copy()->setTimezone(Timezone::forTrail($trip->trail))->translatedFormat('j M Y').'.',
+            'hariBerangkat' => KepalaTrip::hariBerangkat($trip),
+            'tanggalRencana' => KepalaTrip::tanggalRencana($trip),
             'urls' => [
                 'mulai' => route('trips.start', $trip),
                 'ruangKerja' => route('trips.show', $trip),

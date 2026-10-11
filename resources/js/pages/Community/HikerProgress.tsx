@@ -28,8 +28,12 @@ interface Props extends PropsBersama {
         elevasiBelumDiketahui: string | null;
         elevasiTertinggi: string;
     } | null;
-    /** `menunggu`: laporan pengguna ini yang masih menunggu moderasi, termasuk FLAGGED (ruling AF-3). */
-    laporan: { terbit: number; menunggu: number; terimaKasih: number };
+    /**
+     * `menunggu`: laporan pengguna ini yang masih menunggu moderasi, termasuk FLAGGED
+     * (ruling AF-3). `ditolak`: REJECTED dan REMOVED (ruling DF-10); alasannya hanya ada
+     * di Riwayat pendakian, tidak di halaman ini.
+     */
+    laporan: { terbit: number; menunggu: number; ditolak: number; terimaKasih: number };
     grafik: TitikTanjakan[];
 }
 
@@ -107,6 +111,19 @@ export default function HikerProgress() {
                                 <p className="mt-2 text-sm text-secondary">
                                     <span data-angka>{laporan.menunggu}</span> laporan kondisi Anda sedang menunggu moderasi. Laporan tampil untuk pendaki lain sesudah disetujui.
                                 </p>
+                            ) : laporan.terbit === 0 && laporan.menunggu === 0 && laporan.ditolak > 0 ? (
+                                <>
+                                    <p className="mt-2 text-sm text-secondary">
+                                        Belum ada laporan Anda yang terbit. {laporan.ditolak} laporan ditolak atau dihapus moderator; alasannya tercantum di{' '}
+                                        <Tautan href={history.url()} className="font-medium text-brand-ink underline">
+                                            Riwayat pendakian
+                                        </Tautan>
+                                        .
+                                    </p>
+                                    <Tautan href={reportsCreate.url()} className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-brand-ink underline">
+                                        Tulis laporan kondisi
+                                    </Tautan>
+                                </>
                             ) : laporan.terbit === 0 ? (
                                 <>
                                     <p className="mt-2 text-sm text-secondary">

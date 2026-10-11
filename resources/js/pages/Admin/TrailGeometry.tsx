@@ -49,6 +49,9 @@ export default function TrailGeometry() {
     const { auth, flash, trail, spasial, titikTersimpan, maksTitik, ambangKetinggian, kandidat, pratinjau, galat, galatOsm, penolakan } = usePage<Props>().props;
     const admin = auth.user?.isAdmin ?? false;
     const [sibuk, setSibuk] = useState<Aksi | null>(null);
+    // Kandidat OSM yang sedang dipratinjau: hanya tombol Pratinjau miliknya yang `processing`,
+    // supaya useFokusKembali di Button mengembalikan fokus ke tombol itu (ruling CF-5, TA-m7).
+    const [dipratinjau, setDipratinjau] = useState<number | null>(null);
     const [saringan, setSaringan] = useState(kandidat.saringan);
     const pertama = useRef(true);
     const unggah = useForm<{ berkas: File | null }>({ berkas: null });
@@ -134,7 +137,17 @@ export default function TrailGeometry() {
                                                 <p className="font-medium text-primary">{c.nama}</p>
                                                 <p className="text-secondary">{c.keterangan}</p>
                                             </div>
-                                            <Button variant="secondary" size="sm" disabled={sibuk !== null} onClick={() => kirim('pilih', choose.url({ trail: trail.id, osm: c.id }))} aria-label={`Pratinjau ${c.nama}, OSM way ${c.id}`}>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                processing={sibuk === 'pilih' && dipratinjau === c.id}
+                                                disabled={sibuk !== null}
+                                                onClick={() => {
+                                                    setDipratinjau(c.id);
+                                                    kirim('pilih', choose.url({ trail: trail.id, osm: c.id }));
+                                                }}
+                                                aria-label={`Pratinjau ${c.nama}, OSM way ${c.id}`}
+                                            >
                                                 Pratinjau
                                             </Button>
                                         </li>

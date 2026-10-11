@@ -436,6 +436,12 @@ class DesignPrimitivesTest extends TestCase
      * dan toast hilang di tangan pengguna papan ketik. Kini dua penanda terpisah; hitungan
      * hanya berjalan bila keduanya mati, dan jeda fokus baru mati ketika fokus keluar dari
      * toast, bukan ketika berpindah di dalamnya.
+     *
+     * Diubah ruling CF-7 (efek samping P3 tinjauan perbaikan audit): jeda fokus hanya berlaku
+     * bila unsur yang difokus cocok `:focus-visible`. Simpanan memindah fokus ke Urungkan juga
+     * sesudah klik tetikus, dan tanpa syarat itu toastnya tidak pernah hilang sendiri bagi
+     * pengguna tetikus. Peramban yang belum mengenal pemilih itu dianggap fokus terlihat, jadi
+     * toast tetap berhenti bagi pengguna papan ketik. Jeda penunjuk dan batas 8000 ms tetap.
      */
     public function test_the_undo_toast_waits_for_the_reader(): void
     {
@@ -449,6 +455,14 @@ class DesignPrimitivesTest extends TestCase
         $this->assertMatchesRegularExpression('/if \(jedaPenunjuk \|\| jedaFokus\) \{\s*return;\s*\}\s*const pewaktu = window\.setTimeout\(onTutup, durasiMs\);/', $toast);
         $this->assertStringContainsString('onMouseEnter={() => setJedaPenunjuk(true)}', $toast);
         $this->assertStringContainsString('onMouseLeave={() => setJedaPenunjuk(false)}', $toast);
+        $this->assertMatchesRegularExpression('/onFocus=\{\(e\) => \{\s*fokusDiDalam\.current = true;\s*if \(fokusTerlihatPada\(e\.target\)\) \{\s*setJedaFokus\(true\);\s*\}/', $toast, 'Jeda fokus hanya untuk fokus terlihat (CF-7).');
+        $this->assertMatchesRegularExpression("/function fokusTerlihatPada\(unsur: EventTarget\): boolean \{\s*try \{\s*return unsur instanceof Element && unsur\.matches\(':focus-visible'\);\s*\} catch \{\s*return true;\s*\}\s*\}/", $toast);
+        $this->assertSame(1, substr_count($toast, 'setJedaFokus(true)'), 'Tidak ada jalan lain yang menjeda toast karena fokus.');
+
+        // Ruling CC-2: DESIGN.md menulis perilaku yang sama, bukan jeda untuk setiap fokus.
+        $desain = (string) preg_replace('/\s+/', ' ', File::get(base_path('DESIGN.md')));
+        $this->assertStringContainsString('hitungannya berhenti selama fokus papan ketik (`:focus-visible`) berada di dalamnya atau penunjuk berada di atasnya', $desain);
+        $this->assertStringNotContainsString('hitungannya berhenti selama ia difokus atau diarahkan penunjuk', $desain);
         $this->assertMatchesRegularExpression('/onBlur=\{\(e\) => \{\s*if \(e\.currentTarget\.contains\(e\.relatedTarget as Node \| null\)\) \{\s*return;\s*\}\s*fokusDiDalam\.current = false;\s*setJedaFokus\(false\);/', $toast);
         $this->assertDoesNotMatchRegularExpression('/\bsetJeda\(/', $toast, 'Satu jeda bersama untuk penunjuk dan fokus sudah diganti dua penanda.');
 

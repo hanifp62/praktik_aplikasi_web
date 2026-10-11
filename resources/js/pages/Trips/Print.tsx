@@ -91,7 +91,7 @@ export default function Print() {
         <main id="konten" tabIndex={-1} className="mx-auto max-w-3xl px-4 py-6 text-primary print:max-w-none print:p-0">
             <JudulHalaman />
             <div className="print:hidden">
-                <PageHeader induk={{ href: tripShow.url(tripId), label: 'Trip' }} title="Versi cetak" description={rencana.nama}>
+                <PageHeader induk={{ href: tripShow.url(tripId), label: 'Ruang kerja trip' }} title="Versi cetak" description={rencana.nama}>
                     <Button className="mt-3" onClick={() => window.print()}>
                         Cetak halaman ini
                     </Button>

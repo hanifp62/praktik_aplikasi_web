@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\CompletionState;
 use App\Enums\ExperienceLevel;
+use App\Enums\ModerationStatus;
 use App\Enums\PreparationCategory;
 use App\Enums\PreparationStatus;
 use App\Enums\TripStatus;
@@ -173,6 +174,32 @@ class PageQueryBudgetTest extends TestCase
         $banyak = $this->countQueries('/progres');
 
         $this->assertSame($sedikit, $banyak, "Beban tumbuh: {$sedikit} query untuk 1 simpanan, {$banyak} untuk 22.");
+    }
+
+    /**
+     * TA-m3 (tinjauan audit): agregat `laporan.menunggu` dan `laporan.ditolak` (ruling
+     * DF-10) dihitung dari satu kueri `groupBy('moderation_status')`, bukan satu COUNT
+     * per status atau satu `find` per laporan. Bebannya tidak boleh tumbuh bersama
+     * jumlah laporan maupun jumlah status berbeda yang dimilikinya.
+     */
+    public function test_the_shell_does_not_grow_with_the_number_of_moderation_statuses(): void
+    {
+        $user = $this->pendakiBerprofil();
+        $trail = $this->seedTrails(1)->first();
+
+        TrailConditionReport::factory()->for($trail)->create(['user_id' => $user->id, 'moderation_status' => ModerationStatus::PENDING->value]);
+
+        $this->actingAs($user);
+        $this->get('/progres')->assertOk();
+        $sedikit = $this->countQueries('/progres');
+
+        foreach ([ModerationStatus::FLAGGED, ModerationStatus::REJECTED, ModerationStatus::APPROVED, ModerationStatus::PENDING] as $status) {
+            TrailConditionReport::factory()->for($trail)->create(['user_id' => $user->id, 'moderation_status' => $status->value]);
+        }
+
+        $banyak = $this->countQueries('/progres');
+
+        $this->assertSame($sedikit, $banyak, "Beban tumbuh: {$sedikit} query untuk 1 laporan, {$banyak} untuk 5 berstatus campuran.");
     }
 
     /**

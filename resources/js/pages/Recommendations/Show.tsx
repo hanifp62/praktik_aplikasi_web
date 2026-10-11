@@ -18,7 +18,7 @@ interface Props extends PropsBersama {
     runId: number;
     dihasilkan: string | null;
     profilBerubah: boolean;
-    penyebabKosong: 'katalog' | 'wilayah' | 'batasan' | null;
+    penyebabKosong: 'katalog' | 'wilayahTakDikenal' | 'wilayah' | 'batasan' | null;
     wilayah: string | null;
     eligible: HasilRekomendasi[];
     sisaEligible: number;
@@ -113,12 +113,22 @@ export default function Show() {
 
                 {eligible.length === 0 ? (
                     <Card title="Belum ada jalur yang sesuai" className="mb-6">
-                        {/* Tiga sebab, tiga saran: saran yang salah lebih buruk daripada tidak ada saran. */}
+                        {/* Empat sebab, empat saran: saran yang salah lebih buruk daripada tidak ada saran. */}
                         {penyebabKosong === 'katalog' ? (
                             <p className="text-sm text-secondary">
                                 Belum ada satu pun jalur berdata di sistem ini. Keterangan jalur belum dimasukkan pengelola kawasan maupun pemandu bersertifikat
                                 yang disahkan untuk kawasannya. Batasan rencana Anda tidak ada hubungannya dengan layar ini.
                             </p>
+                        ) : penyebabKosong === 'wilayahTakDikenal' ? (
+                            <>
+                                <p className="text-sm text-secondary">
+                                    Wilayah "{wilayah}" tidak cocok dengan nama provinsi atau wilayah mana pun di data Memount. Tulis satu provinsi, misalnya
+                                    Jawa Barat, atau kosongkan wilayahnya.
+                                </p>
+                                <Tautan href={goalsCreate.url()} className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-brand-ink underline">
+                                    Buat rencana baru
+                                </Tautan>
+                            </>
                         ) : penyebabKosong === 'wilayah' ? (
                             <p className="text-sm text-secondary">
                                 Belum ada jalur berdata di {wilayah}. Jalur di wilayah itu mungkin sudah dikenali sistem, tetapi keterangannya belum dimasukkan

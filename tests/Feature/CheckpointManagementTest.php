@@ -8,6 +8,7 @@ use App\Models\Checkpoint;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -157,6 +158,45 @@ class CheckpointManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->post(route('trails.checkpoints.move', [$trail, $checkpoint]), ['arah' => 5])
             ->assertSessionHasErrors('arah');
+    }
+
+    /**
+     * Ruling CC-3 (kekhawatiran 6 audit-fix-C, daftar periksa butir 7): sesudah Naik atau Turun,
+     * baris daftar berurut ulang dan tombol yang ditekan dapat menjadi `disabled` di ujung daftar,
+     * jadi fokus akan jatuh ke body. Fokus mengikuti pos yang dipindah lewat id stabil per checkpoint
+     * dan arah: tombol arah yang sama bila masih aktif, selain itu tombol arah lainnya pada pos
+     * yang sama, dan hanya selama fokus di body atau #konten. Asersi sumber karena halaman React
+     * dirender di klien; urutan sesudah pindah dijaga test_moving_up_swaps_with_the_nearest_neighbour.
+     */
+    public function test_moving_a_checkpoint_keeps_focus_on_its_own_buttons(): void
+    {
+        $isi = File::get(resource_path('js/pages/Admin/Checkpoints.tsx'));
+
+        $this->assertStringContainsString("const idArah = (id: number, arah: -1 | 1): string => `\${arah < 0 ? 'naik' : 'turun'}-checkpoint-\${id}`;", $isi);
+        $this->assertStringContainsString('<Button id={idArah(c.id, -1)} variant="secondary" size="sm" disabled={i === 0} onClick={() => pindah(c.id, -1)}', $isi);
+        $this->assertStringContainsString('<Button id={idArah(c.id, 1)} variant="secondary" size="sm" disabled={i === checkpoints.length - 1} onClick={() => pindah(c.id, 1)}', $isi);
+        $this->assertMatchesRegularExpression(
+            '/onSuccess: \(\) => \{\s*const aktif = document\.activeElement;\s*if \(aktif !== null && aktif !== document\.body && aktif\.id !== \'konten\'\) \{\s*return;\s*\}\s*const sama = document\.getElementById\(idArah\(id, arah\)\);\s*const lain = document\.getElementById\(idArah\(id, arah < 0 \? 1 : -1\)\);\s*\(sama instanceof HTMLButtonElement && !sama\.disabled \? sama : lain\)\?\.focus\(\);\s*\},/',
+            $isi,
+        );
+    }
+
+    /**
+     * Klik ganda pada Naik atau Turun tidak memindah pos dua langkah (kekhawatiran 4 putaran mikro
+     * audit-fix-C). Inertia hanya membatalkan kunjungan pertama di klien, sedangkan server tetap
+     * memproses kedua POST. Penjaga ref selama kiriman berjalan, tanpa menonaktifkan tombol,
+     * supaya fokus CC-3 tidak jatuh ke body. Asersi sumber karena halaman React dirender di klien.
+     */
+    public function test_a_second_move_click_is_ignored_while_the_first_is_in_flight(): void
+    {
+        $isi = File::get(resource_path('js/pages/Admin/Checkpoints.tsx'));
+
+        $this->assertStringContainsString('const sedangPindah = useRef(false);', $isi);
+        $this->assertMatchesRegularExpression(
+            '/const pindah = \(id: number, arah: -1 \| 1\) => \{.*?if \(sedangPindah\.current\) \{\s*return;\s*\}\s*sedangPindah\.current = true;\s*router\.post\(/s',
+            $isi,
+        );
+        $this->assertMatchesRegularExpression('/onFinish: \(\) => \{\s*sedangPindah\.current = false;\s*\},/', $isi);
     }
 
     public function test_a_hiker_cannot_change_checkpoints(): void

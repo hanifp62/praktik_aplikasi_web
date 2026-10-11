@@ -68,7 +68,7 @@ export function useFokusSesudahRender() {
 interface WadahToastProps {
     toast: DataToast | null;
     onTutup: () => void;
-    /** Paling sedikit 8000 ms (WCAG 2.2.1); hitungannya berhenti selama disentuh penunjuk atau difokus. */
+    /** Paling sedikit 8000 ms (WCAG 2.2.1); hitungannya berhenti selama disentuh penunjuk atau difokus papan ketik. */
     durasiMs?: number;
 }
 
@@ -78,6 +78,11 @@ interface WadahToastProps {
  * ditutup. Hitungannya berhenti selama penunjuk berada di atasnya atau fokus berada di
  * dalamnya: dua jeda yang terpisah, jadi penunjuk yang pergi tidak melanjutkan hitungan
  * selagi fokus masih di dalam. Urungkan membatalkan aksinya lalu menutup toast.
+ *
+ * Jeda karena fokus hanya berlaku bila unsur yang difokus cocok `:focus-visible`, yaitu fokus
+ * yang terlihat bagi pengguna papan ketik (ruling CF-7). Bentuk hapus di Simpanan memindah fokus
+ * ke Urungkan juga sesudah klik tetikus, dan tanpa syarat ini toast itu tidak pernah hilang
+ * sendiri bagi pengguna tetikus. Jeda penunjuk tetap.
  *
  * Toast dengan opsi fokus memindah fokus ke Urungkan. Ketika toast hilang dengan fokus di
  * dalamnya, fokus kembali ke unsur yang difokus sebelum fokus masuk ke toast, atau ke
@@ -104,6 +109,20 @@ export function WadahToast({ toast, onTutup, durasiMs = 8000 }: WadahToastProps)
 /** Unsur di luar toast yang dapat menerima fokus kembali; body berarti tidak ada. */
 function unsurLuar(unsur: EventTarget | null, wadah: HTMLElement | null): HTMLElement | null {
     return unsur instanceof HTMLElement && unsur !== document.body && !wadah?.contains(unsur) ? unsur : null;
+}
+
+/**
+ * Fokus terlihat (`:focus-visible`), yaitu fokus dari papan ketik atau dipindah skrip sesudah
+ * interaksi papan ketik (ruling CF-7). Peramban yang belum mengenal pemilih itu melempar galat;
+ * fokusnya lalu dianggap terlihat, jadi toast tetap berhenti dan tidak hilang dari tangan
+ * pengguna papan ketik (WCAG 2.2.1).
+ */
+function fokusTerlihatPada(unsur: EventTarget): boolean {
+    try {
+        return unsur instanceof Element && unsur.matches(':focus-visible');
+    } catch {
+        return true;
+    }
 }
 
 function Toast({ toast, onTutup, durasiMs }: { toast: DataToast; onTutup: () => void; durasiMs: number }) {
@@ -160,7 +179,11 @@ function Toast({ toast, onTutup, durasiMs }: { toast: DataToast; onTutup: () => 
             onMouseLeave={() => setJedaPenunjuk(false)}
             onFocus={(e) => {
                 fokusDiDalam.current = true;
-                setJedaFokus(true);
+
+                if (fokusTerlihatPada(e.target)) {
+                    setJedaFokus(true);
+                }
+
                 sebelum.current ??= unsurLuar(e.relatedTarget, wadah.current);
             }}
             onBlur={(e) => {

@@ -6,6 +6,7 @@ use App\Enums\AnalyticsEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SelectRecommendedTrailRequest;
 use App\Http\Resources\RecommendationResultResource;
+use App\Models\Mountain;
 use App\Models\RecommendationResult;
 use App\Models\RecommendationRun;
 use App\Models\Trail;
@@ -140,10 +141,18 @@ class RecommendationController extends Controller
     }
 
     /**
-     * Layar kosong punya tiga sebab yang menuntut tiga saran berbeda. Penyaring wilayah
+     * Layar kosong punya empat sebab yang menuntut empat saran berbeda. Penyaring wilayah
      * bekerja di tingkat query, jadi jalur yang tersaring tidak pernah menjadi kandidat
      * maupun jalur tersingkir; menyuruh pendaki melonggarkan batas di situ menyuruhnya
      * mengubah hal yang tidak pernah diuji terhadap satu jalur pun.
+     *
+     * DF-1 (audit-e2e-ulang N-1): teks wilayah yang tidak cocok dengan satu pun gunung di
+     * data ("wilayahTakDikenal") mendapat saran yang berbeda dari wilayah yang dikenal
+     * tetapi belum berdata ("wilayah"), supaya pendaki tidak disuruh mengosongkan wilayah
+     * yang sebenarnya sudah punya jalur. Pemeriksaan "dikenal" mencari di SEMUA gunung,
+     * terbit atau tidak (ruling DF-1): wilayah yang dikenal tetapi tanpa jalur lengkap
+     * tetap 'wilayah'. Tanpa makna "beberapa wilayah dipisah koma" -- itu keputusan produk
+     * yang belum diambil (R-021).
      *
      * @param  Collection<int, RecommendationResult>  $results
      */
@@ -157,6 +166,17 @@ class RecommendationController extends Controller
             return 'katalog';
         }
 
-        return $run->hikingGoal?->region ? 'wilayah' : 'batasan';
+        $wilayah = $run->hikingGoal?->region;
+
+        if ($wilayah === null) {
+            return 'batasan';
+        }
+
+        $dikenal = Mountain::query()
+            ->whereRaw('lower(region) = ?', [mb_strtolower($wilayah)])
+            ->orWhereRaw('lower(province) = ?', [mb_strtolower($wilayah)])
+            ->exists();
+
+        return $dikenal ? 'wilayah' : 'wilayahTakDikenal';
     }
 }

@@ -15,9 +15,17 @@ use Inertia\Response;
  * dengan pendaki lain: angka di sini hanya milik pemiliknya.
  *
  * `laporan.menunggu` (ruling AF-3, audit E2E I-3): jumlah laporan kondisi pengguna ini yang masih
- * menunggu moderasi, satu COUNT tanpa N+1. FLAGGED ikut terhitung, karena laporan itu tampil ke
- * pelapornya sebagai menunggu moderasi (ruling W6-6c2, HasilPendakian::laporan()). Tanpa angka
- * ini halaman menulis "Belum ada laporan kondisi dari Anda" sesudah laporan dikirim.
+ * menunggu moderasi. FLAGGED ikut terhitung, karena laporan itu tampil ke pelapornya sebagai
+ * menunggu moderasi (ruling W6-6c2, HasilPendakian::laporan()). Tanpa angka ini halaman menulis
+ * "Belum ada laporan kondisi dari Anda" sesudah laporan dikirim.
+ *
+ * `laporan.ditolak` (ruling DF-10, tinjauan audit TA-m11, sisa I-3): jumlah laporan pengguna ini
+ * yang ditolak atau dihapus moderator. Tanpa angka ini, pelapor yang laporannya hanya ditolak
+ * membaca kalimat yang sama dengan pelapor yang belum pernah menulis laporan sama sekali.
+ *
+ * Kedua angka dihitung dari SATU kueri agregat `groupBy('moderation_status')`, bukan satu COUNT
+ * per status atau N+1 per laporan (anggaran dijaga PageQueryBudgetTest). `groupBy` dengan kolom
+ * yang juga di-select aman untuk SQLite maupun PostgreSQL (R-024).
  */
 class HikerProgressController extends Controller
 {
@@ -25,10 +33,17 @@ class HikerProgressController extends Controller
     {
         $user = $request->user();
         $angka = $progres->forUser($user);
-        $menunggu = TrailConditionReport::query()
+
+        $perStatus = TrailConditionReport::query()
             ->where('user_id', $user->id)
-            ->whereIn('moderation_status', [ModerationStatus::PENDING->value, ModerationStatus::FLAGGED->value])
-            ->count();
+            ->selectRaw('moderation_status, count(*) as jumlah')
+            ->groupBy('moderation_status')
+            ->get()
+            ->mapWithKeys(fn (TrailConditionReport $baris) => [$baris->moderation_status->value => (int) $baris->jumlah]);
+
+        $menunggu = ($perStatus[ModerationStatus::PENDING->value] ?? 0) + ($perStatus[ModerationStatus::FLAGGED->value] ?? 0);
+        $ditolak = ($perStatus[ModerationStatus::REJECTED->value] ?? 0) + ($perStatus[ModerationStatus::REMOVED->value] ?? 0);
+
         $gunung = $progres->summitedMountains($user);
         $tanpaKoordinat = max(0, $angka['gunung'] - count($gunung));
 
@@ -61,6 +76,7 @@ class HikerProgressController extends Controller
             'laporan' => [
                 'terbit' => $angka['laporan_terbit'],
                 'menunggu' => $menunggu,
+                'ditolak' => $ditolak,
                 'terimaKasih' => $angka['terima_kasih'],
             ],
             'grafik' => array_map(fn (array $p) => [

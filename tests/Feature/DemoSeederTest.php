@@ -78,6 +78,24 @@ class DemoSeederTest extends TestCase
     }
 
     /**
+     * DF-1 (audit-e2e-ulang N-1): `preference.region_preference` dan
+     * `profile.region_preference` adalah dua kolom untuk preferensi wilayah yang sama
+     * (perilaku onboarding, ProfileSetupController::store(), menulis nilai yang sama ke
+     * keduanya). Isian bawaan "Cari jalur yang sesuai" dibaca dari
+     * `preference.region_preference`; bila kedua kolom berbeda, kalimat "Preferensi
+     * wilayah: ..." di Profil dan hasil pencarian wilayah bawaan di /goals/create tidak
+     * lagi menunjuk wilayah yang sama.
+     */
+    public function test_the_hikers_region_preference_matches_across_both_columns(): void
+    {
+        $this->seed(DemoSeeder::class);
+
+        $budi = User::where('email', DemoSeeder::EMAIL_PENDAKI)->firstOrFail();
+
+        $this->assertSame($budi->profile->region_preference, $budi->preference->region_preference);
+    }
+
+    /**
      * Tanjakan total jalur (elevation_gain_m, "Angka jalur") tidak boleh lebih kecil dari
      * kenaikan kumulatif antar pos berurutannya ("Pos di jalur ini"), karena pengguna
      * membaca keduanya berdampingan di satu halaman dan angka yang bertentangan terbaca

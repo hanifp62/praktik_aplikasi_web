@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ReadinessState;
 use App\Enums\TripStatus;
+use App\Models\Mountain;
 use App\Models\ReadinessCheck;
 use App\Models\Trail;
 use App\Models\TripPlan;
@@ -390,10 +391,14 @@ class TrackTabTest extends TestCase
      * memindah fokus kembali ke tombol konfirmasi yang baru aktif lagi (R-1/ruling W6-4q):
      * tombol itu `disabled` selama `memproses`, dan peramban tidak mengembalikan fokus sendiri
      * begitu atributnya lepas, jadi tanpa ini fokus jatuh ke body sesudah galat jaringan.
+     *
+     * Diubah ruling CF-3 (audit E2E N-4): MulaiPendakian dipindah dari Track/Index.tsx ke
+     * resources/js/components/mendaki/MulaiPendakian.tsx supaya ruang kerja trip memakai konfirmasi
+     * yang sama. Asersi ini kini membaca berkas komponen; isi yang diasersikan tidak berubah.
      */
     public function test_starting_always_goes_through_inline_confirmation_and_keeps_focus_off_body(): void
     {
-        $komponen = File::get(resource_path('js/pages/Track/Index.tsx'));
+        $komponen = $this->komponenMulai();
 
         // (a) satu ketukan "Mulai pendakian" hanya membuka konfirmasi.
         $this->assertStringContainsString('onClick={buka}', $komponen);
@@ -428,9 +433,11 @@ class TrackTabTest extends TestCase
         $this->assertNotEmpty($tombolBatal, 'Tombol Batal wajib memanggil batal() langsung lewat onClick={batal}.');
 
         // (f) onFinish mengembalikan fokus ke konfirmasi sesudah tombolnya aktif lagi (R-1).
+        // Diubah ruling CC-1: sesudah penolakan server konfirmasi ditutup, jadi tujuannya idMulai;
+        // di cabang lain, termasuk galat jaringan, tetap idKonfirmasi.
         preg_match('/onFinish: \(\) => \{(.*?)\},/s', $komponen, $fnFinish);
         $this->assertNotEmpty($fnFinish, 'onFinish tidak ditemukan.');
-        $this->assertStringContainsString('fokusKe(idKonfirmasi)', $fnFinish[1], 'onFinish wajib mengembalikan fokus ke konfirmasi sesudah galat jaringan, jika tidak fokus jatuh ke body (R-1).');
+        $this->assertStringContainsString('fokusKe(ditolak ? idMulai : idKonfirmasi)', $fnFinish[1], 'onFinish wajib mengembalikan fokus ke konfirmasi sesudah galat jaringan, jika tidak fokus jatuh ke body (R-1).');
     }
 
     /**
@@ -440,40 +447,116 @@ class TrackTabTest extends TestCase
      * Tailwind yang sudah ada di Button, jadi text-bagian di className luar tidak bergaransi
      * menang atas text-isi bawaan Button; span di dalam children selalu menang karena ia
      * menata ulang elemen itu sendiri, bukan mewarisi keputusan cascade).
+     *
+     * Diubah ruling CF-3 (audit E2E N-4): komponennya kini resources/js/components/mendaki/
+     * MulaiPendakian.tsx. Dua tambahan untuk ruang kerja trip, tanpa mengubah tab Mendaki:
+     * `rapat` membuang jarak atas ukuran biasa (kartu Tindakan sudah berjarak), dan variant
+     * primary kini dibaca dari `utama`, yang bawaannya `besar`. Tab Mendaki tidak mengirim
+     * keduanya, jadi tombol hari-H tetap primary 66 px dan baris trip lain tetap secondary.
      */
     public function test_the_large_start_button_is_sixty_six_pixels_tall(): void
     {
-        $komponen = File::get(resource_path('js/pages/Track/Index.tsx'));
+        $komponen = $this->komponenMulai();
 
-        $this->assertStringContainsString("const ukuran = besar ? 'mt-5 min-h-[66px] w-full py-4' : 'mt-3';", $komponen);
+        $this->assertStringContainsString("const ukuran = besar ? 'mt-5 min-h-[66px] w-full py-4' : rapat ? undefined : 'mt-3';", $komponen);
         $this->assertStringContainsString("className={besar ? 'min-h-[66px] flex-1 py-4' : undefined}", $komponen);
         $this->assertStringContainsString('{besar ? <span className="text-bagian">Mulai pendakian</span> : \'Mulai pendakian\'}', $komponen);
         $this->assertStringContainsString('{besar ? <span className="text-bagian">Ya, mulai sekarang</span> : \'Ya, mulai sekarang\'}', $komponen);
         // Ruling W6-FF (M-3 tinjauan akhir W6, mutasi D6): konstanta 66 px benar-benar dipakai
         // tombol "Mulai pendakian", bukan hanya didefinisikan.
-        $this->assertStringContainsString("<Button id={idMulai} onClick={buka} className={ukuran} variant={besar ? 'primary' : 'secondary'}>", $komponen);
+        $this->assertStringContainsString("<Button id={idMulai} onClick={buka} className={ukuran} variant={utama ? 'primary' : 'secondary'}>", $komponen);
+        $this->assertStringContainsString('besar = false, utama = besar, rapat = false,', $komponen, 'Tanpa utama, variant mengikuti besar seperti sebelum komponen dipindah.');
     }
 
     /**
      * Ruling W6-FE (M-2 tinjauan akhir W6): galat HTTP tanpa header Inertia saat mulai, misalnya
      * 419 sesudah sesi berakhir, ditulis "belum pasti" di wilayah status dekat tombol lewat
      * onHttpException yang mengembalikan false, bukan dialog galat bawaan Inertia. Berlaku untuk
-     * kedua tombol mulai: tab Mendaki dan ruang kerja trip. Ruang kerja mengembalikan fokus ke
-     * tombolnya sesudah tombol itu aktif lagi.
+     * kedua tombol mulai: tab Mendaki dan ruang kerja trip.
+     *
+     * Diubah ruling CF-3 (audit E2E N-4): ruang kerja tidak lagi punya logika mulai sendiri yang
+     * memanggil `router.post(start.url(...))` langsung dari tombolnya. Kedua halaman memakai
+     * komponen MulaiPendakian yang sama, jadi galat HTTP dan jaringan, konfirmasi sebaris, dan
+     * pengembalian fokus ruang kerja kini persis sama dengan tab Mendaki. Asersi ruang kerja lama
+     * (`gagalHttp`, `setPesanMulai`, id "mulai-ruang-kerja") diganti asersi pemakaian komponen.
      */
     public function test_an_unreadable_server_answer_to_start_is_written_near_the_button(): void
     {
         $kalimat = preg_quote('Belum pasti dimulai: jawaban server tidak dapat dibaca. Muat ulang halaman, lalu periksa apakah pendakian sudah berjalan sebelum mencoba lagi.', '/');
-        $tab = File::get(resource_path('js/pages/Track/Index.tsx'));
 
-        $this->assertMatchesRegularExpression("/onHttpException: \\(\\) => \\{\\s*setPesan\\('{$kalimat}'\\);\\s*return false;\\s*\\},/", $tab);
+        $this->assertMatchesRegularExpression("/onHttpException: \\(\\) => \\{\\s*setPesan\\('{$kalimat}'\\);\\s*return false;\\s*\\},/", $this->komponenMulai());
 
+        foreach (['js/pages/Track/Index.tsx', 'js/pages/Trips/Show.tsx'] as $halaman) {
+            $isi = File::get(resource_path($halaman));
+
+            $this->assertStringContainsString("import { MulaiPendakian } from '@/components/mendaki/MulaiPendakian';", $isi, "{$halaman} wajib memakai komponen mulai bersama.");
+            $this->assertStringNotContainsString('router.post(', $isi, "{$halaman} tidak boleh mengirim mulai sendiri, melewati konfirmasi sebaris.");
+            $this->assertStringNotContainsString('function MulaiPendakian', $isi, "{$halaman} tidak boleh punya salinan komponen mulai sendiri.");
+        }
+    }
+
+    /**
+     * Ruling CF-3 (audit E2E N-4): ruang kerja trip memulai lewat konfirmasi sebaris yang sama.
+     * Variant tetap primary hanya pada hari berangkat (ruling W4-G1) dan berukuran biasa, bukan
+     * 66 px tab Mendaki. start.url hanya diteruskan ke komponen, tidak dipanggil langsung.
+     */
+    public function test_the_trip_workspace_starts_through_the_shared_inline_confirmation(): void
+    {
         $ruangKerja = File::get(resource_path('js/pages/Trips/Show.tsx'));
 
-        $this->assertMatchesRegularExpression("/onHttpException: \\(\\) => \\{\\s*gagalHttp = true;\\s*setPesanMulai\\('{$kalimat}'\\);\\s*return false;\\s*\\},/", $ruangKerja);
-        $this->assertMatchesRegularExpression("/onFinish: \\(\\) => \\{\\s*setMemulai\\(false\\);\\s*if \\(gagalHttp\\) \\{\\s*fokusKe\\('mulai-ruang-kerja'\\);\\s*\\}\\s*\\},/", $ruangKerja);
-        $this->assertStringContainsString('<Button id="mulai-ruang-kerja" onClick={mulai}', $ruangKerja);
-        $this->assertStringContainsString("<p role=\"status\" className={kelas('text-kecil font-bold text-warn-900', pesanMulai !== '' && 'mt-3')}>", $ruangKerja, 'Wilayah status mulai selalu terpasang di kartu Tindakan.');
+        preg_match('/<MulaiPendakian\s[^>]*\/>/s', $ruangKerja, $tag);
+        $this->assertNotEmpty($tag, 'Ruang kerja wajib memasang <MulaiPendakian />.');
+        $this->assertMatchesRegularExpression('/\burl=\{start\.url\(trip\.id\)\}/', $tag[0]);
+        $this->assertMatchesRegularExpression('/\butama=\{trip\.hariBerangkat\}/', $tag[0]);
+        $this->assertMatchesRegularExpression('/\btanggalRencana=\{trip\.hariBerangkat \? null : trip\.tanggalRencana\}/', $tag[0]);
+        $this->assertMatchesRegularExpression('/\brapat\b/', $tag[0]);
+        $this->assertStringNotContainsString('besar', $tag[0], 'Ukuran biasa di ruang kerja, bukan 66 px tab Mendaki.');
+        $this->assertSame(1, substr_count($ruangKerja, 'start.url('), 'start.url hanya diteruskan ke MulaiPendakian.');
+        $this->assertStringNotContainsString('mulai-ruang-kerja', $ruangKerja);
+    }
+
+    /**
+     * Ruling CF-3: bila hari ini belum tanggal rencana trip, peringatan konfirmasi diawali
+     * "Tanggal rencana trip ini {tanggal}." di kedua halaman. Sumber kebenarannya `hariBerangkat`
+     * (KepalaTrip::hariBerangkat()), jadi tanggal itu hanya diteruskan bila hariBerangkat false.
+     */
+    public function test_the_confirmation_names_the_planned_date_before_the_departure_day(): void
+    {
+        $this->assertStringContainsString(
+            '{tanggalRencana ? `Tanggal rencana trip ini ${tanggalRencana}. ` : null}Pendakian yang sudah dimulai tidak dapat dikembalikan menjadi rencana. Satu pendakian dapat berlangsung pada satu waktu.',
+            $this->komponenMulai(),
+        );
+
+        $tab = File::get(resource_path('js/pages/Track/Index.tsx'));
+        $this->assertStringContainsString('tanggalRencana={hariH.hariBerangkat ? null : hariH.tanggalRencana} besar />', $tab);
+        $this->assertStringContainsString('tanggalRencana={trip.hariBerangkat ? null : trip.tanggalRencana} />', $tab);
+    }
+
+    /**
+     * Ruling CF-3: hari-H dan trip lain di tab Mendaki membawa `hariBerangkat` dan `tanggalRencana`
+     * dari atribut yang sudah dimuat. `hariBerangkat` mengikuti zona gunung: 9 Okt 16.30 UTC sudah
+     * 10 Okt 00.30 WITA tetapi masih 9 Okt 23.30 WIB, jadi trip 10 Okt di gunung WITA sudah hari
+     * berangkat, sedangkan trip 10 Okt di gunung WIB belum.
+     */
+    public function test_each_startable_trip_carries_its_departure_day_and_planned_date(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-09 16:30:00', 'UTC'));
+
+        $user = User::factory()->create();
+        $wib = TripPlan::factory()->for($user)->create(['status' => TripStatus::PLANNED->value, 'planned_date' => '2026-10-10']);
+        $gunungWita = Mountain::factory()->create(['timezone' => 'Asia/Makassar']);
+        $wita = TripPlan::factory()->for($user)->for(Trail::factory()->for($gunungWita))->create(['status' => TripStatus::PLANNED->value, 'planned_date' => '2026-10-10']);
+        $nanti = TripPlan::factory()->for($user)->create(['status' => TripStatus::PLANNED->value, 'planned_date' => '2026-11-14', 'end_date' => '2026-11-15']);
+
+        $props = $this->actingAs($user)->get(route('track'))->assertOk()->viewData('page')['props'];
+        $semua = collect([$props['hariH'], ...$props['lain']])->keyBy('id');
+
+        $this->assertCount(3, $semua);
+        $this->assertFalse($semua[$wib->id]['hariBerangkat'], 'Masih 9 Okt di zona WIB.');
+        $this->assertTrue($semua[$wita->id]['hariBerangkat'], 'Sudah 10 Okt di zona WITA.');
+        $this->assertFalse($semua[$nanti->id]['hariBerangkat']);
+        $this->assertSame('10 Okt 2026', $semua[$wib->id]['tanggalRencana']);
+        $this->assertSame('14 Nov 2026', $semua[$nanti->id]['tanggalRencana'], 'Tanggal mulai rencana, bukan rentang.');
     }
 
     /**
@@ -485,7 +568,8 @@ class TrackTabTest extends TestCase
      */
     public function test_the_network_error_sentence_no_longer_claims_the_hike_did_not_start(): void
     {
-        $komponen = File::get(resource_path('js/pages/Track/Index.tsx'));
+        // Diubah ruling CF-3: komponen mulai kini di components/mendaki/MulaiPendakian.tsx.
+        $komponen = $this->komponenMulai();
 
         preg_match('/onNetworkError: \(\) => \{(.*?)\},/s', $komponen, $gagal);
         $this->assertNotEmpty($gagal, 'onNetworkError tidak ditemukan.');
@@ -504,7 +588,8 @@ class TrackTabTest extends TestCase
      */
     public function test_the_network_status_region_is_always_mounted(): void
     {
-        $komponen = File::get(resource_path('js/pages/Track/Index.tsx'));
+        // Diubah ruling CF-3: komponen mulai kini di components/mendaki/MulaiPendakian.tsx.
+        $komponen = $this->komponenMulai();
 
         preg_match('/\)\}\s*<p role="status" className="mt-2 text-kecil font-bold text-primary">\s*\{pesan\}\s*<\/p>\s*<\/div>/', $komponen, $blokAkhir);
         $this->assertNotEmpty($blokAkhir, 'Wilayah status role=status wajib langsung menyusul blok konfirmasi tanpa syarat baru, dan jadi anak langsung div pembungkus.');
@@ -524,7 +609,8 @@ class TrackTabTest extends TestCase
      */
     public function test_button_accessible_names_include_the_trip_name(): void
     {
-        $komponen = File::get(resource_path('js/pages/Track/Index.tsx'));
+        // Diubah ruling CF-3: komponen mulai kini di components/mendaki/MulaiPendakian.tsx.
+        $komponen = $this->komponenMulai();
 
         $this->assertSame(
             3,
@@ -559,6 +645,70 @@ class TrackTabTest extends TestCase
         preg_match_all('/\[overflow-wrap:anywhere\]/', $komponen, $kemunculan);
         $this->assertGreaterThanOrEqual(2, count($kemunculan[0]), 'Judul hari-H dan baris trip lain wajib keduanya memakai overflow-wrap:anywhere.');
         $this->assertStringNotContainsString('break-words', $komponen, 'Kelas break-words dibuang karena tidak berefek (N-4).');
+    }
+
+    /**
+     * Ruling CC-1 (kekhawatiran 4 audit-fix-C, daftar periksa butir 7): penolakan mulai dialihkan
+     * ke ruang kerja trip dengan props `penolakan`, lalu fokus pindah ke "Mulai pendakian" trip itu
+     * (id stabil `mulai-{id}`) bila masih ada, selain itu ke wilayah alasan penolakan.
+     * - Instans yang masih terpasang (ruang kerja; `router.post` Inertia v3 mempertahankan keadaan)
+     *   menutup konfirmasinya, dan onFinish memfokus `idMulai`, bukan `idKonfirmasi`.
+     * - Instans yang sudah lepas (tab Mendaki yang berpindah halaman, atau ruang kerja yang tidak lagi
+     *   menawarkan mulai) memindah fokus langsung lewat id di onSuccess, hanya selama fokus di body
+     *   atau #konten. Penanda terpasang memakai layout effect supaya sudah false sebelum onSuccess.
+     * Asersi sumber karena komponennya dirender di klien; kontrak server yang dibaca cabang itu
+     * diuji test sesudah ini, dan perilakunya dibuktikan di peramban (laporan audit-fix-C).
+     */
+    public function test_a_refused_start_moves_focus_to_the_trip_start_button_or_the_refusal(): void
+    {
+        $komponen = $this->komponenMulai();
+
+        $this->assertStringContainsString("export const ID_PENOLAKAN_TRIP = 'penolakan-trip';", $komponen);
+        $this->assertMatchesRegularExpression('/useLayoutEffect\(\(\) => \{\s*terpasang\.current = true;\s*return \(\) => \{\s*terpasang\.current = false;\s*\};\s*\}, \[\]\);/', $komponen);
+        $this->assertMatchesRegularExpression(
+            '/onSuccess: \(halaman\) => \{\s*if \(!\(halaman\.props as \{ penolakan\?: unknown \}\)\.penolakan\) \{\s*return;\s*\}\s*ditolak = true;\s*if \(terpasang\.current\) \{\s*setYakin\(false\);\s*return;\s*\}\s*const aktif = document\.activeElement;\s*if \(aktif === null \|\| aktif === document\.body \|\| aktif\.id === \'konten\'\) \{\s*\(document\.getElementById\(idMulai\) \?\? document\.getElementById\(ID_PENOLAKAN_TRIP\)\)\?\.focus\(\);\s*\}\s*\},/',
+            $komponen,
+        );
+        $this->assertMatchesRegularExpression('/onFinish: \(\) => \{\s*setMemproses\(false\);\s*fokusKe\(ditolak \? idMulai : idKonfirmasi\);\s*\},/', $komponen);
+
+        $ruangKerja = File::get(resource_path('js/pages/Trips/Show.tsx'));
+        $this->assertStringContainsString('id="penolakan-trip" tabIndex={-1}', $ruangKerja, 'Wilayah alasan penolakan wajib dapat difokus dengan id yang dipakai MulaiPendakian.');
+    }
+
+    /**
+     * Kontrak server yang dipakai CC-1: mulai yang ditolak berakhir di ruang kerja trip itu
+     * dengan `penolakan` terisi. Bila trip masih dapat dimulai (pendakian lain berjalan), tombol
+     * "Mulai pendakian" trip itu tetap dirender (`trip.aktif` dan bukan `berlangsung`); bila trip
+     * sudah berjalan, tombol itu tidak ada dan fokus jatuh ke wilayah penolakan.
+     */
+    public function test_a_refused_start_lands_on_the_trip_workspace_with_its_reason(): void
+    {
+        $user = User::factory()->create();
+        TripPlan::factory()->for($user)->create(['name' => 'Gede bareng', 'status' => TripStatus::IN_PROGRESS->value]);
+        $rencana = TripPlan::factory()->for($user)->create(['status' => TripStatus::PLANNED->value]);
+
+        $this->actingAs($user)->followingRedirects()->post(route('trips.start', $rencana))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Show')
+                ->where('trip.id', $rencana->id)
+                ->where('trip.aktif', true)
+                ->where('trip.berlangsung', false)
+                ->where('penolakan', 'Pendakian "Gede bareng" masih berlangsung. Selesaikan atau batalkan dulu sebelum memulai trip ini.'));
+
+        $berjalan = TripPlan::query()->where('user_id', $user->id)->where('status', TripStatus::IN_PROGRESS->value)->sole();
+
+        $this->actingAs($user)->followingRedirects()->post(route('trips.start', $berjalan))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Trips/Show')
+                ->where('trip.id', $berjalan->id)
+                ->where('trip.berlangsung', true)
+                ->where('penolakan', fn ($penolakan) => is_string($penolakan) && $penolakan !== ''));
+    }
+
+    /** Sumber komponen mulai bersama tab Mendaki dan ruang kerja trip (ruling CF-3). */
+    private function komponenMulai(): string
+    {
+        return File::get(resource_path('js/components/mendaki/MulaiPendakian.tsx'));
     }
 
     private function hitungKueri(User $user): int

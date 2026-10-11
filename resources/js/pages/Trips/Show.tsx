@@ -1,5 +1,6 @@
-import { router, usePage } from '@inertiajs/react';
-import { useState, type ReactNode } from 'react';
+import { usePage } from '@inertiajs/react';
+import type { ReactNode } from 'react';
+import { MulaiPendakian } from '@/components/mendaki/MulaiPendakian';
 import { BatalkanTrip } from '@/components/trips/BatalkanTrip';
 import { FitTrip } from '@/components/trips/FitTrip';
 import { FormulirSelesai, type SelesaiTertahan } from '@/components/trips/FormulirSelesai';
@@ -31,6 +32,8 @@ interface Props extends PropsBersama {
         /** Hari ini di zona gunung >= tanggal rencana (ruling W4-G1): hanya di sinilah
          *  "Mulai pendakian" memakai variant primary; selain itu secondary. */
         hariBerangkat: boolean;
+        /** Tanggal mulai rencana, misalnya "14 Nov 2026", untuk peringatan konfirmasi mulai (ruling CF-3). */
+        tanggalRencana: string;
     };
     langkah: Langkah[];
     fit: FitRingkas | null;
@@ -58,43 +61,9 @@ const tautanTeks =
  */
 export default function Show() {
     const { kepala, trip, langkah, fit, penilaian, izin, hasilPendakian, completionStates, alasanBatal, penolakan, pengingat, keselamatan, kelola, flash, perangkat } = usePage<Props>().props;
-    const [memulai, setMemulai] = useState(false);
     const fokusKe = useFokusSesudahRender();
     // Dibaca terpisah dari destrukturisasi di atas, yang menjadi jangkar Tugas 10.
     const { ringkasanBatal } = usePage<Props>().props;
-
-    const [pesanMulai, setPesanMulai] = useState('');
-
-    /**
-     * Galat HTTP tanpa header Inertia saat mulai (ruling W6-FE): kalimat "belum pasti" di wilayah
-     * status dekat tombol, bukan dialog galat bawaan Inertia, dan fokus kembali ke tombol sesudah
-     * tombolnya aktif lagi. Galat jaringan tetap ditangani spanduk jaringan AppLayout.
-     */
-    const mulai = () => {
-        let gagalHttp = false;
-
-        setMemulai(true);
-        setPesanMulai('');
-        router.post(
-            start.url(trip.id),
-            {},
-            {
-                onHttpException: () => {
-                    gagalHttp = true;
-                    setPesanMulai('Belum pasti dimulai: jawaban server tidak dapat dibaca. Muat ulang halaman, lalu periksa apakah pendakian sudah berjalan sebelum mencoba lagi.');
-
-                    return false;
-                },
-                onFinish: () => {
-                    setMemulai(false);
-
-                    if (gagalHttp) {
-                        fokusKe('mulai-ruang-kerja');
-                    }
-                },
-            },
-        );
-    };
 
     /**
      * Selesai di ruang kerja menunggu aksi lapangan trip ini yang masih di perangkat ini (ruling
@@ -256,21 +225,30 @@ export default function Show() {
                             </Card>
                         ) : null}
 
+                        {/* Ruling CF-3 (audit E2E N-4): ruling T1 berlaku juga di sini, jadi memulai lewat
+                            konfirmasi sebaris MulaiPendakian yang sama dengan tab Mendaki, termasuk
+                            kalimat galat jaringan dan HTTP serta pengembalian fokusnya. Variant primary
+                            hanya sejak hari berangkat (ruling W4-G1); sebelum itu peringatannya menyebut
+                            tanggal rencana. items-start selama belum dimulai: wilayah status komponen
+                            yang selalu terpasang tidak meregangkan tombol Batalkan trip di sebelahnya. */}
                         {trip.aktif ? (
                             <Card title="Tindakan">
-                                <div className="flex flex-wrap gap-3">
+                                <div className={kelas('flex flex-wrap gap-3', !trip.berlangsung && 'items-start')}>
                                     {trip.berlangsung ? (
                                         <Button href={hike.url(trip.id)}>Buka mode lapangan</Button>
                                     ) : (
-                                        <Button id="mulai-ruang-kerja" onClick={mulai} processing={memulai} variant={trip.hariBerangkat ? 'primary' : 'secondary'}>
-                                            Mulai pendakian
-                                        </Button>
+                                        <MulaiPendakian
+                                            id={trip.id}
+                                            nama={kepala.nama}
+                                            gunung={kepala.gunung}
+                                            url={start.url(trip.id)}
+                                            utama={trip.hariBerangkat}
+                                            tanggalRencana={trip.hariBerangkat ? null : trip.tanggalRencana}
+                                            rapat
+                                        />
                                     )}
                                     <BatalkanTrip tripId={trip.id} url={cancel.url(trip.id)} alasan={alasanBatal} berlangsung={trip.berlangsung} onHasil={kabarBatal} />
                                 </div>
-                                <p role="status" className={kelas('text-kecil font-bold text-warn-900', pesanMulai !== '' && 'mt-3')}>
-                                    {pesanMulai}
-                                </p>
                             </Card>
                         ) : null}
 

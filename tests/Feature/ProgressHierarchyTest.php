@@ -64,6 +64,10 @@ class ProgressHierarchyTest extends TestCase
         return File::get(resource_path('js/pages/Community/HikerProgress.tsx'));
     }
 
+    /**
+     * "Total elevation gain" menjadi "Total tanjakan" (ruling audit-fix-B BF-7a, sisa
+     * M-3, TA-m10): prosa berbahasa Inggris tidak boleh tampil ke pengguna.
+     */
     public function test_the_map_comes_before_the_figures(): void
     {
         $this->actingAs($this->pendakiDenganPuncak())->get(route('progress'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
@@ -105,7 +109,8 @@ class ProgressHierarchyTest extends TestCase
 
     /**
      * Empat kartu setara adalah susunan yang tidak memilih apa pun. Angka pada halaman
-     * ini berbagi satu daftar, bukan satu kartu masing-masing.
+     * ini berbagi satu daftar, bukan satu kartu masing-masing. Label "Total tanjakan"
+     * (bukan "Total elevation gain") mengikuti BF-7a/M-3, TA-m10.
      */
     public function test_the_figures_are_one_group_not_four_competing_cards(): void
     {

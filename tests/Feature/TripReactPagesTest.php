@@ -95,10 +95,18 @@ class TripReactPagesTest extends TestCase
     /**
      * Ruling AF-10 (audit E2E M-8): satu nama untuk ruang kerja trip di setiap tombol kembali
      * menuju trips.show. Sapuan, bukan daftar: halaman baru yang menulis nama lain ikut merah.
+     *
+     * Diperluas ruling CF-4 (audit E2E N-5): sapuan lama hanya mengenali nama impor `show`, jadi
+     * Trips/Print.tsx, yang mengimpor `show as tripShow`, lolos dengan label "Trip". Kini nama
+     * lokal rute trips.show dibaca dari impor '@/routes/trips' di setiap berkas, termasuk alias
+     * dan impor namespace. Setiap tautan kembali PageHeader (`induk`) yang memakai nama itu wajib
+     * berlabel literal "Ruang kerja trip"; induk yang bentuknya tidak terbaca sapuan ikut dihitung
+     * pelanggar, supaya tidak lolos diam-diam.
      */
     public function test_every_way_back_to_the_trip_workspace_uses_one_name(): void
     {
         $pelanggar = [];
+        $diperiksa = 0;
 
         foreach (File::allFiles(resource_path('js')) as $berkas) {
             $isi = $berkas->getContents();
@@ -107,17 +115,57 @@ class TripReactPagesTest extends TestCase
                 $pelanggar[] = $berkas->getRelativePathname();
             }
 
-            preg_match_all("/induk=\{\{ href: show\.url\([^)]*\), label: '([^']+)' \}\}/", $isi, $label);
+            foreach ($this->namaRuteRuangKerja($isi) as $rute) {
+                $q = preg_quote($rute, '/');
+                $semua = preg_match_all("/induk=\{[^\n]*?(?<![\w.]){$q}\.url\(/", $isi);
+                preg_match_all("/induk=\{\{ href: {$q}\.url\([^)]*\), label: '([^']+)' \}\}/", $isi, $label);
+                $diperiksa += $semua;
 
-            foreach ($label[1] as $nama) {
-                if ($nama !== 'Ruang kerja trip') {
-                    $pelanggar[] = $berkas->getRelativePathname().": {$nama}";
+                if ($semua !== count($label[1])) {
+                    $pelanggar[] = $berkas->getRelativePathname().": induk ke {$rute} tanpa label literal yang terbaca";
+                }
+
+                foreach ($label[1] as $nama) {
+                    if ($nama !== 'Ruang kerja trip') {
+                        $pelanggar[] = $berkas->getRelativePathname().": {$nama}";
+                    }
                 }
             }
         }
 
         $this->assertSame([], $pelanggar);
+        $this->assertGreaterThanOrEqual(4, $diperiksa, 'Ubah, Persiapan, Cek, dan Versi cetak kembali ke ruang kerja trip.');
         $this->assertStringContainsString("induk={{ href: show.url(trip.id), label: 'Ruang kerja trip' }}", File::get(resource_path('js/pages/Trips/Edit.tsx')));
+        $this->assertStringContainsString("induk={{ href: tripShow.url(tripId), label: 'Ruang kerja trip' }}", File::get(resource_path('js/pages/Trips/Print.tsx')));
+    }
+
+    /**
+     * Nama lokal rute trips.show di satu berkas: `show`, aliasnya (`show as tripShow`), atau
+     * `{namespace}.show` dari `import * as ... from '@/routes/trips'`.
+     *
+     * @return array<int, string>
+     */
+    private function namaRuteRuangKerja(string $isi): array
+    {
+        $nama = [];
+
+        preg_match_all("/import\s*\{([^}]*)\}\s*from\s*'@\/routes\/trips';/", $isi, $impor);
+
+        foreach ($impor[1] as $daftar) {
+            foreach (explode(',', $daftar) as $bagian) {
+                if (preg_match('/^\s*show(?:\s+as\s+(\w+))?\s*$/', $bagian, $cocok)) {
+                    $nama[] = $cocok[1] ?? 'show';
+                }
+            }
+        }
+
+        preg_match_all("/import\s*\*\s*as\s+(\w+)\s+from\s*'@\/routes\/trips';/", $isi, $ruang);
+
+        foreach ($ruang[1] as $namaRuang) {
+            $nama[] = "{$namaRuang}.show";
+        }
+
+        return $nama;
     }
 
     /**

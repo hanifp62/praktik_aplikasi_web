@@ -202,7 +202,10 @@ class ReporterImpactTest extends TestCase
 
         $sumber = $this->sumber();
         $mulai = strpos($sumber, '{laporan.terbit === 0 && laporan.menunggu > 0 ? (');
-        $cabangLain = strpos($sumber, ') : laporan.terbit === 0 ? (');
+        // DF-10 (tinjauan audit TA-m11) menyisipkan cabang "ditolak" di antara cabang
+        // menunggu dan cabang "belum ada laporan", jadi penanda cabang berikutnya kini
+        // cabang itu, bukan lagi langsung cabang terbit === 0.
+        $cabangLain = strpos($sumber, ') : laporan.terbit === 0 && laporan.menunggu === 0 && laporan.ditolak > 0 ? (');
 
         $this->assertNotFalse($mulai, 'Cabang laporan menunggu harus diperiksa lebih dulu daripada cabang belum ada laporan.');
         $this->assertNotFalse($cabangLain);
@@ -212,5 +215,38 @@ class ReporterImpactTest extends TestCase
         $this->assertStringContainsString('<span data-angka>{laporan.menunggu}</span> laporan kondisi Anda sedang menunggu moderasi. Laporan tampil untuk pendaki lain sesudah disetujui.', $cabang);
         $this->assertStringNotContainsString('reportsCreate', $cabang);
         $this->assertStringNotContainsString('Tulis laporan kondisi', $cabang);
+    }
+
+    /**
+     * Ruling DF-10 (tinjauan audit TA-m11, sisa I-3): pelapor yang laporannya hanya
+     * ditolak atau dihapus moderator tidak boleh membaca "Belum ada laporan kondisi dari
+     * Anda", sama seperti pelapor yang belum pernah menulis laporan sama sekali. Riwayat
+     * pendakian untuk laporan yang sama menulis "Ditolak", jadi kontradiksi antarhalaman
+     * (sejenis I-3) harus ditutup di sini juga. Ajakan menulis laporan baru tetap ada,
+     * berbeda dari cabang "menunggu" yang sengaja tanpa ajakan.
+     */
+    public function test_a_reporter_with_only_rejected_reports_is_told_where_the_reason_lives(): void
+    {
+        $pelapor = User::factory()->create();
+        $this->laporan($pelapor, ModerationStatus::REJECTED);
+
+        $this->actingAs($pelapor)->get(route('progress'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('laporan.terbit', 0)
+            ->where('laporan.menunggu', 0)
+            ->where('laporan.ditolak', 1));
+
+        $sumber = $this->sumber();
+        $mulai = strpos($sumber, ') : laporan.terbit === 0 && laporan.menunggu === 0 && laporan.ditolak > 0 ? (');
+        $cabangLain = strpos($sumber, ') : laporan.terbit === 0 ? (', $mulai);
+
+        $this->assertNotFalse($mulai, 'Cabang laporan ditolak/dihapus tanpa yang terbit atau menunggu harus ada.');
+        $this->assertNotFalse($cabangLain);
+
+        $cabang = substr($sumber, $mulai, $cabangLain - $mulai);
+        $this->assertStringContainsString('Belum ada laporan Anda yang terbit.', $cabang);
+        $this->assertStringContainsString('{laporan.ditolak}', $cabang);
+        $this->assertStringContainsString('Riwayat pendakian', $cabang);
+        $this->assertStringContainsString('reportsCreate', $cabang, 'Ajakan menulis laporan baru harus tetap ada di cabang ini.');
+        $this->assertStringContainsString('Tulis laporan kondisi', $cabang);
     }
 }

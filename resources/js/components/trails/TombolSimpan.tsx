@@ -57,6 +57,9 @@ const opsi = { preserveScroll: true, preserveState: true } as const;
  * dikembalikan lewat useFokusKembali yang sama dengan Button (ruling AF-2, audit E2E I-2): klik
  * tetikus yang memfokus tombol tidak lagi meninggalkan fokus di body. Bentuk tombol dan hapus
  * memakai Button, yang sudah melakukannya sendiri.
+ *
+ * Bentuk hapus lepas bersama kartunya. Sesudah Urungkan berhasil, fokus pindah ke tombol hapus
+ * kartu yang dipulihkan lewat id stabil per jalur, bukan tertinggal di #konten (ruling CF-6).
  */
 export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolSimpanProps) {
     const [memproses, setMemproses] = useState(false);
@@ -65,6 +68,9 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
     const papanKetik = useRef(false);
     const pemicu = useRef<HTMLButtonElement | null>(null);
     const fokusKembali = useFokusKembali(memproses);
+    // Id stabil per jalur untuk tombol hapus kartu Simpanan: kartu yang dipulihkan Urungkan adalah
+    // instans baru, jadi tujuannya dicari lewat id, bukan lewat ref tombol lama (ruling CF-6).
+    const idHapus = `hapus-simpanan-${jalur.id}`;
 
     const simpan = (catatan: string | null = null, urungkan = true) => {
         setMemproses(true);
@@ -85,6 +91,20 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
                     // dimuat ulang sudah cukup (ruling W3-4b).
                 } else if (urungkan) {
                     tampilkanToast(`${jalur.name} disimpan.`, () => router.delete(remove.url({ trail: jalur.id }), opsi), { fokus: papanKetik.current });
+                }
+
+                // Ruling CF-6 (audit E2E CU-1): Urungkan pada bentuk hapus memulihkan kartu Simpanan,
+                // tetapi tombol ini sudah lepas bersama kartu lamanya, jadi toast hanya dapat mundur
+                // ke #konten. Halaman baru sudah dirender sebelum onSuccess (swap Inertia memakai
+                // flushSync), jadi fokus dipindah ke tombol hapus kartu yang dipulihkan. Fokus yang
+                // sudah dipindah pengguna selama kiriman tidak direbut; bila kartu itu tidak ada,
+                // #konten tetap.
+                if (!urungkan && !ditolak && bentuk === 'hapus') {
+                    const aktif = document.activeElement;
+
+                    if (aktif === null || aktif === document.body || aktif.id === 'konten') {
+                        document.getElementById(idHapus)?.focus();
+                    }
                 }
             },
         });
@@ -138,7 +158,7 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
     return (
         <>
             {bentuk === 'hapus' ? (
-                <Button variant="ghost" size="sm" processing={memproses} onClick={tekan}>
+                <Button id={idHapus} variant="ghost" size="sm" processing={memproses} onClick={tekan}>
                     Hapus dari simpanan<span className="sr-only">: {jalur.name}</span>
                 </Button>
             ) : bentuk === 'ikon' ? (

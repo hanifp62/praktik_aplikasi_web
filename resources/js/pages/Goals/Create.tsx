@@ -69,6 +69,7 @@ export default function Create() {
                             name="region"
                             label="Wilayah (opsional)"
                             placeholder="Jawa Tengah"
+                            autoComplete="off"
                             value={form.data.region}
                             onChange={(e) => form.setData('region', e.target.value)}
                             error={form.errors.region}
