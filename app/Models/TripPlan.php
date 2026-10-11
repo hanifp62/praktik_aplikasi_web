@@ -7,7 +7,9 @@ use App\Enums\PreparationStatus;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
 use App\Services\OfficialStatusService;
+use App\Support\Timezone;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -52,13 +54,20 @@ class TripPlan extends Model
     }
 
     /**
-     * Tujuan yang dipakai menilai kecocokan "untuk rencana ini" (spec v3 bagian 6.4 dan 6.5):
-     * tujuan tersimpan trip ini, atau untuk trip lama yang dibuat tanpa tujuan, jenis dan
-     * tanggal tripnya sebagai tujuan sementara yang tidak pernah disimpan.
+     * Tujuan yang dipakai menilai kecocokan "untuk rencana ini" (spec v3 bagian 6.4, 6.5, dan
+     * 6.11): jenis dan tanggal trip ini SELALU, di atas salinan tujuan tersimpannya yang tidak
+     * pernah disimpan (ruling W4-FA, pola RencanaTrip::kecocokan()).
+     *
+     * Hanya dua isian itu yang dimiliki trip dan dibaca penilaian: jenis trip dipakai syarat
+     * dasar durasi (RouteFitService::hardConstraintFailures) dan preferensi jenis, tanggal
+     * dipakai peringatan jendela izin (RouteFitService::peringatan). Batas tanjakan dan target
+     * durasi tetap milik tujuan, karena trip tidak punya isian untuk keduanya. Tanpa penimpaan
+     * ini trip Tektok yang tertaut ke tujuan Camping lolos syarat dasar di jalur bermalam, dan
+     * trip Camping yang tertaut ke tujuan Tektok terkunci "tidak disarankan" (probe P1 dan P5).
      */
     public function tujuanPenilaian(): HikingGoal
     {
-        return $this->hikingGoal ?? new HikingGoal([
+        return ($this->hikingGoal?->replicate() ?? new HikingGoal)->fill([
             'trip_type' => $this->trip_type,
             'target_date' => $this->planned_date,
         ]);
@@ -105,6 +114,59 @@ class TripPlan extends Model
     public function latestReadinessCheck(): HasOne
     {
         return $this->hasOne(ReadinessCheck::class)->latestOfMany();
+    }
+
+    /**
+     * Baris tinjauan pra-berangkat terakhir (pre_departure_confirmed), bukan baris terakhir apa
+     * pun: "Simpan hasil cek ini" sesudah tinjauan menulis baris baru yang belum dikonfirmasi.
+     * Relasi, bukan kueri lepas, supaya indeks trip memuatnya sekali untuk semua kartu (I1
+     * tinjauan akhir W4).
+     */
+    public function latestConfirmedReadinessCheck(): HasOne
+    {
+        return $this->hasOne(ReadinessCheck::class)->ofMany(
+            ['id' => 'max'],
+            fn (Builder $query) => $query->where('pre_departure_confirmed', true),
+        );
+    }
+
+    /**
+     * Tinjauan pra-berangkat yang tercatat untuk trip ini, atau null (ruling W4-FB dan NEW-2).
+     *
+     * Tercatat berarti baris terkonfirmasi ada DAN status trip tidak dapat lagi bertransisi ke
+     * Siap berangkat: tandanya tetap terbaca sesudah pendakian dimulai, selesai, atau batal,
+     * sedangkan trip yang kembali ke Direncanakan dengan baris lama boleh meninjau lagi. Satu
+     * predikat untuk ruang kerja (TripSteps), indeks (TripRowResource), dan Cek kesiapan
+     * (PreDepartureCheck::alasanPenolakan), supaya ketiganya tidak pernah berbeda jawaban.
+     */
+    public function tinjauanTercatat(): ?ReadinessCheck
+    {
+        if ($this->status->canTransitionTo(TripStatus::READY_FOR_DEPARTURE)) {
+            return null;
+        }
+
+        return $this->latestConfirmedReadinessCheck;
+    }
+
+    /**
+     * Rencana yang belum dimulai tetapi tanggal naiknya sudah lewat menurut hari ini di zona
+     * gunungnya (ruling W4-1c dan W4-Fpre a). Trip itu tetap di Mendatang tanpa hitung mundur
+     * dan tanpa perubahan status otomatis; kepala dan kartunya menyebutnya, dan aksinya
+     * mengajak mengubah rencana.
+     */
+    public function tanggalRencanaLewat(): bool
+    {
+        return $this->status->belumDimulai()
+            && Timezone::hariSampai($this->planned_date, Timezone::forTrail($this->trail)) < 0;
+    }
+
+    /**
+     * Rencana yang masih di depan: belum dimulai dan tanggalnya belum lewat. Hanya rencana
+     * seperti ini yang ditawari aksi persiapan lanjutan di Cek kesiapan (W4-4d).
+     */
+    public function masihDirencanakan(): bool
+    {
+        return $this->status->belumDimulai() && ! $this->tanggalRencanaLewat();
     }
 
     /**

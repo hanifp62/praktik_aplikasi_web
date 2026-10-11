@@ -84,7 +84,8 @@ class ConsiderationController extends Controller
      * simpanan yang penuh ditolak dengan pesan yang sama. Baris yang sudah ada (misalnya
      * dari tab atau perangkat lain) di-flash terpisah lewat simpanan-sudah-ada, supaya
      * klien tidak menawarkan Urungkan-sebagai-hapus untuk baris yang tidak dibuatnya
-     * (tinjauan Tugas 4 temuan 2; ruling W3-4b).
+     * (tinjauan Tugas 4 temuan 2; ruling W3-4b). Payload itu menyebut id jalurnya, supaya
+     * tombol hanya membaca jawaban untuk jalurnya sendiri (pola W4-4e).
      *
      * Satu pengecualian untuk "hanya jalur terbit": Urungkan sesudah pemiliknya menghapus jalur
      * yang sudah ditarik dari terbit (masih tampil di Simpanan bersama catatannya). Untuk itu
@@ -115,7 +116,7 @@ class ConsiderationController extends Controller
         if ($hasil === ConsiderationOutcome::SUDAH_ADA) {
             return back()
                 ->with('pengumuman', $jalur->name.' '.Str::lcfirst(ConsiderationOutcome::SUDAH_ADA->label()).'.')
-                ->with('simpanan-sudah-ada', true);
+                ->with('simpanan-sudah-ada', ['trailId' => $jalur->id]);
         }
 
         return back()->with('pengumuman', $jalur->name.' '.Str::lcfirst(ConsiderationOutcome::DITAMBAHKAN->label()).'.');

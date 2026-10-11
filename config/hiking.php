@@ -172,6 +172,11 @@ return [
         // perlengkapan). Tiap kelompok punya hitungannya sendiri lewat awalan kunci,
         // sehingga menandai perlengkapan tidak menghabiskan jatah mengubah rencana.
         'personal_writes_per_minute' => 30,
+
+        // Centang butir persiapan (W4-Fpre c): satu ketukan per butir ditambah Urungkan, dan
+        // daftar bawaan memuat belasan butir, jadi batas tulisan pribadi 30 per menit terlalu
+        // ketat untuk pendaki yang mencentang cepat. Hitungannya sendiri (kunci persiapan-butir).
+        'preparation_toggles_per_minute' => 120,
     ],
 
     /*
@@ -237,9 +242,9 @@ return [
     |--------------------------------------------------------------------------
     */
     'trips' => [
-        // Batas peserta satu rencana. Rombongan yang lebih besar diurus lewat
-        // pengelola kawasan, bukan lewat satu rencana pribadi.
-        'max_participants' => 30,
+        // Batas peserta satu rencana (spec v3 bagian 6.8: 1 sampai 12). Rombongan yang
+        // lebih besar diurus lewat pengelola kawasan, bukan lewat satu rencana pribadi.
+        'max_participants' => 12,
 
         // Tanggal selesai paling lambat sekian hari setelah tanggal mulai. Rentang
         // yang lebih panjang hampir selalu salah ketik bulan atau tahun.

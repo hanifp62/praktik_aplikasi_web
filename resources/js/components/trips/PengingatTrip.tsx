@@ -26,13 +26,18 @@ export interface PengingatHalaman {
  * Sakelar hanya ditawarkan selama trip belum dimulai; sesudahnya server menolak, jadi
  * tombolnya tidak tampil dan kalimatnya menjelaskan. Isi surel tidak pernah menyatakan
  * jalur atau pendaki aman (R-012).
+ *
+ * `kembali` menyebut halaman asal ("persiapan"), supaya server kembali ke halaman yang sama
+ * (ruling W4-FC). Kunjungannya preserveState: komponen halaman yang sama tidak dipasang ulang
+ * (Inertia 3.7.1 memakai kunci halaman yang sama bila preserveState), jadi antrean centang di
+ * Persiapan tidak hilang.
  */
-export function PengingatTrip({ tripId, pengingat }: { tripId: number; pengingat: PengingatHalaman }) {
+export function PengingatTrip({ tripId, pengingat, kembali }: { tripId: number; pengingat: PengingatHalaman; kembali?: 'persiapan' }) {
     const [memproses, setMemproses] = useState(false);
 
     const ubah = () => {
         setMemproses(true);
-        router.put(update.url(tripId), { aktif: !pengingat.aktif }, { preserveScroll: true, onFinish: () => setMemproses(false) });
+        router.put(update.url(tripId), { aktif: !pengingat.aktif, kembali: kembali ?? null }, { preserveState: true, preserveScroll: true, onFinish: () => setMemproses(false) });
     };
 
     return (

@@ -133,6 +133,16 @@ class Trail extends Model
     }
 
     /**
+     * Padanan instance scopePublished(): terbit dan tidak diarsipkan. Satu predikat untuk
+     * setiap halaman yang memutuskan apakah rincian atau penilaian jalur ini boleh ditautkan
+     * (tinjauan Tugas 1 M3 dan Tugas 4 M1), bukan salinan per halaman.
+     */
+    public function terbit(): bool
+    {
+        return $this->is_published && $this->archived_at === null;
+    }
+
+    /**
      * Apakah jalur ini punya geometri, tanpa memaksa satu query per jalur.
      *
      * Sama seperti countFor(), pemanggil yang sudah memuat penandanya lewat

@@ -89,10 +89,10 @@ class PermitService
     ): ?string {
         $jendela = $this->bookingWindowFor($trail, $targetDate, $requirement);
 
-        // Jendela yang sedang terbuka bukan peringatan. Ia tetap penting, tetapi
-        // tempatnya di halaman trip sebagai ajakan bertindak, bukan di daftar
-        // peringatan yang dibaca sebagai daftar hambatan.
-        return $jendela !== null && $jendela['state'] !== self::BOOKING_TERBUKA
+        // Hanya jendela yang menghalangi (sudah tutup atau belum dibuka) yang menjadi
+        // peringatan. Jendela terbuka tempatnya di halaman trip sebagai ajakan bertindak, dan
+        // jendela yang tanggal bukanya belum tercatat bukan hambatan yang diketahui.
+        return $jendela !== null && in_array($jendela['state'], [self::BOOKING_DITUTUP, self::BOOKING_BELUM_DIBUKA], true)
             ? $jendela['message']
             : null;
     }
@@ -104,6 +104,12 @@ class PermitService
     public const BOOKING_DITUTUP = 'DITUTUP';
 
     /**
+     * Belum tutup menurut catatan, tetapi tanggal bukanya tidak tercatat (ruling W4-FE, R-007):
+     * tidak pernah ditulis "sedang dibuka", karena itu mengisi data yang hilang dengan asumsi.
+     */
+    public const BOOKING_BUKA_BELUM_TERCATAT = 'BUKA_BELUM_TERCATAT';
+
+    /**
      * Posisi tanggal rencana terhadap jendela pemesanan izin.
      *
      * Aritmetikanya hanya ada di sini. Jendela ini bergerak relatif terhadap tanggal
@@ -111,7 +117,11 @@ class PermitService
      * ada satu pun data yang disunting: itulah sebabnya ia perlu dihitung ulang setiap
      * halaman trip dibuka, bukan disimpan.
      *
-     * @return array{state: string, message: string, requirement: PermitRequirement}|null
+     * `buka` dan `tutup` adalah tanggal kalender H-buka dan H-tutup untuk tanggal rencana itu
+     * (hari pertama dan hari terakhir pemesanan), atau null bila aturannya tidak mencatatnya;
+     * halaman menuliskannya tanpa menghitung ulang (tinjauan Tugas 3 M8).
+     *
+     * @return array{state: string, message: string, requirement: PermitRequirement, buka: Carbon|null, tutup: Carbon|null}|null
      */
     public function bookingWindowFor(
         Trail $trail,
@@ -151,11 +161,16 @@ class PermitService
 
         $closes = $requirement->booking_closes_days_before;
         $opens = $requirement->booking_opens_days_before;
+        $tanggal = Carbon::parse($targetDate->toDateString());
+        $dasar = [
+            'requirement' => $requirement,
+            'buka' => $opens !== null ? $tanggal->copy()->subDays($opens) : null,
+            'tutup' => $closes !== null ? $tanggal->copy()->subDays($closes) : null,
+        ];
 
         if ($closes !== null && $daysAhead < $closes) {
-            return [
+            return $dasar + [
                 'state' => self::BOOKING_DITUTUP,
-                'requirement' => $requirement,
                 'message' => $this->message($requirement, sprintf(
                     'Pemesanan izin untuk jalur ini sudah ditutup H-%d, sedangkan tanggal rencana Anda tinggal %d hari lagi.',
                     $closes,
@@ -165,9 +180,8 @@ class PermitService
         }
 
         if ($opens !== null && $daysAhead > $opens) {
-            return [
+            return $dasar + [
                 'state' => self::BOOKING_BELUM_DIBUKA,
-                'requirement' => $requirement,
                 'message' => $this->message($requirement, sprintf(
                     'Pemesanan izin untuk jalur ini belum dibuka, baru dibuka H-%d, sedangkan tanggal rencana Anda masih %d hari lagi.',
                     $opens,
@@ -176,9 +190,22 @@ class PermitService
             ];
         }
 
-        return [
+        // Tanggal buka kosong tidak pernah jatuh ke "sedang dibuka" (R-007, ruling W4-FE).
+        if ($opens === null) {
+            return $dasar + [
+                'state' => self::BOOKING_BUKA_BELUM_TERCATAT,
+                'message' => $this->message($requirement, $closes !== null
+                    ? sprintf(
+                        'Tanggal buka pemesanan izin untuk jalur ini belum tercatat; pemesanan ditutup H-%d, yaitu %d hari lagi.',
+                        $closes,
+                        max(0, $daysAhead - $closes)
+                    )
+                    : 'Jendela pemesanan izin untuk jalur ini belum tercatat.'),
+            ];
+        }
+
+        return $dasar + [
             'state' => self::BOOKING_TERBUKA,
-            'requirement' => $requirement,
             'message' => $this->message($requirement, $closes !== null
                 ? sprintf(
                     'Pemesanan izin untuk jalur ini sedang dibuka dan ditutup H-%d, yaitu %d hari lagi.',
@@ -187,6 +214,95 @@ class PermitService
                 )
                 : 'Pemesanan izin untuk jalur ini sedang dibuka.'),
         ];
+    }
+
+    /**
+     * Keterangan dan ajakan pemesanan izin per keadaan jendela, satu penentu untuk Persiapan,
+     * Rencanakan, dan Cek kesiapan (M1 tinjauan akhir W4; ruang kerja menyusul di W8).
+     *
+     * - Terbuka: ajakan "Pesan di sistem resmi", dengan hari terakhirnya bila tercatat.
+     * - Tanggal buka belum tercatat: tautan netral "Periksa di sistem resmi", bukan ajakan
+     *   memesan, karena tidak diketahui apakah pemesanannya sudah dibuka.
+     * - Sudah tutup atau belum dibuka: tanpa tautan; keterangannya menyebut hari terakhir atau
+     *   hari pertama pemesanan.
+     * - Tanggal yang sudah lewat, aturan tanpa alamat pemesanan, atau trip yang sudah selesai
+     *   atau batal ($bolehMemesan false): tanpa tautan.
+     *
+     * Keterangannya tanpa alamat pemesanan mentah, dan kuota yang belum terverifikasi disebut
+     * begitu (tinjauan Tugas 4 M9, lewat PermitRequirement::summary()). Memount menautkan,
+     * tidak memesan (§43).
+     *
+     * @return array{keadaan: string|null, tautan: array{href: string, teks: string, label: string}|null, keterangan: string}
+     */
+    public function pemesanan(Trail $trail, ?CarbonInterface $tanggal, PermitRequirement $aturan, bool $bolehMemesan = true): array
+    {
+        return self::pemesananDariJendela($this->bookingWindowFor($trail, $tanggal, $aturan), $aturan, $bolehMemesan);
+    }
+
+    /**
+     * Penentu yang sama dengan pemesanan(), untuk jendela yang sudah dihitung pemanggilnya.
+     * Rencanakan menulis judul dan tautan dari SATU jendela, jadi "hari ini" hanya dibaca sekali
+     * dan pergantian tengah malam tidak dapat membuat keduanya berasal dari dua keadaan
+     * (W4-FK N4).
+     *
+     * @param  array{state: string, message: string, requirement: PermitRequirement, buka: Carbon|null, tutup: Carbon|null}|null  $jendela  hasil bookingWindowFor()
+     * @return array{keadaan: string|null, tautan: array{href: string, teks: string, label: string}|null, keterangan: string}
+     */
+    public static function pemesananDariJendela(?array $jendela, PermitRequirement $aturan, bool $bolehMemesan = true): array
+    {
+        $ringkas = $aturan->summary();
+        $tutup = $jendela['tutup'] ?? null;
+        $hariTerakhir = $tutup !== null ? ', hari terakhirnya '.self::hari($tutup) : '';
+        $dapatDitautkan = $bolehMemesan && filled($aturan->booking_url);
+
+        return match ($jendela['state'] ?? null) {
+            self::BOOKING_TERBUKA => [
+                'keadaan' => self::BOOKING_TERBUKA,
+                'tautan' => $dapatDitautkan ? [
+                    'href' => $aturan->booking_url,
+                    'teks' => 'Pesan di sistem resmi'.($tutup !== null ? ', paling lambat '.self::hari($tutup) : ''),
+                    'label' => 'Pesan',
+                ] : null,
+                'keterangan' => $ringkas,
+            ],
+            self::BOOKING_BUKA_BELUM_TERCATAT => [
+                'keadaan' => self::BOOKING_BUKA_BELUM_TERCATAT,
+                'tautan' => $bolehMemesan ? self::tautanPeriksa($aturan) : null,
+                'keterangan' => $ringkas.'. Tanggal buka pemesanan belum tercatat di Memount'.$hariTerakhir.'.',
+            ],
+            self::BOOKING_DITUTUP => [
+                'keadaan' => self::BOOKING_DITUTUP,
+                'tautan' => null,
+                'keterangan' => $ringkas.'. Pemesanan di sistem resmi sudah tutup'.$hariTerakhir.'.',
+            ],
+            self::BOOKING_BELUM_DIBUKA => [
+                'keadaan' => self::BOOKING_BELUM_DIBUKA,
+                'tautan' => null,
+                'keterangan' => $ringkas.'. Pemesanan di sistem resmi dibuka mulai '.self::hari($jendela['buka']).'.',
+            ],
+            default => ['keadaan' => null, 'tautan' => null, 'keterangan' => $ringkas],
+        };
+    }
+
+    /**
+     * Tautan netral ke sistem resmi ketika jendela pemesanannya tidak diketahui: "Periksa",
+     * bukan ajakan memesan, karena tidak diketahui apakah pemesanannya sudah dibuka.
+     *
+     * @return array{href: string, teks: string, label: string}|null
+     */
+    public static function tautanPeriksa(PermitRequirement $aturan): ?array
+    {
+        return filled($aturan->booking_url)
+            ? ['href' => $aturan->booking_url, 'teks' => 'Periksa di sistem resmi', 'label' => 'Periksa']
+            : null;
+    }
+
+    /**
+     * Hari kalender pemesanan, cara tulis yang sama di semua halaman trip.
+     */
+    public static function hari(CarbonInterface $tanggal): string
+    {
+        return $tanggal->translatedFormat('D, j M');
     }
 
     /**

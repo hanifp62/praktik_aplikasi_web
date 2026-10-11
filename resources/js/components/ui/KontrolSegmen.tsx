@@ -17,6 +17,8 @@ interface KontrolSegmenProps<T extends string> {
     pilihan: ReadonlyArray<PilihanSegmen<T>>;
     nilai: T;
     onUbah: (nilai: T) => void;
+    /** id unsur yang menjelaskan grup ini, misalnya galat validasinya (aria-describedby). */
+    penjelas?: string;
     className?: string;
 }
 
@@ -26,9 +28,9 @@ interface KontrolSegmenProps<T extends string> {
  * terpilih ditandai permukaan terangkat, garis, dan tebal huruf, bukan warna saja; label
  * dan keterangan panjang membungkus di dalam segmennya.
  */
-export function KontrolSegmen<T extends string>({ nama, label, pilihan, nilai, onUbah, className }: KontrolSegmenProps<T>) {
+export function KontrolSegmen<T extends string>({ nama, label, pilihan, nilai, onUbah, penjelas, className }: KontrolSegmenProps<T>) {
     return (
-        <fieldset className={className}>
+        <fieldset className={className} aria-describedby={penjelas}>
             <legend className="sr-only">{label}</legend>
             <div className="flex gap-1 rounded-tombol bg-surface-sunken p-1">
                 {pilihan.map((p) => (

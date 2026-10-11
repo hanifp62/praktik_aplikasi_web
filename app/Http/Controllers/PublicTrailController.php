@@ -30,7 +30,7 @@ class PublicTrailController extends Controller
 {
     public function show(Trail $trail): View
     {
-        abort_unless($trail->is_published && $trail->archived_at === null, 404);
+        abort_unless($trail->terbit(), 404);
 
         return view('public.trail', [
             'trail' => $trail->load('mountain', 'checkpoints'),

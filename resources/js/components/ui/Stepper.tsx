@@ -9,6 +9,8 @@ interface StepperProps {
     min: number;
     max: number;
     onUbah: (nilai: number) => void;
+    /** id unsur yang menjelaskan grup ini, misalnya galat validasinya (aria-describedby). */
+    penjelas?: string;
     className?: string;
 }
 
@@ -23,14 +25,14 @@ const tombolBatas = 'aria-disabled:cursor-not-allowed aria-disabled:opacity-50 a
  * sedangkan aria-disabled mempertahankannya dan pembaca layar menyebut tombol itu tidak
  * tersedia.
  */
-export function Stepper({ label, keterangan, nilai, min, max, onUbah, className }: StepperProps) {
+export function Stepper({ label, keterangan, nilai, min, max, onUbah, penjelas, className }: StepperProps) {
     const id = useId();
     const nama = label.toLocaleLowerCase('id-ID');
     const diMin = nilai <= min;
     const diMax = nilai >= max;
 
     return (
-        <div role="group" aria-labelledby={`${id}-label`} className={kelas('flex items-center justify-between gap-4', className)}>
+        <div role="group" aria-labelledby={`${id}-label`} aria-describedby={penjelas} className={kelas('flex items-center justify-between gap-4', className)}>
             <div className="min-w-0">
                 <p id={`${id}-label`} className="text-isi font-semibold text-primary">
                     {label}

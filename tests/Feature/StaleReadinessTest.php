@@ -161,6 +161,11 @@ class StaleReadinessTest extends TestCase
         $this->assertNotSame('selesai', $kesiapan['keadaan'], 'Vonis basi tidak boleh tampak sebagai langkah yang selesai.');
     }
 
+    /**
+     * Indeks trip W4 (spec v3 bagian 6.9) mengganti daftar berhalaman dengan kartu utama dan
+     * kelompok: trip mendatang satu-satunya menjadi kartu utama, jadi vonisnya dibaca dari
+     * `utama`, bukan `trips.data.0`. Niatnya tetap: vonis basi tidak disajikan sebagai keadaan.
+     */
     public function test_the_trip_list_stops_presenting_a_superseded_verdict(): void
     {
         $trip = $this->tripYangDinilaiSiap();
@@ -171,8 +176,8 @@ class StaleReadinessTest extends TestCase
             ->get(route('trips.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Trips/Index')
-                ->where('trips.data.0.kesiapan.teks', 'Status jalur berubah, perlu dinilai ulang')
-                ->where('trips.data.0.kesiapan.peringatan', true));
+                ->where('utama.kesiapan.teks', 'Status jalur berubah, perlu dinilai ulang')
+                ->where('utama.kesiapan.peringatan', true));
     }
 
     public function test_the_dashboard_stops_presenting_a_superseded_verdict(): void

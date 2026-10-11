@@ -446,6 +446,28 @@ class FitAssessmentPageTest extends TestCase
     }
 
     /**
+     * "Bandingkan dengan jalur lain" hanya menyebut simpanan yang masih terbit
+     * (Trail::terbit(), predikat satu sumber tinjauan Tugas 1 M3): jalur yang kembali menjadi
+     * draf sesudah disimpan tidak dibandingkan (R-022), jadi tidak ditawarkan. Jalur arsip sudah
+     * tersaring lebih awal oleh daftar simpanan aktif (ConsiderationService::simpanan()).
+     */
+    public function test_the_compare_step_only_names_saved_trails_that_are_still_published(): void
+    {
+        $user = $this->pendaki();
+        $trail = $this->jalur();
+        $terbit = $this->jalur(['name' => 'Jalur Terbit Uji']);
+        $draf = $this->jalur(['name' => 'Jalur Draf Uji']);
+        app(ConsiderationService::class)->toggle($user, $terbit);
+        app(ConsiderationService::class)->toggle($user, $draf);
+        $draf->forceFill(['is_published' => false])->saveQuietly();
+
+        $langkah = collect($this->halaman($user, $trail)->assertOk()->viewData('page')['props']['yangBisaDilakukan'])
+            ->firstWhere('judul', 'Bandingkan dengan jalur lain');
+
+        $this->assertSame('Jalur Terbit Uji ada di simpanan Anda.', $langkah['keterangan']);
+    }
+
+    /**
      * P-8 (Minor): baris dalam kelompok "Perlu perhatian" di panel alasan rekomendasi
      * tidak mengulang kata judul kelompoknya; kata itu sudah terbaca sekali di heading.
      */

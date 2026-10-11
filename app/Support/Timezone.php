@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Trail;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 
 /**
@@ -73,6 +74,17 @@ class Timezone
     public static function isSupported(?string $timezone): bool
     {
         return $timezone !== null && array_key_exists($timezone, self::SUPPORTED);
+    }
+
+    /**
+     * Selisih hari dari hari ini di zona itu sampai tanggal kalender $tanggal: 0 untuk hari ini,
+     * negatif untuk tanggal yang sudah lewat. Satu hitungan untuk hitung mundur kepala dan kartu
+     * trip dan untuk "tanggal rencana sudah lewat", supaya keduanya tidak pernah memakai hari
+     * yang berbeda (tinjauan Tugas 2 M3).
+     */
+    public static function hariSampai(CarbonInterface $tanggal, string $timezone): int
+    {
+        return (int) Carbon::parse(Carbon::now($timezone)->toDateString())->diffInDays(Carbon::parse($tanggal->toDateString()), false);
     }
 
     /**

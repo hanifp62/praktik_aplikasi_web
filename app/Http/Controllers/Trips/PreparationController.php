@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\Trips;
 
-use App\Enums\PreparationCategory;
 use App\Enums\PreparationStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trips\UpdatePreparationItemRequest;
 use App\Models\TripPlan;
 use App\Models\TripPreparationItem;
 use App\Services\PreparationService;
-use App\Services\Trips\TripSteps;
+use App\Services\Trips\HalamanPersiapan;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,68 +20,74 @@ use Inertia\Response;
  */
 class PreparationController extends Controller
 {
-    public function show(TripPlan $trip, PreparationService $preparation): Response
+    public function show(TripPlan $trip, PreparationService $preparation, HalamanPersiapan $halaman): Response
     {
         $this->authorize('view', $trip);
 
-        $trip->load('trail.mountain', 'preparationItems');
+        // Urutan templat ikut dimuat (satu kueri), supaya butir tampil menurut sort_order-nya.
+        $trip->load('trail.mountain', 'preparationItems.preparationItem:id,sort_order', 'reminders');
 
-        if ($trip->preparationItems->isEmpty()) {
+        // Daftar kosong dibangkitkan saat dibuka, kecuali untuk trip yang selesai atau batal:
+        // daftar mereka catatan, dan membuka catatan tidak menulis apa pun (W4-4d).
+        if ($trip->preparationItems->isEmpty() && PreparationService::penolakanDaftar($trip) === null) {
             $preparation->generateFor($trip);
-            $trip->load('preparationItems');
+            $trip->load('preparationItems.preparationItem:id,sort_order');
         }
-
-        $perKategori = $trip->preparationItems->groupBy(fn (TripPreparationItem $item) => $item->category->value);
-        $hitungan = TripSteps::hitungPersiapan($trip->preparationItems);
 
         return Inertia::render('Trips/Preparation', [
             'title' => 'Persiapan Pendakian',
-            'trip' => [
-                'id' => $trip->id,
-                'keterangan' => $trip->name.' - '.$trip->trail->name.', '.$trip->trail->mountain->name,
-            ],
-            // Urutan kategori tetap, ditetapkan di kode; kategori kosong tidak tampil.
-            'kategori' => collect(PreparationCategory::cases())
-                ->filter(fn (PreparationCategory $k) => $perKategori->has($k->value))
-                ->map(fn (PreparationCategory $k) => [
-                    'nama' => $k->label(),
-                    'items' => $perKategori[$k->value]->map(fn (TripPreparationItem $item) => [
-                        'id' => $item->id,
-                        'label' => $item->label,
-                        'description' => $item->description,
-                        'kritis' => (bool) $item->is_critical,
-                        'status' => $item->status->value,
-                    ])->values()->all(),
-                ])
-                ->values()
-                ->all(),
-            'statuses' => array_map(fn (PreparationStatus $s) => ['value' => $s->value, 'label' => $s->label()], PreparationStatus::cases()),
-            'kemajuan' => [
-                'dikonfirmasi' => $hitungan['dikonfirmasi'],
-                'berlaku' => $hitungan['berlaku'],
-                'teks' => TripSteps::teksPersiapan($hitungan),
-            ],
+            ...$halaman->props($trip),
         ]);
     }
 
+    /**
+     * Satu status butir, juga untuk Urungkan: halaman mengirim status yang diinginkan lewat
+     * rute yang sama, dan server membalas BUTIR MANA dan status yang BENAR-BENAR tersimpan
+     * sebelum permintaan ini lewat satu payload flash berkunci (tinjauan Tugas 4 I1b dan
+     * putaran 2), bukan pandangan klien yang bisa basi bila butir ini sudah diubah di tab
+     * atau perangkat lain. Id-nya disebut supaya klien dapat menolak payload yang bukan
+     * milik permintaan yang baru dikirimnya; ini satu-satunya penjaga, bukan pertahanan
+     * berlapis, karena serialisasi di Preparation.tsx berlaku per tab sedangkan flash ini
+     * per sesi, jadi dua tab dengan cookie yang sama tetap bisa bertukar payload (tinjauan
+     * putaran 3 #3). Toast dan Urungkan di klien memakai flash ini, dan tidak ditawarkan
+     * bila statusnya tidak berubah (pola W3-4b). Hanya status yang diambil dari badan
+     * permintaan; trip, kritis, label, dan kategori tidak pernah berubah di sini.
+     */
     public function update(UpdatePreparationItemRequest $request, TripPlan $trip, int $item, PreparationService $preparation): RedirectResponse
     {
         // Dicari di dalam trip ini saja: butir milik trip lain menjawab 404, bukan
         // berubah karena id-nya ditebak (IDOR).
         $butir = TripPreparationItem::where('trip_plan_id', $trip->id)->findOrFail($item);
+        $status = PreparationStatus::from($request->validated('status'));
 
-        $preparation->updateStatus($butir, PreparationStatus::from($request->validated('status')));
+        if ($penolakan = PreparationService::penolakanKonfirmasi($trip, $butir, $status)) {
+            throw ValidationException::withMessages(['status' => $penolakan]);
+        }
 
-        return redirect()->route('trips.preparation', $trip);
+        $sebelum = $butir->status;
+        $preparation->updateStatus($butir, $status);
+
+        return redirect()->route('trips.preparation', $trip)
+            ->with('butir-diubah', [
+                'id' => $butir->id,
+                'sebelum' => $sebelum->value,
+                'berubah' => $sebelum !== $status,
+            ]);
     }
 
     public function regenerate(TripPlan $trip, PreparationService $preparation): RedirectResponse
     {
         $this->authorize('update', $trip);
 
+        if ($penolakan = PreparationService::penolakanDaftar($trip)) {
+            throw ValidationException::withMessages(['daftar' => $penolakan]);
+        }
+
         $preparation->generateFor($trip);
 
+        // Kabar aksi di halaman yang sama, dibacakan di wilayah dekat tombolnya; `status` dipakai
+        // kabar yang datang bersama perpindahan halaman (W4-FK N1).
         return redirect()->route('trips.preparation', $trip)
-            ->with('status', 'Daftar persiapan diperbarui mengikuti karakteristik jalur.');
+            ->with('kabar-aksi', 'Daftar persiapan diperbarui mengikuti karakteristik jalur.');
     }
 }

@@ -33,10 +33,8 @@ class OfficialStatusSafetySentenceTest extends TestCase
      * Pengecualian bernama:
      * - Admin/OfficialStatuses: meja kurator yang mencatat status, bukan layar pembaca yang
      *   memutuskan berangkat (ruling W3-S5).
-     * - Trips/Readiness: ditulis ulang di W4; pengecualian ini WAJIB dihapus rencana W4 begitu
-     *   halaman barunya memuat kalimat ini.
      */
-    private const PENGECUALIAN = ['Admin/OfficialStatuses', 'Trips/Readiness'];
+    private const PENGECUALIAN = ['Admin/OfficialStatuses'];
 
     public function test_every_reader_page_that_shows_an_official_status_says_it_is_not_a_safety_guarantee(): void
     {
@@ -75,7 +73,7 @@ class OfficialStatusSafetySentenceTest extends TestCase
 
         // Pindaian harus benar-benar menemukan halaman status, termasuk yang dititipkan ke
         // pengecualian; kalau tidak, test ini lulus tanpa memeriksa apa pun.
-        foreach (['Trails/Index', 'Trails/Show', 'Trails/Compare', 'Trails/Fit', 'Mountains/Show', 'Community/TrailNews', 'Public/SharedComparison', ...self::PENGECUALIAN] as $wajib) {
+        foreach (['Trails/Index', 'Trails/Show', 'Trails/Compare', 'Trails/Fit', 'Mountains/Show', 'Community/TrailNews', 'Public/SharedComparison', 'Trips/Readiness', ...self::PENGECUALIAN] as $wajib) {
             $this->assertContains($wajib, $halamanStatus, "{$wajib} tidak terdeteksi sebagai halaman status.");
         }
     }

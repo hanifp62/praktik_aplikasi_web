@@ -3,6 +3,7 @@
 namespace Tests\Pratinjau;
 
 use App\Enums\HikingSessionStatus;
+use App\Enums\PreparationStatus;
 use App\Enums\TripStatus;
 use App\Models\Checkpoint;
 use App\Models\HikingSession;
@@ -10,6 +11,8 @@ use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use App\Services\ConsiderationService;
+use App\Services\PreparationService;
+use App\Services\ReadinessService;
 use App\Services\Trails\TautanBagikan;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia;
@@ -128,6 +131,62 @@ class HalamanPratinjauTest extends PratinjauTestCase
         $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
 
         $this->tulisPratinjau('kecocokan', $this->get(self::ASAL.'/trails/gede-via-cibodas/kecocokan?trip='.$trip->id), 'Trails/Fit');
+    }
+
+    /**
+     * Ruang kerja trip W4 (spec v3 bagian 6.9; tidak ada di prototype): trip camping Budi ke
+     * Gede via Cibodas dengan kepala trip dan empat langkah.
+     */
+    public function test_ruang_kerja(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+
+        $this->tulisPratinjau('ruang-kerja', $this->get(self::ASAL.'/trips/'.$trip->id), 'Trips/Show');
+    }
+
+    /**
+     * Rencanakan trip W4 (acuan 08): Gede via Cibodas, camping dua hari, lima belas hari lagi,
+     * jadi jendela izin data contoh terbuka dan prakiraan BMKG belum terbit.
+     */
+    public function test_rencanakan(): void
+    {
+        $this->sebagaiBudi();
+        $jalur = Trail::where('slug', 'gede-via-cibodas')->sole();
+        $naik = now('Asia/Jakarta')->addDays(15);
+
+        $this->tulisPratinjau('rencanakan', $this->get(self::ASAL.'/trips/create?trail='.$jalur->id.'&jenis=CAMPING&tanggal='.$naik->toDateString().'&selesai='.$naik->copy()->addDay()->toDateString()), 'Trips/Create');
+    }
+
+    /**
+     * Persiapan W4 (acuan 09): daftar dibangkitkan dari jalur Gede via Cibodas, tiga butir kritis
+     * pertama dikonfirmasi supaya ruas, hitungan, dan butir yang belum terpotret bersama.
+     */
+    public function test_persiapan(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+        $butir = app(PreparationService::class)->generateFor($trip);
+        $butir->where('is_critical', true)->take(3)->each(fn ($satu) => $satu->update(['status' => PreparationStatus::CONFIRMED->value]));
+
+        $this->tulisPratinjau('persiapan', $this->get(self::ASAL.'/trips/'.$trip->id.'/preparation'), 'Trips/Preparation');
+    }
+
+    /**
+     * Cek kesiapan W4 (acuan 10): daftar persiapan dibangkitkan dengan tiga butir kritis
+     * pertama dikonfirmasi, lalu satu hasil cek disimpan sehari sebelumnya, supaya "Sejak cek
+     * terakhir" ikut terpotret.
+     */
+    public function test_cek_kesiapan(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+        $butir = app(PreparationService::class)->generateFor($trip);
+        $butir->where('is_critical', true)->take(3)->each(fn ($satu) => $satu->update(['status' => PreparationStatus::CONFIRMED->value]));
+        app(ReadinessService::class)->record($trip->fresh())->update(['computed_at' => now()->subDay()]);
+        $butir->where('is_critical', true)->slice(3)->take(2)->each(fn ($satu) => $satu->update(['status' => PreparationStatus::CONFIRMED->value]));
+
+        $this->tulisPratinjau('cek-kesiapan', $this->get(self::ASAL.'/trips/'.$trip->id.'/readiness'), 'Trips/Readiness');
     }
 
     /**

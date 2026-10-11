@@ -2,32 +2,44 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\OfficialStatusValue;
 use App\Enums\RouteFitLabel;
+use App\Enums\TripStatus;
 use App\Models\TripPlan;
 use App\Services\RouteFit\TrailFitSummary;
+use App\Services\Trips\KepalaTrip;
 use App\Services\Trips\TripSteps;
+use App\Support\Timezone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Baris daftar trip, sudah diformat di server.
+ * Satu kartu indeks trip (spec v3 bagian 6.9), sudah diformat di server: jalur, jenis,
+ * tanggal, sisa hari, langkah berikutnya, aksi berikutnya, dan peringatan kesiapan.
  *
- * Kecocokan yang dibawa adalah kecocokan dasar tanpa goal: daftar trip adalah permukaan
- * pemindaian, dan kecocokan tajam yang sadar-rencana tinggal di halaman trip itu
- * sendiri. Skor internal tidak pernah ikut (BR-09).
+ * Kecocokan yang dibawa adalah kecocokan dasar tanpa goal: indeks adalah permukaan
+ * pemindaian, dan kecocokan untuk rencana tinggal di ruang kerja trip. Skor internal tidak
+ * pernah ikut (BR-09). Status trip hanya ditulis untuk trip yang berlangsung, selesai, atau
+ * dibatalkan; trip yang belum dimulai dibaca dari sisa harinya, karena "Siap berangkat" di
+ * kartu terbaca sebagai jaminan (R-014).
  *
- * Kemajuan persiapan dibaca dari kolom hitung (withCount) supaya daftar tidak memuat
- * seluruh butir tiap trip.
+ * Vonis kesiapan dibaca dari langkah "kesiapan" hasil TripSteps::for(), bukan diturunkan
+ * ulang di sini (tinjauan Tugas 2 M7): kartu dan ruang kerja memakai satu turunan.
+ *
+ * Membutuhkan relasi trail.mountain, preparationItems, latestReadinessCheck,
+ * latestConfirmedReadinessCheck, dan history sudah dimuat (IndeksTrip memuatnya sekali untuk
+ * semua kartu).
  *
  * @mixin TripPlan
  */
 class TripRowResource extends JsonResource
 {
+    /**
+     * @param  array<int, array{keadaan: string, kunci: string, judul: string, keterangan: string, catatan: string|null, peringatan: bool, tautan: array{href: string, teks: string}|null}>  $langkah  hasil TripSteps::for()
+     */
     public function __construct(
         TripPlan $trip,
+        private array $langkah,
         private ?TrailFitSummary $fit = null,
-        private ?OfficialStatusValue $statusJalur = null,
     ) {
         parent::__construct($trip);
     }
@@ -37,22 +49,31 @@ class TripRowResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $trip = $this->resource;
+        $belumDimulai = $trip->status->belumDimulai();
+        $berikutnya = collect($this->langkah)->firstWhere('keadaan', TripSteps::BERIKUTNYA);
+
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'url' => route('trips.show', $this->resource),
-            'trail' => $this->trail?->name,
-            'mountain' => $this->trail?->mountain?->name,
-            'tanggal' => $this->planned_date->translatedFormat('d M Y'),
-            'tipe' => $this->trip_type->label(),
-            'status' => $this->status->label(),
-            'persiapan' => isset($this->item_berlaku) && (int) $this->item_berlaku > 0
-                ? TripSteps::teksPersiapan([
-                    'dikonfirmasi' => (int) $this->item_dikonfirmasi,
-                    'berlaku' => (int) $this->item_berlaku,
-                ])
-                : null,
-            'kesiapan' => $this->kesiapan(),
+            'id' => $trip->id,
+            'nama' => $trip->name,
+            'url' => $trip->status === TripStatus::COMPLETED && $trip->history !== null
+                ? route('history.summary', $trip)
+                : route('trips.show', $trip),
+            'jalur' => $trip->trail?->name,
+            'gunung' => $trip->trail?->mountain?->name,
+            'jenis' => $trip->trip_type->labelPendek(),
+            'tanggal' => KepalaTrip::rentang($trip->planned_date, $trip->end_date),
+            'hari' => $belumDimulai ? KepalaTrip::hariMenuju($trip->planned_date, Timezone::forTrail($trip->trail)) : null,
+            'lewat' => $trip->tanggalRencanaLewat() ? KepalaTrip::TANGGAL_LEWAT : null,
+            'keadaan' => $belumDimulai ? null : $trip->status->label(),
+            'fase' => $berikutnya === null ? null : [
+                'kunci' => $berikutnya['kunci'],
+                'judul' => $berikutnya['judul'],
+                'keterangan' => $berikutnya['keterangan'],
+                'peringatan' => $berikutnya['peringatan'],
+            ],
+            'aksi' => TripSteps::aksi($trip, $this->langkah),
+            'kesiapan' => $trip->status->isActive() ? $this->kesiapan() : null,
             'fit' => $this->fit === null ? null : [
                 'label' => $this->fit->label?->value,
                 'labelText' => RouteFitLabel::textFor($this->fit->label),
@@ -63,23 +84,25 @@ class TripRowResource extends JsonResource
     }
 
     /**
+     * Peringatan langkah Cek (jalur ditarik, vonis basi) atau vonis tersimpan terakhir; null bila
+     * trip belum pernah dinilai.
+     *
      * @return array{teks: string, peringatan: bool}|null
      */
     private function kesiapan(): ?array
     {
-        if ($this->resource->trailIsWithdrawn()) {
-            return ['teks' => 'Jalur ditarik dari katalog', 'peringatan' => true];
+        $langkah = collect($this->langkah)->firstWhere('kunci', 'kesiapan');
+
+        if ($langkah === null) {
+            return null;
         }
 
-        // Status sekarang dioper dari luar, dimuat sekali untuk seluruh halaman.
-        if ($this->resource->readinessIsStale($this->statusJalur)) {
-            return ['teks' => 'Status jalur berubah, perlu dinilai ulang', 'peringatan' => true];
+        if ($langkah['peringatan']) {
+            return ['teks' => $langkah['keterangan'], 'peringatan' => true];
         }
 
-        if ($this->latestReadinessCheck !== null) {
-            return ['teks' => 'Kesiapan: '.$this->latestReadinessCheck->computed_state->label(), 'peringatan' => false];
-        }
-
-        return null;
+        return $this->resource->latestReadinessCheck !== null
+            ? ['teks' => 'Kesiapan: '.$langkah['keterangan'], 'peringatan' => false]
+            : null;
     }
 }

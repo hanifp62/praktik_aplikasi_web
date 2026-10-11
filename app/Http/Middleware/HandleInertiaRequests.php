@@ -105,17 +105,31 @@ class HandleInertiaRequests extends Middleware
                 : null,
 
             'flash' => [
+                // Kabar yang datang bersama perpindahan halaman, dibaca halaman tujuannya di
+                // wilayah dekat kepala halaman.
                 'status' => fn () => $request->session()->get('status'),
+                // Kabar aksi di halaman yang sama (Perbarui daftar, sakelar pengingat di
+                // Persiapan), dibaca di wilayah dekat aksinya (W4-FK N1).
+                'kabarAksi' => fn () => $request->session()->get('kabar-aksi'),
                 'timbanganPenuh' => fn () => $request->session()->get('timbangan-penuh'),
                 // Jalur yang baru dihapus dari simpanan beserta catatannya, satu kali dan hanya
                 // di sesi pemiliknya: toast Urungkan memulihkannya utuh (W3).
                 'simpananTerhapus' => fn () => $request->session()->get('simpanan-terhapus'),
                 // Baris sudah ada sebelum store() ini berjalan (tab atau perangkat lain):
                 // klien tidak menawarkan Urungkan-sebagai-hapus untuk baris yang tidak
-                // dibuatnya (tinjauan Tugas 4 temuan 2; ruling W3-4b).
-                'simpananSudahAda' => fn () => (bool) $request->session()->get('simpanan-sudah-ada', false),
+                // dibuatnya (tinjauan Tugas 4 temuan 2; ruling W3-4b). Berkunci id jalur, supaya
+                // tombol jalur lain tidak membacanya (pola W4-4e).
+                'simpananSudahAda' => fn () => $request->session()->get('simpanan-sudah-ada'),
                 // Tautan bagikan yang baru dibuat: tokennya hanya ditunjukkan sekali ini (FR-23).
                 'tautanBagikan' => fn () => $request->session()->get('tautan-bagikan'),
+                // Butir persiapan yang baru diubah: id-nya, status sebelumnya, dan apakah
+                // statusnya benar-benar berubah. Toast Urungkan di Preparation.tsx memulihkan
+                // status yang tersimpan, bukan pandangan klien, dan tidak ditawarkan bila
+                // tidak ada yang berubah (pola W3-4b). Id-nya ada supaya klien dapat menolak
+                // payload yang bukan milik butir yang baru dikirimnya; satu kunci, bukan dua
+                // kunci lepas, karena dua kunci lepas tidak punya cara menyebut satu sama lain
+                // milik butir yang sama (tinjauan Tugas 4 I1b dan putaran 2).
+                'butirDiubah' => fn () => $request->session()->get('butir-diubah'),
             ],
         ];
     }

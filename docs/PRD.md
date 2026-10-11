@@ -2027,6 +2027,98 @@ Dicatat apa adanya dari PRD v2.0. Batas banding "maks 5" di catatan ini sudah di
 
 **Scope impact.** Tidak ada; batas MVP dan MVP+ tetap (§105, §106). Keputusan DK-30 sampai DK-58 spec v3 masuk log keputusan di gelombang W9 (spec v3 bagian 16).
 
+### GR-05: Kata keadaan kesiapan, batas peserta, dan kecocokan untuk rencana (gelombang W4)
+
+**Requirement changed.**
+
+- Kata publik keadaan kesiapan §39 mengikuti DK-48 (spec v3 bagian 4): READY tampil "Persiapan kritis lengkap",
+  NEEDS_PREPARATION "Masih perlu persiapan", dan NOT_RECOMMENDED "Tidak disarankan dengan rencana ini". Ketiga nilai
+  enum dan syaratnya di §39 tidak berubah.
+- Batas peserta satu rencana FR-08 (§35, amandemen K12) menjadi 1 sampai 12 orang, mengikuti spec v3 bagian 6.8;
+  sebelumnya config mengizinkan 30.
+- Dimensi Route Fit pada kesiapan (§38) menilai kecocokan untuk rencana: jenis dan tanggal trip SELALU dipakai, di
+  atas salinan tujuan pendakian tertautnya yang tidak pernah disimpan, apa pun jenis tujuan itu; trip tanpa tujuan
+  memakai jenis dan tanggalnya sebagai tujuan sementara. Isian yang hanya dimiliki tujuan (batas tanjakan, target
+  durasi) tetap dari tujuan. Rencanakan, ruang kerja, halaman penilaian kecocokan, cek kesiapan, dan tinjauan
+  pra-keberangkatan memakai satu definisi ini (`TripPlan::tujuanPenilaian()`, ruling W4-FA).
+- Halaman kesiapan menyebut apa yang berubah sejak hasil cek terakhir yang disimpan, dari snapshot `readiness_checks`
+  yang sudah ada.
+- Pendaki tanpa profil lengkap tidak dinilai label kecocokannya pada kesiapan (§91, R-006). Label tidak ikut
+  menentukan keadaan; syarat dasar rencana tetap berlaku dan tetap dapat menghasilkan "Tidak disarankan dengan
+  rencana ini".
+- Tinjauan pra-keberangkatan yang sudah tercatat tidak ditawarkan ulang untuk dikonfirmasi kedua kalinya.
+- Tinjauan pra-keberangkatan ditolak untuk rencana yang belum dimulai tetapi tanggalnya sudah lewat: halaman dan POST
+  menulis kalimat yang sama dan meminta rencana diubah dulu. Rencana seperti itu tidak lagi punya langkah berikutnya;
+  aksi tunggalnya "Ubah rencana" (ruling W4-1c dan W4-FK).
+
+**Reason.** Spec v3, disetujui pemilik 26 September 2026: DK-48 dan bagian 6.8 sampai 6.11. "Siap" terbaca sebagai
+izin berangkat dan "Tidak direkomendasikan" sebagai penilaian atas orangnya, dan keduanya bertentangan dengan R-014
+dan §40. "Masih perlu persiapan" sengaja berbeda dari label kecocokan "Perlu persiapan" (R-004), dan kedekatan kedua
+kata ini sendiri adalah risiko kebingungan yang diakui (ruling W4-5a). Mitigasinya ada di dua tempat: label kecocokan
+selalu tampil berbentuk pil (`LabelKecocokan`), sedangkan keadaan kesiapan di kartu trip tampil sebagai kalimat
+berawalan "Kesiapan: " (`TripRowResource::kesiapan()`), supaya kedua kata tidak bersanding dalam bentuk yang sama.
+
+**Impact.** Kata baru tampil di ruang kerja dan indeks trip, cek kesiapan, Beranda, dan pratinjau Mendaki. Rencana
+lama dengan lebih dari 12 peserta harus dikurangi saat diubah. Trip lama tanpa tujuan yang direncanakan Tektok untuk
+jalur bermalam kini tertahan syarat dasar dan terbaca "Tidak disarankan dengan rencana ini". Trip yang tertaut ke
+tujuan berjenis lain (Rencanakan menautkan tujuan terakhir pendaki) kini dinilai dengan jenis dan tanggal tripnya
+sendiri di semua halaman: Tektok yang tertaut ke tujuan Camping di jalur bermalam berubah menjadi "Tidak disarankan
+dengan rencana ini", dan Camping yang tertaut ke tujuan Tektok tidak lagi terkunci di keadaan itu. Cek kesiapan yang
+tersimpan sebelum perubahan ini memakai kecocokan dasar atau jenis tujuan, bukan kecocokan untuk rencana; baris
+"Label kecocokan berubah" pertama yang tampil di "Sejak cek terakhir" sesudah rilis dapat berasal dari perubahan
+metode penilaian ini, bukan dari perubahan pada jalurnya. Vonis yang tersimpan sebelum perubahan ini (W4-R25) juga
+tetap tampil sebagai "Kesiapan: ..." di indeks dan ruang kerja trip sampai hasil cek berikutnya disimpan, dan dapat
+berbeda dari keadaan yang dihitung cek kesiapan sekarang; cek kesiapan selalu menghitung ulang. Di luar klaster Trip:
+rincian jalur menilai kecocokan pembaca yang punya trip terdekat di jalur itu dengan jenis dan tanggal trip tersebut;
+ringkasan aturan izin di rincian jalur dan di konsol admin menyebut kuota yang belum terverifikasi; kabar
+`simpanan-sudah-ada` membawa id jalur, bukan `true`; dan lembar Pengingat menulis jendela yang hanya mencatat tanggal
+tutup sebagai "Tanggal buka pemesanan izin belum tercatat", bukan sebagai jendela yang sedang dibuka.
+
+**Affected modules.** Readiness (cek kesiapan dan `ReadinessService::compute`), Trip (indeks, ruang kerja, Rencanakan),
+dan Preparation (termasuk kartu pengingat di halaman Persiapan), ditambah kata label di Beranda serta Mendaki. Di luar
+klaster Trip, lewat `TripPlan::tujuanPenilaian()`, `PermitService`, dan predikat bersama:
+
+- rincian jalur (`TrailDetailPage`): kecocokan untuk trip terdekat, ringkasan izin lewat `PermitRequirement::summary()`,
+  dan tanggal terbit BMKG lewat `PreparationService::tanggalTerbit()`;
+- halaman penilaian kecocokan (`PenilaianKecocokan`): `?trip=` lewat `tujuanPenilaian()`, dan langkah "Bandingkan" yang
+  hanya menyebut simpanan terbit (`Trail::terbit()`);
+- tombol simpan jalur di Jelajah, rincian jalur, dan Simpanan (`TombolSimpan`, bentuk kabar `simpanan-sudah-ada`);
+- lembar Pengingat (`DaftarPengingat`): keadaan jendela `BUKA_BELUM_TERCATAT`;
+- Administration: daftar aturan izin di konsol admin (`PermitRuleResource`, ringkasan lewat `summary()`);
+- halaman publik jalur (`PublicTrailController`): `Trail::terbit()` dengan predikat yang sama seperti sebelumnya.
+
+Keluaran Recommendation tidak berubah: `PermitService::bookingWarningFor()` tetap hanya memperingatkan jendela yang
+sudah tutup atau belum dibuka. Condition tidak berubah.
+
+**Security impact.** Rute cek kesiapan (`trips.readiness.recompute`, `trips.readiness.confirm`) kini dibatasi laju
+lewat `rate_limits.personal_writes_per_minute` dengan kunci `cek-kesiapan`. Rute siklus hidup (`trips.start`,
+`trips.complete`, `trips.cancel`) memakai batas yang sama dengan kunci `siklus-trip`, "Perbarui daftar"
+(`trips.preparation.regenerate`) dengan kunci `persiapan-daftar`, dan centang butir (`trips.preparation.update`) memakai
+batas sendiri `rate_limits.preparation_toggles_per_minute` (120 per menit) dengan kunci `persiapan-butir`. Sakelar
+pengingat kembali ke halaman asalnya lewat isian `kembali` yang hanya menerima dua halaman trip itu sendiri, tanpa
+Referer. Tinjauan pra-keberangkatan dicatat di dalam satu transaksi yang mengunci baris trip, jadi dua permintaan
+bersamaan tidak menulis dua tinjauan. Rute, Policy trip, dan validasi server lain tetap; status butir persiapan tetap
+satu-satunya isian yang dibaca dari badan permintaan.
+
+**Data impact.** Tidak ada perubahan skema dan tidak ada migrasi. `readiness_checks.computed_state` menyimpan nilai
+enum, bukan kata, jadi baris lama tetap terbaca dengan kata baru. Isi `readiness_checks.condition_snapshot` kini
+diminimalkan sebelum disimpan (`ReadinessAssessment::toAttributes()`): laporan komunitas yang ikut tersimpan hanya
+membawa id, waktu masuk, tanggal pendakian, tanda kondisi, dan nama segmen, tanpa identitas pelapor, catatan, maupun
+foto, sesuai `docs/KEBIJAKAN-DATA-PRIBADI.md` §2, §3, dan §5. Baris lama yang masih memuat data pelapor lengkap
+dibersihkan perintah `memount:bersihkan-snapshot-kondisi` (idempoten, berpotongan, `--dry-run` hanya menghitung, dan
+`updated_at` tidak bergeser); perintah itu baru dijalankan di Supabase atas izin pemilik. Halaman Persiapan dan ruang
+kerja trip membaca tabel `trip_reminders` (kartu pengingat); sebelum W4 halaman Persiapan tidak bergantung pada tabel
+itu. Syarat deploy W4: `migrate:status` Supabase mencakup `2026_09_25_000917_add_plan_details_to_trip_plans_table` dan
+`2026_09_25_000918_create_trip_reminders_table` (Q22, ruling W4-FD).
+
+**Scope impact.** Tidak ada fitur di luar spec v3 gelombang W4; batas MVP dan MVP+ tetap (§105, §106).
+
+**Keputusan terbuka untuk pemilik.**
+
+- Alternatif menahan keadaan kesiapan di "Masih perlu persiapan" selama kecocokan untuk rencana belum dapat dinilai,
+  alih-alih memakai label kecocokan dasar.
+- Kemungkinan menawarkan tinjauan pra-keberangkatan ulang untuk rencana yang sudah berubah sejak tinjauan pertama.
+
 ### Log keputusan
 
 | ID | Keputusan | Oleh | Tanggal | Di PRD |

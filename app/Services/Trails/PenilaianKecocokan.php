@@ -383,7 +383,7 @@ final class PenilaianKecocokan
 
         $lain = $this->simpanan->simpanan($pembaca)
             ->map(fn (TrailConsideration $baris) => $baris->trail)
-            ->filter(fn (Trail $t) => $t->is_published && $t->id !== $trail->id)
+            ->filter(fn (Trail $t) => $t->terbit() && $t->id !== $trail->id)
             ->take(2)
             ->values();
 

@@ -28,6 +28,7 @@
     "dependencies": {
         "@inertiajs/react": "^3.7.1",
         "@inertiajs/vite": "^3.7.1",
+        "framer-motion": "^14.0.0",
         "maplibre-gl": "^4.7.1",
         "react": "^19.3.0",
         "react-dom": "^19.3.0"

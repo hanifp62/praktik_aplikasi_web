@@ -316,7 +316,31 @@ Glyph `resmi` hanya menemani sumber OFFICIAL (`TrustGrammarTest`). Sumber di rin
 (R-009), dengan interpretasi sistem terakhir (`TrailDetailPageTest`).
 
 **Konvensi prop untuk primitif baru** (ruling W1-F3): kontrol berkeadaan memakai `nilai` dan `onUbah`, nama tampak
-memakai `label`, dan nama prop berbahasa Indonesia; primitif yang sudah ada tidak diganti namanya.
+memakai `label`, dan nama prop berbahasa Indonesia; primitif yang sudah ada tidak diganti namanya. Grup kontrol yang
+dapat bergalat (`KontrolSegmen`, `Stepper`) menerima `penjelas`, id galat atau keterangan yang diikat lewat
+`aria-describedby` pada grupnya (W4, `KeyboardAndScreenReaderTest`).
+
+**Umpan balik aksi di wilayah yang selalu terpasang** (W4 Tugas 4 dan 6). Umpan balik sebuah aksi, baik kabar
+tersimpan maupun penolakan server, dibacakan lewat wilayah `role="status"` untuk kabar biasa atau `role="alert"`
+untuk penolakan. Wilayahnya selalu terpasang di dekat aksinya sejak halaman dimuat; hanya isinya yang berubah.
+Wilayah yang baru dipasang bersamaan dengan isinya tidak andal dibacakan pembaca layar. Kabar yang datang bersama
+perpindahan halaman (misalnya "Rencana trip tersimpan.") tampil di wilayah dekat kepala halaman tujuan, tempat pendaki
+mendarat, dan isinya ditulis sesudah halaman terpasang; kabar aksi di halaman yang sama tetap di dekat aksinya
+(flash `status` lawan `kabar-aksi`, W4-FK).
+
+**Klaster Trip** (W4, spec v3 bagian 6.8 sampai 6.11). Ruang kerja trip menampilkan empat langkah (Jalur, Rencana,
+Persiapan, Cek) sebagai garis rute berujung cincin pos: garis merek menyambung cincin bernomor, dan cincin langkah yang
+selesai terisi dengan centang. Mulai 1024 px langkah menjadi kolom kiri 18rem di samping isinya. Halaman Rencanakan,
+Persiapan, dan Cek membawa baris langkah ringkas (`LangkahRingkas`) dengan langkah halaman itu ditandai garis bawah
+merek, tebal huruf, dan `aria-current`; langkah lain yang dapat dibuka tampak sebagai tautan saat diam (warna tautan
+dan garis bawah teks), bukan hanya saat disorot. Kepala trip (`KepalaTrip`) menyebut jenis dan sisa hari sebagai
+lencana, tanggal dengan kata "sampai", jam dengan zona gunungnya, dan peserta, tanpa titik tengah; status "Siap
+berangkat" tidak pernah tampil di kepala (R-014). Rencana yang belum dimulai tetapi tanggalnya sudah lewat mengganti
+lencana sisa hari dengan lencana peringatan berikon "Tanggal rencana sudah lewat", di kepala dan kartu indeks, tanpa langkah berikutnya; aksinya hanya "Ubah rencana". Hitungan butir kritis berupa ruas per butir ditambah kalimat "N dari M", bukan
+persen. Keadaan kesiapan memakai kata DK-48 dan kalimat "Ini dukungan keputusan, bukan izin medis, izin hukum, atau
+jaminan keselamatan." Hanya kartu utama indeks trip yang membawa tombol penuh; kartu kelompok memakai tautan teks. Penolakan centang di
+Persiapan tampil sebagai teks di baris butirnya dan dibacakan lewat satu wilayah `role="alert"` halaman yang selalu
+terpasang, sesuai konvensi umpan balik di atas.
 
 **Fokus tidak pernah jatuh ke body.** Chip saringan yang dilepas menyerahkan fokus ke chip tetangga atau wadah grupnya;
 toast yang dipicu papan ketik mengambil fokus ke Urungkan, dan fokus kembali ke unsur sebelumnya atau ke `#konten`

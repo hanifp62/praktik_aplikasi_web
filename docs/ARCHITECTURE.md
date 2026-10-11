@@ -22,14 +22,62 @@ halaman yang sudah pindah ditandai **[React]**, ledger lengkapnya di `HANDOVER.m
 | Rencana | `Goals\GoalForm` | `/goals/create` |
 | Route Fit | `Recommendations\RecommendationResults` | `/recommendations/{run}` |
 | Jelajah jalur | **[React]** Jelajah, rincian jalur, penilaian kecocokan, Simpanan, dan Bandingkan di `pages/Trails/`; halaman gunung `pages/Mountains/Show.tsx`; tautan bagikan publik `pages/Public/SharedComparison.tsx` | `/trails*`, `/mountains/{mountain:slug}`, `/b/{token}` |
-| Trip | `Trips\TripForm`, `Trips\TripShow`, `Trips\TripIndex` | `/trips*` |
-| Persiapan | `Trips\PreparationChecklist` | `/trips/{trip}/preparation` |
-| Readiness | `Trips\ReadinessDashboard` | `/trips/{trip}/readiness` |
+| Trip | **[React]** indeks `pages/Trips/Index.tsx` (`Trips\IndeksTrip`), rencanakan `pages/Trips/Create.tsx` (`Trips\RencanaTrip`), ruang kerja `pages/Trips/Show.tsx` | `/trips`, `/trips/create`, `/trips/{trip}` |
+| Persiapan | **[React]** `pages/Trips/Preparation.tsx` (`Trips\HalamanPersiapan`) | `/trips/{trip}/preparation` |
+| Readiness | **[React]** `pages/Trips/Readiness.tsx` (`Trips\HalamanKesiapan`) | `/trips/{trip}/readiness` |
 | Hike Mode | `Trips\HikeMode` | `/trips/{trip}/hike` |
 | Laporan | `Reports\ConditionReportForm` | `/reports/create` |
 | Riwayat | `History\HikingHistoryPage` | `/history` |
 
 Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middleware `role:moderator`).
+
+### Daur hidup status trip
+
+Status dan transisi sah sebuah `TripPlan`, persis `App\Enums\TripStatus::allowedTransitions()`. Tidak ada transisi
+di diagram ini selain yang diizinkan method itu.
+
+```mermaid
+stateDiagram-v2
+    [*] --> PLANNED : TripLifecycle::create()
+    DRAFT --> PLANNED
+    DRAFT --> CANCELLED
+    PLANNED --> READY_FOR_DEPARTURE : PreDepartureCheck::confirm()
+    PLANNED --> IN_PROGRESS : TripLifecycle::start()
+    PLANNED --> CANCELLED : TripLifecycle::cancel()
+    READY_FOR_DEPARTURE --> IN_PROGRESS : TripLifecycle::start()
+    READY_FOR_DEPARTURE --> PLANNED
+    READY_FOR_DEPARTURE --> CANCELLED : TripLifecycle::cancel()
+    IN_PROGRESS --> COMPLETED : TripLifecycle::complete()
+    IN_PROGRESS --> CANCELLED : TripLifecycle::cancel()
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+
+    note right of DRAFT
+        Didefinisikan di enum; tidak ada jalur aplikasi
+        yang membuat trip di status ini sekarang.
+        TripLifecycle::create() langsung menulis PLANNED.
+    end note
+    note right of PLANNED
+        Langkah ruang kerja Jalur dan Rencana sudah
+        selesai di sini. Persiapan dan Cek memandu
+        sampai status ini dan READY_FOR_DEPARTURE.
+    end note
+    note right of READY_FOR_DEPARTURE
+        Kembali ke PLANNED sah menurut enum, tetapi
+        tidak ada jalur aplikasi yang memicunya sekarang.
+    end note
+    note right of IN_PROGRESS
+        Keempat langkah ruang kerja (Jalur, Rencana,
+        Persiapan, Cek) berhenti menunjuk langkah
+        berikutnya di sini.
+    end note
+```
+
+Bukti: `app/Enums/TripStatus.php` (status, `canTransitionTo()`, dan `belumDimulai()`); `app/Services/Trips/TripLifecycle.php`
+(`create()`, `start()`, `complete()`, `cancel()`); `app/Services/Trips/PreDepartureCheck.php` (transisi PLANNED ke
+READY_FOR_DEPARTURE lewat `confirm()`, di dalam transaksi yang mengunci baris trip; jalur balik READY_FOR_DEPARTURE ke
+PLANNED tidak tercapai lewat aplikasi mana pun saat ini); `app/Services/Trips/TripSteps.php` (`for()`, penanda langkah
+berikutnya berhenti begitu rencana tidak lagi `masihDirencanakan()`, yaitu sudah dimulai atau tanggalnya lewat).
 
 ## Mau ubah apa, sentuh file mana
 
@@ -70,9 +118,12 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 | `OfficialStatusService` | Status resmi, kaskade gunung → jalur → segmen, dan cache snapshot publik |
 | `WeatherService` | Integrasi BMKG, normalisasi ke UTC, dan kesegaran |
 | `ConditionAggregatorService` | Menggabungkan status, cuaca, dan laporan komunitas **tanpa mencampur otoritasnya** |
-| `PermitService` | Aturan perizinan pihak lain dan benturan jendela booking |
-| `PreparationService` | Membangun checklist dari karakteristik jalur dan aturan izinnya |
+| `PermitService` | Aturan perizinan pihak lain, keadaan jendela booking (`bookingWindowFor()`, satu-satunya aritmetika jendela), dan satu penentu ajakan pemesanan per keadaan (`pemesanan()`, atau `pemesananDariJendela()` atas jendela yang sudah dihitung) untuk Rencanakan, Persiapan, dan Cek |
+| `PreparationService` | Membangun checklist dari karakteristik jalur dan aturan izinnya; satu predikat butir yang menunggu BMKG (`menungguBmkg()`) untuk Persiapan, Cek, dan langkah trip |
 | `ReadinessService` | `compute()` menghitung tanpa efek samping, `record()` menyimpan |
+| `Trips\IndeksTrip`, `Trips\RencanaTrip`, `Trips\HalamanPersiapan`, `Trips\HalamanKesiapan` | Kelas halaman klaster Trip (W4): indeks berkelompok, rencanakan dengan muat ulang parsial kecocokan untuk rencana, persiapan dengan butir kritis dan butir yang menunggu BMKG, dan cek kesiapan dengan "Sejak cek terakhir"; kueri tetap, tanpa skor di props |
+| `Trips\KepalaTrip`, `Trips\TripSteps` | Kepala satu trip dan empat langkahnya (Jalur, Rencana, Persiapan, Cek) beserta aksi berikutnya untuk indeks. Predikat yang dipakai lebih dari satu halaman tinggal di model: `TripPlan::tujuanPenilaian()` (jenis dan tanggal trip untuk kecocokan), `TripPlan::tinjauanTercatat()` (relasi `latestConfirmedReadinessCheck`), `TripPlan::tanggalRencanaLewat()`, `Trail::terbit()` |
+| `Trips\PreDepartureCheck` | Tinjauan pra-berangkat: satu sumber alasan penolakan untuk halaman dan POST, dan pencatatan dalam transaksi yang mengunci baris trip |
 | `AuditLogService`, `AnalyticsRecorder` | Jejak audit dan funnel |
 | `Trails\HalamanJelajah`, `Trails\TrailDetailPage`, `Trails\PenilaianKecocokan`, `Trails\RouteComparisonTable`, `Mountains\HalamanGunung` | Kelas halaman (spec v3 bagian 9.2): satu kelas merakit props satu halaman React dari service domain, dengan anggaran kueri yang tidak tumbuh bersama jumlah data |
 | `Trails\TautanBagikan` | Tautan bagikan perbandingan (FR-23): token acak 192 bit yang hanya disimpan hash SHA-256-nya, masa berlaku, batas tautan aktif, dan cabut oleh pemiliknya |
@@ -179,6 +230,8 @@ Keputusan penghapusan akun yang dimaksud ada di `docs/KEBIJAKAN-DATA-PRIBADI.md`
 **Pustaka peta dimuat sesuai kebutuhan.** `resources/js/app.js` hanya memuat sebuah fungsi `window.muatPeta()`; MapLibre yang 787 kB baru diunduh ketika mode pendakian benar-benar menggambar peta. Menambahkan `import 'maplibre-gl'` kembali ke `app.js` akan mengembalikan beban itu ke seluruh halaman.
 
 **Suite spasial menghapus isi basis data.** Ia memakai RefreshDatabase, jadi `SPATIAL_TEST_DSN` harus menunjuk Postgres lokal. Host yang tampak seperti basis data sungguhan ditolak oleh guard di `tests/Spatial/SpatialTestCase.php`, tetapi guard itu mengenali pola nama, bukan segalanya.
+
+**Pembersihan snapshot kesiapan lama.** `php artisan memount:bersihkan-snapshot-kondisi` (`app/Console/Commands/BersihkanSnapshotKondisi.php`) memangkas laporan komunitas di `readiness_checks.condition_snapshot` lama ke kunci minimal tanpa data pribadi pelapor. Idempoten, berpotongan, `--dry-run` hanya menghitung, dan `updated_at` tidak bergeser. Menjalankannya di Supabase menunggu izin pemilik.
 
 **Prakiraan cuaca perlu dijadwalkan.** `weather:refresh` sudah terdaftar dua kali sehari di `routes/console.php`, tetapi scheduler Laravel hanya berjalan bila `php artisan schedule:work` atau cron memanggilnya. Tanpa itu kolom cuaca akan basi lalu kosong.
 

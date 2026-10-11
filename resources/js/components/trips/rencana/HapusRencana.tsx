@@ -41,7 +41,7 @@ export function HapusRencana({ tripId, kelola }: { tripId: number; kelola: Kelol
                     <p className="mt-1 max-w-prose text-sm text-secondary">
                         Rencana yang belum dimulai atau sudah dibatalkan dapat dihapus beserta daftar persiapan, penilaian kesiapan, dan pengingatnya.
                     </p>
-                    <Button variant="danger" className="mt-3" onClick={hapus} processing={menghapus}>
+                    <Button variant="secondary" className="mt-3" onClick={hapus} processing={menghapus}>
                         Hapus rencana
                     </Button>
                 </>

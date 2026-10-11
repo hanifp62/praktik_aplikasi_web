@@ -31,7 +31,7 @@ class TripReactPagesTest extends TestCase
 
         $harapan = [
             route('trips.index') => ['Trips/Index', 'Trip Saya'],
-            route('trips.create') => ['Trips/Create', 'Buat Rencana Trip'],
+            route('trips.create') => ['Trips/Create', 'Rencanakan trip'],
             route('trips.show', $trip) => ['Trips/Show', 'Pendakian Merbabu'],
             route('trips.preparation', $trip) => ['Trips/Preparation', 'Persiapan Pendakian'],
             route('trips.readiness', $trip) => ['Trips/Readiness', 'Kesiapan Pendakian'],
@@ -67,11 +67,12 @@ class TripReactPagesTest extends TestCase
             }
         }
 
-        // Pemilih pada formulir buat trip dibangun satu fungsi: label dan kontrolnya
-        // memakai nama yang sama.
+        // Halaman Rencanakan W4 (prototype 08) tidak lagi membangun pemilih jalur: jalurnya
+        // datang dari ?trail=, dan isiannya memakai FormField yang mengikat label sendiri.
+        // Niatnya tetap: setiap isian di formulir buat trip berlabel.
         $buat = File::get(resource_path('js/pages/Trips/Create.tsx'));
-        $this->assertStringContainsString('<Label htmlFor={name}>', $buat);
-        $this->assertStringContainsString('id={name}', $buat);
+        $this->assertStringContainsString('<FormField', $buat);
+        $this->assertStringContainsString('<Label htmlFor="notes">', $buat);
     }
 
     /**
@@ -91,10 +92,14 @@ class TripReactPagesTest extends TestCase
      * R-014 dan aturan pertama ARCHITECTURE.md: kesiapan adalah dukungan keputusan.
      * Kalimatnya disalin apa adanya, dan tidak ada tempat lain di halaman trip yang
      * menyatakan sesuatu aman.
+     *
+     * W4 Tugas 6 memakai kalimat prototype 10 ("bukan izin medis, izin hukum, atau jaminan
+     * keselamatan"), yang menyebut ketiga batas R-014 dengan kata. Kalimat itu satu-satunya
+     * tempat kata "medis" boleh muncul, jadi ia dikeluarkan dari sapuan seperti kalimat lama.
      */
     public function test_readiness_is_decision_support_and_nothing_is_called_safe(): void
     {
-        $kalimat = 'Penilaian ini menggabungkan kecocokan jalur, kelengkapan persiapan, dan kondisi terkini. Sistem tidak menyatakan bahwa suatu pendakian aman.';
+        $kalimat = 'Ini dukungan keputusan, bukan izin medis, izin hukum, atau jaminan keselamatan.';
         $this->assertStringContainsString($kalimat, File::get(resource_path('js/pages/Trips/Readiness.tsx')));
 
         $berkas = array_merge(
@@ -122,18 +127,24 @@ class TripReactPagesTest extends TestCase
         $trip->preparationItems()->limit(2)->get()->each->update(['status' => PreparationStatus::CONFIRMED]);
         $berlaku = $trip->preparationItems()->where('status', '!=', PreparationStatus::NOT_APPLICABLE->value)->count();
 
+        // Persiapan menghitung dari status butir yang tampil (centang optimis, tinjauan Tugas 4
+        // M4 d); server mengirim status per butir, tanpa persen.
         $this->actingAs($trip->user)->get(route('trips.preparation', $trip))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('kemajuan.dikonfirmasi', 2)
-                ->where('kemajuan.berlaku', $berlaku)
-                ->where('kemajuan.teks', "2 dari {$berlaku} item dikonfirmasi"));
+                ->missing('kemajuan')
+                ->where('kategori', fn ($kategori) => collect($kategori)->flatMap(fn ($k) => $k['items'])->where('status', 'CONFIRMED')->count() === 2));
 
         $this->actingAs($trip->user)->get(route('trips.show', $trip))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('langkah.2.kunci', 'persiapan')
-                ->where('langkah.2.keterangan', "2 dari {$berlaku} item dikonfirmasi"));
+                ->where('langkah.2.keterangan', "2 dari {$berlaku} butir dikonfirmasi"));
     }
 
+    /**
+     * Empat langkah prototype 08 sampai 10 (spec v3 bagian 6.9, W4 Tugas 1), bukan enam: "Hike
+     * mode" dan "Selesaikan trip" pindah ke kartu Tindakan, jadi niat test ini (daftar
+     * langkah menunjuk langkah berikutnya) tetap, hanya jumlahnya yang berubah.
+     */
     public function test_the_step_list_points_at_the_next_step(): void
     {
         $this->seed(PreparationTemplateSeeder::class);
@@ -142,7 +153,7 @@ class TripReactPagesTest extends TestCase
 
         $this->actingAs($trip->user)->get(route('trips.show', $trip))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('langkah', 6)
+                ->has('langkah', 4)
                 ->where('langkah.0.keadaan', 'selesai')
                 ->where('langkah.1.keadaan', 'selesai')
                 ->where('langkah.2.keadaan', 'berikutnya')
@@ -205,7 +216,8 @@ class TripReactPagesTest extends TestCase
 
         $this->actingAs($trip->user)
             ->post(route('trips.preparation.regenerate', $trip))
-            ->assertSessionHas('status', 'Daftar persiapan diperbarui mengikuti karakteristik jalur.');
+            ->assertSessionHas('kabar-aksi', 'Daftar persiapan diperbarui mengikuti karakteristik jalur.')
+            ->assertSessionMissing('status');
 
         $this->assertSame(PreparationStatus::CONFIRMED, $butir->fresh()->status);
     }

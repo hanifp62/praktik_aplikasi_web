@@ -11,6 +11,7 @@ use App\Models\TripPlan;
 use App\Models\User;
 use App\Services\AnalyticsRecorder;
 use App\Services\PreparationService;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Siklus hidup trip: dibuat, diubah, dimulai, diselesaikan, dibatalkan, dihapus.
@@ -21,13 +22,6 @@ use App\Services\PreparationService;
  */
 class TripLifecycle
 {
-    /**
-     * Status sebelum pendakian dimulai: rencana masih dapat diubah dan dihapus.
-     *
-     * @var array<int, TripStatus>
-     */
-    private const BELUM_DIMULAI = [TripStatus::DRAFT, TripStatus::PLANNED, TripStatus::READY_FOR_DEPARTURE];
-
     public function __construct(
         private readonly PreparationService $preparation,
         private readonly AnalyticsRecorder $analytics,
@@ -71,11 +65,25 @@ class TripLifecycle
      * Mengubah isi rencana. Jalur, pemilik, dan status tidak ikut: ketiganya tidak ada
      * di isian yang divalidasi UpdateTripRequest dan tidak disentuh di sini.
      *
+     * Tanggal naik yang pindah mengembalikan butir cuaca yang sudah dikonfirmasi menjadi belum
+     * dikonfirmasi (R-013, W4-4d): prakiraan yang diperiksa untuk tanggal lama tidak berkata
+     * apa pun tentang tanggal baru. Keduanya dalam satu transaksi, supaya tanggal baru tidak
+     * pernah tersimpan bersama konfirmasi cuaca untuk tanggal lama.
+     *
      * @param  array<string, mixed>  $data  isian yang sudah divalidasi UpdateTripRequest
      */
     public function update(TripPlan $trip, array $data): void
     {
-        $trip->update(self::detailRencana($data));
+        DB::transaction(function () use ($trip, $data): void {
+            $trip->fill(self::detailRencana($data));
+            $tanggalPindah = $trip->isDirty('planned_date');
+            $trip->save();
+
+            if ($tanggalPindah) {
+                $this->preparation->batalkanKonfirmasiCuaca($trip);
+            }
+        });
+
         $this->reminders->sinkronkan($trip);
     }
 
@@ -87,7 +95,7 @@ class TripLifecycle
      */
     public function editRefusal(TripPlan $trip): ?string
     {
-        if (in_array($trip->status, self::BELUM_DIMULAI, true)) {
+        if ($trip->status->belumDimulai()) {
             return null;
         }
 

@@ -29,6 +29,17 @@ enum TripStatus: string
     }
 
     /**
+     * Pendakian belum dimulai: rencana masih dapat diubah dan dihapus, kepala dan kartu trip
+     * menghitung mundur, dan langkah perencanaan masih menunjuk langkah berikutnya. Satu
+     * predikat untuk KepalaTrip, TripSteps, TripRowResource, dan TripLifecycle (tinjauan Tugas 1
+     * M2), supaya status baru tidak membuat keempatnya diam-diam berbeda.
+     */
+    public function belumDimulai(): bool
+    {
+        return in_array($this, [self::DRAFT, self::PLANNED, self::READY_FOR_DEPARTURE], true);
+    }
+
+    /**
      * Transisi yang sah dari status ini (PRD §35).
      *
      * COMPLETED dan CANCELLED bersifat final: trip yang sudah dibatalkan tidak boleh

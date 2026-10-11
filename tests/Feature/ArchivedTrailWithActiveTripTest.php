@@ -94,13 +94,17 @@ class ArchivedTrailWithActiveTripTest extends TestCase
     }
 
     /**
+     * Alasan keadaan kesiapan yang tampil di halaman. Sejak W4 Tugas 6 (prototype 10) alasan
+     * mesin dikirim sebagai `keadaan.alasan`, bukan kelompok `check.penjelasan`; yang diuji
+     * tetap kalimat yang dibaca pendaki.
+     *
      * @return array<int, string>
      */
     private function alasanKesiapan(TripPlan $trip): array
     {
         $props = $this->actingAs($trip->user)->get(route('trips.readiness', $trip))->assertOk()->viewData('page')['props'];
 
-        return collect($props['check']['penjelasan'])->pluck('baris')->flatten()->all();
+        return $props['keadaan']['alasan'];
     }
 
     /**

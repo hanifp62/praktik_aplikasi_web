@@ -97,13 +97,18 @@ class TripPlanDetailTest extends TestCase
         $this->assertSame(0, TripPlan::count());
     }
 
+    /**
+     * Spec v3 bagian 6.8 (disetujui pemilik): peserta 1 sampai 12, batas yang sama dengan
+     * stepper di halaman Rencanakan (W4 Tugas 3). Sebelumnya 30; niat test ini tetap, yaitu
+     * jumlah di luar batas ditolak server dengan kalimat yang menyebut batasnya.
+     */
     #[TestWith(['0'])]
-    #[TestWith(['31'])]
-    public function test_the_number_of_participants_stays_within_one_and_thirty(string $jumlah): void
+    #[TestWith(['13'])]
+    public function test_the_number_of_participants_stays_within_one_and_twelve(string $jumlah): void
     {
         $this->actingAs(User::factory()->create())
             ->post(route('trips.store'), $this->isian(Trail::factory()->published()->create(), ['participants_count' => $jumlah]))
-            ->assertSessionHasErrors(['participants_count' => 'Jumlah peserta harus antara 1 dan 30 orang.']);
+            ->assertSessionHasErrors(['participants_count' => 'Jumlah peserta harus antara 1 dan 12 orang.']);
     }
 
     /**
@@ -178,10 +183,17 @@ class TripPlanDetailTest extends TestCase
         $this->assertSame(2, $trip->participants_count);
         $this->assertSame('Kumpul di basecamp.', $trip->notes);
 
+        // Kepala ruang kerja W4 (spec v3 bagian 6.10) menggantikan baris tanggal lama: rentang
+        // ditulis dengan "sampai" (spec v3 bagian 8.8), dan langkah Jalur serta Rencana memakai
+        // rentang, nama jenis, dan pemisah yang sama dengan kepala ("Jalur, Gunung" di
+        // KepalaTrip.tsx), supaya satu halaman tidak menulis rencana dengan dua cara (tinjauan
+        // Tugas 1 M4).
         $this->get(route('trips.show', $trip))->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('langkah.1.keterangan', '17 Okt 2026 - 18 Okt 2026 · Camping · 2 orang')
-            ->where('trip.peserta', '2 orang')
-            ->where('trip.sampai', '18 Okt 2026'));
+            ->where('langkah.0.keterangan', $trip->trail->name.', '.$trip->trail->mountain->name)
+            ->where('langkah.1.keterangan', 'Sab, 17 Okt sampai Min, 18 Okt 2026, Camping, 2 orang')
+            ->where('kepala.jenis', 'Camping')
+            ->where('kepala.peserta', '2 orang')
+            ->where('kepala.tanggal', 'Sab, 17 Okt sampai Min, 18 Okt 2026'));
     }
 
     /**
@@ -308,8 +320,8 @@ class TripPlanDetailTest extends TestCase
 
         $this->actingAs($direncanakan->user)->get(route('trips.show', $direncanakan))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('trip.peserta', null)
-                ->where('trip.sampai', null)
+                ->where('kepala.peserta', null)
+                ->where('kepala.tanggal', fn (string $tanggal) => ! str_contains($tanggal, 'sampai'))
                 ->where('kelola.bolehUbah', true)
                 ->where('kelola.bolehHapus', true)
                 ->where('kelola.alasanTidakDapatDihapus', null));

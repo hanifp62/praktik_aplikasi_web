@@ -22,7 +22,7 @@ class TrailFitAssessmentController extends Controller
 {
     public function __invoke(Request $request, Trail $trail, PenilaianKecocokan $halaman): Response
     {
-        abort_if($trail->archived_at !== null || ! $trail->is_published, 404);
+        abort_unless($trail->terbit(), 404);
 
         $trail->load('mountain');
         $trip = null;

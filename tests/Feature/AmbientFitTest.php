@@ -327,6 +327,9 @@ class AmbientFitTest extends TestCase
      * Menyalakan kecocokan per-goal di sini berarti satu goal berbeda per baris, dan itu
      * batching yang berbeda sama sekali tanpa imbalan sepadan -- karena itu baris ini
      * tetap menampilkan "Kecocokan dasar" meski trip-nya sendiri punya goal.
+     *
+     * Indeks trip W4 (spec v3 bagian 6.9) menaruh trip mendatang terdekat di kartu utama, jadi
+     * kecocokannya dibaca dari `utama`, bukan `trips.data.0`; niatnya tidak berubah.
      */
     public function test_the_trip_list_shows_the_ambient_fit_for_each_trip(): void
     {
@@ -342,8 +345,8 @@ class AmbientFitTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Trips/Index')
-                ->where('trips.data.0.fit.denganRencana', false)
-                ->where('trips.data.0.fit.alasan', fn (?string $alasan) => filled($alasan)));
+                ->where('utama.fit.denganRencana', false)
+                ->where('utama.fit.alasan', fn (?string $alasan) => filled($alasan)));
 
         $this->assertStringContainsString('Kecocokan dasar', File::get(resource_path('js/components/trips/FitTrip.tsx')));
     }

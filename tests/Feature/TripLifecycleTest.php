@@ -10,8 +10,10 @@ use App\Models\HikingHistory;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\TripPlan;
+use App\Models\TripPreparationItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
@@ -190,6 +192,44 @@ class TripLifecycleTest extends TestCase
             ->assertSessionHasErrors('completion_state');
 
         $this->assertSame(TripStatus::IN_PROGRESS, $trip->fresh()->status);
+    }
+
+    /**
+     * W4-Fpre (c), W4-FE, ruling W4-FG (6): rute tulis siklus hidup dan daftar persiapan dibatasi
+     * laju per pengguna dengan kuncinya sendiri (CLAUDE.md bagian 4); centang butir memakai batas
+     * sendiri yang lebih longgar. GET halaman tidak dibatasi.
+     */
+    public function test_lifecycle_and_checklist_writes_are_rate_limited_with_their_own_keys(): void
+    {
+        $tulisan = config('hiking.rate_limits.personal_writes_per_minute');
+        $middleware = fn (string $rute): array => Route::getRoutes()->getByName($rute)->gatherMiddleware();
+
+        foreach (['trips.start', 'trips.complete', 'trips.cancel'] as $rute) {
+            $this->assertContains('throttle:'.$tulisan.',1,siklus-trip', $middleware($rute), $rute);
+        }
+
+        $this->assertContains('throttle:'.$tulisan.',1,persiapan-daftar', $middleware('trips.preparation.regenerate'));
+        $this->assertContains('throttle:120,1,persiapan-butir', $middleware('trips.preparation.update'));
+        $this->assertSame(120, config('hiking.rate_limits.preparation_toggles_per_minute'));
+        $this->assertEmpty(array_filter($middleware('trips.preparation'), fn (string $m) => str_starts_with($m, 'throttle')));
+    }
+
+    /**
+     * Centang butir punya hitungannya sendiri: 120 per menit, lalu 429, tanpa menghabiskan jatah
+     * aksi tulis lain seperti "Perbarui daftar".
+     */
+    public function test_ticking_items_is_capped_on_its_own_count(): void
+    {
+        $trip = $this->trip(TripStatus::PLANNED);
+        $butir = TripPreparationItem::create(['trip_plan_id' => $trip->id, 'category' => 'EQUIPMENT', 'label' => 'Headlamp', 'is_critical' => true, 'status' => 'NOT_CONFIRMED']);
+        $kirim = fn (string $status) => $this->actingAs($trip->user)->post(route('trips.preparation.update', ['trip' => $trip, 'item' => $butir->id]), ['status' => $status]);
+
+        for ($i = 0; $i < 120; $i++) {
+            $kirim($i % 2 ? 'NOT_CONFIRMED' : 'CONFIRMED')->assertRedirect();
+        }
+
+        $kirim('CONFIRMED')->assertTooManyRequests();
+        $this->actingAs($trip->user)->post(route('trips.preparation.regenerate', $trip))->assertRedirect(route('trips.preparation', $trip));
     }
 
     public function test_the_transition_table_is_explicit(): void

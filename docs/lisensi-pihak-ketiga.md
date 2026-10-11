@@ -60,6 +60,7 @@ Daftar transitif lengkap: `composer licenses --no-dev`.
 |---|---|---|
 | `@inertiajs/react` | 3.7.1 | MIT |
 | `@inertiajs/vite` | 3.7.1 | MIT |
+| `framer-motion` | 14.0.0 (dipasang 6 Oktober 2026 atas arahan pemilik; belum diimpor kode mana pun, jadi belum masuk bundel) | MIT, Copyright (c) 2018 Framer B.V. |
 | `maplibre-gl` | 4.7.1 | BSD-3-Clause |
 | `react` | 19.3.0 | MIT |
 | `react-dom` | 19.3.0 | MIT |

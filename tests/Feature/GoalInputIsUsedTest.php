@@ -42,8 +42,11 @@ class GoalInputIsUsedTest extends TestCase
      * Catatan pada rencana sebelumnya ditulis ke basis data dan tidak pernah dibaca
      * di mana pun: 500 karakter yang diketik pengguna lalu hilang tanpa jejak.
      *
-     * Tipe perjalanan dan tanggal sudah dibawa dari rencana ke trip, jadi yang kurang
-     * bukan konsepnya melainkan satu kolom yang terlewat dari pola yang sudah ada.
+     * Tipe perjalanan selalu dibawa dari rencana ke trip lewat RencanaTrip::props().
+     * Tanggal naik dibawa dari target_date rencana hanya ketika ?goal= eksplisit dan URL
+     * belum membawa tanggalnya sendiri (putaran perbaikan 1 W4 Tugas 3, ruling W4-3e);
+     * lihat test_the_goals_target_date_prefills_the_plan_date_when_the_url_has_none di
+     * bawah untuk jalur itu. Test ini sendiri hanya menagih kolom catatan.
      */
     public function test_goal_notes_are_carried_into_the_trip_created_from_it(): void
     {
@@ -64,6 +67,58 @@ class GoalInputIsUsedTest extends TestCase
                 ->where('awal.notes', 'Berangkat bertiga, satu orang baru pertama kali menginap di gunung.')
                 ->where('awal.trail_id', (string) $trail->id)
                 ->where('awal.hiking_goal_id', $goal->id));
+    }
+
+    /**
+     * Tanggal naik dibawa dari target_date rencana ketika rencana dipilih lewat ?goal=
+     * (seperti tautan dari Rekomendasi) dan URL rencana trip belum membawa tanggalnya
+     * sendiri: pendaki tidak mengetik ulang tanggal yang sudah ia pilih di sana (putaran
+     * perbaikan 1 W4 Tugas 3, ruling W4-3e).
+     */
+    public function test_the_goals_target_date_prefills_the_plan_date_when_the_url_has_none(): void
+    {
+        $user = $this->userWithProfile();
+        $trail = Trail::factory()->published()->easy()->create();
+
+        $this->actingAs($user)->post(route('goals.store'), [
+            'trip_type' => 'CAMPING',
+            'target_date' => now()->addDays(10)->toDateString(),
+        ])->assertSessionHasNoErrors();
+
+        $goal = $user->hikingGoals()->latest()->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('trips.create', ['trail' => $trail->id, 'goal' => $goal->id]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('awal.planned_date', $goal->target_date->toDateString()));
+    }
+
+    /**
+     * ?goal= tidak dapat dipakai membaca rencana pendakian milik pengguna lain: relasi
+     * hikingGoals() sudah tergeser oleh pengguna yang masuk, jadi rencana trip tidak
+     * boleh membawa catatan atau tanggal orang lain, dan tidak diam-diam jatuh ke rencana
+     * milik pembaca sendiri (putaran perbaikan 1 W4 Tugas 3, ruling W4-3e).
+     */
+    public function test_another_users_goal_is_ignored_on_the_plan_page(): void
+    {
+        $user = $this->userWithProfile();
+        $lain = $this->userWithProfile();
+        $trail = Trail::factory()->published()->easy()->create();
+
+        $this->actingAs($lain)->post(route('goals.store'), [
+            'trip_type' => 'CAMPING',
+            'notes' => 'Catatan milik orang lain.',
+            'target_date' => now()->addDays(10)->toDateString(),
+        ])->assertSessionHasNoErrors();
+
+        $goalLain = $lain->hikingGoals()->latest()->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('trips.create', ['trail' => $trail->id, 'goal' => $goalLain->id]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('awal.notes', '')
+                ->where('awal.planned_date', '')
+                ->where('awal.hiking_goal_id', null));
     }
 
     /**

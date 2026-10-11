@@ -157,15 +157,20 @@ Route::middleware(['auth'])->group(function () {
     Route::put('trips/{trip}', [TripController::class, 'update'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,rencana-trip')->name('trips.update');
     Route::delete('trips/{trip}', [TripController::class, 'destroy'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,rencana-trip')->name('trips.destroy');
     Route::put('trips/{trip}/pengingat', [TripReminderController::class, 'update'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,pengingat-trip')->name('trips.reminders.update');
-    Route::post('trips/{trip}/start', [TripLifecycleController::class, 'start'])->name('trips.start');
-    Route::post('trips/{trip}/complete', [TripLifecycleController::class, 'complete'])->name('trips.complete');
-    Route::post('trips/{trip}/cancel', [TripLifecycleController::class, 'cancel'])->name('trips.cancel');
+    // Siklus hidup dan daftar persiapan juga tulisan pribadi (W4-Fpre c, W4-FE, ruling W4-FG 6),
+    // masing-masing dengan hitungannya sendiri. Centang butir punya batas sendiri yang lebih
+    // longgar: pencentangan cepat manusia beserta Urungkan dapat melampaui 30 per menit.
+    Route::post('trips/{trip}/start', [TripLifecycleController::class, 'start'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,siklus-trip')->name('trips.start');
+    Route::post('trips/{trip}/complete', [TripLifecycleController::class, 'complete'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,siklus-trip')->name('trips.complete');
+    Route::post('trips/{trip}/cancel', [TripLifecycleController::class, 'cancel'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,siklus-trip')->name('trips.cancel');
     Route::get('trips/{trip}/preparation', [PreparationController::class, 'show'])->name('trips.preparation');
-    Route::post('trips/{trip}/preparation/regenerate', [PreparationController::class, 'regenerate'])->name('trips.preparation.regenerate');
-    Route::post('trips/{trip}/preparation/{item}', [PreparationController::class, 'update'])->whereNumber('item')->name('trips.preparation.update');
+    Route::post('trips/{trip}/preparation/regenerate', [PreparationController::class, 'regenerate'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,persiapan-daftar')->name('trips.preparation.regenerate');
+    Route::post('trips/{trip}/preparation/{item}', [PreparationController::class, 'update'])->whereNumber('item')->middleware('throttle:'.config('hiking.rate_limits.preparation_toggles_per_minute').',1,persiapan-butir')->name('trips.preparation.update');
     Route::get('trips/{trip}/readiness', [ReadinessController::class, 'show'])->name('trips.readiness');
-    Route::post('trips/{trip}/readiness/recompute', [ReadinessController::class, 'recompute'])->name('trips.readiness.recompute');
-    Route::post('trips/{trip}/readiness/confirm', [ReadinessController::class, 'confirm'])->name('trips.readiness.confirm');
+    // W4-6g butir 2: tulisan pribadi yang sama seperti rute trip lain di atas, jadi dibatasi
+    // laju yang sama dengan awalan kuncinya sendiri.
+    Route::post('trips/{trip}/readiness/recompute', [ReadinessController::class, 'recompute'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,cek-kesiapan')->name('trips.readiness.recompute');
+    Route::post('trips/{trip}/readiness/confirm', [ReadinessController::class, 'confirm'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,cek-kesiapan')->name('trips.readiness.confirm');
     // Tab Mendaki (IA v2): membuka pendakian yang berjalan, atau menawarkan trip yang dapat dimulai.
     Route::get('mendaki', TrackController::class)->name('track');
     Route::get('trips/{trip}/hike', [HikeModeController::class, 'show'])->name('trips.hike');

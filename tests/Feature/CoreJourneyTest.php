@@ -96,7 +96,7 @@ class CoreJourneyTest extends TestCase
         $this->assertSame(100, $trip->fresh()->preparationCompletionPercent());
 
         $this->post(route('trips.readiness.confirm', $trip))
-            ->assertSessionHas('status', 'Pre-departure check tercatat.');
+            ->assertSessionHas('status', 'Tinjauan Anda tercatat.');
 
         $this->assertSame(TripStatus::READY_FOR_DEPARTURE, $trip->fresh()->status);
 

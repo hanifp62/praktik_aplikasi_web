@@ -3,19 +3,19 @@
 namespace App\Http\Controllers\Trips;
 
 use App\Enums\CompletionState;
-use App\Enums\PreparationStatus;
 use App\Enums\RouteFitLabel;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trips\StoreTripRequest;
 use App\Http\Requests\Trips\UpdateTripRequest;
-use App\Http\Resources\TripRowResource;
-use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Services\OfficialStatusService;
 use App\Services\PermitService;
 use App\Services\TrailFitService;
+use App\Services\Trips\IndeksTrip;
+use App\Services\Trips\KepalaTrip;
+use App\Services\Trips\RencanaTrip;
 use App\Services\Trips\TripLifecycle;
 use App\Services\Trips\TripReminderScheduler;
 use App\Services\Trips\TripSteps;
@@ -34,90 +34,28 @@ use Inertia\Response;
  */
 class TripController extends Controller
 {
-    public function index(Request $request, OfficialStatusService $officialStatus, TrailFitService $trailFit): Response
+    /**
+     * Indeks trip (spec v3 bagian 6.9): kartu utama trip terdekat, lalu kelompok Berlangsung,
+     * Mendatang, dan Selesai, disusun kelas halaman IndeksTrip.
+     */
+    public function index(Request $request, IndeksTrip $indeks): Response
     {
-        $user = $request->user();
-
-        $trips = $user->tripPlans()
-            ->with('trail.mountain', 'latestReadinessCheck')
-            ->withCount([
-                'preparationItems as item_berlaku' => fn ($q) => $q->where('status', '!=', PreparationStatus::NOT_APPLICABLE->value),
-                'preparationItems as item_dikonfirmasi' => fn ($q) => $q->where('status', PreparationStatus::CONFIRMED->value),
-            ])
-            ->orderByDesc('planned_date')
-            ->paginate(10);
-
-        // Bukan collect(): OfficialStatusService dan PermitService (lewat forTrails())
-        // men-type-hint Eloquent\Collection secara ketat dan melempar TypeError pada
-        // Support\Collection biasa.
-        $jalurDitampilkan = EloquentCollection::make(
-            $trips->pluck('trail')->filter()->unique('id')->values()->all()
-        );
-
-        // Kecocokan dasar, tanpa goal. Pengguna tanpa profil lengkap tidak dinilai sama
-        // sekali: menilai tanpa profil menghasilkan label yang terlihat pasti dan
-        // berdasar ketiadaan (§91).
-        $ringkasanFit = $user->hasCompletedProfile()
-            ? $trailFit->forTrails($user, $jalurDitampilkan)
-            : [];
-
-        // Dimuat sekali untuk seluruh halaman, bukan satu query status per trip.
-        $statusJalur = $officialStatus->effectiveStatusesForTrails($jalurDitampilkan);
-
         return Inertia::render('Trips/Index', [
             'title' => 'Trip Saya',
-            'trips' => [
-                'data' => $trips->getCollection()
-                    ->map(fn (TripPlan $trip) => (new TripRowResource(
-                        $trip,
-                        $ringkasanFit[$trip->trail_id] ?? null,
-                        $statusJalur[$trip->trail_id] ?? null,
-                    ))->resolve($request))
-                    ->values()
-                    ->all(),
-                'links' => $trips->linkCollection()->map(fn (array $l) => ['url' => $l['url'], 'label' => $l['label'], 'active' => $l['active']])->all(),
-            ],
+            ...$indeks->props($request->user(), $request),
         ]);
     }
 
     /**
-     * Isian awal dibawa dari jalur yang dipilih (?trail=) dan dari rencana pendakian
-     * (?goal=, atau rencana terakhir), termasuk catatannya, supaya konteks yang diketik
-     * pendaki pada rencana tidak hilang.
+     * Rencanakan trip (spec v3 bagian 6.8): isian awal dari jalur yang dipilih (?trail=), dari
+     * rencana pendakian (?goal=, atau rencana terakhir) termasuk catatannya, dan dari pilihan
+     * jenis dan tanggal di URL, disusun kelas halaman RencanaTrip.
      */
-    public function create(Request $request, TripReminderScheduler $pengingat): Response
+    public function create(Request $request, RencanaTrip $rencana): Response
     {
-        $user = $request->user();
-        $trail = $request->integer('trail') ?: null;
-        $goal = $request->integer('goal') ?: null;
-
-        $dipilih = $trail ? Trail::published()->find($trail) : null;
-
-        $goalTerakhir = $goal
-            ? $user->hikingGoals()->find($goal)
-            : $user->hikingGoals()->latest()->first();
-
         return Inertia::render('Trips/Create', [
-            'title' => 'Buat Rencana Trip',
-            'awal' => [
-                'trail_id' => $trail !== null ? (string) $trail : '',
-                'hiking_goal_id' => $goalTerakhir?->id,
-                'name' => $dipilih ? 'Pendakian '.$dipilih->name : '',
-                'planned_date' => $goalTerakhir?->target_date?->toDateString() ?? '',
-                'end_date' => '',
-                'start_time' => '',
-                'participants_count' => '',
-                'trip_type' => $goalTerakhir?->trip_type?->value ?? $user->preference?->preferred_trip_type?->value ?? '',
-                'notes' => $goalTerakhir?->notes ?? '',
-                'reminders_enabled' => false,
-            ],
-            'trails' => Trail::published()->with('mountain')->orderBy('name')->get()
-                ->map(fn (Trail $t) => ['value' => (string) $t->id, 'label' => $t->name.' - '.$t->mountain?->name])
-                ->all(),
-            'tripTypes' => self::tipePerjalanan(),
-            'tanggalTerawal' => Timezone::earliestDateInIndonesia(),
-            'batas' => self::batasRencana(),
-            'jadwalPengingat' => $pengingat->keteranganJadwal(),
+            'title' => 'Rencanakan trip',
+            ...$rencana->props($request->user(), $request),
         ]);
     }
 
@@ -125,7 +63,9 @@ class TripController extends Controller
     {
         $trip = $lifecycle->create($request->user(), $request->validated());
 
-        return redirect()->route('trips.preparation', $trip);
+        // Konfirmasi sesudah pindah halaman datang dari flash halaman tujuan (konvensi W2; M6
+        // tinjauan akhir W4): Persiapan merendernya di wilayah statusnya.
+        return redirect()->route('trips.preparation', $trip)->with('status', 'Rencana trip tersimpan.');
     }
 
     /**
@@ -159,7 +99,7 @@ class TripController extends Controller
             ],
             'tripTypes' => self::tipePerjalanan(),
             'tanggalTerawal' => Timezone::earliestDateInIndonesia(),
-            'batas' => self::batasRencana(),
+            'batas' => RencanaTrip::batasIsian(),
         ]);
     }
 
@@ -187,54 +127,57 @@ class TripController extends Controller
         return redirect()->route('trips.index')->with('status', 'Rencana trip dihapus.');
     }
 
-    public function show(Request $request, TripPlan $trip, PermitService $permits, TrailFitService $trailFit, TripSteps $steps, TripLifecycle $lifecycle, TripReminderScheduler $pengingat): Response
+    public function show(Request $request, TripPlan $trip, PermitService $permits, TrailFitService $trailFit, OfficialStatusService $statusResmi, TripSteps $steps, TripLifecycle $lifecycle, TripReminderScheduler $pengingat, KepalaTrip $kepala): Response
     {
         $this->authorize('view', $trip);
 
-        $trip->load('trail.mountain', 'preparationItems', 'latestReadinessCheck', 'history', 'hikingGoal', 'reminders');
+        $trip->load('trail.mountain', 'preparationItems', 'latestReadinessCheck', 'latestConfirmedReadinessCheck', 'history', 'hikingGoal', 'reminders');
         $user = $request->user();
+        $jalur = EloquentCollection::make([$trip->trail]);
+        // Dibaca sekali untuk kecocokan dan langkah Cek (tinjauan Tugas 1 M7).
+        $statusJalur = $statusResmi->effectiveStatusesForTrails($jalur);
 
-        // Trip sudah punya goal, jadi kecocokannya yang tajam, bukan yang dasar.
+        // Kecocokan untuk rencana ini (spec v3 bagian 6.4): jenis dan tanggal trip di atas
+        // salinan tujuannya (TripPlan::tujuanPenilaian(), ruling W4-FA), sama dengan halaman
+        // penilaian kecocokan dan Cek kesiapan.
         $fit = $user->hasCompletedProfile()
-            ? ($trailFit->forTrails($user, EloquentCollection::make([$trip->trail]), $trip->hikingGoal)[$trip->trail->id] ?? null)
+            ? ($trailFit->forTrails($user, $jalur, $trip->tujuanPenilaian(), $statusJalur)[$trip->trail->id] ?? null)
             : null;
+        $jalurTerbit = $trip->trail->terbit();
 
         // Dihitung ulang setiap halaman dibuka, bukan disimpan: jawabannya berubah seiring
-        // hari berjalan meskipun tidak ada satu pun data yang disunting.
-        $jendela = $permits->bookingWindowFor($trip->trail, $trip->planned_date);
+        // hari berjalan meskipun tidak ada satu pun data yang disunting. Trip yang selesai atau
+        // batal tidak ditawari pemesanan izin (W4-4d).
+        $jendela = $trip->status->isActive() ? $permits->bookingWindowFor($trip->trail, $trip->planned_date) : null;
         $alasanHapus = $lifecycle->deleteRefusal($trip);
+
+        // Ruling W4-G1 (Delivery Gate): "Mulai pendakian" hanya tombol primer sejak hari
+        // keberangkatan tiba di zona gunung, selain itu tombol penuh kartu utama indeks
+        // sudah jadi satu-satunya titik fokus. Predikat harinya sama dengan
+        // KepalaTrip::hariMenuju() dan TripPlan::tanggalRencanaLewat() (Timezone::hariSampai),
+        // bukan hitungan hari baru: <= 0 berarti hari ini sudah tanggal rencana atau lewat.
+        $hariBerangkat = Timezone::hariSampai($trip->planned_date, Timezone::forTrail($trip->trail)) <= 0;
 
         return Inertia::render('Trips/Show', [
             'title' => $trip->name,
+            'kepala' => $kepala->untuk($trip),
             'trip' => [
                 'id' => $trip->id,
-                'name' => $trip->name,
-                'trail' => $trip->trail->name,
-                'mountain' => $trip->trail->mountain->name,
-                'tanggal' => $trip->planned_date->translatedFormat('d M Y'),
-                'sampai' => $trip->end_date !== null && ! $trip->end_date->isSameDay($trip->planned_date)
-                    ? $trip->end_date->translatedFormat('d M Y')
-                    : null,
-                'peserta' => $trip->participants_count !== null ? $trip->participants_count.' orang' : null,
-                // Jam ini rencana pengguna, bukan instan UTC, jadi tidak dikonversi.
-                // Penandanya tetap disebut: "mulai 06:00" ambigu bagi pendaki Jakarta
-                // yang merencanakan Rinjani.
-                'mulai' => $trip->start_time
-                    ? Carbon::parse($trip->start_time)->format('H:i').' '.Timezone::label(Timezone::forTrail($trip->trail))
-                    : null,
-                'tipe' => $trip->trip_type->label(),
-                'status' => $trip->status->label(),
                 'aktif' => $trip->status->isActive(),
                 'berlangsung' => $trip->status === TripStatus::IN_PROGRESS,
                 'catatan' => $trip->notes,
+                'hariBerangkat' => $hariBerangkat,
             ],
-            'langkah' => $steps->for($trip),
+            'langkah' => $steps->for($trip, $statusJalur[$trip->trail->id] ?? null),
             'fit' => $fit === null ? null : [
                 'label' => $fit->label?->value,
                 'labelText' => RouteFitLabel::textFor($fit->label),
                 'alasan' => $fit->alasan,
                 'denganRencana' => $fit->denganRencana,
             ],
+            // Penilaian lengkap hanya untuk jalur yang masih terbit (halaman itu menjawab 404
+            // untuk jalur draf dan arsip).
+            'penilaian' => $jalurTerbit ? route('trails.fit', ['trail' => $trip->trail, 'trip' => $trip->id]) : null,
             // Nadanya mengikuti §43: sistem menyebut aturan dan penyelenggaranya, tidak
             // pernah menyatakan izinnya sudah aman atau belum.
             'izin' => $jendela === null ? null : [
@@ -261,19 +204,5 @@ class TripController extends Controller
     private static function tipePerjalanan(): array
     {
         return array_map(fn (TripType $t) => ['value' => $t->value, 'label' => $t->label()], TripType::cases());
-    }
-
-    /**
-     * Batas isian yang sama dengan aturan validasinya, supaya petunjuk di formulir tidak
-     * pernah menyebut angka yang berbeda dari yang ditolak server.
-     *
-     * @return array{peserta: int, rentangHari: int}
-     */
-    private static function batasRencana(): array
-    {
-        return [
-            'peserta' => (int) config('hiking.trips.max_participants'),
-            'rentangHari' => (int) config('hiking.trips.max_span_days'),
-        ];
     }
 }

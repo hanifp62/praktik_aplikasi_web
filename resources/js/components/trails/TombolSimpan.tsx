@@ -48,9 +48,10 @@ const opsi = { preserveScroll: true, preserveState: true } as const;
  * ketik (event.detail === 0) memindah fokus ke Urungkan supaya terjangkau sebelum toast
  * hilang (W1-F4, WCAG 2.2.1).
  *
- * Bila flash.simpananSudahAda benar, toast Urungkan tidak ditawarkan: baris itu sudah ada
- * sebelum tombol ini ditekan (tab atau perangkat lain), sehingga Urungkan-sebagai-hapus
- * akan menghapus baris dan catatan yang tidak dibuat tombol ini (ruling W3-4b).
+ * Bila flash.simpananSudahAda menyebut jalur ini, toast Urungkan tidak ditawarkan: baris itu
+ * sudah ada sebelum tombol ini ditekan (tab atau perangkat lain), sehingga
+ * Urungkan-sebagai-hapus akan menghapus baris dan catatan yang tidak dibuat tombol ini (ruling
+ * W3-4b). Flash simpanan dan penghapusan dibaca hanya bila id jalurnya cocok (pola W4-4e).
  */
 export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolSimpanProps) {
     const [memproses, setMemproses] = useState(false);
@@ -67,7 +68,8 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
             onSuccess: (halaman) => {
                 const flash = (halaman.props as unknown as PropsBersama).flash;
                 const ditolak = flash.timbanganPenuh;
-                const sudahAda = flash.simpananSudahAda;
+                // Berkunci id jalur (pola W4-4e): jawaban milik jalur lain bukan jawaban tombol ini.
+                const sudahAda = flash.simpananSudahAda?.trailId === jalur.id;
 
                 if (ditolak) {
                     setPenuh(ditolak);
@@ -90,7 +92,7 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
             onSuccess: (halaman) => {
                 const terhapus = (halaman.props as unknown as PropsBersama).flash.simpananTerhapus;
 
-                if (!terhapus) {
+                if (!terhapus || terhapus.trailId !== jalur.id) {
                     // Tidak ada baris yang terhapus (sudah dihapus di tab atau perangkat lain), jadi
                     // tidak ada yang dapat diurungkan; pengumuman role="status" halaman menyebutnya.
                     return;

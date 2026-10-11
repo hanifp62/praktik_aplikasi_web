@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\OfficialStatusValue;
 use App\Models\HikingGoal;
 use App\Models\Trail;
 use App\Models\User;
@@ -33,10 +34,15 @@ class TrailFitService
     ) {}
 
     /**
+     * Pemanggil yang sudah memuat status resmi untuk jalur yang sama (indeks dan ruang kerja
+     * trip) mengopernya lewat $statuses, supaya status tidak dibaca dua kali dalam satu
+     * permintaan (tinjauan Tugas 1 M7).
+     *
      * @param  Collection<int, Trail>  $trails
+     * @param  array<int, OfficialStatusValue>|null  $statuses  berkunci id jalur
      * @return array<int, TrailFitSummary>
      */
-    public function forTrails(User $user, Collection $trails, ?HikingGoal $goal = null): array
+    public function forTrails(User $user, Collection $trails, ?HikingGoal $goal = null, ?array $statuses = null): array
     {
         if ($trails->isEmpty()) {
             return [];
@@ -46,7 +52,7 @@ class TrailFitService
         // di evaluate() kemudian membaca dari memori, bukan dari basis data (§96).
         Trail::hydratePublishabilityData($trails);
 
-        $statuses = $this->status->effectiveStatusesForTrails($trails);
+        $statuses ??= $this->status->effectiveStatusesForTrails($trails);
         $restrictions = $this->status->segmentRestrictionsForTrails($trails);
         $weights = $this->fit->weights();
 

@@ -57,7 +57,7 @@ class EmptyStateCoverageTest extends TestCase
             'kategori' => 'daftar persiapan dibangkitkan ketika trip belum punya item',
         ],
         'pages/Trips/Readiness.tsx' => [
-            'check.penjelasan' => 'kelompok tetap TripReadinessResource::penjelasan(); versi Blade melewatinya sebagai larik harfiah',
+            'sejakTerakhir.butir' => 'empat baris tetap HalamanKesiapan::sejak(); bagiannya hanya tampil bila ada cek tersimpan',
         ],
     ];
 

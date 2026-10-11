@@ -6,6 +6,7 @@ use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
+use App\Services\PermitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -153,5 +154,152 @@ class TripPermitWindowTest extends TestCase
         $pesan = $this->izin($trip);
         $this->assertStringContainsString('sudah ditutup', $pesan);
         $this->assertStringNotContainsString('sedang dibuka', $pesan);
+    }
+
+    /**
+     * Halaman Rencanakan (spec v3 bagian 6.8, W4 Tugas 3) memakai keadaan jendela yang sama,
+     * tetapi menyebut tanggalnya untuk hari yang dipilih: kapan dibuka dan kapan ditutup,
+     * siapa pengelolanya, dan bahwa Memount hanya menautkan sistem resmi.
+     */
+    public function test_the_plan_page_names_the_booking_dates_for_the_chosen_day(): void
+    {
+        $trail = Trail::factory()->published()->easy()->create();
+        PermitRequirement::factory()->create([
+            'trail_id' => $trail->id,
+            'authority' => 'Balai Besar TNGGP',
+            'booking_url' => 'https://booking.example.test',
+            'booking_opens_days_before' => 30,
+            'booking_closes_days_before' => 3,
+            'daily_quota' => null,
+        ]);
+        $user = User::factory()->create();
+        $izin = fn (string $tanggal): ?array => $this->actingAs($user)
+            ->get(route('trips.create', ['trail' => $trail->id, 'tanggal' => $tanggal]))
+            ->viewData('page')['props']['izin'];
+
+        $this->assertSame([
+            'keadaan' => 'terbuka',
+            'judul' => 'Pemesanan izin terbuka sampai Rab, 7 Okt',
+            'keterangan' => 'Dibuka sejak Kam, 10 Sep di sistem resmi Balai Besar TNGGP (H-30 sampai H-3). Memount menautkan sistem resmi dan tidak menjual izin.',
+            'tautan' => ['href' => 'https://booking.example.test', 'teks' => 'Pesan di sistem resmi, paling lambat Rab, 7 Okt', 'label' => 'Pesan'],
+            'kuota' => 'Kuota harian jalur ini belum ada sumber terverifikasi. Pastikan saat memesan izin.',
+        ], $izin('2026-10-10'));
+
+        // M1 tinjauan akhir W4: jendela yang belum dibuka atau sudah tutup tidak mengajak memesan.
+        $this->assertSame(['belum', 'Pemesanan izin dibuka mulai Rab, 21 Okt', null], [$izin('2026-11-20')['keadaan'], $izin('2026-11-20')['judul'], $izin('2026-11-20')['tautan']]);
+        $this->assertSame(['tutup', 'Pemesanan izin sudah tutup, hari terakhirnya Rab, 9 Sep', null], [$izin('2026-09-12')['keadaan'], $izin('2026-09-12')['judul'], $izin('2026-09-12')['tautan']]);
+
+        $tanpaTanggal = $izin('');
+        $this->assertSame('tanpaTanggal', $tanpaTanggal['keadaan']);
+        $this->assertSame('Pilih tanggal naik untuk melihat kapan pemesanannya dibuka dan ditutup. Dikelola Balai Besar TNGGP (H-30 sampai H-3).', $tanpaTanggal['keterangan']);
+    }
+
+    /**
+     * Kuota hanya disebut sebagai aturan yang tercatat, tidak pernah sebagai sisa kuota
+     * (§43); kuota tanpa verifikasi disebut belum terverifikasi. Aturan tanpa jendela yang
+     * tercatat tidak ditulis "sedang dibuka" (R-007), dan jalur tanpa aturan tidak mendapat
+     * kotak izin sama sekali.
+     */
+    public function test_the_plan_page_never_invents_a_quota_or_a_window(): void
+    {
+        $user = User::factory()->create();
+        $izin = function (array $aturan) use ($user): ?array {
+            $trail = Trail::factory()->published()->easy()->create();
+
+            if ($aturan !== []) {
+                PermitRequirement::factory()->create(['trail_id' => $trail->id, 'authority' => 'Balai Taman Nasional'] + $aturan);
+            }
+
+            return $this->actingAs($user)->get(route('trips.create', ['trail' => $trail->id, 'tanggal' => '2026-10-10']))->viewData('page')['props']['izin'];
+        };
+
+        $terverifikasi = $izin(['daily_quota' => 600, 'verified_at' => now(), 'booking_opens_days_before' => 30, 'booking_closes_days_before' => 3]);
+        $this->assertSame('Kuota harian tercatat 600 pendaki. Sisa kuota hanya ada di sistem resmi.', $terverifikasi['kuota']);
+
+        $belumTerverifikasi = $izin(['daily_quota' => 600, 'verified_at' => null, 'booking_opens_days_before' => 30, 'booking_closes_days_before' => 3]);
+        $this->assertSame('Kuota harian tercatat 600 pendaki, belum terverifikasi. Pastikan saat memesan izin.', $belumTerverifikasi['kuota']);
+
+        $tanpaJendela = $izin(['booking_opens_days_before' => null, 'booking_closes_days_before' => null]);
+        $this->assertSame('tanpaJendela', $tanpaJendela['keadaan']);
+        $this->assertSame('Jalur ini mewajibkan izin', $tanpaJendela['judul']);
+        $this->assertSame('Jendela pemesanannya belum tercatat di Memount. Periksa ke Balai Taman Nasional.', $tanpaJendela['keterangan']);
+
+        $this->assertNull($izin([]));
+    }
+
+    /**
+     * Ruling W4-FE (R-007): aturan yang mencatat tanggal tutup tetapi tidak tanggal buka tidak
+     * pernah ditulis "terbuka". Rencanakan menyebut tanggal buka belum tercatat dan hari terakhir
+     * pemesanannya, dengan tautan netral "Periksa", bukan ajakan memesan; ruang kerja menulis
+     * keadaan yang sama; dan mesin kecocokan (W3) tidak mendapat peringatan baru.
+     */
+    public function test_a_half_recorded_window_is_never_written_as_open(): void
+    {
+        $trail = Trail::factory()->published()->easy()->create();
+        PermitRequirement::factory()->create([
+            'trail_id' => $trail->id,
+            'authority' => 'Balai Besar TNGGP',
+            'booking_url' => 'https://booking.example.test',
+            'booking_opens_days_before' => null,
+            'booking_closes_days_before' => 3,
+        ]);
+        $user = User::factory()->create();
+        $trip = TripPlan::factory()->create(['user_id' => $user->id, 'trail_id' => $trail->id, 'planned_date' => '2026-10-10']);
+
+        $izin = $this->actingAs($user)->get(route('trips.create', ['trail' => $trail->id, 'tanggal' => '2026-10-10']))->viewData('page')['props']['izin'];
+        $pesanRuangKerja = $this->izin($trip);
+
+        $this->assertSame('bukaBelumTercatat', $izin['keadaan']);
+        $this->assertSame('Tanggal buka pemesanan izin belum tercatat', $izin['judul']);
+        $this->assertSame('Hari terakhir pemesanan Rab, 7 Okt. Periksa jendelanya di sistem resmi Balai Besar TNGGP (ditutup H-3). Memount menautkan sistem resmi dan tidak menjual izin.', $izin['keterangan']);
+        $this->assertSame(['href' => 'https://booking.example.test', 'teks' => 'Periksa di sistem resmi', 'label' => 'Periksa'], $izin['tautan']);
+        $this->assertStringContainsString('belum tercatat', $pesanRuangKerja);
+        $this->assertStringNotContainsString('sedang dibuka', $pesanRuangKerja);
+        $this->assertNull(app(PermitService::class)->bookingWarningFor($trail, Carbon::parse('2026-10-10')));
+    }
+
+    /**
+     * W4-FK N4: judul dan tautan izin Rencanakan berasal dari satu jendela. Bila keadaan jendela
+     * berganti di antara dua pembacaan "hari ini" (pergantian tengah malam), judul "terbuka"
+     * tidak boleh bersanding dengan tautan dari keadaan lain. Muat ulang parsial "izin" saja,
+     * supaya hanya pembacaan Rencanakan sendiri yang dihitung.
+     */
+    public function test_the_plan_page_writes_the_permit_title_and_link_from_one_window(): void
+    {
+        $trail = Trail::factory()->published()->easy()->create();
+        $aturan = PermitRequirement::factory()->create(['trail_id' => $trail->id, 'authority' => 'Balai Besar TNGGP', 'booking_url' => 'https://booking.example.test', 'booking_opens_days_before' => 30, 'booking_closes_days_before' => 3]);
+        $user = User::factory()->create();
+        $query = ['trail' => $trail->id, 'tanggal' => '2026-10-10'];
+        $versi = (string) $this->actingAs($user)->get(route('trips.create', $query))->viewData('page')['version'];
+        $terbuka = ['state' => PermitService::BOOKING_TERBUKA, 'message' => '', 'requirement' => $aturan, 'buka' => Carbon::parse('2026-09-10'), 'tutup' => Carbon::parse('2026-10-07')];
+        $this->partialMock(PermitService::class, fn ($mock) => $mock->shouldReceive('bookingWindowFor')->andReturn($terbuka, ['state' => PermitService::BOOKING_DITUTUP] + $terbuka));
+
+        $izin = $this->actingAs($user)->get(route('trips.create', $query), [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => $versi,
+            'X-Inertia-Partial-Component' => 'Trips/Create',
+            'X-Inertia-Partial-Data' => 'izin',
+        ])->assertOk()->json('props.izin');
+
+        $this->assertSame('terbuka', $izin['keadaan']);
+        $this->assertSame(['href' => 'https://booking.example.test', 'teks' => 'Pesan di sistem resmi, paling lambat Rab, 7 Okt', 'label' => 'Pesan'], $izin['tautan']);
+    }
+
+    /**
+     * Rencanakan membaca "hari ini" dua kali: sekali di lantai tanggal, sekali di jendela
+     * pemesanan. Bila tengah malam lewat di antaranya, jendelanya tidak ada lagi; halaman tetap
+     * terbuka tanpa kotak izin, bukan gagal dan bukan menebak keadaan jendelanya (R-007).
+     */
+    public function test_the_plan_page_writes_no_permit_state_when_the_window_is_gone(): void
+    {
+        $trail = Trail::factory()->published()->easy()->create();
+        PermitRequirement::factory()->create(['trail_id' => $trail->id, 'booking_opens_days_before' => 30, 'booking_closes_days_before' => 3]);
+        $this->partialMock(PermitService::class, fn ($mock) => $mock->shouldReceive('bookingWindowFor')->andReturn(null));
+
+        $respons = $this->actingAs(User::factory()->create())
+            ->get(route('trips.create', ['trail' => $trail->id, 'tanggal' => '2026-10-10']));
+
+        $respons->assertOk();
+        $this->assertNull($respons->viewData('page')['props']['izin']);
     }
 }

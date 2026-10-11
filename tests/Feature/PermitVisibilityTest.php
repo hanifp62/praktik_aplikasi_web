@@ -98,7 +98,10 @@ class PermitVisibilityTest extends TestCase
         $this->assertNotNull($item, 'Checklist harus memuat item perizinan.');
         $this->assertTrue($item->is_critical, 'Izin tidak dapat diurus di basecamp pada hari keberangkatan.');
         $this->assertSame(PreparationCategory::LOGISTICS, $item->category);
-        $this->assertStringContainsString('bookingsemeru', $item->description);
+        // Keterangan menyebut aturannya tanpa alamat pemesanan mentah (tinjauan Tugas 4 M9);
+        // Persiapan menautkan alamat itu sendiri menurut keadaan jendelanya.
+        $this->assertStringContainsString('TN Bromo Tengger Semeru', $item->description);
+        $this->assertStringNotContainsString('bookingsemeru', $item->description);
     }
 
     public function test_a_trail_without_permit_rules_gains_no_permit_item(): void

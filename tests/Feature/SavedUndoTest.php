@@ -206,7 +206,7 @@ class SavedUndoTest extends TestCase
         $this->actingAs($user)->post(route('trails.saved.store', $draf->id))->assertNotFound();
 
         $tombol = File::get(resource_path('js/components/trails/TombolSimpan.tsx'));
-        $this->assertStringContainsString('if (!terhapus) {', $tombol);
+        $this->assertStringContainsString('if (!terhapus || terhapus.trailId !== jalur.id) {', $tombol);
     }
 
     /**
@@ -304,7 +304,7 @@ class SavedUndoTest extends TestCase
 
         $this->actingAs($user)->from(route('trails.index'))->post(route('trails.saved.store', $trail->id))
             ->assertRedirect(route('trails.index'))
-            ->assertSessionHas('simpanan-sudah-ada', true)
+            ->assertSessionHas('simpanan-sudah-ada', ['trailId' => $trail->id])
             ->assertSessionHas('pengumuman', 'Jalur Selo sudah ada di simpanan.');
 
         $this->assertSame(1, TrailConsideration::query()->where('user_id', $user->id)->where('trail_id', $trail->id)->count());

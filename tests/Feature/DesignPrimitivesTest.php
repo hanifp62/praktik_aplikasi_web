@@ -276,13 +276,14 @@ class DesignPrimitivesTest extends TestCase
     /**
      * Kontrol segmen adalah grup radio asli: panah papan ketik berpindah pilihan dan pembaca
      * layar menyebut posisinya tanpa ARIA buatan. Terpilih ditandai permukaan, garis, dan
-     * tebal huruf.
+     * tebal huruf. W4 Tugas 3 menambah aria-describedby opsional pada fieldset itu, supaya
+     * galat validasi jenis trip di halaman Rencanakan terikat ke grupnya; grupnya tetap asli.
      */
     public function test_the_segmented_control_is_a_native_radio_group(): void
     {
         $segmen = $this->sumber('components/ui/KontrolSegmen.tsx');
 
-        $this->assertStringContainsString('<fieldset className={className}>', $segmen);
+        $this->assertStringContainsString('<fieldset className={className} aria-describedby={penjelas}>', $segmen);
         $this->assertStringContainsString('<legend className="sr-only">{label}</legend>', $segmen);
         $this->assertStringContainsString('type="radio" name={nama} value={p.nilai} checked={nilai === p.nilai}', $segmen);
         $this->assertStringContainsString('has-[:checked]:border-control has-[:checked]:bg-surface has-[:checked]:font-bold', $segmen);

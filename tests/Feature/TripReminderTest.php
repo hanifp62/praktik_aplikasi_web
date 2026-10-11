@@ -383,6 +383,35 @@ class TripReminderTest extends TestCase
      * Halaman trip menggambar pengingat yang dikirim server: sakelar lewat rute
      * trips.reminders.update dan daftar dengan keadaan kosong yang menjelaskan dirinya.
      */
+    /**
+     * Ruling W4-FC (I3 tinjauan akhir W4, probe P4): sakelar pengingat di Persiapan kembali ke
+     * Persiapan, bukan melempar pendaki ke ruang kerja. Halaman asal hanya salah satu dari dua
+     * rute trip itu sendiri; nilai lain ditolak dan kembali ke ruang kerja, tidak pernah ke
+     * Referer atau alamat dari peramban.
+     */
+    public function test_the_toggle_returns_to_the_trips_own_page_it_came_from_and_nowhere_else(): void
+    {
+        $trip = $this->trip();
+        $this->actingAs($trip->user);
+
+        // Di Persiapan kabarnya kabar aksi (dibacakan dekat kartu pengingat); di ruang kerja kabar
+        // halaman (dibacakan dekat kepala). W4-FK N1.
+        $this->put(route('trips.reminders.update', $trip), ['aktif' => true, 'kembali' => 'persiapan'])
+            ->assertRedirect(route('trips.preparation', $trip))
+            ->assertSessionHas('kabar-aksi', 'Pengingat dinyalakan. Surel dikirim ke alamat akun Anda sesuai jadwal pengingat.')
+            ->assertSessionMissing('status');
+        $this->put(route('trips.reminders.update', $trip), ['aktif' => false, 'kembali' => 'ruang-kerja'])
+            ->assertRedirect(route('trips.show', $trip))
+            ->assertSessionHas('status', 'Pengingat dimatikan. Pengingat yang belum terkirim dibatalkan.');
+        $this->assertFalse($trip->fresh()->reminders_enabled);
+
+        $this->withHeader('Referer', 'https://jahat.example.test/curi')
+            ->put(route('trips.reminders.update', $trip), ['aktif' => true, 'kembali' => 'https://jahat.example.test/curi'])
+            ->assertRedirect(route('trips.show', $trip))
+            ->assertSessionHasErrors(['kembali' => 'Halaman asal pengingat tidak dikenal.']);
+        $this->assertFalse($trip->fresh()->reminders_enabled);
+    }
+
     public function test_the_trip_page_draws_the_reminder_card(): void
     {
         $halaman = File::get(resource_path('js/pages/Trips/Show.tsx'));
@@ -390,7 +419,7 @@ class TripReminderTest extends TestCase
 
         $this->assertStringContainsString('<PengingatTrip tripId={trip.id} pengingat={pengingat} />', $halaman);
         $this->assertStringContainsString("import { update } from '@/routes/trips/reminders';", $kartu);
-        $this->assertStringContainsString('router.put(update.url(tripId), { aktif: !pengingat.aktif }', $kartu);
+        $this->assertStringContainsString('router.put(update.url(tripId), { aktif: !pengingat.aktif, kembali: kembali ?? null }', $kartu);
         $this->assertStringContainsString('pengingat.daftar.length === 0 ? (', $kartu);
     }
 

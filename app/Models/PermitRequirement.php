@@ -68,14 +68,16 @@ class PermitRequirement extends Model
     }
 
     /**
-     * Ringkasan singkat untuk ditampilkan pada checklist persiapan.
+     * Ringkasan singkat untuk ditampilkan pada checklist persiapan. Kuota dari aturan yang
+     * belum terverifikasi disebut begitu, sama seperti halaman Rencanakan (tinjauan Tugas 4 M9):
+     * angka tanpa catatan itu terbaca sebagai ketentuan yang sudah pasti.
      */
     public function summary(): string
     {
         $parts = [$this->authority];
 
         if ($this->daily_quota !== null) {
-            $parts[] = sprintf('kuota %d pendaki/hari', $this->daily_quota);
+            $parts[] = sprintf('kuota %d pendaki/hari', $this->daily_quota).($this->verified_at === null ? ' (belum terverifikasi)' : '');
         }
 
         if ($this->booking_closes_days_before !== null) {

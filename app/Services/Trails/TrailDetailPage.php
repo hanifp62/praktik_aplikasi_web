@@ -83,8 +83,9 @@ class TrailDetailPage
      * pendaki, yang perlu disiapkan, lalu sumber di halaman ini.
      *
      * Kecocokan dinilai "untuk rencana ini" bila pembaca punya trip terencana yang belum lewat
-     * di jalur ini (trip terdekat), dengan tujuan trip itu; tanpa trip, kecocokan dasar tanpa
-     * tujuan. Tujuan rekomendasi terakhir tidak dipakai: ia bukan rencana di jalur ini.
+     * di jalur ini (trip terdekat), dengan jenis dan tanggal trip itu di atas salinan tujuannya
+     * (TripPlan::tujuanPenilaian(), ruling W4-FA); tanpa trip, kecocokan dasar tanpa tujuan.
+     * Tujuan rekomendasi terakhir tidak dipakai: ia bukan rencana di jalur ini.
      *
      * @return array<string, mixed>
      */
@@ -288,7 +289,9 @@ class TrailDetailPage
         }
 
         $hari = (int) config('hiking.conditions.weather_forecast_days');
-        $terbit = $trip->planned_date->copy()->subDays($hari);
+        // Tanggal terbit dari satu aritmetika yang sama dengan butir cuaca dan Rencanakan
+        // (tinjauan Tugas 4 M1).
+        $terbit = PreparationService::tanggalTerbit($trip->planned_date);
         $tanggal = $trip->planned_date->translatedFormat('j M');
 
         if ($terbit->toDateString() > Carbon::now($zona)->toDateString()) {

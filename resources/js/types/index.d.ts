@@ -26,7 +26,7 @@ export interface PendakianAktif {
 /** Isi lembar Pengingat: pengingat surel terjadwal dan tenggat izin trip mendatang. */
 export interface DaftarPengingat {
     pengingat: Array<{ id: number; trip: string; jenis: string; waktu: string; url: string }>;
-    tenggatIzin: Array<{ tripId: number; trip: string; keadaan: 'BELUM_DIBUKA' | 'TERBUKA' | 'DITUTUP'; kalimat: string; pengelola: string; bookingUrl: string | null; url: string }>;
+    tenggatIzin: Array<{ tripId: number; trip: string; keadaan: 'BELUM_DIBUKA' | 'TERBUKA' | 'BUKA_BELUM_TERCATAT' | 'DITUTUP'; kalimat: string; pengelola: string; bookingUrl: string | null; url: string }>;
 }
 
 export interface PropsBersama {
@@ -45,14 +45,23 @@ export interface PropsBersama {
     tampilan: { efek: 'otomatis' | 'solid'; gerak: 'sistem' | 'kurangi' };
     peta: { styleUrl: string | null; rasterTiles: string[]; attribution: string; maxZoom: number };
     flash: {
+        /** Kabar yang datang bersama perpindahan halaman; halaman tujuan membacanya dekat kepalanya. */
         status: string | null;
+        /** Kabar aksi di halaman yang sama (Perbarui daftar, sakelar pengingat); dibaca dekat aksinya. */
+        kabarAksi: string | null;
         timbanganPenuh: string | null;
         /** Jalur yang baru dihapus dari simpanan dan catatannya, untuk Urungkan; satu kali. */
         simpananTerhapus: { trailId: number; nama: string; catatan: string | null } | null;
-        /** Baris sudah ada sebelum store() ini berjalan; Urungkan-sebagai-hapus tidak ditawarkan. */
-        simpananSudahAda: boolean;
+        /** Baris jalur ini sudah ada sebelum store() berjalan; Urungkan-sebagai-hapus tidak ditawarkan. */
+        simpananSudahAda: { trailId: number } | null;
         /** Tautan bagikan yang baru dibuat; tokennya hanya ada di sini, sekali (FR-23). */
         tautanBagikan: { id: number; url: string; berlakuSampai: string } | null;
+        /**
+         * Butir persiapan yang baru diubah: id-nya, status tersimpan sebelum permintaan ini,
+         * dan apakah benar berubah. Dicek di onSuccess Preparation.tsx supaya toast/Urungkan
+         * tidak salah sasaran bila payload ini ternyata bukan milik butir yang baru dikirim.
+         */
+        butirDiubah: { id: number; sebelum: string; berubah: boolean } | null;
     };
     adminNav: { perluDitinjau: number } | null;
     errors: Record<string, string>;

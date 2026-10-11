@@ -7,19 +7,47 @@ export interface Opsi {
     label: string;
 }
 
-/** Baris daftar trip dari TripRowResource: seluruh teks sudah diformat server. */
+/** Satu kartu indeks trip dari TripRowResource: seluruh teks sudah diformat server. */
 export interface BarisTrip {
     id: number;
-    name: string;
+    nama: string;
     url: string;
-    trail: string | null;
-    mountain: string | null;
+    jalur: string | null;
+    gunung: string | null;
+    jenis: string;
     tanggal: string;
-    tipe: string;
-    status: string;
-    persiapan: string | null;
+    hari: string | null;
+    /** "Tanggal rencana sudah lewat" untuk rencana yang belum dimulai (ruling W4-1c); null bila tidak. */
+    lewat: string | null;
+    keadaan: string | null;
+    fase: { kunci: string; judul: string; keterangan: string; peringatan: boolean } | null;
+    aksi: { label: string; href: string } | null;
     kesiapan: { teks: string; peringatan: boolean } | null;
     fit: FitRingkas | null;
+}
+
+/** Satu kelompok indeks trip (App\Services\Trips\IndeksTrip). */
+export interface KelompokTrip {
+    kunci: 'berlangsung' | 'mendatang' | 'selesai';
+    judul: string;
+    trip: BarisTrip[];
+}
+
+/** Kepala satu trip dari App\Services\Trips\KepalaTrip: seluruh teks sudah diformat server. */
+export interface KepalaTripData {
+    id: number;
+    nama: string;
+    jalur: string;
+    gunung: string;
+    jenis: string;
+    hari: string | null;
+    /** "Tanggal rencana sudah lewat" untuk rencana yang belum dimulai (ruling W4-1c); null bila tidak. */
+    lewat: string | null;
+    tanggal: string;
+    jam: string | null;
+    peserta: string | null;
+    keadaan: string | null;
+    ubah: string | null;
 }
 
 export type KeadaanLangkah = 'selesai' | 'berikutnya' | 'belum';

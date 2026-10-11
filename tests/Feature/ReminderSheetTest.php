@@ -171,6 +171,23 @@ class ReminderSheetTest extends TestCase
         $this->assertSame('Jendela pemesanan izin belum tercatat; periksa sistem resmi.', app(DaftarPengingat::class)->untuk($budi)['tenggatIzin'][0]['kalimat']);
     }
 
+    /**
+     * Ruling W4-FE dan W4-FK N4: tanggal tutup tercatat tetapi tanggal buka tidak. Keadaannya
+     * BUKA_BELUM_TERCATAT, yang juga dikenal tipe klien lembar ini, dan kalimatnya tidak menulis
+     * jendela itu sudah dibuka (R-007); hari terakhirnya tetap disebut.
+     */
+    public function test_a_window_with_only_a_closing_date_is_not_written_as_open(): void
+    {
+        [$budi] = $this->budiDenganTrip();
+        PermitRequirement::query()->update(['booking_opens_days_before' => null]);
+
+        $izin = app(DaftarPengingat::class)->untuk($budi)['tenggatIzin'][0];
+
+        $this->assertSame('BUKA_BELUM_TERCATAT', $izin['keadaan']);
+        $this->assertSame('Tanggal buka pemesanan izin belum tercatat; pemesanan ditutup Jumat, 09 Okt 2026 (H-3).', $izin['kalimat']);
+        $this->assertStringContainsString("keadaan: 'BELUM_DIBUKA' | 'TERBUKA' | 'BUKA_BELUM_TERCATAT' | 'DITUTUP';", File::get(resource_path('js/types/index.d.ts')));
+    }
+
     public function test_an_empty_sheet_says_what_will_appear_there(): void
     {
         $budi = User::factory()->create();

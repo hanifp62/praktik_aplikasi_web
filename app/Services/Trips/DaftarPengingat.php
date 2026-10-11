@@ -124,13 +124,17 @@ class DaftarPengingat
         [$kalimat, $patokan] = match (true) {
             $jendela['state'] === PermitService::BOOKING_BELUM_DIBUKA && $buka !== null => $tulis('Pemesanan izin dibuka', $buka),
             $jendela['state'] === PermitService::BOOKING_DITUTUP && $tutup !== null => $tulis('Pemesanan izin sudah ditutup', $tutup),
+            // Tanggal tutup tercatat tetapi tanggal buka tidak: tidak ditulis seolah sudah dibuka
+            // (R-007, ruling W4-FE), hari terakhirnya tetap disebut.
+            $jendela['state'] === PermitService::BOOKING_BUKA_BELUM_TERCATAT && $tutup !== null => $tulis('Tanggal buka pemesanan izin belum tercatat; pemesanan ditutup', $tutup),
             $tutup !== null => $tulis('Pemesanan izin ditutup', $tutup),
             // Tanggal buka tercatat, sedang berjalan, hanya tutupnya yang belum tercatat:
             // itu fakta yang diketahui, bukan tebakan.
             $buka !== null => ['Pemesanan izin sedang dibuka. Tanggal penutupannya belum tercatat.', null],
             // Tidak ada apa pun yang tercatat: mengklaim "sedang dibuka" di sini adalah
             // klaim tanpa data, bukan sekadar tanggal yang belum tercatat (R-007, Ruling
-            // W2-6a #6). PermitService sendiri tidak diubah (diparkir W8, Ruling W2-6c).
+            // W2-6a #6). Sejak ruling W4-FE PermitService sendiri menandai jendela seperti ini
+            // BUKA_BELUM_TERCATAT, bukan TERBUKA.
             default => ['Jendela pemesanan izin belum tercatat; periksa sistem resmi.', null],
         };
 

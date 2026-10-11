@@ -8,6 +8,7 @@ use App\Models\TripPlan;
 use App\Services\PreparationService;
 use Database\Seeders\PreparationTemplateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class PreparationServiceTest extends TestCase
@@ -93,5 +94,43 @@ class PreparationServiceTest extends TestCase
 
         $this->assertSame(100, $state['completion_percent']);
         $this->assertSame([], $state['critical_outstanding']);
+    }
+
+    /**
+     * Keadaan persiapan prototype 09 dan cek kesiapan prototype 10 (W4 Tugas 4): hitungan butir
+     * kritis yang berlaku dan nama butir kritis yang belum dikonfirmasi. "Tidak berlaku" tidak
+     * dihitung, sama seperti kemajuan persiapan.
+     */
+    public function test_the_critical_count_names_what_is_still_unconfirmed(): void
+    {
+        $trip = TripPlan::factory()->create();
+        $service = app(PreparationService::class);
+        $items = $service->generateFor($trip);
+        $kritis = $items->where('is_critical', true)->values();
+
+        $service->updateStatus($kritis[0], PreparationStatus::CONFIRMED);
+        $service->updateStatus($kritis[1], PreparationStatus::NOT_APPLICABLE);
+
+        $hitungan = PreparationService::kritis($trip->fresh()->preparationItems);
+
+        $this->assertSame(1, $hitungan['dikonfirmasi']);
+        $this->assertSame($kritis->count() - 1, $hitungan['berlaku']);
+        $this->assertSame($kritis->slice(2)->pluck('label')->values()->all(), $hitungan['belum']);
+    }
+
+    /**
+     * Prakiraan BMKG untuk tanggal trip terbit tiga hari sebelumnya (config
+     * hiking.conditions.weather_forecast_days); sebelum itu tanggal terbitnya dikembalikan,
+     * sesudahnya null.
+     */
+    public function test_the_forecast_publication_date_is_known_until_it_arrives(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-25 03:00:00', 'UTC'));
+
+        $jauh = TripPlan::factory()->create(['planned_date' => '2026-10-10']);
+        $dekat = TripPlan::factory()->create(['planned_date' => '2026-09-27']);
+
+        $this->assertSame('2026-10-07', PreparationService::terbitPrakiraan($jauh)?->toDateString());
+        $this->assertNull(PreparationService::terbitPrakiraan($dekat));
     }
 }

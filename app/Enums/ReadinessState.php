@@ -2,6 +2,11 @@
 
 namespace App\Enums;
 
+/**
+ * Keadaan kesiapan sebuah rencana (PRD §39). Kata publiknya mengikuti DK-48 (prototype 09 dan
+ * 10): menyebut apa yang dinilai, bukan vonis atas pendakian atau orangnya. Kesiapan adalah
+ * dukungan keputusan, bukan izin medis, izin hukum, atau jaminan keselamatan (R-014).
+ */
 enum ReadinessState: string
 {
     case READY = 'READY';
@@ -11,9 +16,9 @@ enum ReadinessState: string
     public function label(): string
     {
         return match ($this) {
-            self::READY => 'Siap',
-            self::NEEDS_PREPARATION => 'Perlu persiapan',
-            self::NOT_RECOMMENDED => 'Tidak direkomendasikan',
+            self::READY => 'Persiapan kritis lengkap',
+            self::NEEDS_PREPARATION => 'Masih perlu persiapan',
+            self::NOT_RECOMMENDED => 'Tidak disarankan dengan rencana ini',
         };
     }
 }
