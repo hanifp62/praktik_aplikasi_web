@@ -47,8 +47,10 @@ export function useToastUrungkan() {
 }
 
 /**
- * Memfokus unsur ber-id sesudah render berikutnya. Unsur yang dikembalikan Urungkan baru ada
- * sesudah render, jadi pemanggil menyebut id-nya di onUrungkan dan fokusnya menyusul.
+ * Memfokus unsur ber-id sesudah render berikutnya. Cocok untuk unsur yang kembali di klien pada
+ * render itu, misalnya pameran Primitif. Unsur yang baru ada sesudah jawaban server, seperti chip
+ * tafsiran Jelajah dan kartu Simpanan, difokus di onSuccess kunjungannya, bukan lewat hook ini
+ * (TC-m3 tinjauan akhir).
  */
 export function useFokusSesudahRender() {
     const [id, setId] = useState<string | null>(null);

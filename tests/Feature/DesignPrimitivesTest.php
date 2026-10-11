@@ -462,6 +462,9 @@ class DesignPrimitivesTest extends TestCase
         // dicatat sekali; perpindahan di dalam toast mempertahankan tujuan lama.
         $this->assertStringContainsString('sebelum.current = unsurLuar(e.relatedTarget, wadah.current) ?? sebelum.current;', $toast);
         $this->assertStringNotContainsString('sebelum.current ??= unsurLuar(e.relatedTarget', $toast);
+        // TF-m1: sejak tujuan diperbarui setiap kali fokus masuk, unsurLuar yang menolak unsur di dalam
+        // toast menanggung setiap perpindahan fokus di dalamnya (Urungkan ke Tutup pemberitahuan).
+        $this->assertStringContainsString('return unsur instanceof HTMLElement && unsur !== document.body && !wadah?.contains(unsur) ? unsur : null;', $toast);
 
         // Ruling CC-2: DESIGN.md menulis perilaku yang sama, bukan jeda untuk setiap fokus.
         $desain = (string) preg_replace('/\s+/', ' ', File::get(base_path('DESIGN.md')));
@@ -483,7 +486,9 @@ class DesignPrimitivesTest extends TestCase
      *
      * Opsi fokus memindah fokus ke Urungkan saat toast tampil; pemanggil menyetelnya bila
      * aksinya dipicu papan ketik. Sesudah Urungkan pemanggil memfokus unsur yang
-     * dikembalikan lewat useFokusSesudahRender. Toast yang hilang dengan fokus di dalamnya
+     * dikembalikan: lewat useFokusSesudahRender bila unsur itu kembali di klien (pameran), atau
+     * di onSuccess kunjungan bila unsur itu baru ada sesudah jawaban server (Jelajah, Simpanan).
+     * Toast yang hilang dengan fokus di dalamnya
      * mengembalikan fokus ke unsur sebelumnya atau ke #konten, kecuali pemanggil sudah
      * memindahkannya. Pameran menerapkan keduanya untuk chip tafsiran dan hapus simpanan.
      */
