@@ -4,7 +4,7 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 28 September 2026 (bagian 0, W2 selesai). Bagian 1–10 berasal dari 21 September 2026
+Terakhir diperbarui: 6 Oktober 2026 (bagian 0, W3 selesai). Bagian 1–10 berasal dari 21 September 2026
 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
@@ -25,6 +25,116 @@ yang belum di-commit sampai permintaan izin akhir.
 > induk `docs/superpowers/plans/2026-09-26-memount-v3-induk.md`. Periksa keadaan nyata dulu: `git status`,
 > `php artisan test --compact --testsuite=Unit,Feature`, `npx tsc --noEmit`. Jangan commit, push, mengakses
 > Supabase, menjalankan migrasi, atau menambah dependensi tanpa izin saya.
+
+### W3 Klaster Jelajah (selesai 6 Oktober 2026, menunggu izin commit)
+
+Rencana `docs/superpowers/plans/2026-09-27-memount-v3-w3-jelajah.md`, 12 tugas. Ledger dan seluruh ruling (W3-C0 sampai
+W3-C8, W3-1a sampai W3-10a, W3-S1 sampai W3-S6, W3-F1 sampai W3-F7, W3-G1 dan W3-G2) ada di
+`.superpowers/sdd/2026-09-27-memount-v3-w3-jelajah/progress.md`. Tugas 1 sampai 3 dikerjakan 28 September; sesi
+berhenti saat tinjauan Tugas 4 dan hasilnya hilang, jadi sesi 6 Oktober mengirim ulang tinjauan itu (W3-S1) lalu
+menuntaskan Tugas 4 sampai 12. Setiap tugas ditinjau terpisah; Tugas 4 sampai 9 butuh satu atau dua putaran perbaikan.
+Sesudahnya ada tinjauan akhir lintas tugas (1 Critical, 7 Important, 11 Minor, triase semua butir tertunda), satu
+gelombang perbaikan 75 butir, satu tinjauan ulang, satu perbaikan fixture Spatial, dan satu putaran perbaikan Delivery
+Gate. Nilai di bawah terukur 6 Oktober 2026 pada pohon kerja akhir W3.
+
+| Butir | Nilai | Bukti |
+|---|---|---|
+| Suite Unit dan Feature | 1.806 test, 1.804 lulus, 2 dilewati, 0 gagal (W2 akhir: 1.622) | `php artisan test --compact --testsuite=Unit,Feature` |
+| Suite bawaan | 1.838 test, 1.804 lulus, 34 dilewati (Spatial melewati dirinya tanpa `SPATIAL_TEST_DSN`) | `php artisan test --compact` |
+| TypeScript dan format | `npx tsc --noEmit` 0 galat; `vendor/bin/pint --test` lulus | gerbang akhir W3 |
+| Bundel | `app` JS 355.731 B (W2 akhir 354.780 B); `app` CSS 86.590 B (angka mutlak ikut view terkompilasi, W2-C10); potongan Jelajah 28,3 kB, rincian jalur 19,3 kB, penilaian kecocokan 8,8 kB, Bandingkan 9,4 kB, Simpanan 7,0 kB, tautan bagikan 4,5 kB; lisensi Phosphor dan MapLibre ada di bundel | build 6 Oktober |
+| Pratinjau | 14 halaman (W2: 9; W3 menambah gunung, kecocokan, simpanan, tautan bagikan, bandingkan) | suite `Pratinjau` 14/14 |
+| Anggaran kueri | Setiap halaman baru diuji tidak tumbuh bersama data: Jelajah (4 lawan 24 jalur), halaman gunung, penilaian kecocokan, rincian jalur (pos dan simpanan ditumbuhkan), Simpanan (2 lawan 12), Bandingkan (2 lawan 5), tautan bagikan | `ResultListBudgetTest`, `MountainPageTest`, `FitAssessmentPageTest`, `TrailDetailPageTest`, `SavedRoutesTest`, `PageQueryBudgetTest`, `ComparisonShareTest` |
+| Tangkapan | 34 tangkapan (8 halaman x 390 dan 1440 px x terang dan gelap, tiga centang Simpanan, fokus bar aksi) dibandingkan dengan acuan 02 sampai 07 dan 15; enam halaman dipotret ulang sesudah perbaikan gerbang | `docs/desain/tangkapan/w3/README.md` |
+| Lapisan bawah | Bar aksi rincian jalur 69 px (360 x 740) dan 82 px (320 x 568), satu baris; baki banding Simpanan 58 sampai 78 px (20 sampai 23 persen layar) di 360 x 740 dan 58 sampai 98 px (27 sampai 34 persen) di 320 x 568; panel saringan dan peta 1440 tidak tertutup strip pendakian | `.superpowers/.../t12-pengukuran.md` |
+| Papan ketik | Empat jalur lulus (Jelajah 390, rincian jalur 390, Simpanan 390, Bandingkan 1440). Simpan lalu fokus ke Urungkan belum dapat dibuktikan di pratinjau statis karena butuh server Laravel | README tangkapan W3 |
+| Delivery Gate | Sesudah putusan: Salinan 6 PASS, Desain 11, Interaksi 12, Kebenaran 10; delapan FAIL ditunda dengan putusan tertulis (lihat di bawah), tidak ada FAIL tanpa putusan | `.superpowers/.../delivery-gate-w3.md` |
+
+Yang dibangun W3:
+- tata bahasa kepercayaan: `LabelKecocokan` (Cocok, Perlu persiapan, Kurang cocok, Belum dinilai dari server),
+  `StatusAkses` (UNKNOWN tidak pernah Buka), `Kesegaran`, `LabelSumber`, `BarisStatus`, dengan satu aturan catatan
+  status penentu (`OfficialStatusService::catatanPenentu()`) dan satu scope urutan untuk semua pembaca status resmi;
+- halaman gunung `/mountains/{mountain:slug}` dan penilaian kecocokan `/trails/{trail:slug}/kecocokan` dengan `?trip=`;
+- Jelajah: kartu jalur, saringan dengan hitungan langsung, chip tafsiran yang dapat dilepas, simpan idempoten dengan
+  Urungkan, peta berpola garis per label dengan legenda, pemilih, dan kartu pratinjau yang dipasang hanya saat terlihat;
+- rincian jalur ditulis ulang (angka sekali jalan naik, tantangan, "Cocokkah untuk saya?", profil elevasi, pos di
+  sepanjang garis, kondisi dengan prakiraan per tanggal trip, bar aksi), Simpanan dengan catatan pribadi dan baki banding
+  satu baris, tautan bagikan FR-23 (tabel `comparison_shares`, hanya hash token, halaman publik `/b/{token}` tanpa
+  indeks, tanpa catatan, label kecocokan, atau nama pembuat), Bandingkan tanpa pemenang, dan tombol v3 di halaman publik
+  jalur (Blade);
+- kalimat R-012 "Status resmi menjelaskan ketentuan pengelola, bukan jaminan keselamatan." di setiap layar pembaca yang
+  menampilkan status resmi, dijaga test cakupan sumber (pengecualian bernama: meja kurator, dan `Trips/Readiness` yang
+  wajib dicabut rencana W4).
+
+Ruling koordinator atas konflik rencana (W3-C1 sampai W3-C8):
+- C1: halaman publik `/b/{token}` dibangun sesuai spec v3; akses tanpa akun (P8) dan migrasinya masuk izin akhir.
+- C2: Banding milik tab Trip.
+- C3: baki Jelajah dan `--baki-banding` dilepas; baki Simpanan memakai `BarAksi`.
+- C4: tiga angka, bukan empat, karena `elevation_loss_m` adalah turunan pulang (R-007).
+- C5: PRD tidak disunting sebelum pemilik memutus P8.
+- C6: trip orang lain dijawab 403 sampai Q5 diputus.
+- C7: alasan kartu dari `TrailFitService::alasan()`; urutan diputus W5.
+- C8: `TrailRow.tsx` dihapus di gelombang perbaikan akhir; niat test lamanya diperbarui menurut kartu tiga angka.
+
+Perubahan penting dari tinjauan (selain isi rencana):
+- C1 tinjauan akhir: Urungkan sesudah menghapus jalur tersimpan yang kemudian ditarik dari terbit kini memulihkan
+  catatannya lewat penanda pemulihan sekali-pakai di sesi pemilik.
+- `ConsiderationOutcome::SUDAH_ADA`: simpan atas jalur yang sudah tersimpan (halaman basi) tidak lagi menawarkan
+  Urungkan yang menghapus catatan lama.
+- R-024: pencarian kata kunci kini tidak peka huruf besar di PostgreSQL, dan urutan NULL `effective_at` sama di SQLite
+  dan PostgreSQL. Keduanya punya test `tests/Spatial`.
+- Rincian jalur menampilkan kesegaran status resmi, dan awalan waktu ("Diverifikasi", "Diterbitkan", "Berlaku sejak")
+  mengikuti kolom yang benar-benar dipakai.
+- Trip "Siap berangkat" ikut dihitung sebagai trip terdekat. Prakiraan cuaca menampilkan baris untuk tanggal trip, atau
+  menyatakan jujur bahwa data belum mencapai tanggal itu.
+- Kontras angka pos di atas aksen kuning pada tema gelap: dari sekitar 1,7:1 menjadi 8,18:1 lewat token
+  `--accent-pos-ink`.
+- `OfficialStatusSeederTest` membekukan jam ke 15 September 2026. Test itu sebelumnya gagal sejak 1 Oktober, karena
+  catatan Merbabu berakhir 30 September.
+
+OPEN ISSUE dan butir yang ditunda dengan putusan tertulis:
+- **Ke W4:** label data "Booking izin pendakian (SIMAKSI)"; rencana W4 wajib mencabut pengecualian R-012 untuk
+  `Trips/Readiness.tsx`.
+- **Ke W5:**
+  - kartu di dalam kartu laporan komunitas;
+  - "Kecocokan dasar" berulang di sel Bandingkan dan "Kenapa?" tanpa nama jalur di `FitLine`;
+  - rute `trails.timbang` + `toggle()` dihapus bila Beranda tidak memakainya;
+  - urutan alasan kartu (W3-C7).
+- **Ke W6:** kaca bar aksi yang lewat di atas peta rincian saat bergulir (R-10, INFERENSI, butuh keputusan desain).
+- **Ke W8:**
+  - WAJIB kolom eksplisit tanpa `geometry` pada kandidat Jelajah, rekomendasi, dan simpanan;
+  - penjaga kemonotonan dan jarak pos dari garis;
+  - semantik COALESCE urutan status resmi (cukup di satu scope);
+  - kurasi `elevation_loss_m` dan sumber lingkungan;
+  - default skema `technical_demand`, `navigation_complexity`, dan `camping_available` yang menyamar sebagai data, kini
+    juga tampil di halaman publik `/b/` sebagai "Berkemah: Tidak";
+  - artefak `Trail::hasGeometry()` di SQLite.
+- **Ke W9:**
+  - istilah Inggris "elevation gain" dan angka tanpa titik ribuan di kalimat mesin;
+  - format jam "19:33" lawan DESIGN "15.06";
+  - pengumuman tunggal pembaca layar;
+  - refaktor `TrailDetailPage` (11 dependensi);
+  - `trustProxies`, `encryptHistory`, dan retensi baris tautan bagikan (menunggu `docs/KEBIJAKAN-DATA-PRIBADI.md`);
+  - kedaluwarsa penanda pemulihan sesi;
+  - uji konkurensi `lockForUpdate` di PostgreSQL;
+  - anggaran ukuran Jelajah pada batas 500 kandidat;
+  - aksi kolom kanan rincian 1440 yang membungkus.
+- **Menunggu izin:** klik setiap kendali di peramban dan alur simpan-Urungkan butuh server Laravel lokal (Q1
+  `memount:demo`) atau Playwright (Q17).
+
+Daftar izin akhir yang bertambah karena W3:
+- migrasi `2026_09_28_000100_create_comparison_shares_table` WAJIB dijalankan sebelum atau bersama deploy kode W3,
+  karena Simpanan, Bandingkan, dan `POST trails/shares` mengueri tabel itu (tanpanya dua halaman itu 500);
+- akses tanpa akun untuk `/b/{token}` (P8);
+- Q5 (403 atau 404 untuk trip orang lain);
+- catatan bahwa `MAP_ATTRIBUTION` di `.env` pemilik bisa menimpa atribusi OpenTopoMap baru.
+
+Catatan data: `OfficialStatusSeeder` mencatat status September 2026 yang kedaluwarsa paling lambat 31 Oktober 2026. Bila
+seeder itu pernah dijalankan di Supabase, status gunung tersebut kini terbaca UNKNOWN (perilaku benar menurut R-013).
+Karena itu kurasi status resmi W8 mendesak.
+
+Titik lanjut: W4 Klaster Trip. Rencana `docs/superpowers/plans/2026-10-06-memount-v3-w4-trip.md` (8 tugas, disimulasikan
+di salinan akhir W3 Tugas 9, 1.764 menjadi 1.811 test); pra-cek konflik terhadap pohon akhir W3 sebelum Tugas 1.
 
 ### W2 Kerangka (selesai 28 September 2026, menunggu izin commit)
 
@@ -449,10 +559,15 @@ Vite build sukses):
   server, tautan lewati, `x-brand.head`), `vite.config.js` dua pintu (`app.js` Livewire,
   `app.tsx` Inertia, berbagi `dasar.js`), `tsconfig.json`, rute bertipe Wayfinder
   (`php artisan wayfinder:generate` setiap rute berubah). SSR **mati** sampai diputuskan.
-- Komponen React: `layouts/AppLayout`, `GuestLayout`, `NavLinks`; `components/brand`
-  (Mark, Lockup); `components/ui` (Button, PageHeader, Card, EmptyState, Alert, Field,
-  FitBadge, Pagination, MapView, ThemePicker); `components/trails` (TrailRow, FitLine,
-  FilterForm, Menunggu, ConsiderationTray, types).
+- Komponen React (keadaan 6 Oktober 2026, sesudah W3): `layouts/AppLayout`, `GuestLayout`, `Kerangka`, `NavLinks`;
+  `components/brand` (Mark, Lockup); `components/ui` (primitif W1/W2: Alert, Avatar, BarAksi, BilahTab, Button, Card,
+  Chip, EmptyState, Field, Icon, JudulHalaman, KontrolSegmen, KotakCentang, Lembar, Lencana, LencanaDataContoh,
+  PageHeader, Pagination, Sakelar, Skeleton, Stepper, Tautan, TautanProfil, ThemePicker, ToastUrungkan, TombolIkon,
+  TombolKembali, TombolSalin); `components/trails` (AngkaRingkas, BarisStatus, FaktorKecocokan, FitLine, GarisProfil,
+  Kesegaran, LabelKecocokan, LabelSumber, PetaJelajah, ProfilElevasi, StatusAkses, TombolSimpan, dengan subfolder
+  `jelajah`, `rinci`, `gunung`, `banding`, `kecocokan`); `components/peta`, `components/trips`, `components/community`,
+  `components/discovery`, `components/admin`, `components/akun`. `FitBadge`, `StatusBadge`, `TrailRow`,
+  `ConsiderationTray`, `CheckpointJourney`, dan `ElevationProfile` lama sudah dihapus atau diganti di W3.
 - Kontrak arsitektur tercatat di `docs/ARCHITECTURE.md` (server memegang data dan
   otorisasi, React memegang interaksi; skor internal tidak pernah ke props).
 

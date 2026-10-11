@@ -224,14 +224,15 @@ class HikeSummaryTest extends TestCase
         ]);
 
         $this->buka($user, $trip)->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('profil', 3)
+            ->has('profil.titik', 3)
             ->has('penandaPos', 4)
             ->where('penandaPos.0.label', '1. Pos 1')
             ->has('pos', 4)
             ->where('pos.1.antara', fn (?string $antara) => str_contains((string) $antara, 'naik 200 m')));
 
         $sumber = File::get(resource_path('js/pages/Community/HikeSummary.tsx'));
-        $this->assertStringContainsString('<ElevationProfile', $sumber);
+        $this->assertStringContainsString('<ProfilElevasi profil={profil} />', $sumber);
+        $this->assertStringContainsString('<DaftarPos pos={pos} />', $sumber);
         $this->assertStringContainsString('<PetaGaris', $sumber);
         $this->assertStringContainsString('<WadahPeta', File::get(resource_path('js/components/community/PetaGaris.tsx')));
         $this->assertStringContainsString('role="region"', File::get(resource_path('js/components/peta/WadahPeta.tsx')));

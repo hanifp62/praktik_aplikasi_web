@@ -20,7 +20,11 @@ class SecurityHeaders
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'DENY');
-        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        // Respons yang menyetel kebijakannya sendiri tidak ditimpa: halaman tautan bagikan
+        // memakai no-referrer karena tokennya ada di URL (T8-M3 tinjauan akhir W3).
+        if (! $response->headers->has('Referrer-Policy')) {
+            $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        }
         $response->headers->set('Permissions-Policy', 'geolocation=(self), camera=(), microphone=(), payment=(), usb=()');
         $response->headers->set('Content-Security-Policy', $this->csp());
 

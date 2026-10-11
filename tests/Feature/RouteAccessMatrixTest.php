@@ -50,6 +50,13 @@ class RouteAccessMatrixTest extends TestCase
          */
         'sitemap.xml',
         'pendakian/{trail:slug}',
+
+        /*
+         * Tautan bagikan perbandingan (FR-23): dibuka tanpa akun menurut rancangannya,
+         * hanya membaca, tidak diindeks, dan dibatasi laju. ComparisonShareTest menjaga
+         * bahwa isinya hanya data publik jalur.
+         */
+        'b/{token}',
     ];
 
     public function test_every_route_is_either_public_by_design_or_closed_to_guests(): void

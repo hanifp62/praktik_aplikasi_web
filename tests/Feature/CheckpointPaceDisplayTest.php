@@ -14,11 +14,12 @@ use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
- * Waktu tempuh antarpos di halaman jalur.
+ * Waktu tempuh di halaman jalur.
  *
  * Yang dijaga di sini bukan tata letaknya, melainkan kejujuran angkanya: jumlah rekaman
- * harus ikut terbaca, rentangnya harus disebut, dan tidak ada apa pun yang muncul
- * sebelum rekamannya cukup.
+ * harus ikut terbaca, rentangnya harus disebut (DK-31), dan tidak ada apa pun yang muncul
+ * sebelum rekamannya cukup. Sejak W3 daftar pos menulis waktu dari awal sebagai rentang,
+ * dan jumlah rekaman terkecil per ruas di kepala daftar (waktuDariRekaman).
  */
 class CheckpointPaceDisplayTest extends TestCase
 {
@@ -68,29 +69,33 @@ class CheckpointPaceDisplayTest extends TestCase
     }
 
     /**
-     * Seluruh teks tempo yang dikirim ke halaman, disambung.
+     * @return array<string, mixed>
+     */
+    private function props(): array
+    {
+        return $this->actingAs(User::factory()->create())
+            ->get(route('trails.show', $this->trail))
+            ->assertOk()
+            ->viewData('page')['props'];
+    }
+
+    /**
+     * Seluruh teks waktu dari awal yang dikirim ke halaman, disambung.
      */
     private function tempo(): string
     {
-        $pos = $this->actingAs(User::factory()->create())
-            ->get(route('trails.show', $this->trail))
-            ->assertOk()
-            ->viewData('page')['props']['pos'];
-
-        return implode(' | ', array_filter(array_column($pos, 'tempo')));
+        return implode(' | ', array_filter(array_column($this->props()['pos'], 'waktu')));
     }
 
-    public function test_the_typical_time_is_shown_with_its_range_and_sample_size(): void
+    public function test_the_time_from_the_start_is_a_range_with_its_sample_size(): void
     {
         foreach ([40, 50, 60, 70, 80] as $menit) {
             $this->rekam($menit);
         }
 
-        $tempo = $this->tempo();
-
-        $this->assertStringContainsString('Biasanya 1 jam', $tempo);
-        $this->assertStringContainsString('terentang 40 menit sampai 1 jam 20 menit', $tempo);
-        $this->assertStringContainsString('menurut 5 rekaman pendaki', $tempo);
+        $this->assertStringContainsString('40 menit sampai 1 jam 20 menit dari awal', $this->tempo());
+        $this->assertSame(5, $this->props()['waktuDariRekaman']);
+        $this->assertStringContainsString('rekaman per ruas', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     /**
@@ -104,7 +109,7 @@ class CheckpointPaceDisplayTest extends TestCase
             $this->rekam($menit);
         }
 
-        $this->assertStringContainsString('menurut 6 rekaman pendaki', $this->tempo());
+        $this->assertSame(6, $this->props()['waktuDariRekaman']);
     }
 
     /**
@@ -118,6 +123,7 @@ class CheckpointPaceDisplayTest extends TestCase
         }
 
         $this->assertSame('', $this->tempo());
+        $this->assertNull($this->props()['waktuDariRekaman']);
     }
 
     /**
@@ -125,13 +131,10 @@ class CheckpointPaceDisplayTest extends TestCase
      */
     public function test_the_journey_still_works_without_any_recordings(): void
     {
-        $pos = $this->actingAs(User::factory()->create())
-            ->get(route('trails.show', $this->trail))
-            ->assertOk()
-            ->viewData('page')['props']['pos'];
+        $pos = $this->props()['pos'];
 
-        $this->assertContains('Pos 1', array_column($pos, 'name'));
-        $this->assertContains('Pos 2', array_column($pos, 'name'));
-        $this->assertSame([], array_filter(array_column($pos, 'tempo')));
+        $this->assertContains('Pos 1', array_column($pos, 'nama'));
+        $this->assertContains('Pos 2', array_column($pos, 'nama'));
+        $this->assertSame([], array_filter(array_column($pos, 'waktu')));
     }
 }

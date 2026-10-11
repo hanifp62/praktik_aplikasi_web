@@ -32,8 +32,8 @@ export function lamaBerjalan(mulai: string, sekarang: number): string {
  *
  * Nama jalur dan pos yang panjang membungkus, jadi tinggi strip tidak tetap. Strip mengukur
  * dirinya dan menulis tingginya (ditambah jarak 8 px) ke --strip-pendakian di :root, sehingga
- * bar aksi, baki banding, dan toast selalu duduk di atasnya; nilai 3,5rem di app.css hanya
- * cadangan sebelum skrip berjalan.
+ * bar aksi dan toast selalu duduk di atasnya; nilai 3,5rem di app.css hanya cadangan
+ * sebelum skrip berjalan.
  */
 export function StripPendakian({ pendakian }: { pendakian: PendakianAktif }) {
     const [sekarang, setSekarang] = useState(() => Date.now());

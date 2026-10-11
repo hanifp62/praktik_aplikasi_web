@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,6 +45,26 @@ class PermitRequirement extends Model
     public function dataSource(): BelongsTo
     {
         return $this->belongsTo(DataSource::class);
+    }
+
+    /**
+     * R-024: `latest('verified_at')` / `orderByDesc('verified_at')` menaruh baris NULL
+     * pertama di PostgreSQL dan terakhir di SQLite -- urutan NULL bukan bagian dari standar
+     * SQL dan berbeda antar mesin. Tanpa urutan eksplisit, aturan yang belum terverifikasi
+     * bisa mengalahkan aturan yang sudah terverifikasi di Supabase (PostgreSQL) walau suite
+     * SQLite tetap hijau, persis pola insiden R-024 (suite hijau, halaman salah).
+     *
+     * Aturan terverifikasi selalu didahulukan (verified_at NOT NULL sebelum NULL, ditulis
+     * eksplisit lewat orderByRaw, bukan bergantung pada bawaan mesin), lalu di antara yang
+     * terverifikasi, yang paling baru diverifikasi menang. id menjadi pemutus akhir supaya
+     * urutannya deterministik ketika verified_at sama persis.
+     */
+    public function scopeTerverifikasiDulu(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw('verified_at is null')
+            ->orderByDesc('verified_at')
+            ->orderByDesc('id');
     }
 
     /**

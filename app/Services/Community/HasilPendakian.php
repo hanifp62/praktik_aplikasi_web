@@ -7,6 +7,7 @@ use App\Models\HikeTrackPoint;
 use App\Models\HikingSession;
 use App\Models\TripPlan;
 use App\Services\Trails\CheckpointJourney;
+use App\Services\Trails\ProfilElevasiJalur;
 use App\Support\Durasi;
 
 /**
@@ -61,8 +62,11 @@ class HasilPendakian
             'jejak' => $jejak === null ? null : ['geometri' => $jejak, 'sesi' => $sesi->id],
             'garisJalur' => $jalur->readGeoJson('geometry'),
             'penandaPos' => $penandaPos,
-            'profil' => $jalur->elevation_profile ?: null,
-            'pos' => CheckpointJourney::susun($jalur->checkpoints, []),
+            // Bentuk yang sama dengan rincian jalur (W3): ProfilElevasi dan DaftarPos. Tanpa
+            // jarak pos sepanjang garis rute dan tanpa waktu dari awal di sini: yang dicatat
+            // adalah pendakian ini, bukan perkiraan.
+            'profil' => ProfilElevasiJalur::untuk($jalur->elevation_profile, $jalur->checkpoints, []),
+            'pos' => CheckpointJourney::daftar($jalur->checkpoints, [], []),
             'catatan' => $riwayat->personal_notes,
         ];
     }

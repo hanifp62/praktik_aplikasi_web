@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserExperience;
 use App\Services\ConsiderationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -51,7 +52,9 @@ class ComparisonAsCostTest extends TestCase
     }
 
     /**
-     * Perbandingan dapat dicapai dari halaman jelajah, bukan hanya dari rekomendasi.
+     * Perbandingan dapat dicapai dari halaman jelajah, bukan hanya dari rekomendasi. Sejak W3
+     * jalannya lewat tautan Simpanan berhitungan di kepala Jelajah (spec v3 bagian 6.2) ke
+     * aksi banding di Simpanan (bagian 6.6); baki Jelajah lama tidak ada di prototype.
      */
     public function test_comparison_is_reachable_from_the_browse_page(): void
     {
@@ -63,7 +66,13 @@ class ComparisonAsCostTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('trails.index'))
-            ->assertInertia(fn (AssertableInertia $page) => $page->has('ditimbang', 2));
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('jumlahSimpanan', 2));
+        $this->actingAs($user)
+            ->get(route('trails.saved'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('trails', 2));
+
+        $this->assertStringContainsString('<TautanSimpanan', File::get(resource_path('js/pages/Trails/Index.tsx')));
+        $this->assertStringContainsString('compare.url(', File::get(resource_path('js/components/trails/banding/AksiPilihan.tsx')));
     }
 
     /**

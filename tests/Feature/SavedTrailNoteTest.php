@@ -163,7 +163,7 @@ class SavedTrailNoteTest extends TestCase
         $kartu = File::get(resource_path('js/components/trails/banding/KartuSimpanan.tsx'));
 
         $this->assertMatchesRegularExpression('/<p className="[^"]*\[overflow-wrap:anywhere\][^"]*">\{jalur\.catatan\}<\/p>/', $kartu);
-        $this->assertStringContainsString('grid-cols-[2.75rem_minmax(0,1fr)]', $kartu);
+        $this->assertStringContainsString('grid grid-cols-[minmax(0,1fr)]', $kartu);
         $this->assertStringContainsString('<div className="min-w-0', $kartu);
     }
 
@@ -221,22 +221,18 @@ class SavedTrailNoteTest extends TestCase
 
     /**
      * F2: ConsiderationService::remove() menghapus baris trail_considerations, termasuk
-     * note. Ketika jalur ini punya catatan, "Hapus dari simpanan" harus bertanya dulu dan
-     * menyebut bahwa catatannya ikut terhapus, mengikuti pola window.confirm yang sudah
-     * ada di HapusRencana.tsx. Tanpa catatan, perilaku lama (langsung hapus) tetap dijaga
-     * oleh SavedRoutesTest::test_a_trail_can_be_removed_from_the_list.
+     * note. Ketika jalur ini punya catatan, "Hapus dari simpanan" bertanya dulu dan menyebut
+     * bahwa catatannya ikut terhapus. Sejak W3 pertanyaannya dialog TombolSimpan, dan
+     * Urungkan mengembalikan catatannya (SavedUndoTest); tanpa catatan, langsung hapus.
      */
     public function test_removing_a_saved_trail_with_a_note_asks_for_confirmation_first(): void
     {
         $kartu = File::get(resource_path('js/components/trails/banding/KartuSimpanan.tsx'));
-        $mulai = strpos($kartu, 'const hapus = () => {');
+        $tombol = File::get(resource_path('js/components/trails/TombolSimpan.tsx'));
 
-        $this->assertNotFalse($mulai, 'hapus() tidak ditemukan.');
-
-        $isiHapus = substr($kartu, $mulai, strpos($kartu, '};', $mulai) - $mulai);
-
-        $this->assertStringContainsString('jalur.catatan && !window.confirm(', $isiHapus);
-        $this->assertStringContainsString('ikut terhapus', $isiHapus);
+        $this->assertStringContainsString('adaCatatan: jalur.catatan !== null', $kartu);
+        $this->assertStringContainsString('} else if (jalur.adaCatatan) {', $tombol);
+        $this->assertStringContainsString('keterangan="Catatan pribadi pada jalur ini ikut terhapus.', $tombol);
     }
 
     /**

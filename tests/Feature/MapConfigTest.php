@@ -62,6 +62,19 @@ class MapConfigTest extends TestCase
         $this->assertStringContainsString('OpenStreetMap', $this->renderHikeMode());
     }
 
+    /**
+     * Rumusan atribusi OpenTopoMap termasuk SRTM (spec v3 bagian 10.5): data OpenStreetMap
+     * dan SRTM, tampilan OpenTopoMap berlisensi CC-BY-SA. Bawaan di config dan contoh .env
+     * sama, jadi lingkungan baru tidak mewarisi rumusan lama yang tanpa SRTM.
+     */
+    public function test_the_default_attribution_follows_the_opentopomap_wording(): void
+    {
+        $rumusan = '© OpenStreetMap contributors, SRTM | Tampilan: © OpenTopoMap (CC-BY-SA)';
+
+        $this->assertStringContainsString("env('MAP_ATTRIBUTION', '{$rumusan}')", File::get(config_path('hiking.php')));
+        $this->assertStringContainsString('MAP_ATTRIBUTION="'.$rumusan.'"', File::get(base_path('.env.example')));
+    }
+
     public function test_the_map_container_is_not_announced_as_an_image(): void
     {
         $sumber = File::get(resource_path('js/components/trips/PetaPendakian.tsx'));

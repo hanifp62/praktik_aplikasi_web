@@ -82,6 +82,10 @@ class ColourContrastTest extends TestCase
             ['brand-ink', 'surface-sunken', 'tautan di atas sumur'],
             ['logo-type', 'canvas', 'wordmark di atas latar halaman'],
             ['logo-type', 'surface', 'wordmark di atas bilah navigasi'],
+            // Nomor pos di atas aksen pos (DaftarPos, ProfilElevasi, PetaJalur): tinta
+            // dipaku gelap karena aksen kuningnya sama di semua tema (temuan tangkapan
+            // W3 butir 1; text-primary gelap hanya 1,7:1 di sini).
+            ['accent-pos-ink', 'accent-pos', 'nomor pos di atas aksen pos'],
         ];
     }
 

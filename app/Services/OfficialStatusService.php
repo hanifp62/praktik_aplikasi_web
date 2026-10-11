@@ -23,9 +23,7 @@ class OfficialStatusService
             ->where('statusable_type', $statusable->getMorphClass())
             ->where('statusable_id', $statusable->getKey())
             ->currentlyEffective()
-            ->orderByDesc('effective_at')
-            ->orderByDesc('published_at')
-            ->orderByDesc('id')
+            ->terbaruDulu()
             ->first();
     }
 
@@ -43,24 +41,38 @@ class OfficialStatusService
      */
     public function effectiveStatusForTrail(Trail $trail): OfficialStatusValue
     {
-        $trailStatus = $this->currentValueFor($trail);
+        $jalur = $this->currentFor($trail);
         $mountain = $trail->relationLoaded('mountain') ? $trail->mountain : $trail->mountain()->first();
+        $gunung = $mountain instanceof Mountain ? $this->currentFor($mountain) : null;
 
-        if (! $mountain instanceof Mountain) {
-            return $trailStatus;
+        return self::catatanPenentu($jalur, $gunung)?->status ?? OfficialStatusValue::UNKNOWN;
+    }
+
+    /**
+     * Catatan yang menentukan status efektif sebuah jalur menurut kaskade §42 (R-009).
+     *
+     * Rincian jalur (`snapshotForTrail()`) dan daftar (`StatusJalurRingkas::untuk()`)
+     * memakai fungsi yang sama, sehingga keduanya selalu mengutip sumber yang sama untuk
+     * jalur yang sama: gunung CLOSED menentukan lewat catatan gunung, gunung RESTRICTED
+     * (dan jalur belum CLOSED) juga lewat catatan gunung, selain itu catatan jalur sendiri
+     * yang menentukan (boleh null bila tidak ada catatan yang sedang berlaku). Sebelum
+     * fungsi ini ada, snapshotForTrail() mengutip catatan jalur untuk field deskriptif
+     * (sumber, jenis sumber, cakupan, waktu) walau kaskade menentukan lewat gunung.
+     */
+    public static function catatanPenentu(?OfficialStatus $jalur, ?OfficialStatus $gunung): ?OfficialStatus
+    {
+        $nilaiGunung = $gunung?->status;
+        $nilaiJalur = $jalur?->status ?? OfficialStatusValue::UNKNOWN;
+
+        if ($nilaiGunung === OfficialStatusValue::CLOSED) {
+            return $gunung;
         }
 
-        $mountainStatus = $this->currentValueFor($mountain);
-
-        if ($mountainStatus === OfficialStatusValue::CLOSED) {
-            return OfficialStatusValue::CLOSED;
+        if ($nilaiGunung === OfficialStatusValue::RESTRICTED && $nilaiJalur !== OfficialStatusValue::CLOSED) {
+            return $gunung;
         }
 
-        if ($mountainStatus === OfficialStatusValue::RESTRICTED && $trailStatus !== OfficialStatusValue::CLOSED) {
-            return OfficialStatusValue::RESTRICTED;
-        }
-
-        return $trailStatus;
+        return $jalur;
     }
 
     /**
@@ -76,9 +88,7 @@ class OfficialStatusService
             ->where('statusable_type', $statusable->getMorphClass())
             ->where('statusable_id', $statusable->getKey())
             ->effectiveOn($date)
-            ->orderByDesc('effective_at')
-            ->orderByDesc('published_at')
-            ->orderByDesc('id')
+            ->terbaruDulu()
             ->first()
             ?->status ?? OfficialStatusValue::UNKNOWN;
     }
@@ -170,9 +180,7 @@ class OfficialStatusService
             ->where('statusable_type', (new TrailSegment)->getMorphClass())
             ->whereIn('statusable_id', $segments->pluck('id'))
             ->currentlyEffective()
-            ->orderByDesc('effective_at')
-            ->orderByDesc('published_at')
-            ->orderByDesc('id')
+            ->terbaruDulu()
             ->get();
 
         foreach ($segments as $segment) {
@@ -208,9 +216,7 @@ class OfficialStatusService
             ->where('statusable_type', $morphClass)
             ->whereIn('statusable_id', $ids)
             ->currentlyEffective()
-            ->orderByDesc('effective_at')
-            ->orderByDesc('published_at')
-            ->orderByDesc('id')
+            ->terbaruDulu()
             ->get(['statusable_id', 'status']);
 
         $latest = [];
@@ -268,9 +274,7 @@ class OfficialStatusService
             ->where('statusable_type', (new TrailSegment)->getMorphClass())
             ->whereIn('statusable_id', $segments->pluck('id'))
             ->currentlyEffective()
-            ->orderByDesc('effective_at')
-            ->orderByDesc('published_at')
-            ->orderByDesc('id')
+            ->terbaruDulu()
             ->get();
 
         $restrictions = [];
@@ -329,18 +333,33 @@ class OfficialStatusService
      */
     public function snapshotForTrail(Trail $trail): array
     {
-        $record = $this->currentFor($trail);
-        $status = $this->effectiveStatusForTrail($trail);
+        // Catatan jalur dan catatan gunung masing-masing diambil sekali (tanpa kueri
+        // ganda); catatanPenentu() menentukan yang mana benar-benar berlaku (§42), dan
+        // field deskriptif di bawah selalu mengutip catatan itu, bukan selalu catatan
+        // jalur.
+        $jalur = $this->currentFor($trail);
+        $mountain = $trail->relationLoaded('mountain') ? $trail->mountain : $trail->mountain()->first();
+        $gunung = $mountain instanceof Mountain ? $this->currentFor($mountain) : null;
+        $record = self::catatanPenentu($jalur, $gunung);
+        $status = $record?->status ?? OfficialStatusValue::UNKNOWN;
 
         return [
             'status' => $status->value,
             'status_label' => $status->label(),
             'scope' => $record?->scope?->value,
             'source' => $record?->source,
+            // Jenis sumber dari data_sources (R-009): halaman menyebut "Resmi" hanya bila
+            // catatannya memang bersumber OFFICIAL, bukan karena tersimpan di tabel ini.
+            'source_type' => $record?->dataSource?->source_type?->value,
             'source_url' => $record?->source_url,
             'published_at' => $record?->published_at?->toIso8601String(),
             'verified_at' => $record?->verified_at?->toIso8601String(),
             'fetched_at' => $record?->fetched_at?->toIso8601String(),
+            // Stempel untuk waktu yang dikutip beserta awalannya dan kesegaran di rincian
+            // (I1 tinjauan akhir W3): kesegaran dihitung saat halaman dirender, bukan disimpan
+            // di snapshot yang bercache.
+            'effective_at' => $record?->effective_at?->toIso8601String(),
+            'expires_at' => $record?->expires_at?->toIso8601String(),
             'reason' => $record?->reason,
             'notes' => $record?->notes,
         ];

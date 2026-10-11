@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\ModerationStatus;
 use App\Enums\OfficialStatusValue;
+use App\Enums\SourceType;
 use App\Enums\StatusScope;
+use App\Models\DataSource;
 use App\Models\Mountain;
 use App\Models\MountainFollow;
 use App\Models\OfficialStatus;
@@ -284,12 +286,65 @@ class TrailNewsTest extends TestCase
             ->where('komunitas.0.catatan', 'Jembatan Pos 3 putus.'));
 
         $sumber = $this->sumber();
-        // Pembedanya label berkata-kata, bukan warna saja: "Resmi" bergaris kontrol dan
-        // "Laporan komunitas" berlatar token community (pasangan yang dihitung
-        // ColourContrastTest di kedua tema).
-        $this->assertStringContainsString('border-control px-2 py-0.5 text-xs font-medium text-primary">Resmi</span>', $sumber);
+        // Pembedanya label berkata-kata, bukan warna saja. Sejak perbaikan P-2 baris
+        // resmi memakai LabelSumber (jenis sumber catatan, bukan chip "Resmi" tetap;
+        // kepekaannya diuji tersendiri di bawah), sementara laporan komunitas tetap
+        // berlatar token community (pasangan yang dihitung ColourContrastTest di kedua
+        // tema).
+        $this->assertStringContainsString('<LabelSumber jenis={butir.jenisSumber} />', $sumber);
         $this->assertStringContainsString('bg-community-50 px-2 py-0.5 text-xs font-medium text-community-900">Laporan komunitas</span>', $sumber);
         $this->assertStringContainsString('Laporan komunitas tidak mengubah status resmi jalur.', $sumber);
+    }
+
+    /**
+     * P-2 (R-009, keputusan koordinator nomor 6): jenis sumber baris status mengikuti
+     * data_sources, bukan chip "Resmi" tetap untuk setiap catatan di official_statuses
+     * (§92).
+     */
+    public function test_an_official_sourced_entry_carries_the_official_source_type(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+
+        OfficialStatus::create([
+            'statusable_type' => (new Trail)->getMorphClass(),
+            'statusable_id' => $trail->id,
+            'scope' => StatusScope::TRAIL->value,
+            'status' => OfficialStatusValue::OPEN->value,
+            'source' => 'Balai Besar TN',
+            'effective_at' => now(),
+            'data_source_id' => DataSource::factory()->create(['source_type' => SourceType::OFFICIAL->value])->id,
+        ]);
+
+        $props = $this->halaman($user)->viewData('page')['props'];
+
+        $this->assertSame('OFFICIAL', $props['resmi'][0]['jenisSumber']);
+    }
+
+    /**
+     * Kebalikannya: catatan yang disalin admin tidak boleh meminjam label "Resmi" (R-009).
+     */
+    public function test_an_admin_verified_entry_is_not_labelled_official(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+
+        OfficialStatus::create([
+            'statusable_type' => (new Trail)->getMorphClass(),
+            'statusable_id' => $trail->id,
+            'scope' => StatusScope::TRAIL->value,
+            'status' => OfficialStatusValue::OPEN->value,
+            'source' => 'Catatan admin',
+            'effective_at' => now(),
+            'data_source_id' => DataSource::factory()->create(['source_type' => SourceType::ADMIN_VERIFIED->value])->id,
+        ]);
+
+        $props = $this->halaman($user)->viewData('page')['props'];
+
+        $this->assertSame('ADMIN_VERIFIED', $props['resmi'][0]['jenisSumber']);
+        $this->assertNotSame('OFFICIAL', $props['resmi'][0]['jenisSumber']);
     }
 
     /**

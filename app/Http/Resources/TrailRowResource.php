@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Enums\RouteFitLabel;
-use App\Enums\WaterAvailability;
 use App\Models\Trail;
 use App\Services\RouteFit\TrailFitSummary;
 use App\Support\Durasi;
@@ -27,21 +26,17 @@ class TrailRowResource extends JsonResource
     }
 
     /**
+     * Sejak tinjauan akhir W3 (W3-C8, ruling W3-F3) baris ini tidak lagi mengirim `technical`,
+     * `curam`, dan `kemudahan`: satu-satunya yang merendernya, TrailRow.tsx, sudah dihapus, dan
+     * kartu Jelajah serta Simpanan memakai tiga angka (prototype 02 dan 06). Tuntutan teknis
+     * tetap dibaca saringan Jelajah dari model, bukan dari baris ini.
+     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         $jarak = $this->distance_km !== null ? (float) $this->distance_km : null;
         $naik = $this->elevation_gain_m;
-
-        // Kecuraman hanya ketika kedua angkanya ada: membagi dengan ketiadaan
-        // menghasilkan angka yang terlihat pasti tanpa dasar (PRD §91).
-        $curam = ($jarak && $naik) ? (int) round($naik / $jarak) : null;
-
-        $kemudahan = array_values(array_filter([
-            $this->camping_available ? 'Bisa berkemah' : null,
-            $this->water_availability !== WaterAvailability::UNKNOWN ? $this->water_availability?->label() : null,
-        ]));
 
         return [
             'id' => $this->id,
@@ -50,18 +45,20 @@ class TrailRowResource extends JsonResource
             'url' => route('trails.show', $this->resource),
             'mountain' => $this->mountain?->name,
             'province' => $this->mountain?->province,
-            'technical' => $this->technical_demand?->label(),
             'durasi' => Durasi::pendek($this->estimated_duration_minutes),
             'jarak' => $jarak !== null ? number_format($jarak, 1, ',', '.').' km' : '-',
             'tanjakan' => $naik !== null ? number_format($naik, 0, ',', '.').' m' : '-',
-            'curam' => $curam !== null ? number_format($curam, 0, ',', '.').' m/km' : null,
-            'kemudahan' => $kemudahan,
             'ditimbang' => $this->ditimbang,
             'fit' => $this->fit === null ? null : [
                 'label' => $this->fit->label?->value,
                 'labelText' => RouteFitLabel::textFor($this->fit->label),
                 'alasan' => $this->fit->alasan,
                 'denganRencana' => $this->fit->denganRencana,
+                // Lolos syarat dasar. Bila tidak, labelnya null (kata UNKNOWN "Belum dinilai")
+                // dan kartunya menulis alasannya, jadi tidak terbaca sebagai nilai rendah (R-006, R-008).
+                'layak' => $this->fit->eligible,
+                'mengapaSesuai' => $this->fit->mengapaSesuai,
+                'perluDiperhatikan' => $this->fit->perluDiperhatikan,
             ],
         ];
     }

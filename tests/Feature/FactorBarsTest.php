@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * Penalaran mesin Route Fit sebagai batang.
+ * Penalaran mesin Route Fit sebagai keadaan per faktor.
  *
  * Penjelasan selama ini berupa butir prosa di dalam panel yang terlipat, sehingga satu
  * per satu faktor harus dibaca sebagai kalimat untuk mengetahui mana yang menahan dan
@@ -15,13 +15,21 @@ use Tests\TestCase;
  * sebagai daftar kalimat.
  *
  * Batasan yang paling menentukan bentuknya: BR-09 melarang skor internal sampai ke
- * pengguna. Karena itu lebar batang memakai tiga kategori kasar yang berasal dari ambang
- * yang sudah dipakai aplikasi sendiri, bukan persentase skor. Batang selebar 73% dapat
- * dibaca balik sebagai angka, dan tiga kategori tidak.
+ * pengguna. Karena itu setiap faktor memakai tiga kategori kasar yang berasal dari ambang
+ * yang sudah dipakai aplikasi sendiri, bukan persentase skor. Kata "Perlu perhatian" tidak
+ * dapat dibaca balik menjadi angka seperti batang selebar 73% bisa.
  *
  * Di halaman React pembagiannya dua: server (FaktorKategori) mengubah skor menjadi
- * kategori sebelum apa pun dikirim ke klien, dan FactorBars.tsx hanya menggambar
- * kategorinya. Test ini menjaga keduanya.
+ * kategori sebelum apa pun dikirim ke klien, dan klien hanya menggambar kategorinya. Test
+ * ini menjaga keduanya.
+ *
+ * Diperbarui W3 (spec v3 bagian 6.5, prototype 05): FactorBars.tsx dipindah dari
+ * components/ui dan ditulis ulang menjadi components/trails/FaktorKecocokan.tsx. Batang
+ * diganti baris keadaan berkata (Sesuai, Perlu perhatian, Belum diketahui) berikon; niatnya
+ * tetap: tanpa skor dalam bentuk apa pun, tiga kategori dari ambang mesin, faktor tanpa data
+ * tidak terbaca lemah, dan arti tidak dibawa warna saja. "Sesuai" hanya untuk kategori kuat,
+ * karena kalimat rincian mesin dipilih dengan ambang kuat yang sama; cukup dan lemah
+ * sama-sama "Perlu perhatian", juga di panel alasan rekomendasi.
  */
 class FactorBarsTest extends TestCase
 {
@@ -44,7 +52,7 @@ class FactorBarsTest extends TestCase
 
     private function batang(): string
     {
-        return File::get(resource_path('js/components/ui/FactorBars.tsx'));
+        return File::get(resource_path('js/components/trails/FaktorKecocokan.tsx'));
     }
 
     public function test_each_factor_is_named_with_its_reason(): void
@@ -56,7 +64,7 @@ class FactorBarsTest extends TestCase
 
         $batang = $this->batang();
         $this->assertStringContainsString('{f.label}', $batang);
-        $this->assertStringContainsString('{f.detail ? <p', $batang);
+        $this->assertStringContainsString('{f.detail ? <span', $batang);
     }
 
     /**
@@ -74,13 +82,12 @@ class FactorBarsTest extends TestCase
         $this->assertStringNotContainsString('73%', $json);
         $this->assertStringNotContainsString('score', $json);
 
-        // Lebar batang adalah salah satu dari tiga kelas tetap, bukan angka dari data.
-        // Komentarnya boleh menyebut "73%" untuk menjelaskan mengapa; kodenya tidak.
-        $batang = $this->batang();
-        $kode = $this->tanpaKomentarJs($batang);
+        // Tidak ada lebar, gaya, atau persen yang dapat dibaca balik menjadi angka: keadaan
+        // hanya satu dari tiga kata tetap.
+        $kode = $this->tanpaKomentarJs($this->batang());
         $this->assertStringNotContainsString('style=', $kode);
         $this->assertStringNotContainsString('%', $kode);
-        $this->assertStringContainsString("const lebar: Record<KategoriFaktor, string> = { kuat: 'w-full', cukup: 'w-2/3', lemah: 'w-1/3', 'tak-diketahui': 'w-full' };", $batang);
+        $this->assertDoesNotMatchRegularExpression('/(?<![\w-])w-(?:\d|\[)/', $kode);
     }
 
     /**
@@ -109,12 +116,15 @@ class FactorBarsTest extends TestCase
         $this->assertSame('cukup', FaktorKategori::dari([$this->faktor(0.60)])[0]['kategori']);
         $this->assertSame('lemah', FaktorKategori::dari([$this->faktor(0.10)])[0]['kategori']);
 
-        $this->assertStringContainsString("const kata: Record<KategoriFaktor, string> = { kuat: 'Mendukung', cukup: 'Cukup', lemah: 'Menahan', 'tak-diketahui': 'Belum diketahui' };", $this->batang());
+        $batang = $this->batang();
+        $this->assertStringContainsString("kuat: { kata: 'Sesuai', ikon: 'check'", $batang);
+        $this->assertStringContainsString("cukup: { kata: 'Perlu perhatian', ikon: 'warning'", $batang);
+        $this->assertStringContainsString("lemah: { kata: 'Perlu perhatian', ikon: 'warning'", $batang);
     }
 
     /**
-     * PRD §95, R-006, R-007. Faktor yang datanya belum ada tidak boleh digambar sebagai
-     * batang pendek, karena batang pendek terbaca sebagai "jalur ini buruk pada faktor
+     * PRD §95, R-006, R-007. Faktor yang datanya belum ada tidak boleh terbaca sebagai
+     * keadaan "Perlu perhatian", karena itu terbaca sebagai "jalur ini buruk pada faktor
      * itu" padahal yang benar adalah "belum ada yang tahu". Skornya yang nol pun tidak
      * boleh menurunkannya menjadi lemah.
      */
@@ -123,30 +133,29 @@ class FactorBarsTest extends TestCase
         $this->assertSame('tak-diketahui', FaktorKategori::dari([$this->faktor(0.0, takDiketahui: true)])[0]['kategori']);
 
         $batang = $this->batang();
-        $this->assertStringContainsString("'tak-diketahui': 'Belum diketahui'", $batang);
-        $this->assertStringNotContainsString("'tak-diketahui': 'w-1/3'", $batang);
-        $this->assertStringNotContainsString("'tak-diketahui': 'Menahan'", $batang);
+        $this->assertStringContainsString("'tak-diketahui': { kata: 'Belum diketahui', ikon: 'question'", $batang);
+        $this->assertStringNotContainsString("'tak-diketahui': { kata: 'Perlu perhatian'", $batang);
     }
 
     /**
      * Warna saja tidak boleh menjadi satu-satunya pembawa arti (WCAG 1.4.1). Setiap
-     * batang membawa katanya sendiri, jadi pembaca layar dan mata yang tidak membedakan
+     * baris membawa katanya sendiri, jadi pembaca layar dan mata yang tidak membedakan
      * merah-hijau mendapat keterangan yang sama.
      */
     public function test_meaning_is_carried_by_words_not_only_by_colour(): void
     {
         $batang = $this->batang();
 
-        // Katanya ada sebagai teks, dan batangnya sendiri disembunyikan dari pembaca
-        // layar karena ia hanya mengulang kata yang sudah terbaca di sebelahnya.
-        $this->assertStringContainsString('{kata[f.kategori]}</span>', $batang);
-        $this->assertMatchesRegularExpression('/<div className="[^"]*" aria-hidden="true">\s*<div className=\{`h-full rounded-full \$\{lebar\[f\.kategori\]\}/', $batang);
+        // Katanya ada sebagai teks, dan lingkaran ikonnya disembunyikan dari pembaca layar
+        // karena ia hanya mengulang kata yang sudah terbaca di sebelahnya.
+        $this->assertStringContainsString('<span className="text-meta font-bold text-secondary">{k.kata}</span>', $batang);
+        $this->assertStringContainsString('<span aria-hidden="true" className={kelas(', $batang);
     }
 
     public function test_nothing_is_drawn_without_factors(): void
     {
         $this->assertSame([], FaktorKategori::dari([]));
         $this->assertSame([], FaktorKategori::dari(null));
-        $this->assertMatchesRegularExpression('/if \(factors\.length === 0\) \{\s*return null;\s*\}/', $this->batang());
+        $this->assertMatchesRegularExpression('/if \(faktor\.length === 0\) \{\s*return null;\s*\}/', $this->batang());
     }
 }

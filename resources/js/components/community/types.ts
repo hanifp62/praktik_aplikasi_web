@@ -1,4 +1,5 @@
-import type { StatusResmi } from '@/components/ui/StatusBadge';
+import type { JenisSumber } from '@/components/trails/LabelSumber';
+import type { StatusResmi } from '@/components/trails/StatusAkses';
 
 /** Pilihan formulir yang labelnya sudah diambil dari enum server. */
 export interface Opsi {
@@ -15,6 +16,8 @@ export interface ButirResmi {
     cakupan: string | null;
     alasan: string | null;
     sumber: string;
+    /** Jenis sumber catatan (SourceType); null bila tidak tercatat (R-009). */
+    jenisSumber: JenisSumber | null;
     waktu: string;
     waktuIso: string;
 }

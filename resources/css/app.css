@@ -133,8 +133,13 @@
         --status-belum: 128 134 130;
 
         /* Satu aksen: kuning pos. 1,76:1 di kanvas, jadi tidak pernah membawa arti
-           sendirian (spec v3 bagian 8.1). */
+           sendirian (spec v3 bagian 8.1). accent-pos-ink adalah tinta nomor pos di
+           ATAS aksen ini (lingkaran bernomor DaftarPos, ProfilElevasi, PetaJalur),
+           bukan tinta badan teks: nilainya dipaku gelap di semua tema karena aksen
+           kuningnya sendiri tidak berubah antar tema, dan tinta terang tema gelap
+           (text-primary) hanya 1,7:1 di atasnya. 8,19:1 dihitung ColourContrastTest. */
         --accent-pos: 232 176 75;
+        --accent-pos-ink: 29 35 32;
 
         /*
          * Batas kontrol interaktif. WCAG 1.4.11 menuntut 3:1 terhadap latarnya: 3,65:1 di
@@ -283,6 +288,7 @@
             --status-belum: 138 149 142;
 
             --accent-pos: 232 176 75;
+            --accent-pos-ink: 29 35 32;
 
             --control-border: 127 139 132;
 
@@ -357,6 +363,7 @@
         --status-belum: 138 149 142;
 
         --accent-pos: 232 176 75;
+        --accent-pos-ink: 29 35 32;
 
         --control-border: 127 139 132;
 
@@ -413,6 +420,7 @@
         --brand-ink: 27 77 44;
         --on-brand: 255 255 255;
         --accent-pos: 232 176 75;
+        --accent-pos-ink: 29 35 32;
 
         /* Sama dengan tema aplikasi terang. */
         --brand-50: 238 244 239;
@@ -474,6 +482,7 @@
         --brand-ink: 143 211 160;
         --on-brand: 15 36 24;
         --accent-pos: 232 176 75;
+        --accent-pos-ink: 29 35 32;
 
         /* Sama dengan tema aplikasi gelap. */
         --brand-50: 22 38 28;
@@ -872,17 +881,17 @@ html:has(dialog[open]) {
 |   untuk cadangan --strip-pendakian sebelum skrip berjalan.
 | - Komponennya sendiri, yang mengukur tingginya lewat ResizeObserver dan menulisnya ke
 |   <html> selagi terpasang atau tampil, lalu menghapusnya begitu hilang atau dilepas:
-|   --strip-pendakian (StripPendakian.tsx), --bar-aksi (BarAksi.tsx), --baki-banding
-|   (ConsiderationTray.tsx, baki banding Jelajah), dan --pesan-jaringan (PesanJaringan.tsx).
+|   --strip-pendakian (StripPendakian.tsx), --bar-aksi (BarAksi.tsx), dan --pesan-jaringan
+|   (PesanJaringan.tsx). Baki banding Jelajah dan variabel tingginya dilepas W3: Jelajah
+|   tidak lagi punya baki (prototype 02 dan 15), dan baki banding Simpanan adalah bar aksi.
 |
-| --nav-bawah (bilah tab ditambah strip) dibaca bar aksi, toast, baki banding, dan
-| padding-bottom <main>. scroll-padding menjaga elemen yang difokus papan ketik dan sasaran
-| jangkar tidak tertutup lapisan tetap (WCAG 2.4.11): scroll-padding-bottom menghitung
-| --nav-bawah, --bar-aksi (ruling W2-2a), dan --baki-banding (perbaikan akhir W2, I-1a),
-| karena tanpa itu elemen yang difokus di dekat tepi bawah berhenti tertutup penuh oleh
-| bar atau baki; scroll-padding-top menghitung --kepala-atas dan --pesan-jaringan (ruling
-| W2-5a), dan <main> memberi dirinya padding-top senilai --pesan-jaringan, supaya isi di
-| puncak halaman tidak tertutup lapisan pesan yang fixed itu. Toast sengaja tidak masuk
+| --nav-bawah (bilah tab ditambah strip) dibaca bar aksi, toast, dan padding-bottom <main>.
+| scroll-padding menjaga elemen yang difokus papan ketik dan sasaran jangkar tidak tertutup
+| lapisan tetap (WCAG 2.4.11): scroll-padding-bottom menghitung --nav-bawah dan --bar-aksi
+| (ruling W2-2a), karena tanpa itu elemen yang difokus di dekat tepi bawah berhenti
+| tertutup penuh oleh bar; scroll-padding-top menghitung --kepala-atas dan --pesan-jaringan
+| (ruling W2-5a), dan <main> memberi dirinya padding-top senilai --pesan-jaringan, supaya
+| isi di puncak halaman tidak tertutup lapisan pesan yang fixed itu. Toast sengaja tidak masuk
 | scroll-padding: ia hilang sendiri sesudah 8 detik, hitungannya berhenti selama ia difokus
 | atau diarahkan penunjuk, dan fokusnya pindah ke Urungkan bila aksinya dari papan ketik.
 | Selama tampil, toast dapat menutup unsur terfokus di dekat tepi bawah.
@@ -908,7 +917,7 @@ html:has(dialog[open]) {
     --kepala-atas: 0px;
     --nav-bawah: calc(var(--bilah-tab) + var(--strip-pendakian));
     scroll-padding-top: calc(var(--kepala-atas) + var(--pesan-jaringan, 0px) + 0.5rem);
-    scroll-padding-bottom: calc(var(--nav-bawah) + var(--bar-aksi, 0px) + var(--baki-banding, 0px) + 1.25rem);
+    scroll-padding-bottom: calc(var(--nav-bawah) + var(--bar-aksi, 0px) + 1.25rem);
 }
 
 :root:not(:has(nav[data-bilah-tab])) {

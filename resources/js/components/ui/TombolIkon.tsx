@@ -11,6 +11,11 @@ interface TombolIkonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
     bentuk?: 'bulat' | 'kotak';
     /** 48 px untuk kendali utama; bawaan 44 px. */
     besar?: boolean;
+    /**
+     * Varian isi ikon untuk tombol sakelar yang sedang menyala (misalnya jalur tersimpan,
+     * W3): keadaannya dibawa bentuk, bukan warna saja, bersama aria-pressed dari pemanggil.
+     */
+    isi?: boolean;
 }
 
 const gaya = {
@@ -23,7 +28,7 @@ const gaya = {
  * Tombol berisi satu ikon: 44 px (48 px bila besar), namanya teks sr-only dari prop label
  * yang wajib, bukan aria-label yang mudah terlupa dan tidak ikut diterjemahkan.
  */
-export function TombolIkon({ ikon, label, varian = 'permukaan', bentuk = 'bulat', besar = false, type = 'button', className, ...rest }: TombolIkonProps) {
+export function TombolIkon({ ikon, label, varian = 'permukaan', bentuk = 'bulat', besar = false, isi = false, type = 'button', className, ...rest }: TombolIkonProps) {
     return (
         <button
             type={type}
@@ -38,7 +43,7 @@ export function TombolIkon({ ikon, label, varian = 'permukaan', bentuk = 'bulat'
             )}
             {...rest}
         >
-            <Icon name={ikon} size={besar ? 24 : 22} />
+            <Icon name={ikon} size={besar ? 24 : 22} isi={isi} />
             <span className="sr-only">{label}</span>
         </button>
     );

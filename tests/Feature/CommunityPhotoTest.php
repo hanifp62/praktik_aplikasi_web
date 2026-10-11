@@ -114,7 +114,10 @@ class CommunityPhotoTest extends TestCase
 
         $this->assertStringContainsString('<LabelKomunitas />', $kartu);
         $this->assertStringContainsString('Laporan kondisi dari komunitas', $kartu);
-        $this->assertStringContainsString('bg-community-50', file_get_contents(resource_path('js/components/trails/rinci/LabelSumber.tsx')));
+        // Sejak W3 label sumber tinggal di components/trails/LabelSumber.tsx dan memakai
+        // Lencana bernada komunitas bergaris putus-putus (spec v3 bagian 7).
+        $this->assertStringContainsString("COMMUNITY: { label: 'Komunitas', ikon: 'user', nada: 'komunitas', garis: 'putus' }", file_get_contents(resource_path('js/components/trails/LabelSumber.tsx')));
+        $this->assertStringContainsString("komunitas: { isi: 'bg-community-50 text-community-900'", file_get_contents(resource_path('js/components/ui/Lencana.tsx')));
         $this->assertStringNotContainsString('<img', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
     }
 

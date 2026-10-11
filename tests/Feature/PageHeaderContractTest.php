@@ -174,7 +174,9 @@ class PageHeaderContractTest extends TestCase
         foreach ($this->berkasTsx('pages') as $berkas) {
             $nama = str_replace('\\', '/', $berkas->getRelativePathname());
 
-            if (str_starts_with($nama, 'Auth/') || $nama === 'Welcome.tsx') {
+            // Halaman tamu dan halaman publik tanpa kerangka aplikasi (tautan bagikan FR-23):
+            // tanpa tombol kembali dan tanpa avatar, jadi di luar kontrak ini.
+            if (str_starts_with($nama, 'Auth/') || str_starts_with($nama, 'Public/') || $nama === 'Welcome.tsx') {
                 continue;
             }
 

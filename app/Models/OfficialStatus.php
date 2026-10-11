@@ -70,6 +70,51 @@ class OfficialStatus extends Model
             ->where(fn (Builder $q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', $date));
     }
 
+    /**
+     * Catatan terbaru lebih dulu, dengan urutan NULL yang sama di SQLite dan PostgreSQL
+     * (I3 dan m6 tinjauan akhir W3, R-024).
+     *
+     * `effective_at` boleh kosong (StoreOfficialStatusRequest), dan `ORDER BY ... DESC`
+     * menaruh NULL terakhir di SQLite tetapi pertama di PostgreSQL. Tanpa urutan eksplisit,
+     * catatan Buka tanpa tanggal berlaku mengalahkan penutupan bertanggal di Supabase
+     * sementara suite SQLite memilih penutupan. Di sini catatan bertanggal selalu
+     * didahulukan, seri diputus published_at (juga bertanggal dulu), lalu id.
+     *
+     * Satu-satunya tempat urutan ini ditulis: setiap pembaca "catatan terbaru per entitas"
+     * (OfficialStatusService, StatusJalurRingkas) memakainya, jadi keputusan semantik W8
+     * (COALESCE dengan created_at, parkir W3-1i) cukup mengubah scope ini.
+     */
+    public function scopeTerbaruDulu(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw('effective_at is null')
+            ->orderByDesc('effective_at')
+            ->orderByRaw('published_at is null')
+            ->orderByDesc('published_at')
+            ->orderByDesc('id');
+    }
+
+    /**
+     * Stempel waktu yang dikutip layar untuk sebuah catatan, beserta kata awalannya (W3-2c dan
+     * I1 tinjauan akhir W3).
+     *
+     * Verifikasi didahulukan, lalu terbit, lalu mulai berlaku, dan awalannya menyebut kolom
+     * yang benar-benar dipakai: catatan yang belum pernah diverifikasi tidak boleh tertulis
+     * "Diverifikasi" hanya karena ia punya tanggal terbit. Statis supaya dipakai bersama oleh
+     * daftar (model) dan rincian (snapshot bercache berisi string ISO).
+     *
+     * @return array{waktu: CarbonInterface, awalan: string}|null
+     */
+    public static function waktuDikutip(?CarbonInterface $diverifikasi, ?CarbonInterface $diterbitkan, ?CarbonInterface $berlaku): ?array
+    {
+        return match (true) {
+            $diverifikasi !== null => ['waktu' => $diverifikasi, 'awalan' => 'Diverifikasi'],
+            $diterbitkan !== null => ['waktu' => $diterbitkan, 'awalan' => 'Diterbitkan'],
+            $berlaku !== null => ['waktu' => $berlaku, 'awalan' => 'Berlaku sejak'],
+            default => null,
+        };
+    }
+
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->isPast();

@@ -97,8 +97,8 @@ class AwaitingDataTest extends TestCase
                 ->where('trail.name', 'Jalur Cemoro Sewu')
                 ->where('badan.nama', 'Balai Taman Nasional Gunung Lawu')
                 ->where('menunggu', fn ($butir) => count($butir) > 0)
-                ->missing('fit')
-                ->missing('angkaKunci')
+                ->missing('kecocokan')
+                ->missing('angkaNaik')
                 ->missing('komunitas'));
     }
 
@@ -133,11 +133,11 @@ class AwaitingDataTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Trails/Show')
-                ->where('angkaKunci.0.nilai', '9,4 km')
-                ->where('angkaKunci.1.nilai', '10 jam')
-                ->where('angkaKunci.2.nilai', '1.100 m'));
+                ->where('angkaNaik.0.nilai', '9,4 km')
+                ->where('angkaNaik.1.nilai', '1.100 m')
+                ->where('angkaNaik.2.nilai', '10 jam'));
 
-        $this->assertStringContainsString('Buat rencana trip', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
+        $this->assertStringContainsString('Rencanakan trip', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     /**

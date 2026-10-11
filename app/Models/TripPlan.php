@@ -51,6 +51,47 @@ class TripPlan extends Model
         return $this->belongsTo(HikingGoal::class);
     }
 
+    /**
+     * Tujuan yang dipakai menilai kecocokan "untuk rencana ini" (spec v3 bagian 6.4 dan 6.5):
+     * tujuan tersimpan trip ini, atau untuk trip lama yang dibuat tanpa tujuan, jenis dan
+     * tanggal tripnya sebagai tujuan sementara yang tidak pernah disimpan.
+     */
+    public function tujuanPenilaian(): HikingGoal
+    {
+        return $this->hikingGoal ?? new HikingGoal([
+            'trip_type' => $this->trip_type,
+            'target_date' => $this->planned_date,
+        ]);
+    }
+
+    /**
+     * Satu baris rencana untuk kalimat "untuk rencana ini": jenis trip, tanggal (rentang
+     * bila lebih dari sehari), dan jumlah peserta bila diisi.
+     *
+     * Tanggal mulai menulis bulannya bila berbeda dari tanggal selesai, dan tahunnya bila
+     * tahunnya berbeda (m3 tinjauan akhir W3): "30 sampai 2 Okt 2026" terbaca 30 Oktober.
+     */
+    public function ringkasan(): string
+    {
+        $mulai = $this->planned_date;
+        $selesai = $this->end_date;
+        $formatMulai = match (true) {
+            $selesai === null => 'j M Y',
+            $mulai->year !== $selesai->year => 'j M Y',
+            $mulai->month !== $selesai->month => 'j M',
+            default => 'j',
+        };
+        $tanggal = $selesai !== null && ! $selesai->isSameDay($mulai)
+            ? $mulai->translatedFormat($formatMulai).' sampai '.$selesai->translatedFormat('j M Y')
+            : $mulai->translatedFormat('j M Y');
+
+        return implode(', ', array_filter([
+            $this->trip_type->label(),
+            $tanggal,
+            $this->participants_count ? $this->participants_count.' orang' : null,
+        ]));
+    }
+
     public function preparationItems(): HasMany
     {
         return $this->hasMany(TripPreparationItem::class);

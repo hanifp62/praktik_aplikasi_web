@@ -147,8 +147,11 @@ export default {
                 },
 
                 // Satu aksen: kuning pos. Tidak pernah membawa arti sendirian.
+                // teks adalah tinta nomor pos DI ATAS aksen ini (bukan tinta badan teks
+                // biasa): dipaku gelap di semua tema karena aksen kuningnya sendiri tidak
+                // berubah antar tema (lihat app.css, token accent-pos-ink).
                 aksen: {
-                    pos: token('accent-pos'),
+                    pos: { DEFAULT: token('accent-pos'), teks: token('accent-pos-ink') },
                 },
 
                 logo: {

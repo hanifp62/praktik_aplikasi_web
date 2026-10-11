@@ -85,6 +85,9 @@ class KabarJalur
             'cakupan' => $status->scope?->label(),
             'alasan' => $butir['alasan'],
             'sumber' => $butir['sumber'] ?? 'belum tercatat',
+            // Jenis sumber dari data_sources (R-009, P-2): label "Resmi" tidak lagi
+            // ditulis tetap untuk setiap baris di TrailNews.tsx, mengikuti LabelSumber.
+            'jenisSumber' => $status->dataSource?->source_type?->value,
             'waktu' => $butir['waktu']->diffForHumans(),
             'waktuIso' => $butir['waktu']->toIso8601String(),
         ];

@@ -70,16 +70,16 @@ Sumber luar: prakiraan BMKG per kode wilayah adm4, diambil perintah `weather:ref
 
 | Sub-fitur | Status | Bukti |
 |---|---|---|
-| Ringkasan rute | Ada | `app/Services/Trails/TrailDetailPage.php` (`angkaKunci`, `rincian`), `app/Services/Trails/TrailFigures.php`, `resources/js/pages/Trails/Show.tsx`, `tests/Feature/TrailDetailPageTest.php` |
-| Peta dan profil ketinggian | Ada | `resources/js/components/trails/rinci/PetaJalur.tsx`, `resources/js/components/ui/ElevationProfile.tsx`; ruas tercuram diarsir dan keterangan kalimat menyusul W3 |
-| Titik penting | Ada | `app/Services/Trails/CheckpointJourney.php`, `app/Services/CheckpointPaceService.php`, `resources/js/components/ui/CheckpointJourney.tsx`, `tests/Feature/CheckpointJourneyTest.php`, `tests/Feature/CheckpointPaceDisplayTest.php` |
-| Kondisi dan sumber info | Ada, dengan catatan | `resources/js/components/trails/rinci/Kondisi.tsx`, `resources/js/components/trails/rinci/LabelSumber.tsx`, `app/Services/OfficialStatusService.php`, `app/Services/ConditionAggregatorService.php`, `app/Services/WeatherService.php`. Label kepercayaan memakai `SourceType` (Resmi, Terverifikasi admin, Ahli bersertifikat, Komunitas, Interpretasi sistem), bukan "Pakar" (K6). Prakiraan menampilkan waktu, cuaca, suhu, dan kelembapan untuk delapan titik; angin dan curah hujan belum tampil walau kolom angin ada |
+| Ringkasan rute | Ada | `app/Services/Trails/TrailDetailPage.php` (`angkaNaik`, `tantangan`), `app/Services/Trails/TrailFigures.php`, `resources/js/pages/Trails/Show.tsx`, `tests/Feature/TrailDetailPageTest.php` |
+| Peta dan profil ketinggian | Ada | `resources/js/components/trails/rinci/PetaJalur.tsx`, `resources/js/components/trails/ProfilElevasi.tsx`, `app/Services/Trails/ProfilElevasiJalur.php`; sejak W3 ruas tercuram diarsir dengan keterangan kalimat (`tests/Feature/ElevationProfileDisplayTest.php`) |
+| Titik penting | Ada | `app/Services/Trails/CheckpointJourney.php`, `app/Services/CheckpointPaceService.php`, `app/Services/Trails/PosSepanjangJalur.php` (km dari garis rute), `resources/js/components/trails/rinci/DaftarPos.tsx`, `tests/Feature/CheckpointJourneyTest.php`, `tests/Feature/CheckpointPaceDisplayTest.php`, `tests/Spatial/PosSepanjangJalurTest.php` |
+| Kondisi dan sumber info | Ada, dengan catatan | `resources/js/components/trails/rinci/Kondisi.tsx`, `resources/js/components/trails/LabelSumber.tsx`, `resources/js/components/trails/rinci/SumberHalaman.tsx`, `app/Services/OfficialStatusService.php`, `app/Services/ConditionAggregatorService.php`, `app/Services/WeatherService.php`. Label kepercayaan memakai `SourceType` (Resmi, Terverifikasi admin, Ahli bersertifikat, Komunitas, Interpretasi sistem), bukan "Pakar" (K6). Prakiraan menampilkan waktu, cuaca, suhu, dan kelembapan untuk delapan titik; angin dan curah hujan belum tampil walau kolom angin ada |
 | Laporan pendaki | Ada | `LaporanKomunitas.tsx`, `app/Http/Controllers/Trails/ReportThanksController.php`, `tests/Feature/ReportThanksTest.php` |
-| Alasan kecocokan | Ada | `fit.faktor` lewat `app/Support/FaktorKategori.php`, `tests/Feature/AmbientFitTest.php`; halaman penilaian lengkap `/trails/{slug}/kecocokan` menyusul W3 (spec v3 bagian 6.5) |
+| Alasan kecocokan | Ada | "Cocokkah untuk saya?" di `resources/js/components/trails/rinci/CocokkahUntukSaya.tsx`, `tests/Feature/AmbientFitTest.php`; halaman penilaian lengkap `/trails/{slug}/kecocokan` sejak W3 (`app/Http/Controllers/Trails/TrailFitAssessmentController.php`, `app/Services/Trails/PenilaianKecocokan.php`, `tests/Feature/FitAssessmentPageTest.php`) |
 | Izin resmi | Ada | `perizinan` di `TrailDetailPage`, `tests/Feature/PermitVisibilityTest.php` |
 | Jalur belum lengkap | Ada | `Trails/Awaiting`, `tests/Feature/AwaitingDataTest.php` |
 | Halaman publik SEO | Ada, rute lama | `app/Http/Controllers/PublicTrailController.php`, `resources/views/public/trail.blade.php` |
-| Halaman gunung | Belum ada | Hanya `POST mountains/{mountain}/follow`; `/mountains/{slug}` menyusul W3 (DK-44) |
+| Halaman gunung | Ada (W3) | `/mountains/{slug}` lewat `app/Http/Controllers/Trails/MountainPageController.php`, `app/Services/Mountains/HalamanGunung.php`, `resources/js/pages/Mountains/Show.tsx`, `tests/Feature/MountainPageTest.php` (DK-44); foto berlisensi dan status gunung api menunggu W8 (DK-37, DK-43) |
 | Status gunung api PVMBG | Belum ada | DK-43, W8 |
 
 ## Task NgodingPakeAI
@@ -87,15 +87,15 @@ Sumber luar: prakiraan BMKG per kode wilayah adm4, diambil perintah `weather:ref
 | # | Task | Peta ke kode | Status kode |
 |---|---|---|---|
 | 1 | Bangun halaman detail rute dengan data tiruan | `resources/js/pages/Trails/Show.tsx` dengan data nyata | Ada |
-| 2 | Buat panel ringkasan rute | `angkaKunci`, `rincian` di `TrailDetailPage` | Ada |
+| 2 | Buat panel ringkasan rute | `angkaNaik`, `tantangan` di `TrailDetailPage` | Ada |
 | 3 | Buat peta jalur dan titik akhir | `PetaJalur.tsx` | Ada |
-| 4 | Buat grafik profil ketinggian jalur | `ElevationProfile.tsx` | Ada |
-| 5 | Buat daftar titik penting di jalur | `CheckpointJourney` | Ada |
+| 4 | Buat grafik profil ketinggian jalur | `ProfilElevasi.tsx` | Ada |
+| 5 | Buat daftar titik penting di jalur | `CheckpointJourney`, `DaftarPos.tsx` | Ada |
 | 6 | Buat panel kondisi dan sumber info | `Kondisi.tsx`, `LabelSumber.tsx` | Ada |
 | 7 | Buat panel alasan kecocokan faktor | `FaktorKategori`, bagian kecocokan di `Show.tsx` | Ada |
 | 8 | Tangani data kosong dengan keterangan jujur | `TrailFigures::BELUM` dan kalimat per bagian | Ada |
-| 9 | Terapkan tata letak responsif mobile desktop | `Show.tsx` | Sebagian (dua kolom lengket menyusul W3) |
-| 10 | Hubungkan navigasi jelajah ke halaman detail | Seluruh baris `TrailRow` menjadi tautan | Ada |
+| 9 | Terapkan tata letak responsif mobile desktop | `Show.tsx` | Ada (W3: dua kolom dengan kolom kanan lengket mulai 1024 px, bar aksi satu baris di ponsel) |
+| 10 | Hubungkan navigasi jelajah ke halaman detail | Seluruh kartu `KartuJalur` menjadi tautan | Ada |
 | 11 | Buat skema dan migrasi tabel jalur | `create_trails_table` | Ada |
 | 12 | Buat tabel titik penting dan profil ketinggian | `create_checkpoints_table`, `add_coordinates_to_checkpoints`, `add_elevation_profile_to_trails_table` | Ada |
 | 13 | Buat tabel kondisi jalur dan sumber info | `create_official_statuses_table`, `create_trail_condition_reports_table`, `create_data_sources_table`, `create_weather_snapshots_table` | Ada |

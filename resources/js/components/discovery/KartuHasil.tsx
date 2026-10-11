@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { FitBadge } from '@/components/ui/FitBadge';
+import { LabelKecocokan } from '@/components/trails/LabelKecocokan';
 import { Tautan } from '@/components/ui/Tautan';
 import { PanelAlasan } from './PanelAlasan';
 import type { HasilRekomendasi } from './types';
@@ -46,7 +46,7 @@ export function KartuHasil({ hasil, dibandingkan, onBandingkan, onPilih, memilih
                     ) : null}
                 </div>
                 <span data-fit-label className="shrink-0">
-                    <FitBadge label={hasil.label} text={hasil.labelText} />
+                    <LabelKecocokan nilai={hasil.label} label={hasil.labelText} />
                 </span>
             </div>
 

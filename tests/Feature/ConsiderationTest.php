@@ -276,14 +276,17 @@ class ConsiderationTest extends TestCase
     }
 
     /**
-     * Baki Jelajah menyebut batas simpanan yang sama dengan penolakannya.
+     * Batas yang disebut ke pembaca sama dengan batas penolakannya. Diperbarui W3: baki
+     * Jelajah dilepas bersama prop batasTimbangan, jadi batasnya kini disebut halaman
+     * Simpanan, dan penolakan di Jelajah dijawab dialog "Simpanan sudah penuh"
+     * (SavedUndoTest).
      */
-    public function test_the_jelajah_tray_states_the_configured_saved_limit(): void
+    public function test_the_saved_page_states_the_configured_saved_limit(): void
     {
         config()->set('hiking.saved_trails.max', 12);
 
         $this->actingAs(User::factory()->create())
-            ->get(route('trails.index'))
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('batasTimbangan', 12));
+            ->get(route('trails.saved'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('batas', 12));
     }
 }

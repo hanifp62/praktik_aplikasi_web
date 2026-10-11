@@ -1,8 +1,8 @@
+import { Kesegaran } from '@/components/trails/Kesegaran';
+import { LabelSumber } from '@/components/trails/LabelSumber';
+import { StatusAkses } from '@/components/trails/StatusAkses';
 import { Card } from '@/components/ui/Card';
-import { Freshness } from '@/components/ui/Freshness';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { LabelResmi } from './LabelSumber';
-import type { Cuaca, Perizinan, StatusResmiRinci, SumberData } from './types';
+import type { Cuaca, Perizinan, StatusResmiRinci } from './types';
 
 /*
  * Aturan kartu di halaman rinci: kartu berarti blok ini punya sumber. Status resmi,
@@ -11,22 +11,20 @@ import type { Cuaca, Perizinan, StatusResmiRinci, SumberData } from './types';
  * sumbernya (LabelSumber), bukan dengan garis aksen.
  */
 
-// py-1 pada tautan sebaris memperbesar bidang sentuh tanpa mengubah tinggi baris.
-const tautanLuar = 'py-1 text-brand-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
-
 export function StatusResmiKartu({ status }: { status: StatusResmiRinci }) {
     return (
         <Card title="Status resmi">
             <div className="flex flex-wrap items-center gap-3">
-                <StatusBadge status={status.status} text={status.statusLabel} scope={status.scope} />
+                <StatusAkses nilai={status.status} label={status.statusLabel} cakupan={status.scope} />
                 <span className="inline-flex flex-wrap items-center gap-2 text-sm text-secondary">
-                    <LabelResmi />
+                    <LabelSumber jenis={status.jenisSumber} />
                     Sumber: {status.source}
                 </span>
             </div>
             {status.reason ? <p className="mt-2 text-sm text-secondary">{status.reason}</p> : null}
             <div className="mt-2">
-                <Freshness rendered={status.diverifikasi} prefix="Diverifikasi" />
+                {/* Awalan dan kesegaran dari server (W3-2c, I1 tinjauan akhir W3), sama dengan kartu Jelajah. */}
+                <Kesegaran waktu={status.waktu} awalan={status.awalanWaktu ?? undefined} keadaan={status.kesegaran} />
             </div>
             <p className="mt-2 text-xs text-muted">Status resmi menjelaskan ketentuan pengelola, bukan jaminan keselamatan.</p>
         </Card>
@@ -74,10 +72,10 @@ export function PerizinanKartu({ izin }: { izin: Perizinan }) {
             ) : null}
 
             <div className="mt-3">
-                <Freshness rendered={izin.diverifikasi} prefix="Aturan diverifikasi" />
+                <Kesegaran waktu={izin.diverifikasi} awalan="Aturan diverifikasi" />
             </div>
             <p className="mt-1 text-xs text-muted">
-                <LabelResmi /> Sumber: {izin.source}. Aturan perizinan dapat berubah; periksa kembali ke penyelenggara sebelum berangkat.
+                <LabelSumber jenis={izin.jenisSumber} /> Sumber: {izin.source}. Aturan perizinan dapat berubah; periksa kembali ke penyelenggara sebelum berangkat.
             </p>
         </Card>
     );
@@ -115,42 +113,27 @@ export function CuacaKartu({ cuaca }: { cuaca: Cuaca }) {
                         </table>
                     </div>
                     <p className="mt-3 text-xs text-muted">Sumber data cuaca: {cuaca.source}</p>
-                    <Freshness rendered={cuaca.diperbarui} stateLabel={cuaca.freshnessLabel} />
+                    <Kesegaran waktu={cuaca.diperbarui} keadaan={cuaca.freshnessLabel} />
                 </>
             ) : (
                 <p className="text-sm text-secondary">{cuaca.message}</p>
             )}
-        </Card>
-    );
-}
-
-export function SumberDataKartu({ sumber }: { sumber: SumberData }) {
-    return (
-        <Card title="Sumber data">
-            <dl className="space-y-2 text-sm">
-                <div>
-                    <dt className="text-muted">Data jalur</dt>
-                    <dd className="text-primary">
-                        {sumber.jalur}
-                        {sumber.jalurUrl ? (
-                            <>
-                                {' '}&middot;{' '}
-                                <a className={tautanLuar} href={sumber.jalurUrl} rel="noopener noreferrer" target="_blank">
-                                    tautan sumber<span className="sr-only"> (membuka tab baru)</span>
-                                </a>
-                            </>
-                        ) : null}
-                    </dd>
-                </div>
-                <div>
-                    <dt className="text-muted">Status resmi</dt>
-                    <dd className="text-primary">{sumber.statusResmi}</dd>
-                </div>
-                <div>
-                    <dt className="text-muted">Cuaca</dt>
-                    <dd className="text-primary">{sumber.cuaca}</dd>
-                </div>
-            </dl>
+            {cuaca.untukTrip ? (
+                cuaca.untukTrip.status === 'tersedia' ? (
+                    <div className="mt-3 rounded-control bg-surface-sunken px-3 py-2 text-kecil text-secondary">
+                        <p className="font-bold text-primary">{cuaca.untukTrip.judul}</p>
+                        <ul className="mt-1 space-y-0.5">
+                            {cuaca.untukTrip.forecast.map((baris) => (
+                                <li key={baris.id}>
+                                    {baris.waktu}: {baris.cuaca}, {baris.suhu}, kelembapan {baris.kelembapan}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ) : (
+                    <p className="mt-3 rounded-control bg-surface-sunken px-3 py-2 text-kecil text-secondary">{cuaca.untukTrip.pesan}</p>
+                )
+            ) : null}
         </Card>
     );
 }

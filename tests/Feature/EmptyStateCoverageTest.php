@@ -50,9 +50,8 @@ class EmptyStateCoverageTest extends TestCase
         'pages/Onboarding/ProfileSetup.tsx' => [
             'ringkasan' => 'sebelas baris tetap ringkasan profil, tampil hanya bila profilnya lengkap',
         ],
-        'pages/Trails/Show.tsx' => [
-            'angkaKunci' => 'empat angka tetap dari TrailDetailPage; nilai yang hilang ditulis belum diketahui',
-            'rincian' => 'lima baris tetap dari TrailDetailPage',
+        'pages/Public/SharedComparison.tsx' => [
+            'props.baris' => 'sembilan baris tetap RouteComparisonTable::baris(); tabelnya hanya tampil bila ada jalur',
         ],
         'pages/Trips/Preparation.tsx' => [
             'kategori' => 'daftar persiapan dibangkitkan ketika trip belum punya item',

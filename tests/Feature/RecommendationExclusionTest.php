@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\RouteFitLabel;
 use App\Models\Checkpoint;
 use App\Models\DataSource;
 use App\Models\HikingGoal;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Services\RouteFitService;
 use App\Services\TrailFitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -96,26 +98,25 @@ class RecommendationExclusionTest extends TestCase
     /**
      * Kontrak antarmuka Jelajah, diuji pada halaman sungguhan dan bukan pada servisnya.
      *
-     * Baris jalur merender fit-line kapan pun ringkasannya ada, tanpa memeriksa
-     * `eligible`. Yang menjaga kontraknya adalah label yang bernilai null untuk jalur
-     * tak lengkap, sehingga lencananya jatuh ke "Belum dinilai" (kata tunggal untuk
-     * UNKNOWN sejak perbaikan akhir W1, M-5; sebelumnya "Tidak dinilai"). Itu perilaku
-     * yang benar, tetapi selama ini tidak ada test yang menguncinya: satu perubahan pada
-     * fit-badge dapat memulihkan label publik tanpa ada yang menyadarinya.
+     * Kartu merender labelnya kapan pun ringkasannya ada. Yang menjaga kontraknya adalah
+     * label yang bernilai null untuk jalur tak lengkap, sehingga lencananya jatuh ke kata
+     * UNKNOWN dari RouteFitLabel ("Belum dinilai", M-5 W1), dan jalur itu tidak dihitung
+     * pada pilihan saringan kecocokan mana pun. Sejak W3 halaman juga menyebut ketiga label
+     * sebagai pilihan saringan, jadi pemeriksaannya pada props kartu, bukan pada seluruh HTML.
      */
     public function test_jelajah_shows_no_public_fit_label_for_an_incomplete_trail(): void
     {
         $user = $this->hiker();
         $cacat = $this->legacyIncompletePublishedTrail();
 
-        $halaman = $this->actingAs($user)->get(route('trails.index'));
-
-        $halaman->assertOk()
-            ->assertSee($cacat->name)
-            ->assertDontSee('Cocok')
-            ->assertDontSee('Perlu persiapan')
-            ->assertDontSee('Kurang cocok')
-            ->assertSee('Belum dinilai');
+        $this->actingAs($user)->get(route('trails.index'))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('trails.data.0.id', $cacat->id)
+                ->where('trails.data.0.fit.label', null)
+                ->where('trails.data.0.fit.labelText', RouteFitLabel::UNRATED_TEXT)
+                ->where('trails.data.0.fit.layak', false)
+                ->where('atribut.0.kecocokan', null)
+                ->where('saringan.kecocokan', fn ($pilihan) => collect($pilihan)->sum('jumlah') === 0));
     }
 
     /**
@@ -126,11 +127,11 @@ class RecommendationExclusionTest extends TestCase
         $user = $this->hiker();
         $lengkap = $this->completeTrail();
 
-        $halaman = $this->actingAs($user)->get(route('trails.index'));
-
-        $halaman->assertOk()
-            ->assertSee($lengkap->name)
-            ->assertDontSee('Belum dinilai');
+        $this->actingAs($user)->get(route('trails.index'))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('trails.data.0.id', $lengkap->id)
+                ->where('trails.data.0.fit.label', fn (?string $label) => in_array($label, ['COCOK', 'PERLU_PERSIAPAN', 'KURANG_COCOK'], true))
+                ->where('trails.data.0.fit.labelText', fn (string $teks) => $teks !== RouteFitLabel::UNRATED_TEXT));
     }
 
     /**

@@ -58,7 +58,9 @@ class TrailDetailMapTest extends TestCase
 
     /**
      * Pos punya koordinat meski garis jalurnya belum ada, dan titik-titik itu sendiri
-     * sudah cukup untuk menggambarkan jalurnya secara kasar.
+     * sudah cukup untuk menggambarkan jalurnya secara kasar. Sejak tinjauan akhir W3 (T6-M3,
+     * spec v3 bagian 6.4) peta seperti itu tetap menyebut bahwa garis rute belum dimasukkan,
+     * jadi penanda pos tidak terbaca sebagai rute yang sudah tergambar.
      */
     public function test_checkpoints_alone_already_put_the_trail_on_a_map(): void
     {
@@ -73,8 +75,9 @@ class TrailDetailMapTest extends TestCase
 
         $peta = $this->peta($trail);
 
-        $this->assertSame([['lng' => 110.44, 'lat' => -7.45, 'label' => '1. Pos Bayangan']], $peta['penanda']);
+        $this->assertSame([['lng' => 110.44, 'lat' => -7.45, 'label' => '1. Pos Bayangan', 'urutan' => 1, 'aksen' => null]], $peta['penanda']);
         $this->assertStringContainsString('petaJalur.penanda.length > 0', File::get(resource_path('js/pages/Trails/Show.tsx')));
+        $this->assertMatchesRegularExpression('/\{data\.geometry \? null : \(\s*<p[^>]*>\s*<span className="font-bold text-primary">Garis rute belum dimasukkan\.<\/span>/', $this->sumberPeta());
     }
 
     /**
@@ -108,7 +111,7 @@ class TrailDetailMapTest extends TestCase
             $this->assertNull($peta['geometry']);
         }
 
-        $this->assertStringContainsString('Garis jalur ini belum dimasukkan', File::get(resource_path('js/pages/Trails/Show.tsx')));
+        $this->assertStringContainsString('<span className="font-bold text-primary">Garis rute belum dimasukkan.</span>', File::get(resource_path('js/pages/Trails/Show.tsx')));
     }
 
     /**
@@ -130,8 +133,8 @@ class TrailDetailMapTest extends TestCase
 
         $props = $this->actingAs(User::factory()->create())->get(route('trails.show', $trail))->viewData('page')['props'];
 
-        $this->assertContains('Pos 1 Watu Gede', array_column($props['pos'], 'name'));
-        $this->assertContains('Pos 2 Sabana', array_column($props['pos'], 'name'));
+        $this->assertContains('Pos 1 Watu Gede', array_column($props['pos'], 'nama'));
+        $this->assertContains('Pos 2 Sabana', array_column($props['pos'], 'nama'));
         $this->assertStringContainsString('<span className="sr-only">{penanda.map((p) => p.label)', $this->sumberPeta());
     }
 }

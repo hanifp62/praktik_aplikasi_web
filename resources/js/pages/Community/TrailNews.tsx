@@ -5,7 +5,8 @@ import type { ButirKomunitas, ButirResmi, CuacaGunung } from '@/components/commu
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { LabelSumber } from '@/components/trails/LabelSumber';
+import { StatusAkses } from '@/components/trails/StatusAkses';
 import { Tautan } from '@/components/ui/Tautan';
 import { AppLayout } from '@/layouts/AppLayout';
 import { dashboard } from '@/routes';
@@ -64,7 +65,7 @@ export default function TrailNews() {
                         <section aria-labelledby="kabar-resmi">
                             <h2 id="kabar-resmi" className="scroll-mt-4 text-lg font-semibold text-primary">Status resmi</h2>
                             <p className="mt-1 max-w-prose text-sm text-secondary">
-                                Status dicatat beserta sumber dan tanggalnya. Selama belum ada keterangan resmi, status ditampilkan sebagai belum diketahui, bukan ditebak sebagai terbuka.
+                                Status dicatat beserta sumber dan tanggalnya. Selama belum ada keterangan resmi, status ditampilkan sebagai belum diketahui, bukan ditebak sebagai terbuka. Status resmi menjelaskan ketentuan pengelola, bukan jaminan keselamatan.
                             </p>
                             {resmi.length === 0 ? (
                                 <p className={kosong}>
@@ -142,13 +143,13 @@ export default function TrailNews() {
     );
 }
 
-/** OFFICIAL: keterangan pengelola kawasan (§92), ditandai label "Resmi" bergaris kontrol. */
+/** Label sumber mengikuti jenis catatannya (R-009): "Resmi" hanya untuk OFFICIAL. */
 function ButirStatus({ butir }: { butir: ButirResmi }) {
     return (
         <li className="rounded-lg border border-subtle bg-surface p-4">
             <div className="flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center rounded-control border border-control px-2 py-0.5 text-xs font-medium text-primary">Resmi</span>
-                <StatusBadge status={butir.status} text={butir.statusLabel} scope={butir.cakupan} />
+                <LabelSumber jenis={butir.jenisSumber} />
+                <StatusAkses nilai={butir.status} label={butir.statusLabel} cakupan={butir.cakupan} />
             </div>
             <p className="mt-2 text-sm font-medium text-primary">{butir.judul}</p>
             {butir.alasan ? <p className="mt-1 text-sm text-secondary">{butir.alasan}</p> : null}

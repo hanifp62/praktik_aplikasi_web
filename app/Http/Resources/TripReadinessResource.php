@@ -47,7 +47,7 @@ class TripReadinessResource extends JsonResource
                 : 'Belum ada item persiapan.',
             'kritisBelum' => count($persiapan['critical_outstanding'] ?? []),
             'statusResmi' => [
-                // StatusBadge hanya mengenal tiga status resmi; UNKNOWN tampil sebagai
+                // StatusAkses hanya mengenal tiga status resmi; UNKNOWN tampil sebagai
                 // "Belum diketahui", bukan diperlakukan sebagai buruk (R-006).
                 'status' => $status === OfficialStatusValue::UNKNOWN ? null : $status->value,
                 'label' => $status->label(),

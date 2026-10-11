@@ -68,7 +68,7 @@ class ProgressLadderOnTrailDetailTest extends TestCase
             ->get(route('trails.show', $kandidat))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('fit.tangga', fn ($kalimat) => str_contains((string) $kalimat, 'di atas tanjakan terberat yang pernah Anda tuntaskan')));
+                ->where('kecocokan.tangga', fn ($kalimat) => str_contains((string) $kalimat, 'di atas tanjakan terberat yang pernah Anda tuntaskan')));
     }
 
     /**
@@ -85,6 +85,6 @@ class ProgressLadderOnTrailDetailTest extends TestCase
         $this->actingAs($user)
             ->get(route('trails.show', $kandidat))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('fit.tangga', null));
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('kecocokan.tangga', null));
     }
 }

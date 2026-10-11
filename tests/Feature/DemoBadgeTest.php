@@ -50,6 +50,20 @@ class DemoBadgeTest extends TestCase
         $this->assertStringContainsString('<span className="sr-only">: isi halaman ini bukan data sungguhan</span>', $lencana);
     }
 
+    /**
+     * Temuan tangkapan W3 butir 5 (ruling W3-G1 butir e, DK-35): halaman publik tautan
+     * bagikan tidak lewat kerangka berkepala (ia hanya lockup dan konten), jadi butir di
+     * atas tidak mencakupnya. Diperiksa terpisah supaya data contoh di tautan bagikan tidak
+     * pernah terbaca sebagai data sungguhan oleh pembaca tanpa akun.
+     */
+    public function test_the_shared_comparison_page_mounts_the_badge_too(): void
+    {
+        $isi = File::get(resource_path('js/pages/Public/SharedComparison.tsx'));
+
+        $this->assertMatchesRegularExpression("/import \{ LencanaDataContoh \} from '@\/components\/ui\/LencanaDataContoh';/", $isi);
+        $this->assertStringContainsString('<LencanaDataContoh />', $isi);
+    }
+
     public function test_the_setting_is_off_unless_asked_for(): void
     {
         $this->assertMatchesRegularExpression('/^APP_DEMO=false$/m', File::get(base_path('.env.example')));

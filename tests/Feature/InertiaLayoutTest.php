@@ -29,12 +29,16 @@ class InertiaLayoutTest extends TestCase
         $halaman = File::get(resource_path('js/pages/Trails/Index.tsx'));
         $this->assertSame(1, substr_count($halaman, '<PageHeader ') + substr_count($halaman, '<h1'), 'Jelajah harus punya tepat satu h1.');
 
-        $form = File::get(resource_path('js/components/trails/FilterForm.tsx'));
-        preg_match_all('/<(?:TextInput|Select)\s(?:[^>]*\s)?id="([^"]+)"/', $form, $kontrol);
-        $this->assertNotEmpty($kontrol[1]);
+        // Isian Jelajah: rentang tanjakan di saringan dan kotak cari. id berupa ekspresi
+        // useId, jadi label dicocokkan dengan ekspresi yang sama persis.
+        foreach (['js/components/trails/jelajah/SaringanJelajah.tsx' => 2, 'js/components/trails/jelajah/KotakCari.tsx' => 1] as $berkas => $jumlah) {
+            $form = File::get(resource_path($berkas));
+            preg_match_all('/<(?:TextInput|Select|input)\s(?:[^>]*\s)?id=(\{[^}]*\}\}|\{[^}]+\}|"[^"]+")/', $form, $kontrol);
+            $this->assertCount($jumlah, $kontrol[1], $berkas);
 
-        foreach ($kontrol[1] as $id) {
-            $this->assertStringContainsString('htmlFor="'.$id.'"', $form, "Kontrol #{$id} tanpa label.");
+            foreach ($kontrol[1] as $id) {
+                $this->assertStringContainsString('htmlFor='.$id, $form, "Kontrol {$id} di {$berkas} tanpa label.");
+            }
         }
     }
 
@@ -140,7 +144,8 @@ class InertiaLayoutTest extends TestCase
      * Diperbarui perbaikan akhir W2 (F-1, tinjauan akhir I-1a): scroll-padding-bottom juga
      * memperhitungkan --baki-banding, yang ditulis ConsiderationTray.tsx ke <html> selagi baki
      * banding Jelajah tampil; tanpa itu, di 360 px setiap hentian Tab di dekat tepi bawah
-     * berhenti tertutup penuh oleh baki.
+     * berhenti tertutup penuh oleh baki. Diperbarui W3: baki itu dilepas bersama
+     * --baki-banding, jadi scroll-padding-bottom kembali ke navigasi bawah dan bar aksi.
      *
      * Diperbarui perbaikan akhir W2 (F-4, tinjauan akhir M-2): --kepala-atas mencerminkan
      * W2-2b. Mulai 1024 px tinggi header menjadi bawaan :root dan baru dinolkan lewat
@@ -156,7 +161,7 @@ class InertiaLayoutTest extends TestCase
 
         $this->assertStringContainsString('--nav-bawah: calc(var(--bilah-tab) + var(--strip-pendakian));', $css);
         $this->assertStringContainsString('scroll-padding-top: calc(var(--kepala-atas) + var(--pesan-jaringan, 0px) + 0.5rem);', $css, 'scroll-padding-top harus memperhitungkan tinggi pesan jaringan (ruling W2-5a).');
-        $this->assertStringContainsString('scroll-padding-bottom: calc(var(--nav-bawah) + var(--bar-aksi, 0px) + var(--baki-banding, 0px) + 1.25rem);', $css, 'scroll-padding-bottom harus memperhitungkan tinggi bar aksi dan baki banding.');
+        $this->assertStringContainsString('scroll-padding-bottom: calc(var(--nav-bawah) + var(--bar-aksi, 0px) + 1.25rem);', $css, 'scroll-padding-bottom harus memperhitungkan tinggi bar aksi.');
         $this->assertMatchesRegularExpression('/:root \{\s*--bilah-tab: calc\(4\.375rem \+ max\(env\(safe-area-inset-bottom, 0px\), 0\.75rem\)\);/', $css, 'Tinggi bilah tab harus jadi bawaan supaya peramban tanpa :has() kelebihan ruang, bukan kehilangan ruang.');
         $this->assertMatchesRegularExpression('/:root:not\(:has\(nav\[data-bilah-tab\]\)\) \{\s*--bilah-tab: env\(safe-area-inset-bottom, 0px\);\s*\}/', $css, 'Bilah tab dinolkan hanya ketika benar-benar tidak ada di halaman.');
         $this->assertMatchesRegularExpression('/@media \(min-width: 1024px\) \{\s*:root \{\s*--kepala-atas: 4\.25rem;\s*\}\s*:root:not\(:has\(\[data-kepala-lebar\]\)\) \{\s*--kepala-atas: 0px;\s*\}\s*:root:has\(nav\[data-bilah-tab\]\) \{\s*--bilah-tab: env\(safe-area-inset-bottom, 0px\);\s*\}/', $css, 'Mulai 1024 px tinggi header harus jadi bawaan, dinolkan hanya ketika header tidak ada (cermin W2-2b).');
@@ -165,30 +170,40 @@ class InertiaLayoutTest extends TestCase
     }
 
     /**
-     * Perbaikan akhir W2 (F-1, tinjauan akhir I-1a): baki banding Jelajah menempel di tepi
-     * bawah seperti strip pendakian dan bar aksi, tetapi semula di luar sistem jarak lapisan,
-     * sehingga fokus papan ketik di 360 px berhenti tertutup penuh di baliknya (WCAG 2.4.11).
-     * Pola strip dipakai ulang (ActiveHikeStripTest): tinggi yang membungkus diukur lewat
-     * ResizeObserver, ditulis ke --baki-banding selagi baki tampil, dan dihapus saat baki
-     * hilang (simpanan habis, jadi efeknya berjalan ulang menurut tampil) atau dilepas.
+     * Setiap lapisan bawah yang dihitung jarak lapisan mengukur dirinya sendiri (perbaikan
+     * akhir W2, F-1, tinjauan akhir I-1a): tinggi yang membungkus diukur lewat ResizeObserver,
+     * ditulis ke <html> selagi lapisannya tampil, dan dihapus saat hilang atau dilepas, supaya
+     * fokus papan ketik di 360 px tidak berhenti tertutup di baliknya (WCAG 2.4.11).
      *
-     * Kelas sm: yang menanggung safe area sendiri dibuang: titik henti kerangka kini lg
-     * (W2-K6), dan --nav-bawah selalu sudah memuat safe area, lewat tinggi bilah tab atau
-     * lewat --bilah-tab yang bernilai safe area ketika bilahnya tidak ada atau tersembunyi.
+     * Diperbarui W3: baki banding Jelajah dilepas (prototype 02 dan 15 tanpa baki; hitungan dan
+     * pintu Simpanan ada di kepala halaman), dan --baki-banding ikut dilepas dari
+     * scroll-padding dan jarak toast. Niat test semula dijaga dari dua arah: setiap variabel
+     * lapisan yang dibaca scroll-padding-bottom dan jarak bawah toast punya penulis dan
+     * penghapus, dan tidak ada variabel yang tertinggal tanpa penulis.
      */
-    public function test_the_comparison_tray_measures_itself_like_the_other_bottom_layers(): void
+    public function test_every_bottom_layer_the_spacing_counts_measures_itself(): void
     {
-        $baki = File::get(resource_path('js/components/trails/ConsiderationTray.tsx'));
+        $css = File::get(resource_path('css/app.css'));
+        $toast = File::get(resource_path('js/components/ui/ToastUrungkan.tsx'));
 
-        $this->assertStringContainsString('<div ref={wadah} className="sticky bottom-[var(--nav-bawah,0px)] z-30 ', $baki);
-        $this->assertStringContainsString("akar.style.setProperty('--baki-banding', `\${elemen.offsetHeight}px`)", $baki, 'Tinggi baki yang membungkus diukur, bukan ditebak.');
-        $this->assertStringContainsString('new ResizeObserver(ukur)', $baki);
-        $this->assertMatchesRegularExpression("/akar\.style\.removeProperty\('--baki-banding'\);\s*\};\s*\}, \[tampil\]\);/", $baki, 'Variabel dihapus saat baki hilang atau dilepas, bukan tertinggal sesudah simpanan habis.');
+        preg_match('/scroll-padding-bottom: ([^;]+);/', $css, $jarak);
+        preg_match('/bottom-\[(calc\([^\]]+\))\] z-40/', $toast, $jarakToast);
+        preg_match_all('/var\((--[a-z-]+)/', ($jarak[1] ?? '').' '.($jarakToast[1] ?? ''), $dibaca);
 
-        preg_match('/<div ref=\{wadah\} className="([^"]*)"/', $baki, $kelas);
+        // Diturunkan app.css dari keberadaan elemen, bukan hanya diukur komponennya.
+        $dariCss = ['--nav-bawah', '--bilah-tab', '--strip-pendakian'];
+        $diukur = array_values(array_diff(array_unique($dibaca[1]), $dariCss));
 
-        $this->assertStringNotContainsString('sm:', $kelas[1] ?? '', 'Baki tidak lagi berasumsi navigasi bawah hilang mulai 640 px.');
-        $this->assertStringNotContainsString('safe-area-inset-bottom', $kelas[1] ?? '', 'Safe area sudah dimuat --nav-bawah; baki tidak menanggungnya dua kali.');
+        $this->assertSame(['--bar-aksi'], $diukur, 'Lapisan bawah yang dihitung berubah; pastikan setiap lapisan baru mengukur dirinya.');
+
+        $js = collect(File::allFiles(resource_path('js')))->map(fn ($berkas): string => $berkas->getContents())->implode("\n");
+
+        foreach ($diukur as $variabel) {
+            $this->assertStringContainsString("setProperty('{$variabel}'", $js, "{$variabel} dibaca tanpa penulis.");
+            $this->assertStringContainsString("removeProperty('{$variabel}')", $js, "{$variabel} tidak pernah dihapus.");
+        }
+
+        $this->assertStringNotContainsString('--baki-banding', $css.$js, 'Baki banding Jelajah sudah dilepas W3; variabelnya tidak boleh tertinggal tanpa penulis.');
     }
 
     /**

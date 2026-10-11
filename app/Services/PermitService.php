@@ -30,12 +30,12 @@ class PermitService
     {
         return PermitRequirement::query()
             ->where('trail_id', $trail->id)
-            ->latest('verified_at')
+            ->terverifikasiDulu()
             ->first()
             ?? PermitRequirement::query()
                 ->whereNull('trail_id')
                 ->where('mountain_id', $trail->mountain_id)
-                ->latest('verified_at')
+                ->terverifikasiDulu()
                 ->first();
     }
 
@@ -62,7 +62,7 @@ class PermitService
                 $query->whereIn('trail_id', $trails->pluck('id'))
                     ->orWhereIn('mountain_id', $trails->pluck('mountain_id')->filter()->unique());
             })
-            ->orderByDesc('verified_at')
+            ->terverifikasiDulu()
             ->get();
 
         foreach ($trails as $trail) {

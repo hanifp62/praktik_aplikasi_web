@@ -14,7 +14,7 @@ memastikan setiap tabel yang dibuat migrasi tercantum di sini. Model domain dan 
 | Otoritas dan sumber data | `data_sources`, `authorities`, `authority_mountain`, `expert_credentials`, `credential_mountain` | Hierarki otoritas (R-009) |
 | Kondisi dan kepercayaan data | `official_statuses`, `weather_snapshots`, `trail_condition_reports`, `report_thanks`, `permit_requirements`, `mountain_follows` | Laporan komunitas tidak menimpa status resmi (R-010); cuaca bersumber dan berkesegaran (R-013) |
 | Route Fit dan rekomendasi | `recommendation_rules`, `recommendation_runs`, `recommendation_results` | Skor internal tidak pernah keluar dari server (BR-09) |
-| Pertimbangkan | `trail_considerations` | Simpanan pribadi dan catatannya (FR-22) |
+| Pertimbangkan | `trail_considerations`, `comparison_shares` | Simpanan pribadi dan catatannya (FR-22); tautan bagikan perbandingan, hanya hash tokennya yang disimpan (FR-23) |
 | Rencana dan persiapan | `hiking_goals`, `trip_plans`, `trip_reminders`, `preparation_templates`, `preparation_items`, `trip_preparation_items`, `readiness_checks`, `user_owned_items` | Kesiapan adalah pendukung keputusan (R-014) |
 | Pendakian dan progres | `hiking_sessions`, `hike_track_points`, `hiking_history`, `personal_targets` | Lokasi presisi privat secara bawaan (BR-13) |
 | Tata kelola dan operasi | `moderation_actions`, `audit_logs`, `analytics_events`, `usability_sessions`, `scheduled_task_runs` | Jejak audit mencatat nilai lama dan nilai baru |
@@ -44,7 +44,7 @@ Keadaan per 26 September 2026: dari tabel yang dibuat sesudah migrasi itu, hanya
 `report_thanks`, `mountain_follows`, `personal_targets`, `user_owned_items`) hanya dilindungi
 pencabutan hak itu; lapis kedua untuk mereka menunggu keputusan pemilik (spec v3 bagian 15, Q22).
 Migrasi baru yang membuat tabel wajib menyalakan RLS pada PostgreSQL mengikuti pola
-`2026_09_25_000918_create_trip_reminders_table`.
+`2026_09_25_000918_create_trip_reminders_table`; `comparison_shares` (W3) mengikutinya.
 
 ## Kebijakan migrasi
 

@@ -12,6 +12,7 @@ use App\Models\Mountain;
 use App\Models\OfficialStatus;
 use App\Models\PermitRequirement;
 use App\Models\Trail;
+use App\Models\TrailConditionReport;
 use App\Models\TripPlan;
 use App\Models\TripReminder;
 use App\Models\User;
@@ -98,6 +99,8 @@ class DemoSeederTest extends TestCase
             ...PermitRequirement::pluck('authority')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA))->all(),
             ...PermitRequirement::whereNotNull('source')->pluck('source')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA))->all(),
             ...PermitRequirement::whereNotNull('notes')->pluck('notes')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA.'.'))->all(),
+            // W3: laporan kondisi contoh untuk halaman gunung dan rincian jalur.
+            ...TrailConditionReport::pluck('note')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA.'.'))->all(),
         ];
 
         $this->assertSame([], $tanpaPenanda);

@@ -31,13 +31,16 @@ use App\Http\Controllers\PublicTrailController;
 use App\Http\Controllers\Recommendations\RecommendationController;
 use App\Http\Controllers\ReportPhotoController;
 use App\Http\Controllers\ThemePreferenceController;
+use App\Http\Controllers\Trails\ComparisonShareController;
 use App\Http\Controllers\Trails\ConsiderationController;
 use App\Http\Controllers\Trails\MountainFollowController;
+use App\Http\Controllers\Trails\MountainPageController;
 use App\Http\Controllers\Trails\ReportThanksController;
 use App\Http\Controllers\Trails\RouteComparisonController;
 use App\Http\Controllers\Trails\SavedRoutesController;
 use App\Http\Controllers\Trails\SavedTrailNoteController;
 use App\Http\Controllers\Trails\TrailDetailController;
+use App\Http\Controllers\Trails\TrailFitAssessmentController;
 use App\Http\Controllers\Trails\TrailIndexController;
 use App\Http\Controllers\Trips\HikeModeController;
 use App\Http\Controllers\Trips\PreparationController;
@@ -86,6 +89,17 @@ Route::post('tampilan', [DisplayPreferenceController::class, 'store'])
 Route::get('pendakian/{trail:slug}', [PublicTrailController::class, 'show'])->name('public.trail');
 Route::get('sitemap.xml', [PublicTrailController::class, 'sitemap'])->name('public.sitemap');
 
+/*
+ * Tautan bagikan perbandingan (FR-23): dibuka tanpa akun, hanya membaca, tidak diindeks,
+ * dan dibatasi laju per alamat dengan hitungannya sendiri (awalan kunci tautan-buka), jadi
+ * tidak berbagi kuota dengan rute publik lain yang memakai batas yang sama. Token 32
+ * karakter base64url; bentuk lain tidak pernah sampai ke controller.
+ */
+Route::get('b/{token}', [ComparisonShareController::class, 'show'])
+    ->where('token', '[A-Za-z0-9_-]{32}')
+    ->middleware('throttle:'.config('hiking.share_links.views_per_minute').',1,tautan-buka')
+    ->name('shares.show');
+
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', DashboardController::class)->middleware('verified')->name('dashboard');
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile');
@@ -105,20 +119,33 @@ Route::middleware(['auth'])->group(function () {
     Route::get('trails', TrailIndexController::class)->name('trails.index');
     Route::post('trails/{trail}/timbang', [ConsiderationController::class, 'toggle'])->name('trails.timbang');
     Route::get('trails/saved', SavedRoutesController::class)->name('trails.saved');
+    // Id dari rute dibatasi 18 digit, bukan sekadar angka: id yang melampaui bilangan bulat
+    // PHP menjadi TypeError 500 di parameter `int`, bukan 404 (T8-M5 tinjauan akhir W3).
     // Simpanan dan banding (DK-05): menghapus dari simpanan di sini; halaman banding
-    // hanya membaca, jadi tidak punya aksi hapus sendiri.
-    Route::delete('trails/saved/{trail}', [ConsiderationController::class, 'destroy'])->whereNumber('trail')->name('trails.saved.remove');
+    // hanya membaca, jadi tidak punya aksi hapus sendiri. Dibatasi laju seperti tulisan
+    // pribadi lain, dengan hitungannya sendiri supaya Urungkan tidak ikut habis (m4).
+    Route::delete('trails/saved/{trail}', [ConsiderationController::class, 'destroy'])->where('trail', '[0-9]{1,18}')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,hapus-simpanan')->name('trails.saved.remove');
+    // Simpan idempoten (spec v3 bagian 6.2 dan 9.1): tombol simpan dan Urungkan sesudah
+    // "Hapus dari simpanan", yang mengembalikan jalur beserta catatannya.
+    Route::post('trails/saved/{trail}', [ConsiderationController::class, 'store'])->where('trail', '[0-9]{1,18}')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,simpan-jalur')->name('trails.saved.store');
+    // Tautan bagikan perbandingan (FR-23): hanya pemiliknya yang membuat dan mencabut.
+    Route::post('trails/shares', [ComparisonShareController::class, 'store'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,tautan-bagikan')->name('shares.store');
+    Route::delete('trails/shares/{share}', [ComparisonShareController::class, 'destroy'])->where('share', '[0-9]{1,18}')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,tautan-bagikan')->name('shares.destroy');
     // Catatan pribadi pada jalur tersimpan (FR-22). Jalur dari rute dan pemilik dari sesi,
     // tidak pernah dari badan permintaan; dibatasi laju seperti tulisan pribadi lain.
-    Route::put('trails/saved/{trail}/catatan', [SavedTrailNoteController::class, 'update'])->whereNumber('trail')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-simpanan')->name('trails.saved.note.update');
-    Route::delete('trails/saved/{trail}/catatan', [SavedTrailNoteController::class, 'destroy'])->whereNumber('trail')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-simpanan')->name('trails.saved.note.destroy');
+    Route::put('trails/saved/{trail}/catatan', [SavedTrailNoteController::class, 'update'])->where('trail', '[0-9]{1,18}')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-simpanan')->name('trails.saved.note.update');
+    Route::delete('trails/saved/{trail}/catatan', [SavedTrailNoteController::class, 'destroy'])->where('trail', '[0-9]{1,18}')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-simpanan')->name('trails.saved.note.destroy');
     Route::get('trails/compare', [RouteComparisonController::class, 'show'])->name('trails.compare');
     Route::get('trails/{trail:slug}', TrailDetailController::class)->name('trails.show');
+    // Penilaian kecocokan satu jalur (spec v3 bagian 6.5), opsional ?trip= milik pembaca.
+    Route::get('trails/{trail:slug}/kecocokan', TrailFitAssessmentController::class)->name('trails.fit');
 
     // Aksi halaman rinci jalur. Dibatasi laju: keduanya sinyal antarpendaki, dan
     // penulisan berulang tidak menambah arti apa pun.
     Route::post('reports/{report}/thanks', [ReportThanksController::class, 'store'])->middleware('throttle:60,1')->name('reports.thanks');
     Route::post('mountains/{mountain}/follow', [MountainFollowController::class, 'store'])->middleware('throttle:60,1')->name('mountains.follow');
+    // Halaman gunung (DK-44): hub jalur sebuah gunung, hanya untuk pengguna masuk.
+    Route::get('mountains/{mountain:slug}', MountainPageController::class)->name('mountains.show');
 
     Route::get('trips', [TripController::class, 'index'])->name('trips.index');
     Route::get('trips/create', [TripController::class, 'create'])->name('trips.create');

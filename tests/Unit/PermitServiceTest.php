@@ -137,4 +137,45 @@ class PermitServiceTest extends TestCase
         $this->assertStringContainsString('wajib pemandu terdaftar', $summary);
         $this->assertStringContainsString('maksimal 2 hari', $summary);
     }
+
+    /**
+     * Perbaikan 1 W3, P-3 (Important, R-024): `latest('verified_at')` menaruh NULL pertama
+     * di PostgreSQL dan terakhir di SQLite. Sebuah aturan yang belum terverifikasi, walau
+     * dibuat belakangan (id lebih besar), tidak boleh mengalahkan aturan yang sudah
+     * terverifikasi lewat scopeTerverifikasiDulu().
+     */
+    public function test_requirement_for_prefers_a_verified_rule_over_an_unverified_one_created_later(): void
+    {
+        $trail = Trail::factory()->create();
+
+        $terverifikasi = PermitRequirement::factory()->create([
+            'trail_id' => $trail->id, 'authority' => 'Terverifikasi', 'verified_at' => now()->subDays(5),
+        ]);
+        PermitRequirement::factory()->create([
+            'trail_id' => $trail->id, 'authority' => 'Belum terverifikasi', 'verified_at' => null,
+        ]);
+
+        $this->assertSame($terverifikasi->id, app(PermitService::class)->requirementFor($trail)->id);
+    }
+
+    /**
+     * Padanan test di atas untuk versi batch: requirementsForTrails() dipakai TrailFitService
+     * untuk sekumpulan jalur sekaligus, dan wajib menjaga penyelesaian yang sama.
+     */
+    public function test_requirements_for_trails_also_prefers_verified_rules(): void
+    {
+        $mountain = Mountain::factory()->create();
+        $trail = Trail::factory()->for($mountain)->create();
+
+        $terverifikasi = PermitRequirement::factory()->create([
+            'mountain_id' => $mountain->id, 'authority' => 'Terverifikasi', 'verified_at' => now()->subDays(5),
+        ]);
+        PermitRequirement::factory()->create([
+            'mountain_id' => $mountain->id, 'authority' => 'Belum terverifikasi', 'verified_at' => null,
+        ]);
+
+        $hasil = app(PermitService::class)->requirementsForTrails(Trail::whereKey($trail->id)->get());
+
+        $this->assertSame($terverifikasi->id, $hasil[$trail->id]->id);
+    }
 }

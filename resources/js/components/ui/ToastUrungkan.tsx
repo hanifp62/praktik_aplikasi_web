@@ -83,8 +83,8 @@ interface WadahToastProps {
  * dalamnya, fokus kembali ke unsur yang difokus sebelum fokus masuk ke toast, atau ke
  * #konten bila unsur itu sudah tidak ada; tidak ke body. Pengembalian itu menunggu satu
  * bingkai dan dilewati bila pemanggil sudah memindahkan fokus, misalnya ke unsur yang
- * dikembalikan Urungkan. Melayang di atas navigasi bawah, bar aksi (--bar-aksi), dan baki
- * banding Jelajah (--baki-banding), di bawah dialog.
+ * dikembalikan Urungkan. Melayang di atas navigasi bawah dan bar aksi (--bar-aksi), di
+ * bawah dialog.
  *
  * Toast yang ditutup karena pemiliknya dilepas (ruling W2-5i) tidak mengembalikan fokus ke
  * unsur sebelumnya, walau unsur itu masih terpasang. Pemilik yang dilepas biasanya halaman
@@ -95,7 +95,7 @@ interface WadahToastProps {
  */
 export function WadahToast({ toast, onTutup, durasiMs = 8000 }: WadahToastProps) {
     return (
-        <div aria-live="polite" aria-atomic="true" className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-bawah,env(safe-area-inset-bottom))+var(--bar-aksi,0px)+var(--baki-banding,0px)+1rem)] z-40 flex justify-center px-4">
+        <div aria-live="polite" aria-atomic="true" className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-bawah,env(safe-area-inset-bottom))+var(--bar-aksi,0px)+1rem)] z-40 flex justify-center px-4">
             {toast ? <Toast key={toast.id} toast={toast} onTutup={onTutup} durasiMs={durasiMs} /> : null}
         </div>
     );

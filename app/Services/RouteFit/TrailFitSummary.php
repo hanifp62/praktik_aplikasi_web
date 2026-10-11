@@ -13,10 +13,16 @@ use App\Enums\RouteFitLabel;
  */
 readonly class TrailFitSummary
 {
+    /**
+     * @param  array<int, string>  $mengapaSesuai  paling banyak dua kalimat why_it_fits mesin
+     * @param  array<int, string>  $perluDiperhatikan  paling banyak dua kalimat what_to_watch mesin
+     */
     public function __construct(
         public ?RouteFitLabel $label,
         public bool $eligible,
         public string $alasan,
         public bool $denganRencana,
+        public array $mengapaSesuai = [],
+        public array $perluDiperhatikan = [],
     ) {}
 }

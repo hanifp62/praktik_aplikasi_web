@@ -13,8 +13,8 @@ Pendaki mengumpulkan jalur tanpa batas yang berarti, menandai pertimbangannya se
 ## Posisi di loop dan permukaan
 
 - **Loop (§7):** antara menemukan rute dan merencanakan trip.
-- **Tab:** Simpanan di Jelajah (`/trails/saved`); Banding di Trip (`/trails/compare`), sesuai pemetaan permukaan lama "Pertimbangkan" di §145.
-- **Tautan bagikan:** halaman publik baca-saja `/b/{token}` (FR-23), belum dibangun.
+- **Tab:** Simpanan di Jelajah (`/trails/saved`); Banding di Trip (`/trails/compare`), sesuai pemetaan permukaan lama "Pertimbangkan" di §145. Sejak W3 tombol kembali Banding menuju Trip, bukan Simpanan (tinjauan akhir W2, W2-F2).
+- **Tautan bagikan:** halaman publik baca-saja `/b/{token}` (FR-23), dibangun W3; akses tanpa akun masih menunggu persetujuan pemilik (spec v2 P8).
 
 ## Kriteria penerimaan
 
@@ -44,18 +44,18 @@ Pendaki mengumpulkan jalur tanpa batas yang berarti, menandai pertimbangannya se
 | `trail_considerations` | `user_id`, `trail_id`, `note` (paling panjang 500, null bila tidak ada), `created_at` | `create_trail_considerations_table`, `add_note_to_trail_considerations_table` (kemungkinan belum dijalankan di Supabase, INFERENCE, menunggu Q22) |
 | `trails`, `official_statuses` | kolom banding dan status resmi | spesifikasi 01 dan 02 |
 | `config/hiking.php` | `saved_trails.max` (50), `saved_trails.compare_max` (3), `rate_limits.personal_writes_per_minute` (30) | config |
-| Tabel tautan bagikan | hash token, pemilik, daftar jalur, `expires_at` 7 hari, `revoked_at` | usulan spec v3 bagian 9.3; belum ada migrasi |
+| `comparison_shares` | hash token, pemilik, daftar jalur, `expires_at` 7 hari, `revoked_at` | `2026_09_28_000100_create_comparison_shares_table` (W3); diuji SQLite dan PostgreSQL CI, belum dijalankan di Supabase (Q2) |
 
 ## State
 
 | Keadaan | Perilaku yang dituntut | Keadaan sekarang |
 |---|---|---|
-| Belum ada simpanan | Cara menambah dan tautan ke Jelajah | Ada: "Belum ada rute tersimpan" di `resources/js/pages/Trails/Saved.tsx` |
+| Belum ada simpanan | Cara menambah dan tautan ke Jelajah | Ada: "Belum ada jalur tersimpan" dan "Cari jalur di Jelajah" di `resources/js/pages/Trails/Saved.tsx` |
 | Satu simpanan | "Simpan satu jalur lagi untuk membandingkan." tanpa centang | Ada |
 | Jalur ditarik dari terbit | Tetap tampil dengan catatannya, tidak dapat dicentang, alasannya disebut | Ada: `KartuSimpanan.tsx` |
 | Batas banding tercapai | Hitungan dan kalimat batas | Ada: `AksiPilihan.tsx` |
 | Catatan ditolak | Pesan di isian, fokus pindah ke isian | Ada: `InputError` dan `fokusGalat` di `KartuSimpanan.tsx` |
-| Batas laju tercapai | Pesan jujur | Sebagian: server menjawab 429; pesan khusus di kartu menyusul W3 |
+| Batas laju tercapai | Pesan jujur | Sebagian: server menjawab 429; pesan khusus di kartu belum ada (OPEN ISSUE rencana W3) |
 | Banding kosong | Membedakan belum memilih dari belum punya cukup simpanan | Ada: `resources/js/pages/Trails/Compare.tsx` |
 | Pilihan dari tautan lama tidak lengkap | Kalimat di halaman | Ada: `pesan` dirender lewat `Alert` di `Compare.tsx` |
 
@@ -64,34 +64,34 @@ Pendaki mengumpulkan jalur tanpa batas yang berarti, menandai pertimbangannya se
 | Sub-fitur | Status | Bukti |
 |---|---|---|
 | Daftar simpanan | Ada | `app/Http/Controllers/Trails/SavedRoutesController.php`, `resources/js/pages/Trails/Saved.tsx`, `resources/js/components/trails/banding/KartuSimpanan.tsx`, `ConsiderationService::simpanan()`, `tests/Feature/SavedRoutesTest.php` |
-| Pilih untuk banding | Ada (W0) | `resources/js/components/trails/banding/AksiPilihan.tsx`, `resources/js/components/trails/banding/PemilihBanding.tsx`; baki banding mengambang ala prototype 06 menyusul W3 |
-| Bandingkan rute | Ada | `app/Http/Controllers/Trails/RouteComparisonController.php`, `app/Services/Trails/RouteComparisonTable.php`, `resources/js/components/trails/banding/TabelBanding.tsx`, `tests/Feature/RouteComparisonTest.php`, `tests/Feature/ComparisonAsCostTest.php`; profil elevasi skala sama, sakelar "Sorot yang berbeda", dan "Jadikan dasar rencana" berbobot setara menyusul W3 |
+| Pilih untuk banding | Ada (W0, rupa W3) | `resources/js/components/trails/banding/AksiPilihan.tsx`, `resources/js/components/trails/banding/PemilihBanding.tsx`; baki banding mengambang satu baris ala prototype 06 (W3, `tests/Feature/SavedRoutesTest.php`) |
+| Bandingkan rute | Ada | `app/Http/Controllers/Trails/RouteComparisonController.php`, `app/Services/Trails/RouteComparisonTable.php`, `resources/js/components/trails/banding/TabelBanding.tsx`, `tests/Feature/RouteComparisonTest.php`, `tests/Feature/ComparisonAsCostTest.php`; sejak W3 status resmi bersumber, laporan terbaru, izin, profil elevasi skala sama, sakelar "Sorot yang berbeda", dan "Jadikan dasar rencana" berbobot setara |
 | Catatan pribadi (FR-22) | Ada (W0) | Rute `trails.saved.note.update` dan `trails.saved.note.destroy`, `app/Http/Controllers/Trails/SavedTrailNoteController.php`, `app/Http/Requests/Trails/UpdateSavedTrailNoteRequest.php`, `ConsiderationService::simpananMilik()` dan `simpanCatatan()`, `app/Policies/TrailConsiderationPolicy.php`, `tests/Feature/SavedTrailNoteTest.php`. Migrasi kolom `note` kemungkinan belum dijalankan di Supabase (INFERENCE, menunggu Q22) |
-| Bagikan pilihan (FR-23) | Belum ada | Rancangan di spec v3 bagian 9.3; akses tanpa akun menunggu keputusan pemilik (spec v2 P8); tombol bagikan disembunyikan (DK-40) |
+| Bagikan pilihan (FR-23) | Ada (W3), menunggu P8 | `app/Services/Trails/TautanBagikan.php`, `app/Http/Controllers/Trails/ComparisonShareController.php`, `resources/js/components/trails/banding/LembarBagikan.tsx`, `resources/js/pages/Public/SharedComparison.tsx`, `tests/Feature/ComparisonShareTest.php`, `tests/Spatial/ComparisonShareSchemaTest.php`; tombol bagikan tampil di Simpanan dan Banding (DK-40); akses tanpa akun menunggu keputusan pemilik (spec v2 P8) |
 
 ## Task NgodingPakeAI
 
 | # | Task | Peta ke kode | Status kode |
 |---|---|---|---|
 | 1 | Bangun halaman daftar simpanan dengan data tiruan | `Saved.tsx` dengan data nyata | Ada |
-| 2 | Buat kartu jalur tersimpan dengan metadata lengkap | `KartuSimpanan.tsx` di atas `TrailRow` | Ada (W0) |
-| 3 | Tambah tombol simpan di jelajah dan detail | `TrailRow.tsx`, `resources/js/pages/Trails/Show.tsx`, rute `trails.timbang` | Ada |
+| 2 | Buat kartu jalur tersimpan dengan metadata lengkap | `KartuSimpanan.tsx` dengan `AngkaRingkas.tsx` | Ada (W0; `TrailRow` dihapus di gelombang perbaikan akhir W3) |
+| 3 | Tambah tombol simpan di jelajah dan detail | `TombolSimpan.tsx` di `KartuJalur.tsx` dan `resources/js/pages/Trails/Show.tsx`, rute `trails.saved.store` | Ada |
 | 4 | Implementasi hapus simpanan dan empty state | Rute `trails.saved.remove`, `ConsiderationService::remove()` | Ada |
 | 5 | Bangun tabel bandingkan hingga tiga jalur | `TabelBanding.tsx` | Ada; batas 3, bukan 5 (K1) |
 | 6 | Buat pemilih jalur dari daftar simpanan | `AksiPilihan.tsx`, `PemilihBanding.tsx` | Ada (W0) |
 | 7 | Tampilkan keterangan jujur untuk data kosong | `TrailFigures::BELUM` di `RouteComparisonTable::baris()` | Ada |
 | 8 | Buat editor catatan pribadi pada kartu jalur | `KartuSimpanan.tsx` | Ada (W0) |
 | 9 | Tampilkan catatan pribadi di daftar simpanan | Props `trails.*.catatan` | Ada (W0) |
-| 10 | Buat tombol bagikan dan salin tautan | Tidak ada | Belum ada (FR-23) |
-| 11 | Bangun halaman publik hasil bagikan | Tidak ada | Belum ada |
-| 12 | Tangani tampilan tautan kedaluwarsa dan tidak valid | Tidak ada | Belum ada |
+| 10 | Buat tombol bagikan dan salin tautan | `LembarBagikan.tsx` | Ada (W3) |
+| 11 | Bangun halaman publik hasil bagikan | `resources/js/pages/Public/SharedComparison.tsx` | Ada (W3), menunggu P8 |
+| 12 | Tangani tampilan tautan kedaluwarsa dan tidak valid | `ComparisonShareController::show()` menjawab 404 dengan halaman "Tautan tidak berlaku" yang sama untuk tautan kedaluwarsa, dicabut, atau tidak valid | Ada (W3) |
 | 13 | Buat skema dan migrasi jalur simpanan | `create_trail_considerations_table` | Ada |
 | 14 | Buat endpoint CRUD jalur simpanan | Rute `trails.timbang`, `trails.saved`, `trails.saved.remove` | Ada |
 | 15 | Buat skema dan endpoint catatan pribadi | `add_note_to_trail_considerations_table`, rute catatan | Ada (W0); migrasi kemungkinan belum dijalankan di Supabase (INFERENCE, menunggu Q22) |
 | 16 | Buat endpoint agregasi data perbandingan jalur | `RouteComparisonTable::susun()` | Ada |
-| 17 | Buat skema dan endpoint tautan bagikan | Tidak ada | Belum ada |
-| 18 | Buat endpoint publik tautan bagikan | Tidak ada | Belum ada |
-| 19 | Tangani validasi kedaluwarsa tautan bagikan | Tidak ada | Belum ada |
+| 17 | Buat skema dan endpoint tautan bagikan | `comparison_shares`, rute `shares.store` dan `shares.destroy` | Ada (W3); migrasi belum dijalankan di Supabase (Q2) |
+| 18 | Buat endpoint publik tautan bagikan | Rute `shares.show` (`/b/{token}`), noindex dan batas laju per alamat IP | Ada (W3), menunggu P8 |
+| 19 | Tangani validasi kedaluwarsa tautan bagikan | `ComparisonShare::scopeBerlaku()`, `TautanBagikan::buka()` | Ada (W3) |
 
 ## Keputusan dan konflik terkait
 

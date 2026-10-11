@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Enums\CheckpointType;
 use App\Enums\CompletionState;
+use App\Enums\ConditionTag;
 use App\Enums\ExperienceLevel;
+use App\Enums\ModerationStatus;
 use App\Enums\NavigationComplexity;
 use App\Enums\NavigationExperience;
 use App\Enums\OfficialStatusValue;
@@ -25,6 +27,7 @@ use App\Models\Mountain;
 use App\Models\OfficialStatus;
 use App\Models\PermitRequirement;
 use App\Models\Trail;
+use App\Models\TrailConditionReport;
 use App\Models\TrailConsideration;
 use App\Models\TripPlan;
 use App\Models\User;
@@ -43,9 +46,11 @@ use Illuminate\Support\Str;
  * H-1; tiga pendakian selesai; satu trip batal; lima jalur tersimpan; dan satu aturan izin
  * tingkat gunung untuk Gunung Gede (jendela pesan H-30 sampai H-3). Simpanan, pengingat, dan
  * aturan izin mengisi kerangka W2 (hitungan Simpanan dan lembar Pengingat) lewat tabel dan
- * penjadwal yang sama dengan fitur aslinya. Isinya meniru contoh di prototype pemilik supaya
- * tangkapan pratinjau dapat dibandingkan dengan gambar acuannya: tanjakan tertinggi Budi
- * 700 m dari Prau, sehingga Cibodas (1.650 m) menjadi tanjakan terbesarnya.
+ * penjadwal yang sama dengan fitur aslinya. Sejak W3 setiap jalur terbit membawa profil
+ * elevasi, Gunung Gede punya status tingkat gunung, dan satu laporan kondisi termoderasi dari
+ * pendaki contoh kedua. Isinya meniru contoh di prototype pemilik supaya tangkapan pratinjau
+ * dapat dibandingkan dengan gambar acuannya: tanjakan tertinggi Budi 700 m dari Prau,
+ * sehingga Cibodas (1.650 m) menjadi tanjakan terbesarnya.
  *
  * Setiap teks yang dapat terbaca sebagai fakta diawali "DATA CONTOH", dan layout memasang
  * lencana "Data contoh" lewat APP_DEMO. Geometri jalur tidak diisi: kolom geografi hanya
@@ -113,6 +118,8 @@ class DemoSeeder extends Seeder
         $this->trip($budi, $jalur);
         $this->simpanan($budi, $jalur);
         $this->izin($sumber, $jalur);
+        $this->statusGunung($sumber, $jalur);
+        $this->laporan($jalur);
     }
 
     private function pendaki(): User
@@ -327,6 +334,51 @@ class DemoSeeder extends Seeder
     }
 
     /**
+     * Status akses tingkat gunung untuk Gunung Gede (halaman gunung W3): Buka, dengan sumber
+     * dan penanda yang sama dengan status jalurnya, supaya kalimat "status tingkat gunung tidak
+     * berarti semua jalur buka" punya status untuk diterangkan.
+     *
+     * @param  array<string, Trail>  $jalur
+     */
+    private function statusGunung(DataSource $sumber, array $jalur): void
+    {
+        OfficialStatus::create([
+            'statusable_type' => (new Mountain)->getMorphClass(),
+            'statusable_id' => $jalur['gede-via-cibodas']->mountain_id,
+            'scope' => StatusScope::MOUNTAIN->value,
+            'status' => OfficialStatusValue::OPEN->value,
+            'data_source_id' => $sumber->id,
+            'source' => self::PENANDA.', bukan status resmi',
+            'published_at' => now()->subDays(9),
+            'fetched_at' => now()->subDays(9),
+            'effective_at' => now()->subDays(9),
+            'verified_at' => now()->subDays(7),
+        ]);
+    }
+
+    /**
+     * Satu laporan kondisi yang lolos moderasi di Gede via Cibodas, dari pendaki contoh kedua
+     * berinisial (antislop R-23), supaya lapisan komunitas halaman gunung dan rincian jalur
+     * punya isi. Catatannya berpenanda DATA CONTOH.
+     *
+     * @param  array<string, Trail>  $jalur
+     */
+    private function laporan(array $jalur): void
+    {
+        $pelapor = User::create(['name' => 'Sari Wulandari', 'email' => 'sari@contoh.test', 'password' => Str::password(20, symbols: false)]);
+
+        TrailConditionReport::create([
+            'trail_id' => $jalur['gede-via-cibodas']->id,
+            'user_id' => $pelapor->id,
+            'hike_date' => Carbon::parse(Timezone::earliestDateInIndonesia())->subDays(2)->toDateString(),
+            'condition_tags' => [ConditionTag::SLIPPERY->value, ConditionTag::MUDDY->value],
+            'note' => self::PENANDA.'. Licin dan berlumpur antara Air Panas dan Kandang Badak setelah hujan sore.',
+            'moderation_status' => ModerationStatus::APPROVED->value,
+            'moderated_at' => now(),
+        ]);
+    }
+
+    /**
      * Sebelas jalur. Jalur dengan status null belum punya pos dan status resmi, jadi tetap
      * tidak terbit dan tampil sebagai jalur yang datanya belum tersedia.
      *
@@ -365,6 +417,7 @@ class DemoSeeder extends Seeder
                     ['Alun-alun Surya Kencana', CheckpointType::CAMPGROUND, 2750],
                     ['Puncak Gede', CheckpointType::SUMMIT, 2958],
                 ],
+                'profil' => [['km' => 0, 'm' => 1450], ['km' => 2.5, 'm' => 1900], ['km' => 5.0, 'm' => 2750], ['km' => 7.2, 'm' => 2958]],
             ],
             'gede-via-selabintana' => [
                 'gunung' => 'gede', 'nama' => 'Gede via Selabintana', 'jarak' => 11.8, 'naik' => 1900, 'menit' => 660,
@@ -377,6 +430,7 @@ class DemoSeeder extends Seeder
                     ['Alun-alun Surya Kencana', CheckpointType::CAMPGROUND, 2750],
                     ['Puncak Gede', CheckpointType::SUMMIT, 2958],
                 ],
+                'profil' => [['km' => 0, 'm' => 1100], ['km' => 4.0, 'm' => 1700], ['km' => 8.0, 'm' => 2400], ['km' => 10.0, 'm' => 2750], ['km' => 11.8, 'm' => 2958]],
             ],
             'pangrango-via-cibodas' => [
                 'gunung' => 'pangrango', 'nama' => 'Pangrango via Cibodas', 'jarak' => 11.2, 'naik' => 1680, 'menit' => 510,
@@ -389,6 +443,7 @@ class DemoSeeder extends Seeder
                     ['Kandang Badak', CheckpointType::CAMPGROUND, 2395],
                     ['Puncak Pangrango', CheckpointType::SUMMIT, 3019],
                 ],
+                'profil' => [['km' => 0, 'm' => 1340], ['km' => 5.3, 'm' => 2150], ['km' => 7.2, 'm' => 2395], ['km' => 11.2, 'm' => 3019]],
             ],
             'papandayan-via-camp-david' => [
                 'gunung' => 'papandayan', 'nama' => 'Papandayan via Camp David', 'jarak' => 7.4, 'naik' => 610, 'menit' => 270,
@@ -401,6 +456,7 @@ class DemoSeeder extends Seeder
                     ['Pondok Saladah', CheckpointType::CAMPGROUND, 2288],
                     ['Tegal Alun', CheckpointType::POS, 2600],
                 ],
+                'profil' => [['km' => 0, 'm' => 2050], ['km' => 2.5, 'm' => 2288], ['km' => 5.0, 'm' => 2450], ['km' => 7.4, 'm' => 2600]],
             ],
             'batu-via-jonggol' => [
                 'gunung' => 'batu', 'nama' => 'Batu via Jonggol', 'jarak' => 1.6, 'naik' => 280, 'menit' => 90,
@@ -412,6 +468,7 @@ class DemoSeeder extends Seeder
                     ['Basecamp Gunung Batu', CheckpointType::BASECAMP, 600],
                     ['Puncak Gunung Batu', CheckpointType::SUMMIT, 875],
                 ],
+                'profil' => [['km' => 0, 'm' => 600], ['km' => 0.8, 'm' => 760], ['km' => 1.6, 'm' => 875]],
             ],
             'prau-via-wates' => [
                 'gunung' => 'prau', 'nama' => 'Prau via Wates', 'jarak' => 6.1, 'naik' => 700, 'menit' => 270,
@@ -423,6 +480,7 @@ class DemoSeeder extends Seeder
                     ['Basecamp Wates', CheckpointType::BASECAMP, 1890],
                     ['Puncak Prau', CheckpointType::SUMMIT, 2590],
                 ],
+                'profil' => [['km' => 0, 'm' => 1890], ['km' => 2.0, 'm' => 2150], ['km' => 4.0, 'm' => 2400], ['km' => 6.1, 'm' => 2590]],
             ],
             'andong-via-sawit' => [
                 'gunung' => 'andong', 'nama' => 'Andong via Sawit', 'jarak' => 2.8, 'naik' => 380, 'menit' => 120,
@@ -434,6 +492,7 @@ class DemoSeeder extends Seeder
                     ['Basecamp Sawit', CheckpointType::BASECAMP, 1340],
                     ['Puncak Andong', CheckpointType::SUMMIT, 1726],
                 ],
+                'profil' => [['km' => 0, 'm' => 1340], ['km' => 1.4, 'm' => 1550], ['km' => 2.8, 'm' => 1726]],
             ],
             'batur-via-toya-bungkah' => [
                 'gunung' => 'batur', 'nama' => 'Batur via Toya Bungkah', 'jarak' => 4.6, 'naik' => 600, 'menit' => 150,
@@ -445,6 +504,7 @@ class DemoSeeder extends Seeder
                     ['Toya Bungkah', CheckpointType::BASECAMP, 1100],
                     ['Puncak Batur', CheckpointType::SUMMIT, 1717],
                 ],
+                'profil' => [['km' => 0, 'm' => 1100], ['km' => 2.3, 'm' => 1450], ['km' => 4.6, 'm' => 1717]],
             ],
             'rinjani-via-sembalun' => [
                 'gunung' => 'rinjani', 'nama' => 'Rinjani via Sembalun', 'jarak' => 22.5, 'naik' => 2600, 'menit' => 1500,
@@ -457,6 +517,7 @@ class DemoSeeder extends Seeder
                     ['Plawangan Sembalun', CheckpointType::CAMPGROUND, 2639],
                     ['Puncak Rinjani', CheckpointType::SUMMIT, 3726],
                 ],
+                'profil' => [['km' => 0, 'm' => 1150], ['km' => 8.0, 'm' => 1800], ['km' => 15.0, 'm' => 2639], ['km' => 22.5, 'm' => 3726]],
             ],
             'rinjani-via-senaru' => [
                 'gunung' => 'rinjani', 'nama' => 'Rinjani via Senaru', 'jarak' => null, 'naik' => null, 'menit' => null,

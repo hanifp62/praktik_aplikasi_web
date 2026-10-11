@@ -7,6 +7,7 @@ use App\Models\Trail;
 use App\Models\User;
 use App\Services\ConsiderationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia;
@@ -15,9 +16,10 @@ use Tests\TestCase;
 /**
  * Daftar rute tersimpan.
  *
- * Sumbernya simpanan di basis data (trail_considerations), sumber yang sama dengan baki
- * di Jelajah. Versi sebelumnya membaca sesi, sehingga daftarnya kosong lagi setiap kali
- * pendaki keluar: Logout memanggil Session::invalidate().
+ * Sumbernya simpanan di basis data (trail_considerations), sumber yang sama dengan hitungan
+ * Simpanan di kepala halaman dan pilihan bawaan halaman Banding (baki Jelajah lama sudah
+ * diganti tautan Simpanan sejak W3). Versi sebelumnya membaca sesi, sehingga daftarnya
+ * kosong lagi setiap kali pendaki keluar: Logout memanggil Session::invalidate().
  *
  * Halamannya React (Inertia): data diuji lewat props yang dikirim server, dan teks yang
  * dirender klien dijaga dari sumber halamannya.
@@ -44,23 +46,41 @@ class SavedRoutesTest extends TestCase
         return File::get(resource_path($berkas));
     }
 
-    public function test_the_list_shows_each_saved_trail_with_distance_duration_and_difficulty(): void
+    /**
+     * Tiga angka kartu Simpanan (prototype 06): jarak, tanjakan, dan lama naik. Sebelum
+     * tinjauan akhir W3 test ini juga menegaskan `technical` ("difficulty"); kolom itu hanya
+     * dirender TrailRow.tsx, yang dihapus (W3-C8), jadi tidak lagi dikirim (ruling W3-F3, m5)
+     * dan test ini menegaskan ketiadaannya, bukan kata tingkat teknisnya.
+     */
+    public function test_the_list_shows_each_saved_trail_with_its_three_numbers(): void
     {
         $user = User::factory()->create();
         $trail = Trail::factory()->for(Mountain::factory()->create())->easy()->published()->create([
             'name' => 'Jalur Selo',
             'distance_km' => 12.5,
+            'elevation_gain_m' => 1250,
             'estimated_duration_minutes' => 390,
         ]);
         app(ConsiderationService::class)->toggle($user, $trail);
 
         $this->daftar($user)->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Trails/Saved')
-            ->where('title', 'Rute Tersimpan')
+            ->where('title', 'Simpanan')
             ->where('trails.0.name', 'Jalur Selo')
             ->where('trails.0.jarak', '12,5 km')
+            ->where('trails.0.tanjakan', '1.250 m')
             ->where('trails.0.durasi', '6,5 j')
-            ->where('trails.0.technical', 'Rendah'));
+            ->missing('trails.0.technical')
+            ->missing('trails.0.curam')
+            ->missing('trails.0.kemudahan'));
+
+        // T7-M2: angka yang tidak ada dibuang dan setiap angka bernama untuk pembaca layar,
+        // lewat satu komponen yang dipakai juga pratinjau peta Jelajah.
+        $this->assertStringContainsString('<AngkaRingkas jalur={jalur}', $this->sumber('js/components/trails/banding/KartuSimpanan.tsx'));
+        $this->assertStringContainsString('<AngkaRingkas jalur={pratinjau}', $this->sumber('js/components/trails/PetaJelajah.tsx'));
+        $angka = $this->sumber('js/components/trails/AngkaRingkas.tsx');
+        $this->assertStringContainsString(".filter((a) => a.nilai !== '-')", $angka);
+        $this->assertStringContainsString('<span className="sr-only">Jarak </span>', $angka);
     }
 
     /**
@@ -110,8 +130,8 @@ class SavedRoutesTest extends TestCase
     {
         $this->daftar(User::factory()->create())->assertInertia(fn (AssertableInertia $page) => $page->has('trails', 0));
 
-        $this->assertStringContainsString('Belum ada rute tersimpan', $this->sumber());
-        $this->assertStringContainsString('Cari jalur untuk disimpan', $this->sumber());
+        $this->assertStringContainsString('Belum ada jalur tersimpan', $this->sumber());
+        $this->assertStringContainsString('Cari jalur di Jelajah', $this->sumber());
     }
 
     public function test_a_guest_is_redirected_to_the_login_page(): void
@@ -153,7 +173,7 @@ class SavedRoutesTest extends TestCase
             ->has('trails', 2)
             ->where('batas', 50)
             ->where('batasBanding', 3));
-        $this->assertStringContainsString('rute tersimpan, maksimal {batas}.', $this->sumber());
+        $this->assertStringContainsString('`${trails.length} jalur tersimpan, maksimal ${batas}.', $this->sumber());
     }
 
     /**
@@ -174,7 +194,7 @@ class SavedRoutesTest extends TestCase
         $kartu = $this->sumber('js/components/trails/banding/KartuSimpanan.tsx');
         $this->assertStringContainsString('!jalur.terbit', $kartu);
         $this->assertStringContainsString('Jalur ini sedang tidak terbit, jadi tidak dapat dibandingkan.', $kartu);
-        $this->assertStringContainsString('disabled={alasanTidakDapatDipilih !== null}', $kartu);
+        $this->assertStringContainsString('disabled={!jalur.terbit}', $kartu);
         $this->assertStringContainsString('trails.filter((t) => t.terbit)', $this->sumber());
     }
 
@@ -187,9 +207,20 @@ class SavedRoutesTest extends TestCase
     {
         $kartu = $this->sumber('js/components/trails/banding/KartuSimpanan.tsx');
 
-        $this->assertStringContainsString("import { remove } from '@/routes/trails/saved';", $kartu);
+        // Sejak W3 penghapusan lewat TombolSimpan (bentuk "hapus"), rute yang sama dengan Jelajah.
+        $this->assertStringContainsString('bentuk="hapus"', $kartu);
+        $tombol = $this->sumber('js/components/trails/TombolSimpan.tsx');
+        $this->assertStringContainsString("import { remove, store } from '@/routes/trails/saved';", $tombol);
         $this->assertStringNotContainsString('@/routes/trails/compare', $kartu);
         $this->assertStringNotContainsString('@/routes/trails/compare', $this->sumber());
+
+        // Ruling W3-7a: kendali destruktif tidak boleh menumpuk target tautan di sebelahnya,
+        // jadi cabang hapus tidak boleh memakai margin negatif yang menggeser kotak tekannya
+        // ke kiri atas "Lihat rincian" (KartuSimpanan menaruh keduanya sebaris).
+        $mulaiHapus = strpos($tombol, "bentuk === 'hapus'");
+        $this->assertNotFalse($mulaiHapus, 'Cabang bentuk hapus tidak ditemukan.');
+        $akhirHapus = strpos($tombol, ') : bentuk ===', $mulaiHapus);
+        $this->assertStringNotContainsString('-ml-4', substr($tombol, $mulaiHapus, $akhirHapus - $mulaiHapus));
     }
 
     /**
@@ -204,6 +235,48 @@ class SavedRoutesTest extends TestCase
         $this->assertStringContainsString('Pilih minimal 2 jalur untuk membandingkan.', $aksi);
         $this->assertStringContainsString('Batas banding tercapai.', $aksi);
         $this->assertStringContainsString('maks={batasBanding}', $this->sumber());
+    }
+
+    /**
+     * Baki banding di layar sempit adalah ringkasan satu baris (tinjauan akhir W2, W2-F1). Baki
+     * Jelajah lama yang mendaftar semua nama tersimpan membuat lapisan bawah menutup 40 sampai
+     * 57 persen layar 320 sampai 360 px. Baki Simpanan hanya membawa hitungan, ruasnya, pesan
+     * batas, dan satu aksi pada satu waktu; nama jalur yang dipilih sudah terlihat dari centang
+     * di kartunya, jadi tidak diulang dan baki tidak membungkus menjadi daftar.
+     */
+    public function test_the_compare_tray_is_a_one_row_summary_without_names(): void
+    {
+        $aksi = $this->sumber('js/components/trails/banding/AksiPilihan.tsx');
+
+        $this->assertStringContainsString('<div className="flex w-full items-center gap-3">', $aksi);
+        $this->assertStringNotContainsString('flex-wrap', $aksi, 'Baki tidak boleh membungkus aksinya ke baris baru.');
+        $this->assertStringContainsString('dipilih: number[];', $aksi, 'Baki hanya menerima id pilihan, bukan nama.');
+        $this->assertDoesNotMatchRegularExpression('/\{[^}]*\.(?:name|nama)\b/', $aksi, 'Nama jalur tidak diulang di baki.');
+        $this->assertSame(3, substr_count($aksi, 'className="shrink-0"') + substr_count($aksi, 'shrink-0 text-meta'), 'Setiap keadaan menampilkan tepat satu aksi atau petunjuk yang tidak menyusut.');
+        $this->assertStringContainsString('<BarAksi label="Pilihan banding" lebarPenuh>', $this->sumber());
+    }
+
+    /**
+     * T7-M6 (temuan tangkapan W3 butir 8, ruling W3-G1 butir f): isi baki menumpuk di kiri
+     * mulai 640 px (`simpanan-1440-light.webp`) karena anak BarAksi tidak melebar sendiri
+     * walau `.chrome` sudah selebar kartu. `lebarPenuh` pada baki Simpanan membuatnya
+     * mengisi lebar yang tersedia; Fit.tsx dan bar aksi rincian jalur tidak memakainya,
+     * karena isinya kelompok tombol ringkas yang sengaja tidak melebar (bukti T12,
+     * belum diukur untuk keduanya).
+     */
+    public function test_the_compare_tray_fills_the_available_width_from_640px(): void
+    {
+        $bar = File::get(resource_path('js/components/ui/BarAksi.tsx'));
+
+        $this->assertMatchesRegularExpression("/lebarPenuh\?:\s*boolean;/", $bar);
+        $this->assertStringContainsString(
+            "<div className={kelas('flex flex-wrap gap-2 sm:justify-end', lebarPenuh && 'sm:flex-1')}>{children}</div>",
+            $bar
+        );
+
+        $this->assertStringContainsString('<BarAksi label="Pilihan banding" lebarPenuh>', $this->sumber());
+        $this->assertStringNotContainsString('lebarPenuh', File::get(resource_path('js/pages/Trails/Fit.tsx')), 'Fit.tsx sengaja tetap berupa kelompok tombol, bukan baris melebar.');
+        $this->assertStringNotContainsString('lebarPenuh', File::get(resource_path('js/pages/Trails/Show.tsx')), 'Bar aksi rincian jalur sengaja tetap berupa kelompok tombol, bukan baris melebar.');
     }
 
     /**
@@ -233,6 +306,12 @@ class SavedRoutesTest extends TestCase
         $this->daftar($user)->assertInertia(fn (AssertableInertia $page) => $page->has('trails', 1));
         $this->assertStringContainsString('Simpan satu jalur lagi untuk membandingkan.', $this->sumber());
         $this->assertStringContainsString('tersedia >= 2', $this->sumber());
+
+        // T7-M4 dan T7-M5 tinjauan akhir W3: tanpa centang, deskripsi tidak menawarkan "Pilih
+        // sampai N" dan formulir catatan tidak terbungkus kelompok pilihan banding.
+        $this->assertStringContainsString('${tersedia >= 2 ? ` Pilih sampai ${batasBanding} untuk dibandingkan.` : \'\'}', $this->sumber());
+        $this->assertMatchesRegularExpression('/\{tersedia >= 2 \? \(\s*<fieldset>/', $this->sumber());
+        $this->assertStringNotContainsString('penuh', $this->sumber('js/components/trails/banding/KartuSimpanan.tsx'), 'Prop pilihan.penuh tidak pernah dibaca (T7-M3).');
     }
 
     /**
@@ -266,14 +345,18 @@ class SavedRoutesTest extends TestCase
      * Cacat yang pernah ditutup: simpanan tidak dapat dicapai dari menunya sendiri
      * (HANDOVER.md §7). Daftar ini wajib punya pintu dari dua tempat pendaki berada.
      */
-    public function test_the_jelajah_tray_links_to_the_list(): void
+    public function test_jelajah_links_to_the_list(): void
     {
         $user = User::factory()->create();
         app(ConsiderationService::class)->toggle($user, $this->jalur());
 
+        // W3: baki Jelajah diganti tautan Simpanan berhitungan di kepala halaman (ponsel) dan
+        // di header layar lebar (spec v3 bagian 5.2 dan 6.2); pintunya tetap dua.
         $this->actingAs($user)->get(route('trails.index'))->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('ditimbang', 1));
-        $this->assertStringContainsString('href={saved.url()}', $this->sumber('js/components/trails/ConsiderationTray.tsx'));
+            ->where('jumlahSimpanan', 1));
+        $this->assertStringContainsString('aksi={<TautanSimpanan className="lg:hidden" />}', $this->sumber('js/pages/Trails/Index.tsx'));
+        $this->assertStringContainsString('<TautanSimpanan', $this->sumber('js/layouts/KepalaLebar.tsx'));
+        $this->assertStringContainsString('href={saved.url()}', $this->sumber('js/layouts/TautanSimpanan.tsx'));
     }
 
     public function test_the_compare_page_links_to_the_list(): void
@@ -309,7 +392,7 @@ class SavedRoutesTest extends TestCase
         $nama = array_column($this->daftar($user)->viewData('page')['props']['trails'], 'name');
 
         $this->assertSame(['Jalur Tetap'], $nama);
-        $this->assertStringContainsString('remove.url({ trail: ', $this->sumber('js/components/trails/banding/KartuSimpanan.tsx'));
+        $this->assertStringContainsString('remove.url({ trail: ', $this->sumber('js/components/trails/TombolSimpan.tsx'));
     }
 
     /**
@@ -354,5 +437,98 @@ class SavedRoutesTest extends TestCase
         $this->delete(route('trails.saved.remove', $jalur->id))->assertRedirect(route('login'));
 
         $this->assertDatabaseHas('trail_considerations', ['user_id' => $user->id, 'trail_id' => $jalur->id]);
+    }
+
+    /**
+     * Prototype 06: setiap kartu membawa label kecocokan dasar pembacanya, dinilai sekaligus
+     * untuk seluruh simpanan, tanpa skor (BR-09). Jalur yang ditarik dari terbit tidak dinilai.
+     */
+    public function test_each_saved_trail_carries_the_readers_fit_label(): void
+    {
+        $user = User::factory()->create();
+        $user->profile()->create(['experience_level' => 'INTERMEDIATE', 'completed_at' => now()]);
+        $user = $user->fresh();
+        $terbit = $this->jalur();
+        $ditarik = $this->jalur();
+        app(ConsiderationService::class)->toggle($user, $terbit);
+        app(ConsiderationService::class)->toggle($user, $ditarik);
+        $ditarik->forceFill(['is_published' => false])->saveQuietly();
+
+        $trails = collect($this->daftar($user)->viewData('page')['props']['trails'])->keyBy('id');
+
+        $this->assertContains($trails[$terbit->id]['fit']['label'], ['COCOK', 'PERLU_PERSIAPAN', 'KURANG_COCOK']);
+        $this->assertNull($trails[$ditarik->id]['fit']);
+        $this->assertStringNotContainsString('internalScore', json_encode($trails->all()));
+
+        $this->daftar(User::factory()->create())->assertInertia(fn (AssertableInertia $page) => $page->where('kataBelumDinilai', 'Belum dinilai'));
+    }
+
+    /**
+     * Ruling W2-5i: kartu hilang oleh penghapusannya sendiri, jadi halaman yang memiliki toast
+     * Urungkan dan meneruskannya ke kartu.
+     */
+    public function test_the_page_owns_the_undo_toast_for_removals(): void
+    {
+        $this->assertStringContainsString('const { tampilkanToast } = useKerangka();', $this->sumber());
+        $this->assertStringContainsString('tampilkanToast={tampilkanToast}', $this->sumber());
+        $this->assertStringContainsString('tampilkanToast={tampilkanToast} bentuk="hapus"', $this->sumber('js/components/trails/banding/KartuSimpanan.tsx'));
+    }
+
+    /**
+     * Melewati batas banding tidak dimatikan diam-diam: centangnya tetap aktif dan bakinya
+     * menyebut batasnya (prototype 06). Centang memakai KotakCentang berlabel nama jalur di
+     * dalam kelompok yang menyebut batasnya (keputusan koordinator W3 nomor 5). Pesannya
+     * pendek supaya baki tetap satu baris di 320 px (W2-F1).
+     *
+     * Sejak tinjauan akhir W3 (T7-M1) pesannya lewat umumkan(), yang memberi pembeda tak
+     * terlihat pada pengulangan teks yang sama supaya wilayah role="status" mengumumkannya
+     * lagi, dan pesan dikosongkan begitu pilihan berubah dari luar centang.
+     */
+    public function test_going_past_the_comparison_limit_is_explained(): void
+    {
+        $halaman = $this->sumber();
+        $kartu = $this->sumber('js/components/trails/banding/KartuSimpanan.tsx');
+
+        $this->assertStringContainsString('umumkan(`Maksimal ${batasBanding}. Lepas satu dulu.`);', $halaman);
+        $this->assertStringContainsString('setPesan((lama) => (lama === teks ? teks + String.fromCharCode(0xa0) : teks));', $halaman);
+        $this->assertStringContainsString('useEffect(() => setPesan(null), [kunciPilihan]);', $halaman);
+        $this->assertStringContainsString('<AksiPilihan dipilih={pilihanBerlaku} maks={batasBanding} tersedia={tersedia} pesan={pesan} />', $halaman);
+        $this->assertStringContainsString('<legend className="sr-only">Pilih sampai {batasBanding} jalur untuk dibandingkan</legend>', $halaman);
+        $this->assertStringContainsString('<KotakCentang', $kartu);
+        $this->assertStringContainsString('label={jalur.name}', $kartu);
+        $this->assertStringNotContainsString('<Checkbox', $kartu);
+    }
+
+    /**
+     * Anggaran kueri (keputusan koordinator W3 nomor 12): penilaian kecocokan seluruh simpanan
+     * batch, jadi jumlah kueri tidak tumbuh bersama jumlah simpanan.
+     */
+    public function test_the_page_does_not_grow_with_the_number_of_saved_trails(): void
+    {
+        $user = User::factory()->create();
+        $user->profile()->create(['experience_level' => 'INTERMEDIATE', 'completed_at' => now()]);
+        $user = $user->fresh();
+        app(ConsiderationService::class)->toggle($user, $this->jalur());
+        app(ConsiderationService::class)->toggle($user, $this->jalur());
+
+        $this->daftar($user);
+        $sedikit = $this->hitungKueri($user);
+
+        foreach (range(1, 10) as $i) {
+            app(ConsiderationService::class)->toggle($user, $this->jalur());
+        }
+
+        $this->assertSame($sedikit, $this->hitungKueri($user));
+    }
+
+    private function hitungKueri(User $user): int
+    {
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $this->daftar($user);
+        $jumlah = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $jumlah;
     }
 }

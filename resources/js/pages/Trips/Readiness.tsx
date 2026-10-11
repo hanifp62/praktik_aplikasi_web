@@ -3,9 +3,9 @@ import { useState, type ReactNode } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Freshness } from '@/components/ui/Freshness';
+import { Kesegaran } from '@/components/trails/Kesegaran';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { StatusBadge, type StatusResmi } from '@/components/ui/StatusBadge';
+import { StatusAkses, type StatusResmi } from '@/components/trails/StatusAkses';
 import { kelas } from '@/lib/kelas';
 import { AppLayout } from '@/layouts/AppLayout';
 import { preparation, show } from '@/routes/trips';
@@ -102,7 +102,7 @@ export default function Readiness() {
                     </Card>
 
                     <Card title="Status resmi">
-                        <StatusBadge status={check.statusResmi.status} text={check.statusResmi.label} />
+                        <StatusAkses nilai={check.statusResmi.status} label={check.statusResmi.label} />
                         <p className="mt-2 text-xs text-secondary">Sumber: {check.statusResmi.sumber}</p>
                     </Card>
                 </div>
@@ -125,7 +125,7 @@ export default function Readiness() {
                         <>
                             <p className="text-sm text-secondary">Area referensi: {check.cuaca.area}</p>
                             <p className="mt-1 text-xs text-muted">Sumber: {check.cuaca.sumber}</p>
-                            <Freshness rendered={check.cuaca.diperbarui ?? null} stateLabel={check.cuaca.kesegaran} />
+                            <Kesegaran waktu={check.cuaca.diperbarui ?? null} keadaan={check.cuaca.kesegaran} />
                         </>
                     ) : (
                         <p className="text-sm text-secondary">{check.cuaca.pesan}</p>

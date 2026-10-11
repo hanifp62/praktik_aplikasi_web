@@ -24,7 +24,7 @@ class TrailHeaderResource extends JsonResource
     }
 
     /**
-     * @return array{id: int, name: string, description: ?string, mountain: string, mountainId: int, province: ?string, mdpl: ?string}
+     * @return array{id: int, name: string, description: ?string, mountain: string, mountainId: int, mountainUrl: string, province: ?string, mdpl: ?string}
      */
     public function toArray(Request $request): array
     {
@@ -36,6 +36,8 @@ class TrailHeaderResource extends JsonResource
             'description' => $this->description,
             'mountain' => $this->mountain->name,
             'mountainId' => $this->mountain->id,
+            // Remah ke halaman gunung (spec v3 bagian 6.4, DK-44).
+            'mountainUrl' => route('mountains.show', $this->mountain),
             'province' => $this->mountain->province,
             'mdpl' => $mdpl !== null ? number_format((int) $mdpl, 0, ',', '.').' mdpl' : null,
         ];

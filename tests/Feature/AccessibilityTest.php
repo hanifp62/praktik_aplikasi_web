@@ -80,15 +80,20 @@ class AccessibilityTest extends TestCase
      * (WCAG 1.4.1). Kata itu dirender sebagai teks yang terbaca; simbol di sebelahnya
      * hanya penanda visual dan disembunyikan dari pembaca layar supaya tidak dibacakan
      * dua kali.
+     *
+     * Diperbarui W3: FitBadge dan StatusBadge dipindah ke components/trails dan ditulis
+     * ulang (LabelKecocokan, StatusAkses). Ikon lencana kini Icon tanpa label, yang
+     * aria-hidden dengan sendirinya; status dibawa bentuk (DK-32) dan kata.
      */
     public function test_status_is_never_conveyed_by_colour_alone(): void
     {
-        $lencana = File::get(resource_path('js/components/ui/FitBadge.tsx'));
-        $this->assertMatchesRegularExpression('/<span aria-hidden="true">\{gaya\[1\]\}<\/span>\s*\{text\}/', $lencana, 'FitBadge menyampaikan kecocokan hanya lewat warna.');
+        $lencana = File::get(resource_path('js/components/trails/LabelKecocokan.tsx'));
+        $this->assertStringContainsString('<Lencana nada={r.nada} bentuk="pil" ikon={r.ikon} className={className}>', $lencana);
+        $this->assertMatchesRegularExpression('/>\s*\{label\}\s*<\/Lencana>/', $lencana, 'LabelKecocokan menyampaikan kecocokan hanya lewat warna.');
 
-        $status = File::get(resource_path('js/components/ui/StatusBadge.tsx'));
+        $status = File::get(resource_path('js/components/trails/StatusAkses.tsx'));
         $this->assertStringContainsString('<span className="sr-only">Status resmi:</span>', $status);
-        $this->assertStringContainsString("{text ?? 'Belum diketahui'}", $status, 'Status tanpa label harus disebut belum diketahui, bukan kosong.');
+        $this->assertStringContainsString("{label ?? 'Belum diketahui'}", $status, 'Status tanpa label harus disebut belum diketahui, bukan kosong.');
 
         $pesan = File::get(resource_path('js/components/ui/Alert.tsx'));
         $this->assertStringContainsString('<span className="sr-only">{awalan}</span>', $pesan);

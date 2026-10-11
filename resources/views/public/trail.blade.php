@@ -54,7 +54,7 @@
     <body class="min-h-dvh bg-canvas font-sans text-primary antialiased">
         <main class="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
             <header>
-                <p class="text-sm font-medium text-muted">{{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }}</p>
+                <p class="text-kecil font-bold text-secondary">{{ $trail->mountain->name }}, {{ $trail->mountain->province }}</p>
 
                 {{--
                     Data contoh (DK-35, tinjauan W1-9a #4): halaman publik tidak boleh
@@ -69,10 +69,11 @@
                     </span>
                 @endif
 
-                <h1 class="mt-1 text-3xl font-semibold text-primary">{{ $trail->name }}</h1>
+                {{-- Judul v3, sama dengan h1 PageHeader.tsx (W1-F2). --}}
+                <h1 class="mt-1 text-balance text-judul text-primary">{{ $trail->name }}</h1>
 
                 @if ($trail->description)
-                    <p class="mt-3 text-base text-secondary">{{ $trail->description }}</p>
+                    <p class="mt-3 text-isi text-secondary">{{ $trail->description }}</p>
                 @endif
             </header>
 
@@ -83,7 +84,7 @@
                 pernyataan yang keliru tentang hari ini.
             --}}
             <section>
-                <h2 class="text-lg font-semibold text-primary">Karakteristik jalur</h2>
+                <h2 class="text-bagian text-primary">Karakteristik jalur</h2>
 
                 <dl class="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
                     <div>
@@ -119,14 +120,14 @@
 
             @if ($trail->elevation_profile)
                 <section>
-                    <h2 class="text-lg font-semibold text-primary">Profil elevasi</h2>
+                    <h2 class="text-bagian text-primary">Profil elevasi</h2>
                     <x-ui.elevation-profile :profile="$trail->elevation_profile" class="mt-3" />
                 </section>
             @endif
 
             @if ($trail->checkpoints->isNotEmpty())
                 <section>
-                    <h2 class="text-lg font-semibold text-primary">Pos</h2>
+                    <h2 class="text-bagian text-primary">Pos</h2>
                     <x-ui.checkpoint-journey :checkpoints="$trail->checkpoints" class="mt-4 space-y-1" />
                 </section>
             @endif
@@ -137,7 +138,7 @@
                 status terkini dicari dan mengapa ia tidak ada di sini.
             --}}
             <section class="rounded-control border border-warn-300 bg-warn-50 p-4">
-                <h2 class="text-base font-semibold text-warn-900">Sebelum berangkat</h2>
+                <h2 class="text-subjudul text-warn-900">Sebelum berangkat</h2>
                 <p class="mt-2 text-sm text-warn-900">
                     Halaman ini sengaja tidak memuat <strong>status resmi terkini</strong> maupun
                     prakiraan cuaca. Keduanya berubah dari hari ke hari, sedangkan halaman yang
@@ -148,10 +149,7 @@
                     Periksa status resmi dan prakiraan terbaru di dalam aplikasi, atau tanyakan
                     langsung kepada pengelola kawasan dan basecamp.
                 </p>
-                <a href="{{ route('login') }}"
-                    class="mt-3 inline-flex min-h-11 items-center rounded-control bg-brand-700 px-4 py-2 text-sm font-medium text-on-brand hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
-                    Lihat status terkini di aplikasi
-                </a>
+                <x-ui.button :href="route('login')" class="mt-3">Lihat status terkini di aplikasi</x-ui.button>
             </section>
         </main>
     </body>

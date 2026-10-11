@@ -3,7 +3,21 @@ import { kotakDari, tambahPenanda, usePetaDasar, type Titik } from '@/components
 import { WadahPeta } from '@/components/peta/WadahPeta';
 import { warnaToken } from '@/components/peta/warnaToken';
 import type { Penanda } from '@/components/trails/types';
-import type { PetaJalurData } from './types';
+import type { AksenPos, PetaJalurData } from './types';
+
+/**
+ * Penanda pos bernomor, disusun lewat textContent. Pos berkemah dan tujuan membawa aksen
+ * kuning (DESIGN.md, satu aksen), selalu bersama nomornya dan nama pos di keterangan penanda.
+ */
+function elemenPos(urutan: number, aksen: AksenPos): HTMLElement {
+    const el = document.createElement('span');
+    el.className = aksen
+        ? 'flex size-7 items-center justify-center rounded-full border-2 border-primary bg-aksen-pos text-meta font-bold text-aksen-pos-teks shadow-overlay'
+        : 'flex size-7 items-center justify-center rounded-full border-2 border-brand-ink bg-surface text-meta font-bold text-brand-ink shadow-overlay';
+    el.textContent = String(urutan);
+
+    return el;
+}
 
 /** Titik-titik garis dalam urutan jalannya; MultiLineString disambung per bagian. */
 function titikGaris(data: PetaJalurData): Titik[] {
@@ -25,9 +39,9 @@ interface PetaJalurProps {
 }
 
 /**
- * Peta rinci jalur: garis jalur beserta titik awal dan akhirnya, dan penanda pos.
- * Padanan non-visualnya daftar penanda di bawah (sr-only) dan daftar pos di halaman yang
- * sama.
+ * Peta rinci jalur: garis jalur beserta titik awal dan akhirnya, dan penanda pos bernomor
+ * yang sama dengan daftar pos (pos berkemah dan tujuan beraksen). Padanan non-visualnya
+ * daftar penanda di bawah (sr-only) dan daftar pos di halaman yang sama.
  */
 export function PetaJalur({ id, data, label, cadangan = 'Keterangan jalur dan daftar pos di bawah tetap dapat dipakai.' }: PetaJalurProps) {
     const wadah = useRef<HTMLDivElement>(null);
@@ -35,7 +49,7 @@ export function PetaJalur({ id, data, label, cadangan = 'Keterangan jalur dan da
     const awal = garis[0];
     const akhir = garis.length > 1 ? garis[garis.length - 1] : undefined;
 
-    const penanda: Array<Penanda & { ujung?: boolean }> = [
+    const penanda: Array<Penanda & { ujung?: boolean; urutan?: number; aksen?: AksenPos }> = [
         ...(awal ? [{ lng: awal[0], lat: awal[1], label: 'Awal jalur', ujung: true }] : []),
         ...data.penanda,
         ...(akhir ? [{ lng: akhir[0], lat: akhir[1], label: 'Akhir jalur', ujung: true }] : []),
@@ -67,7 +81,14 @@ export function PetaJalur({ id, data, label, cadangan = 'Keterangan jalur dan da
             }
 
             for (const p of penanda) {
-                tambahPenanda(peta, maplibregl, p, p.ujung ? warna : undefined);
+                if (p.urutan !== undefined) {
+                    new maplibregl.Marker({ element: elemenPos(p.urutan, p.aksen ?? null) })
+                        .setLngLat([p.lng, p.lat])
+                        .setPopup(new maplibregl.Popup({ offset: 18 }).setText(p.label))
+                        .addTo(peta);
+                } else {
+                    tambahPenanda(peta, maplibregl, p, p.ujung ? warna : undefined);
+                }
             }
         },
     });
@@ -75,6 +96,13 @@ export function PetaJalur({ id, data, label, cadangan = 'Keterangan jalur dan da
     return (
         <div className="space-y-1">
             <WadahPeta wadahRef={wadah} id={id} label={label} gagal={gagal} ukuran="h-96" cadangan={cadangan} />
+            {/* Pos berkoordinat tanpa garis: peta hanya menandai posnya, dan menunggu garis disebut,
+                bukan dibiarkan terbaca seolah rutenya sudah tergambar (T6-M3, spec v3 bagian 6.4). */}
+            {data.geometry ? null : (
+                <p className="text-meta text-secondary">
+                    <span className="font-bold text-primary">Garis rute belum dimasukkan.</span> Peta hanya menandai pos yang berkoordinat; menunggu kurator Memount memasukkan garisnya.
+                </p>
+            )}
             <span className="sr-only">{penanda.map((p) => p.label).join(', ')}</span>
         </div>
     );

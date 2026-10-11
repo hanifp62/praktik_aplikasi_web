@@ -85,7 +85,9 @@ class TrailNewsService
         $segmen = TrailSegment::query()->whereIn('trail_id', $jalur)->pluck('id');
 
         return OfficialStatus::query()
-            ->with('statusable')
+            // dataSource dimuat sekali untuk seluruh baris (bukan per baris): Kabar
+            // membutuhkan jenis sumbernya untuk memilih label yang benar (P-2, R-009).
+            ->with(['statusable', 'dataSource:id,source_type'])
             ->where(fn ($q) => $q
                 ->orWhere(fn ($w) => $w->where('statusable_type', (new Mountain)->getMorphClass())->whereIn('statusable_id', $gunung))
                 ->orWhere(fn ($w) => $w->where('statusable_type', (new Trail)->getMorphClass())->whereIn('statusable_id', $jalur))

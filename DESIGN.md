@@ -97,9 +97,9 @@ Koreksi terukur atas prototype (DK-31, ditambah satu di gelombang 1): batas kont
 dihitung dengan rumus WCAG 2.x, bukan ditaksir: teks 4,5:1 dan non-teks 3:1 di kedua tema (`ColourContrastTest`).
 
 **Satu aksen.** Kuning pos hanya 1,76:1 di kanvas, jadi tidak pernah membawa arti sendirian: ia selalu menemani bentuk
-dan label. Aksen ini dicadangkan untuk pos berkemah dan tujuan di profil elevasi, peta, dan bilah langkah (W3 sampai
-W5), serta untuk cincin fokus lapangan gelap (W6). Tanda merek tetap `currentColor` dengan token `logo-mark` sampai
-gerbang DK-16.
+dan label. Sejak W3 aksen ini menandai pos berkemah dan tujuan di profil elevasi, peta jalur, dan daftar pos rincian
+jalur, selalu bersama lingkaran bernomor dan kata jenis posnya. Bilah langkah (W4 dan W5) dan cincin fokus lapangan
+gelap (W6) menyusul. Tanda merek tetap `currentColor` dengan token `logo-mark` sampai gerbang DK-16.
 
 **Warna semantik tidak pernah didesaturasi demi keselarasan.** Peringatan, bahaya, dan status membawa arti keselamatan.
 
@@ -234,21 +234,25 @@ berwarna token `bayangan`, hanya untuk lapisan yang melayang: bilah tab, strip p
 dialog, menu avatar, toast, pesan jaringan, dan kartu pratinjau peta. Kaca paling banyak dua elemen per layar lewat
 `.chrome`, bersyarat dan bukan bawaan, tidak pernah di atas peta, kartu, status resmi, laporan komunitas, atau dialog.
 
-Skala lapisan: bar aksi, baki banding, bilah tab, strip pendakian aktif, dan header layar lebar `z-30`; toast dan
+Skala lapisan: bar aksi, bilah tab, strip pendakian aktif, dan header layar lebar `z-30`; toast dan
 pesan jaringan `z-40`. Lembar bawah dan dialog adalah `<dialog>` asli yang dibuka `showModal()`, dan menu avatar adalah
 popover asli, jadi ketiganya tinggal di top layer peramban tanpa z-index. Lembar dan dialog memakai tirai token `scrim`;
 halaman di belakangnya berhenti bergulir, Escape menutup, dan fokus kembali ke pemicunya, atau ke `#konten` bila
 pemicunya tidak ada (W1-K6).
 
 Urutan tumpuk di tepi bawah layar, dari bawah ke atas: bilah tab; strip pendakian aktif selama trip berlangsung; bar
-aksi 0,75rem di atasnya (halaman tugas) atau baki banding tepat di atasnya (Jelajah); lalu toast 1rem di atas navigasi
-ditambah tinggi bar aksi dan baki. `--nav-bawah` adalah jumlah tinggi bilah tab dan strip, diturunkan `app.css`
-dari elemen yang benar-benar ada di halaman (W2). Selama terpasang atau tampil, bar aksi, strip, dan baki banding
-mengukur tingginya sendiri dan menuliskannya ke `--bar-aksi`, `--strip-pendakian`, dan `--baki-banding` di `<html>`.
-Pengganjal bar aksi di bawah isi halaman membaca `--bar-aksi`, dan jarak bawah toast membaca `--nav-bawah`,
-`--bar-aksi`, dan `--baki-banding`, jadi toast tidak menutupi tombol bar aksi, maupun tombol baki selagi baki
-menempel di tepi bawah, juga ketika bar, strip, atau baki membungkus ke dua baris di layar sempit
-(`DesignPrimitivesTest`, `ActiveHikeStripTest`, `InertiaLayoutTest`).
+aksi 0,75rem di atasnya; lalu toast 1rem di atas navigasi ditambah tinggi bar aksi. `--nav-bawah` adalah jumlah tinggi
+bilah tab dan strip, diturunkan `app.css` dari elemen yang benar-benar ada di halaman (W2). Selama terpasang atau
+tampil, bar aksi dan strip mengukur tingginya sendiri dan menuliskannya ke `--bar-aksi` dan `--strip-pendakian` di
+`<html>`. Pengganjal bar aksi di bawah isi halaman membaca `--bar-aksi`, dan jarak bawah toast membaca `--nav-bawah`
+dan `--bar-aksi`, jadi toast tidak menutupi tombol bar aksi, juga ketika bar atau strip membungkus ke dua baris di
+layar sempit (`DesignPrimitivesTest`, `ActiveHikeStripTest`, `InertiaLayoutTest`).
+
+Anggaran tinggi lapisan bawah di 320 sampai 360 px (tinjauan akhir W2, W2-F1 dan W2-F5): bar aksi rincian jalur satu
+baris (simpan berupa tombol ikon 44 px, Banding dan Rencanakan trip berukuran kecil), dan baki banding Simpanan satu
+baris ringkas (hitungan, ruas, pesan pendek, satu aksi) tanpa daftar nama. Jelajah tidak punya baki; hitungan dan
+pintu Simpanan ada di kepala halaman (prototype 02 dan 15). Panel yang menempel di layar lebar (peta dan saringan
+Jelajah, kolom kanan rincian jalur) menyisakan header, pesan jaringan, dan lapisan bawah dari tingginya (W2-F3).
 
 ### Gerak
 
@@ -299,9 +303,17 @@ dan ruling itu yang berlaku).
 | Kelas fokus dan tekan bersama | `gaya.ts` |
 
 Setiap primitif interaktif punya fokus terlihat, target 44 px, dan nama aksesibel, dan labelnya membungkus alih-alih
-terpotong (`DesignPrimitivesTest`, `LongInputLayoutTest`). Enam komponen domain yang masih di folder itu
-(CheckpointJourney, ElevationProfile, FactorBars, FitBadge, StatusBadge, Freshness; 24 impor dan 5 berkas test yang
-menunjuk jalurnya) dipindah W3 bersama penulisan ulangnya.
+terpotong (`DesignPrimitivesTest`, `LongInputLayoutTest`). Komponen domain tidak tinggal di folder itu: W3 memindah
+dan menulis ulang enam yang tersisa ke `resources/js/components/trails/` (FitBadge menjadi `LabelKecocokan`,
+StatusBadge menjadi `StatusAkses`, Freshness menjadi `Kesegaran`, FactorBars menjadi `FaktorKecocokan`,
+ElevationProfile menjadi `ProfilElevasi`, CheckpointJourney menjadi `rinci/DaftarPos`), bersama `LabelSumber` yang
+naik dari `rinci/`.
+
+**Tata bahasa kepercayaan** (W3, spec v3 bagian 7). Label kecocokan selalu ikon dan kata, tanpa angka: tiga label
+publik, ditambah "Belum dinilai" untuk UNKNOWN yang katanya datang dari server (`RouteFitLabel`). Status akses dibawa
+bentuk dan kata, beserta sumber dan kesegarannya. Tanpa catatan yang berlaku, statusnya Belum diketahui, bukan Buka.
+Glyph `resmi` hanya menemani sumber OFFICIAL (`TrustGrammarTest`). Sumber di rincian jalur diurutkan menurut otoritas
+(R-009), dengan interpretasi sistem terakhir (`TrailDetailPageTest`).
 
 **Konvensi prop untuk primitif baru** (ruling W1-F3): kontrol berkeadaan memakai `nilai` dan `onUbah`, nama tampak
 memakai `label`, dan nama prop berbahasa Indonesia; primitif yang sudah ada tidak diganti namanya.
@@ -325,7 +337,7 @@ Lima tab Beranda, Jelajah, Trip, Mendaki, Progres (DK-25), dari satu daftar (`it
   memberi `akar` (h1, aksi kontekstual, avatar 44 px ke Profil; Beranda menambah `merek` untuk lockup), halaman turunan
   memberi `induk` (tombol kembali 44 px ke induk logisnya, bukan riwayat peramban). Navigasi utama adalah bilah tab pil
   mengambang (`BilahTab`: item 56 px, label 12 px, ikon 22 px, varian isi dan `aria-current` untuk tab aktif). Halaman
-  tugas dengan bar aksi tetap (detail jalur, rencanakan trip; penilaian kecocokan menyusul di W3) memasang
+  tugas dengan bar aksi tetap (detail jalur, penilaian kecocokan, rencanakan trip) memasang
   `<AppLayout bilahTab={false}>`. Lebar 640 sampai 1023 px sengaja tetap memakai kerangka ponsel.
 - **Mulai 1024 px** (DK-33) header 68 px menempel di atas: lockup, navigasi segmen lima tab di tengah (ikon 20 px, label
   14 px), lalu lencana Data contoh, Simpanan dengan hitungannya, dan menu avatar (popover asli: Profil; Moderasi dan
@@ -342,18 +354,25 @@ Lima tab Beranda, Jelajah, Trip, Mendaki, Progres (DK-25), dari satu daftar (`it
   (ruling W2-2b). Mulai 1024 px `--bilah-tab` juga dinolkan walau bilahnya ada di halaman, karena di sana bilah itu
   tersembunyi. `--kepala-atas` mengikuti arah yang sama (perbaikan akhir W2): mulai 1024 px bawaannya tinggi header
   68 px, dan baru dinolkan lewat `:not(:has([data-kepala-lebar]))` di halaman tanpa header (GuestLayout, Welcome, mode
-  lapangan). Strip pendakian, bar aksi, baki banding Jelajah, dan pesan jaringan mengukur tingginya sendiri lewat
-  `ResizeObserver` dan menuliskannya ke `--strip-pendakian`, `--bar-aksi`, `--baki-banding`, dan `--pesan-jaringan` di
-  `<html>` selama masing-masing terpasang atau tampil.
+  lapangan). Strip pendakian, bar aksi, dan pesan jaringan mengukur tingginya sendiri lewat `ResizeObserver` dan
+  menuliskannya ke `--strip-pendakian`, `--bar-aksi`, dan `--pesan-jaringan` di `<html>` selama masing-masing
+  terpasang atau tampil. Baki banding Jelajah beserta variabel tingginya dilepas W3.
 - Fokus papan ketik dan sasaran jangkar tidak berhenti di balik lapisan tetap (WCAG 2.4.11): `scroll-padding-bottom`
-  menghitung bilah tab dan strip (`--nav-bawah`), bar aksi (ruling W2-2a), dan baki banding (perbaikan akhir W2);
+  menghitung bilah tab dan strip (`--nav-bawah`) dan bar aksi (ruling W2-2a);
   `scroll-padding-top` menghitung header layar lebar (`--kepala-atas`) dan pesan jaringan (ruling W2-5a), dan `<main>`
   memberi dirinya `padding-top` setinggi pesan jaringan. Toast tidak masuk hitungan itu: ia hilang sendiri sesudah
   8 detik, hitungannya berhenti selama ia difokus atau diarahkan penunjuk, dan fokusnya pindah ke Urungkan bila aksinya
   dari papan ketik. Selama tampil, toast dapat menutup unsur terfokus di dekat tepi bawah.
 
-Jelajah berbasis peta tetap mengikuti keputusan F2 (peta menggambar bentuk jalur, bukan titik gunung) sampai W3
-menulis ulang klasternya.
+**Pemilik tab** (spec v3 bagian 5.3, DK-25). Halaman gunung menyalakan Jelajah. Banding milik Trip, jadi tombol
+kembalinya ke Trip, dan Simpanan tetap terjangkau lewat "Lihat simpanan" di bawah judulnya. Tombol kembali tidak
+pernah memindah tab: bila sebuah halaman menyalakan tab, induknya menyalakan tab yang sama
+(`NavigationConsistencyTest`, tinjauan akhir W2, W2-F2).
+
+**Peta Jelajah** (W3) tetap mengikuti keputusan F2: yang digambar bentuk jalur bergeometri, bukan titik gunung. Label
+kecocokan dibedakan pola garis (utuh untuk Cocok, putus panjang untuk Perlu persiapan, titik-titik untuk Kurang cocok,
+putus-titik untuk Belum dinilai) dan legenda bertulisan, bukan warna saja. Jalur tanpa geometri disebut jumlahnya di
+pojok peta. Bila tidak satu pun jalur punya geometri, MapLibre tidak dimuat dan panelnya menyebut yang ditunggu.
 
 ### Catatan tata kelola
 

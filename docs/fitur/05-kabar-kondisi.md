@@ -62,10 +62,10 @@ Sumber luar: prakiraan BMKG (kode wilayah adm4) lewat `weather:refresh`; status 
 
 | Sub-fitur | Status | Bukti |
 |---|---|---|
-| Kabar resmi | Ada | `app/Services/OfficialStatusService.php`, `resources/js/components/ui/StatusBadge.tsx`, `app/Http/Controllers/Admin/OfficialStatusController.php`, `app/Console/Commands/CheckDataFreshness.php`, `tests/Feature/OfficialStatusTargetTest.php`, `tests/Feature/StatusCacheInvalidationTest.php`, `tests/Feature/DataFreshnessReviewTest.php` |
+| Kabar resmi | Ada | `app/Services/OfficialStatusService.php`, `resources/js/components/trails/StatusAkses.tsx`, `app/Http/Controllers/Admin/OfficialStatusController.php`, `app/Console/Commands/CheckDataFreshness.php`, `tests/Feature/OfficialStatusTargetTest.php`, `tests/Feature/StatusCacheInvalidationTest.php`, `tests/Feature/DataFreshnessReviewTest.php` |
 | Prakiraan cuaca | Sebagian | `app/Services/WeatherService.php`, `app/Console/Commands/RefreshWeatherSnapshots.php`, `tests/Feature/WeatherRefreshTest.php`; tampil waktu, cuaca, suhu, dan kelembapan untuk delapan titik; angin, curah hujan, dan penanda jam berisiko belum tampil |
 | Laporan pendaki | Ada | `app/Http/Controllers/Community/ConditionReportController.php`, `app/Http/Requests/StoreConditionReportRequest.php`, `app/Support/ImageSanitizer.php`, `resources/js/pages/Community/ConditionReport.tsx`, `resources/js/components/trails/rinci/LaporanKomunitas.tsx`, `tests/Feature/CommunityReportModerationTest.php`, `tests/Feature/CommunityPhotoTest.php`; saring per jenis cerita atau tips tidak dibangun (DK-11) |
-| Sumber dan kesegaran | Ada | `app/Services/DataFreshnessService.php`, `resources/js/components/community/LabelKesegaran.tsx`, `resources/js/components/ui/Freshness.tsx`, `resources/js/components/trails/rinci/LabelSumber.tsx` |
+| Sumber dan kesegaran | Ada | `app/Services/DataFreshnessService.php`, `resources/js/components/community/LabelKesegaran.tsx`, `resources/js/components/trails/Kesegaran.tsx`, `resources/js/components/trails/LabelSumber.tsx`, `tests/Feature/TrustGrammarTest.php` |
 | Kabar gunung yang diikuti | Ada | `app/Http/Controllers/Community/TrailNewsController.php`, `app/Services/TrailNewsService.php`, `app/Services/Community/KabarJalur.php`, `resources/js/pages/Community/TrailNews.tsx`, `app/Http/Controllers/Trails/MountainFollowController.php`, `tests/Feature/TrailNewsTest.php` |
 | Terima kasih | Ada | `app/Http/Controllers/Trails/ReportThanksController.php`, `app/Http/Requests/Trails/ThankReportRequest.php`, `tests/Feature/ReportThanksTest.php` |
 | Status gunung api PVMBG | Belum ada | DK-43, W8 |
@@ -75,7 +75,7 @@ Sumber luar: prakiraan BMKG (kode wilayah adm4) lewat `weather:refresh`; status 
 | # | Task | Peta ke kode | Status kode |
 |---|---|---|---|
 | 1 | Bangun halaman Kabar & Kondisi dengan data tiruan | `resources/js/pages/Community/TrailNews.tsx` dengan data nyata | Ada |
-| 2 | Buat kartu status resmi jalur dengan label warna | `StatusBadge.tsx` (bentuk dan kata, bukan warna saja) | Ada |
+| 2 | Buat kartu status resmi jalur dengan label warna | `StatusAkses.tsx` (bentuk dan kata, bukan warna saja) | Ada |
 | 3 | Buat panel prakiraan cuaca per waktu | `resources/js/components/trails/rinci/Kondisi.tsx` | Sebagian |
 | 4 | Buat daftar laporan pendaki dengan penanda kiriman | `LaporanKomunitas.tsx` | Ada |
 | 5 | Tambah filter dan urutkan laporan pendaki | Terbaru dulu | Berbeda: jenis cerita dan tips tidak ada (DK-11) |

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { FitBadge } from '@/components/ui/FitBadge';
+import { LabelKecocokan } from '@/components/trails/LabelKecocokan';
 import type { FitRingkas } from './types';
 
 /**
@@ -15,7 +15,7 @@ export function FitLine({ fit, trailId }: { fit: FitRingkas; trailId: number }) 
     return (
         <div className="relative z-10 mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span data-fit-label className="shrink-0">
-                <FitBadge label={fit.label} text={fit.labelText} />
+                <LabelKecocokan nilai={fit.label} label={fit.labelText} />
             </span>
             <span className="text-xs text-muted">{fit.denganRencana ? 'untuk rencana ini' : 'Kecocokan dasar'}</span>
             <Button size="sm" variant="ghost" aria-controls={idAlasan} aria-expanded={terbuka} onClick={() => setTerbuka((v) => !v)}>

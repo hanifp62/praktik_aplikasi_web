@@ -6,6 +6,7 @@ use App\Enums\PreparationCategory;
 use App\Enums\PreparationStatus;
 use App\Models\PreparationItem;
 use App\Models\PreparationTemplate;
+use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\TripPreparationItem;
 use Illuminate\Support\Collection;
@@ -16,7 +17,8 @@ use Illuminate\Support\Facades\DB;
  */
 class PreparationService
 {
-    private const PERMIT_LABEL = 'Booking izin pendakian (SIMAKSI)';
+    /** Publik: rincian jalur menyebut butir izin dengan nama yang sama dengan daftar persiapan trip. */
+    public const PERMIT_LABEL = 'Booking izin pendakian (SIMAKSI)';
 
     public function __construct(private readonly PermitService $permits) {}
 
@@ -88,6 +90,26 @@ class PreparationService
                 'status' => $existing?->status?->value ?? PreparationStatus::NOT_CONFIRMED->value,
             ]
         );
+    }
+
+    /**
+     * Butir khusus satu jalur untuk bagian "Yang perlu disiapkan" di rinciannya (spec v3
+     * bagian 6.4): hanya butir templat jalur itu yang berlaku untuknya, bukan templat bawaan,
+     * karena bagian itu menjawab apa yang berbeda di jalur ini. Butir yang sama masuk ke
+     * daftar persiapan trip lewat generateFor().
+     *
+     * @return Collection<int, PreparationItem>
+     */
+    public function khususJalur(Trail $trail): Collection
+    {
+        $template = PreparationTemplate::query()
+            ->where('trail_id', $trail->id)
+            ->with('items')
+            ->first();
+
+        return ($template?->items ?? collect())
+            ->filter(fn (PreparationItem $item) => $item->appliesToTrail($trail))
+            ->values();
     }
 
     /**

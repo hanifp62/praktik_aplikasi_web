@@ -108,20 +108,74 @@ class ConsiderationService
     }
 
     /**
+     * Catatan simpanan aktif untuk sekumpulan jalur, berkunci id jalur (nilai null bila jalur
+     * tersimpan tanpa catatan). Jalur yang tidak tersimpan tidak punya kunci.
+     *
+     * Dipakai kartu Jelajah untuk "tersimpan?" dan "bercatatan?" pada satu halaman hasil saja,
+     * lewat predikat yang sama dengan hitungan dan daftar Simpanan (T4-M6 tinjauan akhir W3),
+     * bukan membaca seluruh baris trail_considerations pembaca.
+     *
+     * @param  iterable<int, int>  $trailIds
+     * @return Collection<int, string|null>
+     */
+    public function catatanUntuk(User $user, iterable $trailIds): Collection
+    {
+        return $this->kueriSimpananAktif($user)
+            ->whereIn('trail_id', collect($trailIds)->values())
+            ->pluck('note', 'trail_id');
+    }
+
+    /**
      * Menghapus satu jalur dari simpanan, tanpa syarat.
      *
      * Bukan toggle(): "Hapus" adalah tombol penghapusan, bukan sakelar. Kalau dipakai
      * toggle() dan tombolnya terpencet dua kali, panggilan kedua menemukan barisnya sudah
      * tidak ada lalu MENAMBAHKANNYA KEMBALI. delete() pada baris yang sudah tidak ada
-     * tidak melakukan apa-apa, jadi mengulang aksi ini selalu aman. Yang dihapus selalu
-     * baris milik $user, sehingga id jalur dari klien tidak dapat menyentuh simpanan
+     * tidak melakukan apa-apa, jadi mengulang aksi ini tidak mengubah apa pun. Yang dihapus
+     * selalu baris milik $user, sehingga id jalur dari klien tidak dapat menyentuh simpanan
      * orang lain.
+     *
+     * Mengembalikan jumlah baris yang terhapus (0 atau 1), supaya pemanggil hanya menawarkan
+     * Urungkan untuk penghapusan yang benar-benar terjadi (m4 tinjauan akhir W3).
      */
-    public function remove(User $user, int $trailId): void
+    public function remove(User $user, int $trailId): int
     {
-        TrailConsideration::where('user_id', $user->id)
+        return TrailConsideration::where('user_id', $user->id)
             ->where('trail_id', $trailId)
             ->delete();
+    }
+
+    /**
+     * Menyimpan satu jalur secara idempoten, dengan catatan pribadi bila ada (spec v3 bagian
+     * 6.2 dan 9.1). Dipakai tombol simpan kartu dan bar aksi, dan oleh Urungkan sesudah
+     * "Hapus dari simpanan" untuk mengembalikan jalurnya beserta catatannya.
+     *
+     * Berbeda dengan toggle(), kiriman ulang atau halaman yang basi tidak pernah membalik
+     * simpanan menjadi terhapus: jalur yang sudah tersimpan tetap tersimpan dan catatannya
+     * tidak ditimpa. Baris yang sudah ada mengembalikan ConsiderationOutcome::SUDAH_ADA,
+     * berbeda dari DITAMBAHKAN, supaya pemanggil tidak menawarkan Urungkan-sebagai-hapus
+     * untuk baris yang tidak dibuat panggilan ini (tinjauan Tugas 4 temuan 2; ruling
+     * W3-4b). Batas simpanan dijaga dengan kunci yang sama dengan toggle(). Catatan
+     * ditulis lewat simpanCatatan() setelah barisnya dipastikan milik $user.
+     */
+    public function simpan(User $user, Trail $trail, ?string $catatan = null): ConsiderationOutcome
+    {
+        return DB::transaction(function () use ($user, $trail, $catatan) {
+            User::whereKey($user->id)->lockForUpdate()->first();
+
+            if (TrailConsideration::where('user_id', $user->id)->where('trail_id', $trail->id)->exists()) {
+                return ConsiderationOutcome::SUDAH_ADA;
+            }
+
+            if ($this->jumlahSimpanan($user) >= $this->batasSimpanan()) {
+                return ConsiderationOutcome::DITOLAK;
+            }
+
+            $baris = TrailConsideration::createOrFirst(['user_id' => $user->id, 'trail_id' => $trail->id]);
+            $this->simpanCatatan($baris, $catatan);
+
+            return ConsiderationOutcome::DITAMBAHKAN;
+        });
     }
 
     /**

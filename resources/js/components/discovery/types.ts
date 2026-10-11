@@ -1,5 +1,5 @@
-import type { FaktorBar } from '@/components/ui/FactorBars';
-import type { LabelFit } from '@/components/ui/FitBadge';
+import type { FaktorBaris } from '@/components/trails/FaktorKecocokan';
+import type { LabelFit } from '@/components/trails/LabelKecocokan';
 
 /**
  * Satu hasil rekomendasi sebagaimana dikirim RecommendationResultResource: label publik,
@@ -18,7 +18,7 @@ export interface HasilRekomendasi {
     angka: { jarak: string; tanjakan: string; durasi: string; teknis: string };
     berubah: boolean;
     warnings: string[];
-    faktor: FaktorBar[];
+    faktor: FaktorBaris[];
     penjelasan: { why_it_fits: string[]; what_to_watch: string[]; preparation_gap: string[] };
 }
 

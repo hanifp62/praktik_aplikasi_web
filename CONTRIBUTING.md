@@ -82,7 +82,11 @@ Melanggar salah satu ini membuat suite merah, bukan sekadar ditegur saat tinjaua
 | Teks tidak di bawah 12 px; nilai skala tipe bernama mengikuti spec | `TypeFloorTest`, `TypographySystemTest` |
 | Ikon berbobot per ukuran, tidak di bawah 16 px, dan tidak ada panah hiasan di label tombol | `IconSystemTest` |
 | Primitif: fokus terlihat, target 44 px, nama aksesibel, label membungkus, tiga jenis keadaan kosong | `DesignPrimitivesTest`, `LongInputLayoutTest` |
-| Skor kecocokan tidak pernah sampai ke halaman | `FactorBarsDoNotLeakScoreTest`, `LockedBusinessRulesTest` |
+| Skor kecocokan tidak pernah sampai ke halaman | `FactorBarsDoNotLeakScoreTest`, `LockedBusinessRulesTest`, `FitAssessmentPageTest`, `TrailCardTest` |
+| Label kecocokan selalu ikon dan kata; "Belum dinilai" datang dari server; glyph resmi hanya untuk sumber OFFICIAL | `TrustGrammarTest` |
+| Tombol kembali tidak memindah tab: induk halaman menyalakan tab yang sama dengan halamannya | `NavigationConsistencyTest` |
+| Tautan bagikan: token hanya disimpan hash-nya; halaman publik noindex, tanpa catatan dan label kecocokan; hanya pemilik yang mencabut | `ComparisonShareTest` |
+| Jumlah kueri halaman Jelajah, gunung, rincian jalur, penilaian kecocokan, Simpanan, Bandingkan, dan tautan bagikan tidak tumbuh bersama jumlah data | `ResultListBudgetTest`, `MountainPageTest`, `TrailDetailPageTest`, `FitAssessmentPageTest`, `SavedRoutesTest`, `PageQueryBudgetTest`, `ComparisonShareTest` |
 | Pemilik lain tidak dapat membuka data orang lain | `TripOwnershipTest` dan test otorisasi per fitur |
 | Jejak audit mencatat nilai lama dan nilai baru | `AuditLogChangeTest` |
 | Tidak ada pola kredensial yang dikenal (daftarnya di `SECURITY.md`) di berkas terlacak dan berkas baru yang tidak diabaikan git | `SecretsNotInRepoTest` |

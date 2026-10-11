@@ -1,4 +1,4 @@
-import { FitBadge } from '@/components/ui/FitBadge';
+import { LabelKecocokan } from '@/components/trails/LabelKecocokan';
 import { kelas } from '@/lib/kelas';
 import type { FitRingkas } from './types';
 
@@ -11,7 +11,7 @@ export function FitTrip({ fit, className }: { fit: FitRingkas; className?: strin
     return (
         <div className={kelas('mt-3 flex flex-wrap items-center gap-x-2 gap-y-1', className)}>
             <span data-fit-label className="shrink-0">
-                <FitBadge label={fit.label} text={fit.labelText} />
+                <LabelKecocokan nilai={fit.label} label={fit.labelText} />
             </span>
             <span className="text-xs text-muted">{fit.denganRencana ? 'untuk rencana ini' : 'Kecocokan dasar'}</span>
             <p data-fit-reason className="w-full text-sm text-secondary">{fit.alasan}</p>

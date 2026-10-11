@@ -1,11 +1,11 @@
-import { FactorBars, type FaktorBar } from '@/components/ui/FactorBars';
+import { FaktorKecocokan, type FaktorBaris } from '@/components/trails/FaktorKecocokan';
 import type { HasilRekomendasi } from './types';
 
-const kelompok: Array<{ kunci: string; simbol: string; judul: string; masuk: (f: FaktorBar) => boolean }> = [
-    // Kuat dan cukup sama-sama tidak menahan; kata di sebelah batangnya tetap membedakan.
-    { kunci: 'sesuai', simbol: '✓', judul: 'Sesuai', masuk: (f) => f.kategori === 'kuat' || f.kategori === 'cukup' },
-    // Sama dengan "Yang perlu diperhatikan" di bawah: mesin memakai ambang lemah yang sama.
-    { kunci: 'perhatian', simbol: '⚠︎', judul: 'Perlu perhatian', masuk: (f) => f.kategori === 'lemah' },
+const kelompok: Array<{ kunci: string; simbol: string; judul: string; masuk: (f: FaktorBaris) => boolean }> = [
+    // Hanya kategori kuat: kalimat rincian mesin dipilih dengan ambang kuat yang sama (W3).
+    { kunci: 'sesuai', simbol: '✓', judul: 'Sesuai', masuk: (f) => f.kategori === 'kuat' },
+    // Cukup dan lemah: kalimat rinciannya menyebut apa yang belum sepadan dengan jalurnya.
+    { kunci: 'perhatian', simbol: '⚠︎', judul: 'Perlu perhatian', masuk: (f) => f.kategori === 'cukup' || f.kategori === 'lemah' },
     // Data yang belum ada bukan nilai rendah (R-006), jadi tidak dikelompokkan sebagai penahan.
     { kunci: 'belum', simbol: '?', judul: 'Belum diketahui', masuk: (f) => f.kategori === 'tak-diketahui' },
 ];
@@ -15,6 +15,19 @@ const kelompok: Array<{ kunci: string; simbol: string; judul: string; masuk: (f:
  * perlu perhatian (⚠) lebih dulu, karena pertanyaan pertama pendaki adalah faktor mana
  * yang menahan; prosa mesin menyusul untuk yang ingin membaca alasannya utuh.
  * Simbol hanya penanda visual, maknanya dibawa judul teksnya.
+ *
+ * Perbaikan P-8: setiap kelompok memberi FaktorKecocokan `tampilkanKata={false}` supaya
+ * baris di dalamnya tidak mengulang kata yang sudah terbaca sekali di heading kelompok
+ * (mis. tiga baris "Perlu perhatian" di bawah heading "Perlu perhatian").
+ *
+ * Kelompok "Perlu perhatian" (cukup dan lemah) tumpang tindih dengan prosa "Yang perlu
+ * diperhatikan" (RecommendationExplanationService::whatToWatch(), berisi peringatan,
+ * faktor tak-diketahui, dan faktor LEMAH saja) hanya pada faktor lemah; faktor cukup
+ * muncul di badge kelompok ini tetapi tidak di prosanya. Keduanya sengaja dibiarkan: badge
+ * menjawab "faktor mana" secepat mata memindai, prosa menjawab "kenapa" untuk yang ingin
+ * membaca alasannya utuh (§30), dan definisi "Perlu perhatian" yang dipakai di sini
+ * (cukup+lemah) adalah definisi yang sama dengan lapis 2/3 di halaman penilaian kecocokan
+ * (FaktorKecocokan), bukan definisi whatToWatch() yang lebih sempit.
  */
 export function PanelAlasan({ hasil, id }: { hasil: HasilRekomendasi; id: string }) {
     const bagian: Array<[keyof HasilRekomendasi['penjelasan'], string]> = [
@@ -40,7 +53,7 @@ export function PanelAlasan({ hasil, id }: { hasil: HasilRekomendasi; id: string
                                         <span aria-hidden="true">{k.simbol}</span>
                                         {k.judul}
                                     </h4>
-                                    <FactorBars factors={isi} className="mt-2" />
+                                    <FaktorKecocokan faktor={isi} className="mt-2" tampilkanKata={false} />
                                 </div>
                             ) : null;
                         })}

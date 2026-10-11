@@ -32,8 +32,12 @@ class RouteFitService
 
     /**
      * Factors that gate the top label: a serious gap here can never read as "Cocok".
+     *
+     * Public sejak perbaikan P-5 (W3 putaran 1): PenilaianKecocokan (halaman penilaian
+     * kecocokan) memakai daftar ini langsung untuk menyusun "Kenapa bukan Cocok?", supaya
+     * jalur kritis tidak disalin dua kali di dua berkas yang bisa diam-diam berbeda.
      */
-    private const CRITICAL_FACTORS = [
+    public const CRITICAL_FACTORS = [
         CompatibilityFactor::EXPERIENCE_MATCH,
         CompatibilityFactor::TECHNICAL_MATCH,
         CompatibilityFactor::NAVIGATION_MATCH,
@@ -66,7 +70,7 @@ class RouteFitService
         $weights ??= $this->weights();
 
         $failedRules = $this->hardConstraintFailures($goal, $trail, $status);
-        $warnings = $this->warningsFor($trail, $status, $segmentRestrictions, $goal, $permit);
+        $warnings = $this->peringatan($trail, $status, $segmentRestrictions, $goal, $permit);
         $factors = $this->scorer->score($user, $goal, $trail, $weights);
 
         $score = $this->weightedScore($factors);
@@ -133,10 +137,20 @@ class RouteFitService
     }
 
     /**
+     * Peringatan yang tidak menggagalkan syarat dasar tetapi wajib terbaca: status Dibatasi
+     * atau belum diketahui, pembatasan per segmen, dan jendela izin.
+     *
+     * Satu-satunya pembentuk kalimat ini (W3-3c tinjauan akhir W3): penjelasan mesin
+     * (what_to_watch, panel "Kenapa?" Jelajah) dan halaman penilaian kecocokan
+     * (PenilaianKecocokan) memakainya bersama. Status ditulis dengan kata
+     * (OfficialStatusValue::label()), tidak pernah nilai enum mentah (R-005). Baris
+     * recommendation_results lama yang menyimpan kalimat versi mentah tidak diperbaiki
+     * surut (m9).
+     *
      * @param  array<int, array{segment: string, status: OfficialStatusValue, reason: ?string}>  $segmentRestrictions
      * @return array<int, string>
      */
-    private function warningsFor(
+    public function peringatan(
         Trail $trail,
         OfficialStatusValue $status,
         array $segmentRestrictions = [],
@@ -146,7 +160,7 @@ class RouteFitService
         $warnings = [];
 
         if ($status === OfficialStatusValue::RESTRICTED) {
-            $warnings[] = 'Status resmi jalur ini RESTRICTED. Periksa ketentuan pembatasan yang berlaku.';
+            $warnings[] = 'Status resmi jalur ini '.$status->label().'. Periksa ketentuan pembatasan yang berlaku.';
         }
 
         if ($status === OfficialStatusValue::UNKNOWN) {

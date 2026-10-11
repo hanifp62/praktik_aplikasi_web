@@ -69,11 +69,15 @@ class TrailFitService
                 permit: $permits[$trail->id] ?? null,
             );
 
+            // Isi "Kenapa?" di kartu Jelajah (spec v3 bagian 6.2): dua kalimat teratas dari
+            // penjelasan mesin yang sama dengan halaman rekomendasi, bukan kalimat baru.
             $ringkasan[$trail->id] = new TrailFitSummary(
                 label: $hasil->label,
                 eligible: $hasil->eligible,
                 alasan: $this->alasan($hasil),
                 denganRencana: $goal !== null,
+                mengapaSesuai: $hasil->eligible ? array_slice($hasil->explanation['why_it_fits'] ?? [], 0, 2) : [],
+                perluDiperhatikan: array_slice($hasil->explanation['what_to_watch'] ?? [], 0, 2),
             );
         }
 
@@ -85,9 +89,10 @@ class TrailFitService
      *
      * Ketika sebuah jalur tersingkir, yang ingin ia tahu penyebabnya, bukan kelebihannya.
      * Ketika cocok, yang menolong justru alasan terkuatnya. Urutan ini yang membuat satu
-     * kalimat cukup, dan §89 memang hanya menyediakan satu baris di tingkat daftar.
+     * kalimat cukup, dan §89 memang hanya menyediakan satu baris di tingkat daftar. Publik
+     * karena rincian jalur memakai kalimat yang sama untuk penilaiannya (W3).
      */
-    private function alasan(RouteFitResult $hasil): string
+    public function alasan(RouteFitResult $hasil): string
     {
         if (! $hasil->eligible) {
             return $this->alasanTersingkir($hasil->failedRules[0] ?? null);

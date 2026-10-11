@@ -7,10 +7,10 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { FormField } from '@/components/ui/Field';
-import { Freshness } from '@/components/ui/Freshness';
+import { Kesegaran } from '@/components/trails/Kesegaran';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
-import { StatusBadge, type StatusResmi } from '@/components/ui/StatusBadge';
+import { StatusAkses, type StatusResmi } from '@/components/trails/StatusAkses';
 import { AppLayout } from '@/layouts/AppLayout';
 import { profile } from '@/routes';
 import { store } from '@/routes/admin/statuses';
@@ -54,7 +54,7 @@ const kategoriTinjau = [
     ['basi', 'Lama tidak diverifikasi', 'Catatannya masih berlaku, tetapi belum dipastikan ulang ke pengelola.'],
 ] as const;
 
-/** UNKNOWN tidak punya warna operasional: StatusBadge menampilkannya netral. */
+/** UNKNOWN tidak punya warna operasional: StatusAkses menggambarnya lingkaran putus-putus. */
 const badge = (status: string): StatusResmi => (status === 'OPEN' || status === 'RESTRICTED' || status === 'CLOSED' ? status : null);
 
 const kosongkan = ['statusable_id', 'source', 'source_url', 'published_at', 'effective_at', 'expires_at', 'reason', 'notes'] as const;
@@ -122,7 +122,7 @@ export default function OfficialStatuses() {
                                             {tinjau[kunci].map((item) => (
                                                 <li key={item.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-secondary">
                                                     <span className="font-medium text-primary">{item.nama}</span>
-                                                    <StatusBadge status={badge(item.status)} text={item.statusText} />
+                                                    <StatusAkses nilai={badge(item.status)} label={item.statusText} />
                                                     <span className="text-xs text-secondary">{item.keterangan}</span>
                                                     <Button variant="ghost" size="sm" onClick={() => catatUlang(item)} aria-label={`Catat ulang status ${item.nama}`}>
                                                         Catat ulang
@@ -217,7 +217,7 @@ export default function OfficialStatuses() {
                             <tr key={r.id} className="border-b border-subtle align-top">
                                 <td className="p-4 font-medium text-primary">{r.objek}</td>
                                 <td className="p-4 text-secondary">{r.cakupan}</td>
-                                <td className="p-4"><StatusBadge status={badge(r.status)} text={r.statusText} /></td>
+                                <td className="p-4"><StatusAkses nilai={badge(r.status)} label={r.statusText} /></td>
                                 <td className="p-4 text-secondary">
                                     {r.sumberUrl ? (
                                         <a href={r.sumberUrl} rel="noopener noreferrer" target="_blank" className="text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
@@ -227,7 +227,7 @@ export default function OfficialStatuses() {
                                     ) : (
                                         r.sumber
                                     )}
-                                    <Freshness rendered={r.diverifikasi} prefix="Diverifikasi" />
+                                    <Kesegaran waktu={r.diverifikasi} awalan="Diverifikasi" />
                                 </td>
                                 <td className="p-4 text-secondary">{r.berlaku}</td>
                                 <td className="p-4 text-secondary">{r.dicatatOleh}</td>

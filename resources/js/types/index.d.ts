@@ -44,7 +44,16 @@ export interface PropsBersama {
     tema: 'system' | 'light' | 'dark';
     tampilan: { efek: 'otomatis' | 'solid'; gerak: 'sistem' | 'kurangi' };
     peta: { styleUrl: string | null; rasterTiles: string[]; attribution: string; maxZoom: number };
-    flash: { status: string | null; timbanganPenuh: string | null };
+    flash: {
+        status: string | null;
+        timbanganPenuh: string | null;
+        /** Jalur yang baru dihapus dari simpanan dan catatannya, untuk Urungkan; satu kali. */
+        simpananTerhapus: { trailId: number; nama: string; catatan: string | null } | null;
+        /** Baris sudah ada sebelum store() ini berjalan; Urungkan-sebagai-hapus tidak ditawarkan. */
+        simpananSudahAda: boolean;
+        /** Tautan bagikan yang baru dibuat; tokennya hanya ada di sini, sekali (FR-23). */
+        tautanBagikan: { id: number; url: string; berlakuSampai: string } | null;
+    };
     adminNav: { perluDitinjau: number } | null;
     errors: Record<string, string>;
     title?: string;

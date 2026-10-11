@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Trails;
 
+use App\Enums\RouteFitLabel;
 use App\Http\Controllers\Controller;
 use App\Models\Trail;
 use App\Models\TrailConsideration;
 use App\Services\ConsiderationService;
 use App\Services\Trails\RouteComparisonTable;
+use App\Services\Trails\TautanBagikan;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -23,8 +25,8 @@ use Inertia\Response;
  *
  * Tautan ?trails= lama yang pernah dibagikan tetap terbuka: jalurnya ditampilkan apa
  * adanya, dan yang terpotong atau tidak lagi terbit disebut, bukan dibuang diam-diam.
- * Berbagi ke orang tanpa akun menunggu tautan bagikan FR-23 (spec v3 §9.3); sampai itu
- * halaman ini tidak menawarkan tombol bagikan (DK-40).
+ * Berbagi ke orang tanpa akun lewat tautan bagikan FR-23 (ComparisonShareController); halaman
+ * ini membawa tautan yang masih berlaku supaya pembuatnya dapat mencabutnya.
  */
 class RouteComparisonController extends Controller
 {
@@ -35,7 +37,7 @@ class RouteComparisonController extends Controller
      */
     private const ID_DIBACA = 10;
 
-    public function show(Request $request, ConsiderationService $consideration, RouteComparisonTable $tabel): Response
+    public function show(Request $request, ConsiderationService $consideration, RouteComparisonTable $tabel, TautanBagikan $tautan): Response
     {
         $user = $request->user();
         $maks = $consideration->batasBanding();
@@ -64,6 +66,9 @@ class RouteComparisonController extends Controller
             'pilihan' => ['maks' => $maks, 'opsi' => $this->opsi($simpanan, $dipilih)],
             'jumlahTersimpan' => $simpanan->count(),
             'pesan' => $pesan,
+            'kataBelumDinilai' => RouteFitLabel::UNRATED_TEXT,
+            'tautanAktif' => $tautan->ringkasAktif($user),
+            'hariBerlakuTautan' => $tautan->hariBerlaku(),
             'pengumuman' => session('pengumuman', ''),
         ] + $susunan);
     }

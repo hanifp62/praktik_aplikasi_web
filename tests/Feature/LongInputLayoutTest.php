@@ -119,6 +119,35 @@ class LongInputLayoutTest extends TestCase
     }
 
     /**
+     * Kartu dan komponen domain klaster Jelajah (W3) membungkus nama jalur, gunung, dan pos
+     * yang panjang, tidak memotongnya (Review Focus rencana induk: teks panjang di 360 px).
+     * Nama jalur sering panjang dan hanya berbeda di ujungnya ("Gede via Gunung Putri" dan
+     * "Gede via Gunung Putri lewat Surya Kencana"), jadi nama yang terpotong tidak dapat
+     * dibedakan dari tetangganya. Folder yang belum ada dilewati, dan berkas yang ditambahkan
+     * tugas berikutnya ikut diperiksa.
+     */
+    public function test_domain_cards_wrap_long_names_instead_of_cutting_them(): void
+    {
+        $pemotong = [];
+
+        foreach (['components/trails', 'pages/Trails', 'pages/Mountains', 'pages/Public'] as $folder) {
+            if (! is_dir(resource_path('js/'.$folder))) {
+                continue;
+            }
+
+            foreach (File::allFiles(resource_path('js/'.$folder)) as $berkas) {
+                $isi = (string) preg_replace('#/\*.*?\*/#s', ' ', $berkas->getContents());
+
+                if (preg_match('/\b(?:truncate|whitespace-nowrap|text-ellipsis|line-clamp-\d)\b/', $isi) === 1) {
+                    $pemotong[] = $folder.'/'.str_replace('\\', '/', $berkas->getRelativePathname());
+                }
+            }
+        }
+
+        $this->assertSame([], $pemotong, 'Komponen domain memotong labelnya: '.implode(', ', $pemotong));
+    }
+
+    /**
      * Pameran primitif memuat satu blok selebar 360 px yang menaruh untaian Indonesia
      * panjang di setiap primitif berlabel, supaya pembungkusan dilihat di tangkapan 390 px
      * (Review Focus W1), bukan diasumsikan dari kelas.

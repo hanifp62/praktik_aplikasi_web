@@ -2,12 +2,13 @@ import { router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { PetaGaris } from '@/components/community/PetaGaris';
 import type { GarisGeoJson } from '@/components/community/types';
+import { ProfilElevasi } from '@/components/trails/ProfilElevasi';
+import { DaftarPos } from '@/components/trails/rinci/DaftarPos';
+import type { PosJalur, ProfilElevasiData } from '@/components/trails/rinci/types';
 import type { Penanda } from '@/components/trails/types';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { CheckpointJourney, type PosPerjalanan } from '@/components/ui/CheckpointJourney';
-import { ElevationProfile, type TitikElevasi } from '@/components/ui/ElevationProfile';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
 import { history, progress } from '@/routes';
@@ -23,8 +24,8 @@ interface Props extends PropsBersama {
     jejak: { geometri: GarisGeoJson; sesi: number } | null;
     garisJalur: GarisGeoJson | null;
     penandaPos: Penanda[];
-    profil: TitikElevasi[] | null;
-    pos: PosPerjalanan[];
+    profil: ProfilElevasiData | null;
+    pos: PosJalur[];
     catatan: string | null;
 }
 
@@ -105,13 +106,13 @@ export default function HikeSummary() {
 
                 {profil ? (
                     <Card title="Profil elevasi">
-                        <ElevationProfile profile={profil} />
+                        <ProfilElevasi profil={profil} />
                     </Card>
                 ) : null}
 
                 {pos.length > 0 ? (
                     <Card title="Pos yang dilalui">
-                        <CheckpointJourney checkpoints={pos} className="space-y-1" />
+                        <DaftarPos pos={pos} />
                     </Card>
                 ) : null}
 

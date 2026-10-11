@@ -1,10 +1,20 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { kelas } from '@/lib/kelas';
 
 interface BarAksiProps {
     /** Nama wilayah bagi pembaca layar, misalnya "Aksi rencana trip". */
     label: string;
     /** Ringkasan keadaan yang berubah, misalnya "2 jalur ditimbang"; diumumkan ketika berubah. */
     ringkasan?: ReactNode;
+    /**
+     * Isi mengisi lebar penuh baki mulai 640 px, bukan menumpuk rapat di kiri dengan sisa
+     * baki kosong (T7-M6, temuan tangkapan W3 butir 8, ruling W3-G1 butir f). Satu anak
+     * tanpa flex-grow tidak melebar sendiri walau induknya `.chrome` sudah selebar kartu;
+     * baki banding Simpanan (satu ringkasan sebaris) butuh itu, kelompok tombol Fit.tsx dan
+     * bar aksi rincian jalur tidak. Bawaannya false, supaya kedua konsumen itu tidak diam-diam
+     * berubah.
+     */
+    lebarPenuh?: boolean;
     children: ReactNode;
 }
 
@@ -18,7 +28,7 @@ interface BarAksiProps {
  * isi terakhir halaman tidak tertutup dan toast melayang di atas bar, bukan menutupi
  * tombolnya, berapa pun tinggi bar yang membungkus.
  */
-export function BarAksi({ label, ringkasan, children }: BarAksiProps) {
+export function BarAksi({ label, ringkasan, lebarPenuh = false, children }: BarAksiProps) {
     const bar = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -49,7 +59,7 @@ export function BarAksi({ label, ringkasan, children }: BarAksiProps) {
                             {ringkasan}
                         </div>
                     ) : null}
-                    <div className="flex flex-wrap gap-2 sm:justify-end">{children}</div>
+                    <div className={kelas('flex flex-wrap gap-2 sm:justify-end', lebarPenuh && 'sm:flex-1')}>{children}</div>
                 </div>
             </section>
         </>

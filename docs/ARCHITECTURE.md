@@ -21,7 +21,7 @@ halaman yang sudah pindah ditandai **[React]**, ledger lengkapnya di `HANDOVER.m
 | Profil | `Onboarding\ProfileSetup` | `/onboarding` |
 | Rencana | `Goals\GoalForm` | `/goals/create` |
 | Route Fit | `Recommendations\RecommendationResults` | `/recommendations/{run}` |
-| Jelajah jalur | **[React]** `Http\Controllers\Trails\TrailIndexController` → `pages/Trails/Index.tsx`; `Trails\TrailDetail`, `Trails\RouteComparison` (Livewire) | `/trails*` |
+| Jelajah jalur | **[React]** Jelajah, rincian jalur, penilaian kecocokan, Simpanan, dan Bandingkan di `pages/Trails/`; halaman gunung `pages/Mountains/Show.tsx`; tautan bagikan publik `pages/Public/SharedComparison.tsx` | `/trails*`, `/mountains/{mountain:slug}`, `/b/{token}` |
 | Trip | `Trips\TripForm`, `Trips\TripShow`, `Trips\TripIndex` | `/trips*` |
 | Persiapan | `Trips\PreparationChecklist` | `/trips/{trip}/preparation` |
 | Readiness | `Trips\ReadinessDashboard` | `/trips/{trip}/readiness` |
@@ -39,7 +39,10 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 | Bobot faktor kompatibilitas | **Bukan di kode.** Tabel `recommendation_rules` lewat halaman admin, supaya kalibrasi terekam di jejak audit tiap run |
 | Radius kedatangan checkpoint | `config/hiking.php` → `hike_mode` |
 | Ambang kesegaran cuaca / laporan komunitas | `config/hiking.php` → `conditions` |
-| Sumber tile peta | `config/hiking.php` → `map`, atau variabel `MAP_*` di `.env` |
+| Sumber tile peta dan atribusinya | `config/hiking.php` → `map`, atau variabel `MAP_*` di `.env`; atribusi bawaan OpenTopoMap termasuk SRTM (`MapConfigTest`) |
+| Umur, jumlah, dan batas laju tautan bagikan perbandingan | `config/hiking.php` → `share_links` (`ttl_days`, `max_active_per_user`, `views_per_minute` per alamat IP); membuat dan mencabut memakai `rate_limits.personal_writes_per_minute` |
+| Jumlah kandidat yang dinilai Jelajah per kunjungan | `config/hiking.php` → `jelajah.batas_kandidat`; halaman menyebut bila hasilnya terpotong |
+| Label kecocokan, status akses, kesegaran, dan label sumber di layar | `resources/js/components/trails/` (`LabelKecocokan`, `StatusAkses`, `Kesegaran`, `LabelSumber`); ringkasan status bersumber dari `app/Services/Trails/StatusJalurRingkas.php` |
 | Batas laju submit | `config/hiking.php` → `rate_limits` |
 | Warna, radius, huruf, gaya tombol | Token di `resources/css/app.css`, pemetaan kelas di `tailwind.config.js`, primitif React di `resources/js/components/ui/`, komponen Blade halaman publik di `resources/views/components/ui/` |
 | Tab navigasi, kerangka ponsel dan layar lebar, strip pendakian, lembar Pengingat | `resources/js/layouts/` (daftar tab `NavLinks.tsx`, kerangka `AppLayout.tsx`); kepala setiap halaman lewat `PageHeader` dengan `akar` atau `induk` |
@@ -71,6 +74,9 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 | `PreparationService` | Membangun checklist dari karakteristik jalur dan aturan izinnya |
 | `ReadinessService` | `compute()` menghitung tanpa efek samping, `record()` menyimpan |
 | `AuditLogService`, `AnalyticsRecorder` | Jejak audit dan funnel |
+| `Trails\HalamanJelajah`, `Trails\TrailDetailPage`, `Trails\PenilaianKecocokan`, `Trails\RouteComparisonTable`, `Mountains\HalamanGunung` | Kelas halaman (spec v3 bagian 9.2): satu kelas merakit props satu halaman React dari service domain, dengan anggaran kueri yang tidak tumbuh bersama jumlah data |
+| `Trails\TautanBagikan` | Tautan bagikan perbandingan (FR-23): token acak 192 bit yang hanya disimpan hash SHA-256-nya, masa berlaku, batas tautan aktif, dan cabut oleh pemiliknya |
+| `Trails\ProfilElevasiJalur`, `Trails\PosSepanjangJalur` | Profil elevasi dengan ruas tercuram, dan km pos di sepanjang garis rute (PostGIS); tanpa geometri tidak ada km yang ditebak |
 
 **`app/Support`**: utilitas yang tidak memuat kebijakan produk: `Timezone` (konversi WIB/WITA/WIT), `ImageSanitizer` (pembersih EXIF), `PostGis` (kolom geografi).
 
@@ -81,7 +87,7 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 **`app/Http/Controllers` + `resources/js/pages`**: presentasi baru (React lewat Inertia). Kontraknya:
 
 - **Server memegang data dan otorisasi, React memegang interaksi.** Controller membaca query lewat service (`Services\Trails\TrailSearch`), memformat lewat resource (`Http\Resources\TrailRowResource`: angka sudah "8,0 km" saat sampai di klien), dan merender `Inertia::render('Nama/Halaman', $props)`. Aksi yang mengubah data adalah rute POST biasa dengan Policy/scope yang sama seperti dulu; klien tidak pernah dipercaya untuk keputusan akses.
-- **Props bersama** (`Http\Middleware\HandleInertiaRequests`): `auth.user` secukupnya untuk navigasi (peran hanya menentukan apa yang DITAMPILKAN), `merek`, `demo` (lencana Data contoh), `jumlahSimpanan` dan `pendakianAktif` (kerangka; null untuk tamu dan di mode lapangan), `daftarPengingat` (opsional, hanya lewat muat ulang parsial lembar Pengingat), `tema`, `tampilan` (efek dan gerak), `peta`, `adminNav` (hanya admin), dan `flash`, ditambah `errors` dari middleware dasar Inertia. Biaya kueri props kerangka ada di baris "Props bersama kerangka" pada tabel di atas. Bentuknya dikunci di `resources/js/types/index.d.ts`.
+- **Props bersama** (`Http\Middleware\HandleInertiaRequests`): `auth.user` secukupnya untuk navigasi (peran hanya menentukan apa yang DITAMPILKAN), `merek`, `demo` (lencana Data contoh), `jumlahSimpanan` dan `pendakianAktif` (kerangka; null untuk tamu dan di mode lapangan), `daftarPengingat` (opsional, hanya lewat muat ulang parsial lembar Pengingat), `tema`, `tampilan` (efek dan gerak), `peta`, `adminNav` (hanya admin), dan `flash` (termasuk `simpananTerhapus` untuk Urungkan dan `tautanBagikan` yang membawa token sekali saja), ditambah `errors` dari middleware dasar Inertia. Biaya kueri props kerangka ada di baris "Props bersama kerangka" pada tabel di atas. Bentuknya dikunci di `resources/js/types/index.d.ts`.
 - **Judul dan meta dirender server**: setiap halaman mengirim prop `title` (dan `description` bila publik) yang dibaca `resources/views/inertia.blade.php`, supaya tab, riwayat, dan mesin pencari benar sebelum React berjalan. SSR belum diaktifkan (`config/inertia.php`), keputusan terpisah.
 - **Rute bertipe** dari Wayfinder (`resources/js/routes`, `resources/js/actions`); jalankan `php artisan wayfinder:generate` setiap rute berubah. Jangan menulis URL sebagai string di komponen.
 - **Skor internal tidak pernah sampai ke props** (BR-09), sama seperti ke HTML.
@@ -114,7 +120,7 @@ Artisan, Laravel Boost, konvensi Inertia, dan seluruh suite test.
 | Unsur panduan | Padanan di Memount |
 |---|---|
 | `apps/backend/src` (config, controllers, middlewares, models, routes, services) | `config/`, `app/Http/Controllers`, `app/Http/Middleware`, `app/Models`, `routes/`, `app/Services`, `app/Policies` |
-| `apps/frontend/src` (components, core, features, views) | Komponen fitur di `resources/js/components`, inti di `resources/js/lib`, halaman di `resources/js/pages`; primitif desain di `resources/js/components/ui/` (komponen domain yang masih di sana dipindah W3) |
+| `apps/frontend/src` (components, core, features, views) | Komponen fitur di `resources/js/components`, inti di `resources/js/lib`, halaman di `resources/js/pages`; primitif desain di `resources/js/components/ui/`, komponen domain jalur di `resources/js/components/trails/` (W3) |
 | `packages/api-client` | Rute dan aksi bertipe Wayfinder, router Inertia |
 | `packages/ui-design-system` | Token `resources/css/app.css`, pemetaan `tailwind.config.js`, primitif `resources/js/components/ui/` (W1), dan pameran primitif `/dev/primitif` yang hanya terdaftar di `APP_ENV=local` (`routes/dev.php`) |
 | `packages/config` (ESLint, Prettier, TypeScript) | `tsconfig.json` dan Pint; ESLint dan Prettier menunggu izin (Q17) |
@@ -145,6 +151,7 @@ Ini kontrak engineering, bukan strategi pemasaran. Strategi pertumbuhan ada di `
 - **Tidak boleh ada SEO claim yang tidak sesuai dengan konten.** Judul, deskripsi, dan markup mengikuti apa yang halaman itu benar-benar tawarkan.
 - Halaman jalur yang datanya belum lengkap tidak dipromosikan sebagai lengkap. Gerbang publikasi §110 dan larangan mengarang data berlaku sama di lapisan metadata.
 - Larangan konten tipis hasil AI dalam skala besar ada di `docs/PRD.md` BR-16.
+- Halaman tautan bagikan `/b/{token}` tidak diindeks (meta `robots` dan header `X-Robots-Tag: noindex`), tidak masuk sitemap, dan tidak memuat catatan pribadi maupun label kecocokan (`ComparisonShareTest`).
 
 ## Yang belum ada
 

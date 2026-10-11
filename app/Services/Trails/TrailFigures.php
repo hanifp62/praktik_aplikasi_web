@@ -55,4 +55,24 @@ final class TrailFigures
     {
         return collect($trail->terrainTypes())->map->label()->join(', ') ?: self::BELUM;
     }
+
+    /**
+     * Baris ukuran padat untuk daftar ("9,7 km · ↑1.650 m · 7,5 j"): titik tengah hanya di
+     * baris ukuran seperti ini (spec v3 bagian 8.8). Angka yang tidak ada tidak ditulis nol,
+     * dan baris yang sebagian angkanya belum ada mengakuinya (PRD §95).
+     */
+    public static function ringkas(Trail $trail): string
+    {
+        $bagian = array_values(array_filter([
+            $trail->distance_km !== null ? number_format((float) $trail->distance_km, 1, ',', '.').' km' : null,
+            $trail->elevation_gain_m !== null ? '↑'.number_format($trail->elevation_gain_m, 0, ',', '.').' m' : null,
+            ($trail->estimated_duration_minutes ?? 0) > 0 ? Durasi::pendek($trail->estimated_duration_minutes) : null,
+        ]));
+
+        if ($bagian === []) {
+            return 'Angka jalur belum tersedia';
+        }
+
+        return implode(' · ', $bagian).(count($bagian) < 3 ? ' · sebagian angka belum tersedia' : '');
+    }
 }

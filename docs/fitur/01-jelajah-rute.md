@@ -57,25 +57,25 @@ Sumber luar: peta dasar dari penyedia yang dikonfigurasi di `config/hiking.php` 
 
 | Keadaan | Perilaku yang dituntut | Keadaan sekarang |
 |---|---|---|
-| Kosong karena saringan | Penyebab dan saringan yang dapat dilonggarkan | Ada: `EmptyState` "Tidak ada jalur yang cocok" di `resources/js/pages/Trails/Index.tsx` |
-| Pertama kali, profil belum lengkap | Tanpa label tebakan; "Belum dinilai" dan ajakan mengisi profil | Ada: tombol "Isi profil sekarang" di `resources/js/pages/Trails/Index.tsx`; kecocokan tidak dihitung tanpa profil |
-| Data jalur belum lengkap | Tidak dihitung, tidak direkomendasikan, tampil terpisah | Ada: daftar `menunggu` dari `TrailIndexController`, kartu `resources/js/components/trails/Menunggu.tsx` |
-| Memuat | Kerangka kartu, bukan area kosong | Sebagian: kunjungan parsial Inertia mempertahankan daftar lama; skeleton kartu menyusul W3 |
+| Kosong karena saringan | Penyebab dan saringan yang dapat dilonggarkan | Ada (W3): "Tidak ada jalur dengan saringan ini" dengan jumlah yang disembunyikan, "Tampilkan juga", dan "Hapus semua saringan"; katalog yang belum terbit diperiksa lebih dulu sebagai keadaan menunggu (W1-F1, `tests/Feature/TrailIndexSearchTest.php`) |
+| Pertama kali, profil belum lengkap | Tanpa label tebakan; "Belum dinilai" dan ajakan mengisi profil | Ada (W3): setiap kartu berlabel "Belum dinilai" dan kotak "Jalur di sini belum dinilai untuk Anda" dengan "Isi profil pendaki" di `resources/js/pages/Trails/Index.tsx`; kecocokan tidak dihitung tanpa profil |
+| Data jalur belum lengkap | Tidak dihitung, tidak direkomendasikan, tampil terpisah | Ada (W3): bagian "Belum bisa dinilai" dengan kartu bergaris putus-putus `resources/js/components/trails/jelajah/KartuBelumDinilai.tsx` yang menyebut yang ditunggu (`tests/Feature/TrailCardTest.php`) |
+| Memuat | Kerangka kartu, bukan area kosong | Ada (W3): skeleton kartu selama kunjungan saringan di `resources/js/pages/Trails/Index.tsx` |
 | Galat peta | Kalimat jujur, daftar tetap tersedia | Ada: pengakuan gagal gaya peta di `resources/js/components/peta/usePetaDasar.ts` |
-| Belum ada jalur bergeometri | Penjelasan, daftar tetap tampil | Sebagian: pilihan Peta hanya muncul bila ada data sebaran; kalimat jumlah jalur yang belum tergambar menyusul W3 |
+| Belum ada jalur bergeometri | Penjelasan, daftar tetap tampil | Ada (W3): kalimat jumlah jalur tanpa garis rute di pojok peta; tanpa satu pun geometri, MapLibre tidak dimuat dan panel peta menyebut yang ditunggu (`tests/Feature/TrailIndexMapTest.php`) |
 | Luring | Tidak dijanjikan untuk Jelajah | Service worker hanya menyimpan shell dan halaman `/offline` |
 
 ## Status implementasi
 
 | Sub-fitur | Status | Bukti |
 |---|---|---|
-| Peta rute interaktif | Ada | `resources/js/components/trails/PetaJelajah.tsx`, `app/Services/Trails/PetaSebaranJalur.php` (hanya jalur bergeometri, PostGIS), `tests/Feature/TrailIndexMapTest.php`, `tests/Spatial/PetaSebaranJalurTest.php` |
-| Daftar dan kartu rute | Ada | `resources/js/pages/Trails/Index.tsx`, `resources/js/components/trails/TrailRow.tsx`, `app/Http/Resources/TrailRowResource.php`, `tests/Feature/TrailRowTest.php`; 12 jalur per halaman (`TrailSearch::PER_HALAMAN`) |
-| Pencarian dan saringan | Ada untuk kata kunci, wilayah, jarak, durasi, tuntutan teknis | `app/Services/Trails/TrailSearch.php`, `resources/js/components/trails/FilterForm.tsx`, `tests/Feature/TrailIndexSearchTest.php` |
-| Pencarian kalimat (FR-27) | Sebagian (temuan F3) | `TrailSearch` mengenali lima alias kota (Malang, Surabaya, Bandung, Bogor, Semarang) dan membuang teks pencarian ketika alias cocok; chip tafsiran yang dapat dilepas menyusul W3 |
-| Label kecocokan dan "Kenapa?" | Ada | `resources/js/components/trails/FitLine.tsx`, `app/Services/TrailFitService.php`, `tests/Feature/AmbientFitTest.php`, `tests/Feature/FactorBarsDoNotLeakScoreTest.php` |
+| Peta rute interaktif | Ada | `resources/js/components/trails/PetaJelajah.tsx`, `app/Services/Trails/PetaSebaranJalur.php` (hanya jalur bergeometri, PostGIS), `tests/Feature/TrailIndexMapTest.php`, `tests/Spatial/PetaSebaranJalurTest.php`; sejak W3 pola garis per label dengan legenda, chip pemilih, dan kartu pratinjau |
+| Daftar dan kartu rute | Ada | `resources/js/pages/Trails/Index.tsx`, `resources/js/components/trails/jelajah/KartuJalur.tsx`, `app/Http/Resources/KartuJalurResource.php`, `app/Services/Trails/HalamanJelajah.php`, `tests/Feature/TrailCardTest.php`, `tests/Feature/ResultListBudgetTest.php`; 12 jalur per halaman (`TrailSearch::PER_HALAMAN`) |
+| Pencarian dan saringan | Ada untuk kata kunci, wilayah, kecocokan dasar, jenis trip, tuntutan teknis, status resmi, dan rentang tanjakan; lembar saringan menghitung "Tampilkan N jalur" | `app/Services/Trails/TrailSearch.php`, `resources/js/components/trails/jelajah/SaringanJelajah.tsx`, `resources/js/components/trails/jelajah/saringan.ts`, `tests/Feature/TrailIndexSearchTest.php` |
+| Pencarian kalimat (FR-27) | Sebagian (temuan F3) | `TrailSearch` mengenali lima alias kota (Malang, Surabaya, Bandung, Bogor, Semarang) dan membuang teks pencarian ketika alias cocok; sejak W3 tafsirannya tampil sebagai chip yang dapat dilepas dengan "Kembalikan tafsiran kalimat" (`resources/js/components/trails/jelajah/TafsiranKalimat.tsx`) |
+| Label kecocokan dan "Kenapa?" | Ada | `resources/js/components/trails/LabelKecocokan.tsx` di `KartuJalur.tsx` ("Kenapa?" dan "Lihat penilaian lengkap"), `app/Services/TrailFitService.php`, `tests/Feature/TrailCardTest.php`, `tests/Feature/TrustGrammarTest.php`, `tests/Feature/FactorBarsDoNotLeakScoreTest.php` |
 | Ajakan lengkapi profil | Ada | `resources/js/pages/Trails/Index.tsx` ("Isi profil sekarang") |
-| Simpan rute | Ada | Rute `trails.timbang`, `app/Http/Controllers/Trails/ConsiderationController.php`, baki `resources/js/components/trails/ConsiderationTray.tsx`, `tests/Feature/ConsiderationTest.php` |
+| Simpan rute | Ada | Sejak W3 tombol simpan 44 px dengan Urungkan (`resources/js/components/trails/TombolSimpan.tsx`) lewat rute idempoten `trails.saved.store` dan `trails.saved.remove`, `app/Http/Controllers/Trails/ConsiderationController.php`, `tests/Feature/SavedUndoTest.php`, `tests/Feature/ConsiderationTest.php`; Jelajah tanpa baki, hitungan dan pintu Simpanan di kepala halaman |
 | Ajakan masuk saat menyimpan (tamu) | Berbeda | Seluruh Jelajah di belakang login (grup `auth` di `routes/web.php`); tamu hanya melihat halaman publik `/pendakian/{slug}` |
 | Rekomendasi dari tujuan (FR-05) | Ada | `app/Http/Controllers/Goals/GoalController.php`, `app/Http/Controllers/Recommendations/RecommendationController.php`, `resources/js/pages/Recommendations/Show.tsx`, `resources/js/components/discovery/KartuHasil.tsx`, `resources/js/components/discovery/PanelAlasan.tsx`, `tests/Feature/RecommendationFlowTest.php` |
 
@@ -87,13 +87,13 @@ Catatan 23 September 2026: task 1 sampai 9 ditandai done oleh agen sebelumnya te
 |---|---|---|---|
 | 1 | Bangun halaman Jelajah Rute dengan data tiruan | `resources/js/pages/Trails/Index.tsx` dengan data nyata | Ada |
 | 2 | Buat peta interaktif sebaran jalur | `PetaJelajah.tsx`, `PetaSebaranJalur` | Ada; versi 22 September yang memakai koordinat gunung (F2) diganti geometri jalur (DK-06) |
-| 3 | Buat kartu daftar jalur dengan metadata | `TrailRow.tsx`, `TrailRowResource` | Ada |
-| 4 | Buat pencarian kata kunci dan filter jarak waktu kesulitan | `TrailSearch`, `FilterForm.tsx` | Ada |
+| 3 | Buat kartu daftar jalur dengan metadata | `KartuJalur.tsx`, `KartuJalurResource` (turunan `TrailRowResource`) | Ada; `TrailRow.tsx` dihapus di gelombang perbaikan akhir W3 (W3-C8) |
+| 4 | Buat pencarian kata kunci dan filter jarak waktu kesulitan | `TrailSearch`, `SaringanJelajah.tsx` | Ada |
 | 5 | Dukung pencarian kalimat sederhana di frontend | `TrailSearch` (di server, bukan frontend) | Sebagian (F3) |
 | 6 | Tampilkan badge kecocokan pada kartu jalur | `FitLine.tsx` | Ada; label mengikuti R-004 (K3) |
 | 7 | Buat panel alasan Kenapa pada badge kecocokan | `FitLine.tsx` | Ada |
 | 8 | Tampilkan ajakan lengkapi profil di badge | `resources/js/pages/Trails/Index.tsx` | Ada |
-| 9 | Buat tombol simpan rute pada kartu | `TrailRow.tsx`, rute `trails.timbang` | Ada; versi sesi 22 September diganti `trail_considerations` |
+| 9 | Buat tombol simpan rute pada kartu | `TombolSimpan.tsx`, rute `trails.saved.store` dan `trails.saved.remove` | Ada; versi sesi 22 September diganti `trail_considerations`, sakelar `trails.timbang` tidak lagi dipakai kartu (ditunda ke W5) |
 | 10 | Bangun halaman daftar rute tersimpan | `resources/js/pages/Trails/Saved.tsx`, `SavedRoutesController` | Ada (dilanjutkan di spesifikasi 03) |
 | 11 | Tambahkan empty state dan saran ubah filter | `resources/js/pages/Trails/Index.tsx` | Ada |
 | 12 | Buat halaman detail jalur dengan ringkasan | Spesifikasi 02 | Ada |
@@ -111,4 +111,4 @@ Catatan 23 September 2026: task 1 sampai 9 ditandai done oleh agen sebelumnya te
 
 - **DK-05** simpan longgar, banding sempit (diputuskan atas delegasi pemilik); **DK-06** peta hanya menggambar jalur bergeometri (diputuskan atas delegasi pemilik); **DK-25** lima tab; **DK-35** data contoh hanya SQLite lokal; **DK-40** kontrol yang belum berfungsi tidak ditampilkan.
 - **K2** skor kecocokan tidak tampil; **K3** tiga label R-004; **K7** peta bukan antarmuka utama (DK-06); **K16** skema kanonis adalah migrasi; **K20** FR-27 berbasis aturan dengan batas jujur.
-- **Temuan:** F2 (peta memakai koordinat gunung, ditutup DK-06), F3 (alias kota, terbuka), F6 (daftar jauh di bawah layar pertama ponsel, redesain W3), F7 (baki simpanan sticky berpotensi menutupi fokus, hipotesis yang belum diverifikasi di peramban).
+- **Temuan:** F2 (peta memakai koordinat gunung, ditutup DK-06), F3 (alias kota, terbuka), F6 (daftar jauh di bawah layar pertama ponsel, ditata ulang W3), F7 (baki simpanan sticky berpotensi menutupi fokus; baki Jelajah dilepas W3).

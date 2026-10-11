@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { thanks } from '@/routes/reports';
-import { LabelKomunitas } from './LabelSumber';
+import { LabelKomunitas } from '@/components/trails/LabelSumber';
 import type { Komunitas } from './types';
 
 /**

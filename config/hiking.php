@@ -80,6 +80,10 @@ return [
         // BMKG memperbarui dua kali sehari, jadi ambangnya mengikuti kadens itu.
         'weather_current_hours' => 12,
         'weather_aging_hours' => 24,
+
+        // Jangkauan prakiraan BMKG: tanggal trip yang lebih jauh belum punya prakiraan, dan
+        // halaman menyebut kapan ia mulai terbit (spec v3 bagian 6.1 dan 6.4).
+        'weather_forecast_days' => 3,
     ],
 
     /*
@@ -107,7 +111,9 @@ return [
     'map' => [
         'style_url' => env('MAP_STYLE_URL'),
         'raster_tiles' => [env('MAP_TILE_URL', 'https://tile.opentopomap.org/{z}/{x}/{y}.png')],
-        'attribution' => env('MAP_ATTRIBUTION', '© OpenTopoMap (CC-BY-SA) © OpenStreetMap contributors'),
+        // Rumusan OpenTopoMap termasuk SRTM (spec v3 bagian 10.5): data OpenStreetMap dan SRTM,
+        // tampilan OpenTopoMap berlisensi CC-BY-SA.
+        'attribution' => env('MAP_ATTRIBUTION', '© OpenStreetMap contributors, SRTM | Tampilan: © OpenTopoMap (CC-BY-SA)'),
         'max_zoom' => (int) env('MAP_MAX_ZOOM', 17),
     ],
 
@@ -170,6 +176,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Jelajah (spec v3 bagian 6.2)
+    |--------------------------------------------------------------------------
+    */
+    'jelajah' => [
+        // Kandidat yang dinilai di memori untuk satu permintaan (kecocokan, status, saringan).
+        // Kueri tidak tumbuh bersama angka ini; waktu hitungnya ya, jadi dibatasi, dan halaman
+        // menyebut bila hasilnya terpotong alih-alih memotongnya diam-diam.
+        'batas_kandidat' => 500,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Simpanan dan Banding Jalur (DK-05, DK-29)
     |--------------------------------------------------------------------------
     |
@@ -198,10 +216,11 @@ return [
     */
     'share_links' => [
         // Umur tautan: cukup untuk merundingkan satu rencana dengan teman, cukup pendek
-        // sehingga tautan yang tercecer di grup percakapan tidak hidup selamanya.
-        // Status resmi dan cuaca di halamannya dibaca ulang setiap kali dibuka, jadi
-        // umur ini tidak membuat isinya basi.
-        'ttl_days' => 30,
+        // sehingga tautan yang tercecer di grup percakapan tidak hidup selamanya. Tujuh
+        // hari mengikuti spec v3 bagian 9.3 dan prototype 06 (sebelumnya 30, dari
+        // spesifikasi fitur 03). Status resmi di halamannya dibaca ulang setiap kali
+        // dibuka, jadi umur ini tidak membuat isinya basi.
+        'ttl_days' => 7,
 
         // Tautan aktif per akun. Menahan pembuatan tanpa ujung tanpa mengganggu pemakaian
         // wajar. Yang lama dicabut pemiliknya, tidak pernah digeser diam-diam, karena

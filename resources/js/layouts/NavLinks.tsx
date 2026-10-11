@@ -13,7 +13,8 @@ const modePendakian = (p: string) => /^\/trips\/[^/]+\/hike/.test(p);
  * Explore, Trips, Track, Progress, berlabel Indonesia. Profil bukan tab; ia dibuka dari
  * avatar (ruling W2-R1). Community bukan tab; ia lapisan di dalam halaman (laporan di
  * rincian jalur, bagikan laporan di Progres, kabar gunung yang diikuti di Beranda). Tab
- * aktif dihitung dari path, satu tab per halaman.
+ * aktif dihitung dari path, satu tab per halaman. Halaman gunung milik Jelajah (spec v3
+ * bagian 5.3): path-nya di luar /trails, jadi disebut sendiri.
  */
 export const permukaan = [
     { label: 'Beranda', ikon: 'house' as const, href: dashboard.url(), aktif: (p: string) => p === '/dashboard' || p.startsWith('/kabar') },
@@ -21,7 +22,7 @@ export const permukaan = [
         label: 'Jelajah',
         ikon: 'map-trifold' as const,
         href: trailsIndex.url(),
-        aktif: (p: string) => (p === '/trails' || p.startsWith('/trails/')) && !p.startsWith('/trails/compare'),
+        aktif: (p: string) => ((p === '/trails' || p.startsWith('/trails/')) && !p.startsWith('/trails/compare')) || p.startsWith('/mountains/'),
     },
     {
         label: 'Trip',

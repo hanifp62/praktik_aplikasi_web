@@ -6,9 +6,13 @@ use App\Enums\HikingSessionStatus;
 use App\Enums\TripStatus;
 use App\Models\Checkpoint;
 use App\Models\HikingSession;
+use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
+use App\Services\ConsiderationService;
+use App\Services\Trails\TautanBagikan;
 use Illuminate\Support\Facades\Route;
+use Inertia\Testing\AssertableInertia;
 
 /**
  * Halaman yang dipotret di akhir gelombang 1 (ruling W1-R4 dan W1-R6): pameran primitif,
@@ -101,6 +105,66 @@ class HalamanPratinjauTest extends PratinjauTestCase
         ]);
 
         $this->tulisPratinjau('jelajah-mendaki', $this->get(self::ASAL.'/trails'), 'Trails/Index');
+    }
+
+    /**
+     * Halaman gunung W3 (acuan 03): visual data profil, status tingkat gunung, tiga jalur Gede,
+     * izin, dan satu laporan pendaki.
+     */
+    public function test_gunung(): void
+    {
+        $this->sebagaiBudi();
+
+        $this->tulisPratinjau('gunung', $this->get(self::ASAL.'/mountains/gunung-gede'), 'Mountains/Show');
+    }
+
+    /**
+     * Penilaian kecocokan W3 (acuan 05): Gede via Cibodas untuk trip camping Budi, jadi
+     * bahan rencananya ikut dinilai dan aksi utamanya melanjutkan persiapan.
+     */
+    public function test_kecocokan(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+
+        $this->tulisPratinjau('kecocokan', $this->get(self::ASAL.'/trails/gede-via-cibodas/kecocokan?trip='.$trip->id), 'Trails/Fit');
+    }
+
+    /**
+     * Satu simpanan Budi diberi catatan pribadi contoh (T7-M9 tinjauan akhir W3), supaya blok
+     * "Catatan pribadi, hanya Anda" ikut terpotret di T12.
+     */
+    public function test_simpanan(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $layanan = app(ConsiderationService::class);
+        $layanan->simpanCatatan($layanan->simpanan($budi)->firstOrFail(), 'Berangkat Jumat malam. Tanya kuota ke basecamp sehari sebelumnya.');
+
+        $respons = $this->get(self::ASAL.'/trails/saved');
+        $respons->assertInertia(fn (AssertableInertia $halaman) => $halaman->where('trails.0.catatan', 'Berangkat Jumat malam. Tanya kuota ke basecamp sehari sebelumnya.'));
+
+        $this->tulisPratinjau('simpanan', $respons, 'Trails/Saved');
+    }
+
+    /**
+     * Halaman publik tautan bagikan (FR-23), dibuka sebagai tamu. Tautannya dibuat lewat
+     * TautanBagikan dari dua simpanan Budi.
+     */
+    public function test_tautan_bagikan(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $jalur = Trail::query()->whereIn('slug', ['gede-via-cibodas', 'gede-via-gunung-putri'])->orderBy('slug')->get();
+        [$token] = app(TautanBagikan::class)->buat($budi, $jalur);
+        auth()->logout();
+
+        $this->tulisPratinjau('bagikan', $this->get(self::ASAL.'/b/'.$token), 'Public/SharedComparison');
+    }
+
+    public function test_bandingkan(): void
+    {
+        $this->sebagaiBudi();
+
+        $this->tulisPratinjau('bandingkan', $this->get(self::ASAL.'/trails/compare'), 'Trails/Compare');
     }
 
     public function test_jelajah_tanpa_jalur_terbit(): void

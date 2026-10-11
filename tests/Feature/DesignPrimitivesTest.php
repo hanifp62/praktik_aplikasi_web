@@ -176,9 +176,12 @@ class DesignPrimitivesTest extends TestCase
     {
         $jelajah = $this->tanpaKomentarJs($this->sumber('pages/Trails/Index.tsx'));
 
-        $this->assertStringContainsString('{trails.data.length === 0 && adaSaringan ? (', $jelajah);
-        $this->assertMatchesRegularExpression('/jenis="tersaring"[\s\S]*?Hapus semua saringan/', $jelajah);
-        $this->assertMatchesRegularExpression('/\) : trails\.data\.length === 0 \? \(\s*<EmptyState\s+jenis="menunggu"/', $jelajah);
+        // W1-F1: "menunggu" diperiksa lebih dulu dari jumlah jalur terbit yang tidak disaring,
+        // baru sesudahnya "tersaring"; saringan tidak pernah disalahkan atas katalog kosong.
+        $this->assertMatchesRegularExpression('/\{jumlahTerbit === 0 \? \(\s*<EmptyState\s+jenis="menunggu"/', $jelajah);
+        $this->assertMatchesRegularExpression('/\) : trails\.data\.length === 0 \? \(\s*<EmptyState\s+jenis="tersaring"/', $jelajah);
+        $this->assertLessThan(strpos($jelajah, 'jenis="tersaring"'), strpos($jelajah, 'jenis="menunggu"'));
+        $this->assertMatchesRegularExpression('/jenis="tersaring"[\s\S]*?Tampilkan juga[\s\S]*?Hapus semua saringan/', $jelajah);
         $this->assertStringContainsString('menunggu="Menunggu kurator Memount menerbitkan jalur yang datanya lengkap"', $jelajah);
         $this->assertStringNotContainsString('Tidak ada jalur yang cocok', $jelajah);
     }
@@ -502,6 +505,10 @@ class DesignPrimitivesTest extends TestCase
      * Diperbarui perbaikan akhir W2 (F-1, tinjauan akhir I-1a): jarak bawah toast juga
      * menghitung --baki-banding, tinggi baki banding Jelajah, supaya toast tidak menimpa
      * baris tombol baki di 360 px.
+     *
+     * Diperbarui W3: baki banding Jelajah dilepas bersama --baki-banding (prototype 02 dan 15
+     * tanpa baki), jadi jarak bawah toast kembali menghitung navigasi bawah dan bar aksi.
+     * Baki banding Simpanan adalah bar aksi, jadi toast tetap melayang di atasnya.
      */
     public function test_the_action_bar_floats_on_the_single_elevation(): void
     {
@@ -519,9 +526,9 @@ class DesignPrimitivesTest extends TestCase
         $this->assertStringContainsString('const akar = document.documentElement;', $bar);
 
         $this->assertStringContainsString(
-            'bottom-[calc(var(--nav-bawah,env(safe-area-inset-bottom))+var(--bar-aksi,0px)+var(--baki-banding,0px)+1rem)] z-40',
+            'bottom-[calc(var(--nav-bawah,env(safe-area-inset-bottom))+var(--bar-aksi,0px)+1rem)] z-40',
             $this->sumber('components/ui/ToastUrungkan.tsx'),
-            'Toast melayang di atas bar aksi dan baki banding, bukan di tepi yang sama.'
+            'Toast melayang di atas bar aksi, bukan di tepi yang sama.'
         );
     }
 

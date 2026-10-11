@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\OfficialStatus;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -90,6 +91,36 @@ class DataFreshnessService
             // di kategori yang lebih mendesak.
             'basi' => $this->stale()->reject(fn (OfficialStatus $s) => $kedaluwarsa->contains('id', $s->id)),
         ];
+    }
+
+    /**
+     * Keadaan satu catatan status untuk pendaki (spec v3 bagian 7): "Terkini" bila
+     * diverifikasi dalam masa tinjau dan tidak segera kedaluwarsa, "Perlu ditinjau" bila
+     * belum pernah diverifikasi, terlalu lama tidak diverifikasi, atau segera kedaluwarsa,
+     * dan "Kedaluwarsa" bila masa berlakunya sudah lewat. Ambangnya sama dengan antrean
+     * tinjau admin di atas, jadi pendaki dan admin tidak pernah membaca dua penilaian.
+     */
+    public function keadaan(OfficialStatus $status): string
+    {
+        return $this->keadaanDari($status->verified_at, $status->expires_at);
+    }
+
+    /**
+     * Keadaan kesegaran dari dua stempelnya saja, fungsi murni yang dipakai keadaan() dan
+     * rincian jalur (I1 tinjauan akhir W3). Rincian membaca snapshot status yang bercache,
+     * jadi kesegarannya dihitung dari stempel pada saat halaman dirender, bukan ikut dibekukan
+     * di cache, dan kartu Jelajah serta rincian menyebut kata yang sama untuk catatan yang sama.
+     */
+    public function keadaanDari(?CarbonInterface $diverifikasi, ?CarbonInterface $kedaluwarsa): string
+    {
+        if ($kedaluwarsa !== null && $kedaluwarsa->isPast()) {
+            return 'Kedaluwarsa';
+        }
+
+        $basi = $diverifikasi === null || $diverifikasi->lt(now()->subDays($this->hariTinjau()));
+        $segera = $kedaluwarsa !== null && $kedaluwarsa->lte(now()->addDays($this->hariPeringatan()));
+
+        return $basi || $segera ? 'Perlu ditinjau' : 'Terkini';
     }
 
     private function dasar(): Builder

@@ -72,6 +72,19 @@ class TrailConditionReport extends Model
     }
 
     /**
+     * Laporan dalam jendela "terbaru" komunitas: tanggal pendakian tidak lebih tua dari
+     * hiking.conditions.community_recent_days hari, dihitung dari tanggal terbaru di Indonesia
+     * (WIT), bukan tanggal UTC server (T9-M5 tinjauan akhir W3). Batasnya inklusif. Dipakai
+     * Banding dan halaman gunung, supaya keduanya menyebut "terbaru" dengan jendela yang sama.
+     */
+    public function scopeDalamJendelaTerbaru(Builder $query): Builder
+    {
+        $hari = (int) config('hiking.conditions.community_recent_days', 30);
+
+        return $query->where('hike_date', '>=', Carbon::parse(Timezone::latestDateInIndonesia())->subDays($hari)->toDateString());
+    }
+
+    /**
      * @return array<int, ConditionTag>
      */
     public function tags(): array

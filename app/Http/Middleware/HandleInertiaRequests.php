@@ -107,6 +107,15 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'status' => fn () => $request->session()->get('status'),
                 'timbanganPenuh' => fn () => $request->session()->get('timbangan-penuh'),
+                // Jalur yang baru dihapus dari simpanan beserta catatannya, satu kali dan hanya
+                // di sesi pemiliknya: toast Urungkan memulihkannya utuh (W3).
+                'simpananTerhapus' => fn () => $request->session()->get('simpanan-terhapus'),
+                // Baris sudah ada sebelum store() ini berjalan (tab atau perangkat lain):
+                // klien tidak menawarkan Urungkan-sebagai-hapus untuk baris yang tidak
+                // dibuatnya (tinjauan Tugas 4 temuan 2; ruling W3-4b).
+                'simpananSudahAda' => fn () => (bool) $request->session()->get('simpanan-sudah-ada', false),
+                // Tautan bagikan yang baru dibuat: tokennya hanya ditunjukkan sekali ini (FR-23).
+                'tautanBagikan' => fn () => $request->session()->get('tautan-bagikan'),
             ],
         ];
     }

@@ -69,7 +69,8 @@ class AmbientFitTest extends TestCase
      *
      * Dijaga di tiga lapis, karena label keempat dapat menyelinap di salah satunya:
      * enum di server, teks yang dikirim ke halaman, dan tipe label di React yang
-     * menentukan warna dan simbolnya. Ketiadaan penilaian ditulis "Belum dinilai" (R-006,
+     * menentukan warna dan simbolnya (LabelKecocokan sejak W3, dahulu FitBadge). Ketiadaan
+     * penilaian ditulis "Belum dinilai" (R-006,
      * DK-41, spec v3 bagian 7), bukan label keempat. Sampai perbaikan akhir W1 server
      * menulis "Tidak dinilai" di tujuh tempat sementara sistem desain menulis "Belum
      * dinilai" (M-5); kini keduanya satu kata dari RouteFitLabel::textFor().
@@ -94,7 +95,7 @@ class AmbientFitTest extends TestCase
         }
 
         $tipe = "'COCOK' | 'PERLU_PERSIAPAN' | 'KURANG_COCOK' | null";
-        $this->assertStringContainsString("export type LabelFit = {$tipe};", File::get(resource_path('js/components/ui/FitBadge.tsx')));
+        $this->assertStringContainsString("export type LabelFit = {$tipe};", File::get(resource_path('js/components/trails/LabelKecocokan.tsx')));
         $this->assertStringContainsString("label: {$tipe};", File::get(resource_path('js/components/trails/types.ts')));
     }
 
@@ -234,19 +235,24 @@ class AmbientFitTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Trails/Show')
-                ->where('fit.faktor', fn ($faktor) => collect($faktor)->contains('label', 'Kesesuaian pengalaman')));
+                // T6-M4 tinjauan akhir W3: every() pada larik kosong selalu benar, jadi
+                // daftarnya dipastikan berisi dulu.
+                ->where('kecocokan.mengapaSesuai', fn ($butir) => collect($butir)->isNotEmpty() && collect($butir)->every(fn ($b) => is_string($b)))
+                ->where('kecocokan.penilaianUrl', route('trails.fit', ['trail' => $trail->slug])));
 
-        $this->assertStringContainsString('Mengapa demikian', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
+        // Sejak W3 ketujuh faktornya di halaman penilaian kecocokan; rincian menautkannya.
+        $this->assertStringContainsString('Lihat ketujuh faktor penilaian', file_get_contents(resource_path('js/components/trails/rinci/CocokkahUntukSaya.tsx')));
     }
 
     /**
      * Item D tinjauan akhir: jalur yang sama bisa terbaca "Cocok" di baris daftar
      * (yang menilai tanpa goal) dan "Perlu persiapan" di halaman detailnya (yang menilai
-     * dengan rencana terbaru pengguna kalau ada), dan sebelum diperbaiki tidak ada
-     * penanda di mana pun yang menyebut sebabnya -- terlihat seperti dua mesin yang tidak
-     * sepakat, padahal dua pertanyaan yang berbeda. Pengguna di sini sengaja tidak punya
-     * hiking goal, jadi halaman detail juga menilai tanpa goal dan wajib mengaku begitu
-     * dengan kalimat yang sama seperti baris daftar.
+     * untuk trip terencana terdekat pembaca di jalur ini, kalau ada; sejak W3, bukan tujuan
+     * rekomendasi terakhir), dan sebelum diperbaiki tidak ada penanda di mana pun yang
+     * menyebut sebabnya -- terlihat seperti dua mesin yang tidak sepakat, padahal dua
+     * pertanyaan yang berbeda. Pengguna di sini tidak punya trip di jalur ini, jadi halaman
+     * detail menilai kecocokan dasar dan wajib mengaku begitu (T6-M5 tinjauan akhir W3:
+     * docblock lama menyebut "rencana terbaru" dan hiking goal, yang tidak lagi dipakai).
      */
     public function test_the_trail_detail_page_states_it_is_showing_the_ambient_fit_without_a_goal(): void
     {
@@ -255,19 +261,18 @@ class AmbientFitTest extends TestCase
         $this->actingAs($this->pendakiDenganProfil())
             ->get(route('trails.show', $trail))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('fit.denganRencana', false));
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('kecocokan.rencana', null));
 
         $this->assertStringContainsString(
-            "fit.denganRencana ? 'untuk rencana ini' : 'Kecocokan dasar'",
-            file_get_contents(resource_path('js/pages/Trails/Show.tsx'))
+            'kecocokan.rencana ? `Untuk rencana ini: ${kecocokan.rencana}` : \'Kecocokan dasar dengan profil Anda\'',
+            file_get_contents(resource_path('js/components/trails/rinci/CocokkahUntukSaya.tsx'))
         );
     }
 
     /**
-     * Item D, sisi lainnya: pengguna yang punya hiking goal melihat halaman detail
-     * menilai DENGAN rencananya, dan halaman itu wajib menyebutnya -- kalimat yang sama
-     * persis dengan yang dipakai halaman trip ("untuk rencana ini") supaya pembaca yang
-     * pernah melihatnya di sana mengenalinya di sini.
+     * Item D, sisi lainnya, diperbarui W3 (spec v3 bagian 6.4): halaman detail menilai
+     * "untuk rencana ini" bila pembaca punya trip terencana di jalur INI, dan menyebut
+     * rencananya. Tujuan rekomendasi terakhir saja tidak cukup: ia bukan rencana di jalur ini.
      */
     public function test_the_trail_detail_page_states_it_is_showing_the_plan_aware_fit_with_a_goal(): void
     {
@@ -275,10 +280,13 @@ class AmbientFitTest extends TestCase
         $trail = $this->jalurTerbit();
         HikingGoal::factory()->for($user)->create();
 
-        $this->actingAs($user)
-            ->get(route('trails.show', $trail))
-            ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('fit.denganRencana', true));
+        $this->actingAs($user)->get(route('trails.show', $trail))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('kecocokan.rencana', null));
+
+        $trip = TripPlan::factory()->for($user)->create(['trail_id' => $trail->id, 'planned_date' => now()->addDays(9)->toDateString()]);
+
+        $this->actingAs($user)->get(route('trails.show', $trail))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('kecocokan.rencana', $trip->fresh()->ringkasan()));
     }
 
     /**

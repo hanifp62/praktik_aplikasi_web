@@ -25,9 +25,18 @@ class OfficialStatusSeederTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Seeder mencatat keadaan nyata September 2026 dengan masa berlaku, dan catatan Merbabu
+     * berakhir 30 September. Tanpa jam beku, test ini menegaskan kabar yang sudah kedaluwarsa
+     * sebagai kabar hari ini dan gagal begitu tanggalnya lewat (6 Oktober 2026). Jam dibekukan
+     * di pertengahan September, di dalam setiap jendela kecuali penutupan Desember, supaya
+     * test membaca keadaan yang dicatat seeder, bukan tanggal mesin yang menjalankannya.
+     */
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->travelTo(Carbon::parse('2026-09-15 08:00:00'));
 
         $this->seed(MountainSeeder::class);
         $this->seed(OfficialStatusSeeder::class);
