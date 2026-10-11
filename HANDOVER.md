@@ -83,6 +83,12 @@ apa adanya.
   NXDOMAIN, juga lewat DNS publik. Menurut dokumentasi Supabase, itu berarti proyek dijeda, dihapus, atau ref-nya salah.
   Pulihkan proyek dari dashboard sebelum memakai Supabase lagi. Sesudah itu migrasi W3 dan W6 (izin akhir 2, 43, dan 52)
   tetap dibutuhkan.
+- Atas permintaan pemilik, `.env` lokal di mesin ini diarahkan ke data contoh pada 11 Oktober 2026. Kunci yang diubah:
+  `DB_CONNECTION=demo`, `APP_DEMO=true`, `FIELD_PACK_ENABLED=true`, dan `FIELD_SAFETY_ENABLED=true`. Akibatnya
+  `php artisan serve` biasa langsung menyajikan data contoh. Penyajian itu teruji: login lewat formulir, Beranda, Mendaki,
+  ruang kerja trip, dan mode lapangan tampil tanpa galat console.
+- Isi `.env` sebelumnya disimpan di `.env.sebelum-inspeksi` (diabaikan git). Untuk kembali ke Supabase, salin berkas
+  itu menjadi `.env` sesudah proyeknya dipulihkan.
 
 Nilai di bawah terukur 11 Oktober 2026 pada pohon kerja akhir W6 (snapshot tree `2ad3f1a`). Selisihnya terhadap akhir
 W5 (`d4a78fe`), sebelum tangkapan dan residu: 90 berkas ditambah, 102 diubah, dan 1 dihapus
