@@ -12,6 +12,8 @@ export type TemaLapangan = 'terang' | 'gelap';
 interface TataLetakPendakianProps {
     /** Ruang kerja trip; null di paket luring, karena halaman lain tidak dapat dibuka tanpa sinyal. */
     kembali: string | null;
+    /** Pendakian sedang berjalan: hanya saat itu nama tombol kembali menyebut pendakian tetap berjalan. */
+    berlangsung: boolean;
     /** Satu h1 dari halaman (PageHeaderContractTest). */
     judul: ReactNode;
     /** Keadaan dan lama berjalan, dibaca sekilas di bawah judul. */
@@ -31,7 +33,7 @@ const tautanKembali = kelas('inline-flex h-12 min-w-12 shrink-0 items-center jus
  * akar halaman ini, bukan di <html>, jadi tema aplikasi tidak berubah sesudah keluar dari mode
  * lapangan; warna teks, kursor, dan aksen kontrol diturunkan dari akar ini (app.css).
  */
-export function TataLetakPendakian({ kembali, judul, keterangan, children }: TataLetakPendakianProps) {
+export function TataLetakPendakian({ kembali, berlangsung, judul, keterangan, children }: TataLetakPendakianProps) {
     const [tema, setTema] = useState<TemaLapangan>(() => (window.temaGelapAktif?.() ? 'gelap' : 'terang'));
 
     usePenjagaPerangkat();
@@ -41,8 +43,14 @@ export function TataLetakPendakian({ kembali, judul, keterangan, children }: Tat
             <JudulHalaman />
             <header className="sticky top-0 z-20 border-b border-subtle bg-surface">
                 <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2 sm:px-6">
+                    {/* Nama halaman induk sama dengan tombol kembali lain (ruling AF-10); "Pendakian tetap
+                        berjalan" hanya benar selama pendakian memang berjalan. */}
                     {kembali ? (
-                        <Tautan href={kembali} aria-label="Kembali ke detail trip. Pendakian tetap berjalan." className={tautanKembali}>
+                        <Tautan
+                            href={kembali}
+                            aria-label={berlangsung ? 'Kembali ke Ruang kerja trip. Pendakian tetap berjalan.' : 'Kembali ke Ruang kerja trip'}
+                            className={tautanKembali}
+                        >
                             <Icon name="arrow-left" size={22} />
                         </Tautan>
                     ) : null}

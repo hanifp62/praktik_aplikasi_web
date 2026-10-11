@@ -411,6 +411,23 @@ class DesignPrimitivesTest extends TestCase
     }
 
     /**
+     * Ruling AF-7 (audit E2E M-5): <dialog> dirender di tempat pemanggil, dan sebagai anak
+     * bukan-pertama wadah space-y-*, aturan margin space-y (tiga kelas) mengalahkan mt-auto dan
+     * m-auto (satu kelas), sehingga lembar bawah menempel 16 px dari atas layar dan dialog tengah
+     * naik ke atas. Margin letaknya karena itu memakai penanda penting di sumbernya, untuk setiap
+     * pemanggil.
+     */
+    public function test_the_sheet_and_dialog_margins_cannot_be_overridden_by_a_spacing_parent(): void
+    {
+        $lembar = $this->tanpaKomentarJs($this->sumber('components/ui/Lembar.tsx'));
+
+        $this->assertStringContainsString('className="lembar !mb-0 !mt-auto ', $lembar);
+        $this->assertStringContainsString(' sm:!mb-auto ', $lembar);
+        $this->assertStringContainsString('className="dialog-tengah !m-auto ', $lembar);
+        $this->assertDoesNotMatchRegularExpression('/[\s"](mt-auto|mb-0|sm:mb-auto|m-auto)[\s"]/', $lembar, 'Margin letak tanpa penanda penting dapat dikalahkan space-y pemanggil.');
+    }
+
+    /**
      * Toast urungkan menunggu pembacanya (WCAG 2.2.1): paling sedikit 8 detik, berhenti
      * selama disentuh penunjuk atau difokus, dan dapat ditutup dengan tombol bernama.
      *

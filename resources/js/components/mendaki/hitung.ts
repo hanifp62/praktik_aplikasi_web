@@ -147,6 +147,36 @@ export function teksNaik(meter: number): string {
     return `↑${angkaBulat.format(Math.round(meter))} m`;
 }
 
+/** Bahan keterangan petak "Naik lagi" yang angkanya tidak ada; semua dari cabang useModeLapangan. */
+export interface SebabNaikKosong {
+    /** Profil elevasi berisi paling sedikit dua titik (naikDiantara memberi null di bawah itu). */
+    profil: boolean;
+    /** Letak pos tujuan dan titik awal di garis jalur diketahui (garis ada, koordinat pos ada dan dekat garis). */
+    letakDiGaris: boolean;
+    /** Urutan pos terakhir yang dicapai; 0 bila belum ada. */
+    tercapai: number;
+    /** Ketinggian pos tujuan dan pos terakhir yang dicapai sama-sama tercatat. */
+    ketinggianPos: boolean;
+}
+
+/**
+ * Keterangan petak "Naik lagi" bila angkanya tidak ada (ruling AF-9, audit E2E M-7). Angkanya dicari
+ * dari dua sumber berurutan (useModeLapangan): profil elevasi sepanjang garis jalur, lalu selisih
+ * ketinggian pos terakhir yang dicapai dan pos tujuan. Angka kosong berarti KEDUANYA gagal, jadi
+ * keterangannya menyebut sebab nyata keduanya, masing-masing dengan frasanya sendiri:
+ * - sumber profil: "profil elevasi belum ada", atau "garis jalur atau koordinat pos belum dapat
+ *   dipakai" (garis tidak ada, pos tanpa koordinat, atau pos jauh dari garis);
+ * - sumber pos: "belum ada pos yang dicapai", atau "ketinggian pos belum tercatat".
+ * Keadaan lain tidak menghasilkan angka kosong; bila tetap terjadi, keterangannya umum dan benar.
+ */
+export function keteranganNaikKosong(sebab: SebabNaikKosong): string {
+    const dariProfil = !sebab.profil ? 'profil elevasi belum ada' : !sebab.letakDiGaris ? 'garis jalur atau koordinat pos belum dapat dipakai' : null;
+    const dariPos = sebab.tercapai === 0 ? 'belum ada pos yang dicapai' : !sebab.ketinggianPos ? 'ketinggian pos belum tercatat' : null;
+    const bagian = [dariProfil, dariPos].filter((b): b is string => b !== null);
+
+    return bagian.length > 0 ? bagian.join(' dan ') : 'belum dapat dihitung';
+}
+
 /** Akurasi posisi ("±15 m"). */
 export function teksAkurasi(meter: number): string {
     return `±${angkaBulat.format(Math.round(meter))} m`;
@@ -319,7 +349,8 @@ export function teksSekitar(meter: number): string {
  * (usePosisiLapangan; pra-tinjau Tugas 7 PT7-3a): "belum" hanya untuk keadaan yang memang masih
  * menunggu. Izin yang ditolak tidak ditulis "belum didapat", karena posisi itu tidak akan datang.
  * Hanya untuk cabang tanpa posisi; bila posisi terakhir masih tampil, kartu memakai
- * kalimatPosisiLama (ruling W6-7h).
+ * kalimatPosisiLama (ruling W6-7h). Lokasi mati juga untuk pendakian yang sudah berakhir di
+ * perangkat ini (shell dari rekaman berakhir, ruling AF-6), jadi kalimatnya menyebut keadaan itu.
  */
 export function kalimatPosisiDarurat(keadaan: string): string {
     switch (keadaan) {
@@ -328,7 +359,7 @@ export function kalimatPosisiDarurat(keadaan: string): string {
         case 'tidak-didukung':
             return 'Peramban ini tidak dapat membaca lokasi.';
         case 'mati':
-            return 'Lokasi tidak dibaca selama pendakian dijeda atau belum dimulai.';
+            return 'Lokasi tidak dibaca selama pendakian dijeda, belum dimulai, atau sudah berakhir.';
         case 'galat':
             return 'Posisi belum terbaca; perangkat mencoba lagi.';
         default:

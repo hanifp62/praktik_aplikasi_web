@@ -1,10 +1,13 @@
 import { router, usePage } from '@inertiajs/react';
-import { useState, type RefObject } from 'react';
+import { useEffect, useId, useState, type RefObject } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { InputError } from '@/components/ui/Field';
+import { fokusTerlihat } from '@/components/ui/gaya';
 import { LembarBawah } from '@/components/ui/Lembar';
 import { TombolSalin } from '@/components/ui/TombolSalin';
+import { useFokusSesudahRender } from '@/components/ui/ToastUrungkan';
+import { kelas } from '@/lib/kelas';
 import { destroy, store } from '@/routes/shares';
 import type { PropsBersama } from '@/types';
 
@@ -37,12 +40,31 @@ const opsi = { preserveScroll: true, preserveState: true } as const;
  *
  * Membuat dan mencabut adalah kiriman dari dalam dialog modal, jadi galat jaringan ditulis di
  * dalam lembar ini (ruling W2-5e): pesan jaringan kerangka menjadi inert di bawah dialog.
+ *
+ * Fokus dan pengumuman sesudah aksi (ruling AF-2, audit E2E I-2): "Buat tautan" dan "Cabut" melepas
+ * tombolnya sendiri, jadi fokus tidak boleh jatuh ke body. Sesudah tautan dibuat, fokus pindah ke
+ * blok tautan baru, yang bernama judulnya dan dijelaskan URL-nya. Sesudah tautan dicabut, fokus
+ * pindah ke wilayah kabar lembar ini. Wilayah role="status" itu selalu terpasang di dalam lembar
+ * dan membacakan pengumuman halaman dari server ("Tautan bagikan dibuat." atau "...dicabut..."),
+ * karena wilayah pengumuman halaman di luar dialog menjadi inert selama lembar terbuka. Isinya
+ * dikosongkan setiap lembar dibuka, supaya kabar aksi lama tidak tampil sebagai kabar baru.
  */
 export function LembarBagikan({ terbuka, onTutup, pemicu, jalur, tautanAktif, hariBerlaku }: LembarBagikanProps) {
     const { flash, errors } = usePage<PropsBersama>().props;
     const [memproses, setMemproses] = useState(false);
     const [galatJaringan, setGalatJaringan] = useState(false);
+    const [kabar, setKabar] = useState('');
+    const fokusKe = useFokusSesudahRender();
+    const id = useId();
+    const idBaru = `${id}-baru`;
+    const idKabar = `${id}-kabar`;
     const baru = flash.tautanBagikan;
+
+    useEffect(() => {
+        if (terbuka) {
+            setKabar('');
+        }
+    }, [terbuka]);
 
     const kirim = (aksi: () => void) => {
         setGalatJaringan(false);
@@ -59,9 +81,39 @@ export function LembarBagikan({ terbuka, onTutup, pemicu, jalur, tautanAktif, ha
         },
     };
 
-    const buat = () => kirim(() => router.post(store.url(), { trails: jalur.map((j) => j.id) }, { ...opsi, ...selesai }));
+    /** Pengumuman halaman dari jawaban server; Compare dan Saved sama-sama mengirimnya dari flash. */
+    const pengumumanDari = (props: unknown) => (props as { pengumuman?: string }).pengumuman ?? '';
 
-    const cabut = (id: number) => kirim(() => router.delete(destroy.url({ share: id }), { ...opsi, ...selesai }));
+    const buat = () =>
+        kirim(() =>
+            router.post(
+                store.url(),
+                { trails: jalur.map((j) => j.id) },
+                {
+                    ...opsi,
+                    ...selesai,
+                    onSuccess: (halaman) => {
+                        setKabar(pengumumanDari(halaman.props));
+
+                        if ((halaman.props as unknown as PropsBersama).flash.tautanBagikan) {
+                            fokusKe(idBaru);
+                        }
+                    },
+                },
+            ),
+        );
+
+    const cabut = (tautan: number) =>
+        kirim(() =>
+            router.delete(destroy.url({ share: tautan }), {
+                ...opsi,
+                ...selesai,
+                onSuccess: (halaman) => {
+                    setKabar(pengumumanDari(halaman.props));
+                    fokusKe(idKabar);
+                },
+            }),
+        );
 
     return (
         <LembarBawah
@@ -77,10 +129,19 @@ export function LembarBagikan({ terbuka, onTutup, pemicu, jalur, tautanAktif, ha
                 ) : null}
 
                 {baru ? (
-                    <div className="space-y-2 rounded-lg border border-subtle bg-surface-sunken p-3">
-                        <p className="text-kecil font-bold text-primary">Tautan baru, berlaku sampai {baru.berlakuSampai}</p>
+                    <div
+                        id={idBaru}
+                        role="group"
+                        tabIndex={-1}
+                        aria-labelledby={`${idBaru}-judul`}
+                        aria-describedby={`${idBaru}-url`}
+                        className={kelas('space-y-2 rounded-lg border border-subtle bg-surface-sunken p-3', fokusTerlihat)}
+                    >
+                        <p id={`${idBaru}-judul`} className="text-kecil font-bold text-primary">
+                            Tautan baru, berlaku sampai {baru.berlakuSampai}
+                        </p>
                         {/* URL terlihat sebagai teks yang mudah dipilih, bukan hanya bila papan klip gagal (T8-M13). */}
-                        <p className="select-all break-all rounded-control border border-subtle bg-surface px-3 py-2 text-kecil text-primary">{baru.url}</p>
+                        <p id={`${idBaru}-url`} className="select-all break-all rounded-control border border-subtle bg-surface px-3 py-2 text-kecil text-primary">{baru.url}</p>
                         <TombolSalin teks={baru.url} label="Salin tautan" />
                         <p className="text-meta text-muted">Tautan ini hanya ditunjukkan sekarang. Simpan atau kirim sebelum menutup lembar ini.</p>
                     </div>
@@ -115,6 +176,12 @@ export function LembarBagikan({ terbuka, onTutup, pemicu, jalur, tautanAktif, ha
                         </ul>
                     </section>
                 ) : null}
+
+                {/* Wilayah kabar selalu terpasang di dalam lembar; empty:!mt-0 menghapus jarak space-y
+                    saat kosong tanpa menyembunyikan wilayahnya. */}
+                <p id={idKabar} role="status" tabIndex={-1} className={kelas('rounded-kecil text-kecil text-primary empty:!mt-0', fokusTerlihat)}>
+                    {kabar}
+                </p>
             </div>
         </LembarBawah>
     );

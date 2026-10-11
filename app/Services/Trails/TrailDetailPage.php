@@ -576,7 +576,7 @@ class TrailDetailPage
     {
         return [
             'id' => $s->id,
-            'waktu' => $s->forecast_at->copy()->setTimezone($zona)->translatedFormat('d M H:i'),
+            'waktu' => $s->forecast_at->copy()->setTimezone($zona)->translatedFormat('d M H.i'),
             'cuaca' => $s->weather_description ?? '-',
             'suhu' => $s->temperature_c !== null ? number_format((float) $s->temperature_c, 1, ',', '.').' °C' : '-',
             'kelembapan' => $s->humidity_percent !== null ? $s->humidity_percent.'%' : '-',

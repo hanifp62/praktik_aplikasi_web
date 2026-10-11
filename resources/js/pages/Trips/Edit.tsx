@@ -33,7 +33,8 @@ export default function Edit() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-                <PageHeader induk={{ href: show.url(trip.id), label: 'Rincian trip' }} title="Ubah Rencana Trip" description={trip.jalur} />
+                {/* Satu nama untuk halaman induk di semua tombol kembali (ruling AF-10, audit E2E M-8). */}
+                <PageHeader induk={{ href: show.url(trip.id), label: 'Ruang kerja trip' }} title="Ubah Rencana Trip" description={trip.jalur} />
 
                 <form onSubmit={kirim} className="space-y-5 rounded-lg bg-surface p-6">
                     <p className="text-sm text-secondary">Jalur tidak dapat diganti di sini. Untuk jalur lain, buat rencana trip baru.</p>

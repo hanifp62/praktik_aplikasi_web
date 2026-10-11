@@ -1,7 +1,56 @@
 import { Tautan } from './Tautan';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useEffect, useRef, type ButtonHTMLAttributes, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { kelas } from '@/lib/kelas';
 import { umpanTekan } from './gaya';
+
+/**
+ * Fokus kembali ke tombol yang diaktifkan pengguna sesudah aksinya selesai (ruling AF-2, audit E2E
+ * I-2; daftar periksa butir 7). Tombol yang sedang difokus menjadi `disabled` selama `sibuk`, dan
+ * peramban menjatuhkan fokusnya ke body tanpa pernah mengembalikannya. Semantik `disabled` tidak
+ * diubah, jadi kiriman ganda tetap tercegah.
+ *
+ * `tandai` dipanggil di onClick, yang juga menangkap klik sintetis submit implisit (Enter di
+ * isian). Saat `sibuk` kembali false sesudah sempat true, tanda itu dipakai dan dihapus: bila fokus
+ * sedang di body atau tidak ada, dan tombolnya masih terpasang, fokus kembali ke tombol itu. Fokus
+ * yang sudah dipindah dengan sengaja oleh pemanggil (misalnya ke isian galat atau ke Urungkan) tidak
+ * pernah direbut. Tombol yang dilepas oleh aksinya sendiri tidak terpasang lagi; pemanggilnya
+ * memberi tujuan fokus sendiri. `tandai(e)` dengan event juga mencatat tombol yang diklik, untuk
+ * tombol yang bukan Button ini (TombolIkon di TombolSimpan).
+ */
+export function useFokusKembali(sibuk: boolean): { tombol: RefObject<HTMLButtonElement | null>; tandai: (e?: MouseEvent<HTMLButtonElement>) => void } {
+    const tombol = useRef<HTMLButtonElement | null>(null);
+    const ditekan = useRef(false);
+    const sibukLalu = useRef(sibuk);
+
+    useEffect(() => {
+        if (sibuk === sibukLalu.current) {
+            return;
+        }
+
+        sibukLalu.current = sibuk;
+
+        if (sibuk || !ditekan.current) {
+            return;
+        }
+
+        ditekan.current = false;
+        const aktif = document.activeElement;
+
+        if ((aktif === null || aktif === document.body) && tombol.current?.isConnected) {
+            tombol.current.focus();
+        }
+    }, [sibuk]);
+
+    const tandai = (e?: MouseEvent<HTMLButtonElement>) => {
+        ditekan.current = true;
+
+        if (e) {
+            tombol.current = e.currentTarget;
+        }
+    };
+
+    return { tombol, tandai };
+}
 
 type Varian = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -34,8 +83,10 @@ export function Button({
     children,
     type = 'button',
     disabled,
+    onClick,
     ...rest
 }: ButtonProps) {
+    const { tombol, tandai } = useFokusKembali(processing);
     const ukuran = size === 'sm' ? 'px-4 py-2 text-kecil' : 'px-5 py-3 text-isi';
 
     const gaya: Record<Varian, string> = {
@@ -73,8 +124,21 @@ export function Button({
         );
     }
 
+    // ref dan onClick mendahului {...rest} yang tidak lagi membawa onClick: pengembalian fokus
+    // useFokusKembali (ruling AF-2) tidak dapat ditimpa pemanggil.
     return (
-        <button type={type} className={semua} disabled={disabled || processing} aria-busy={processing || undefined} {...rest}>
+        <button
+            ref={tombol}
+            type={type}
+            className={semua}
+            disabled={disabled || processing}
+            aria-busy={processing || undefined}
+            onClick={(e) => {
+                tandai();
+                onClick?.(e);
+            }}
+            {...rest}
+        >
             {processing ? (
                 <span className="inline-flex items-center gap-2">
                     <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">

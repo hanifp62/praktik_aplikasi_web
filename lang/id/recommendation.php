@@ -10,5 +10,5 @@ return [
         .'tidak lagi diperbarui di sini. Tanyakan keadaan jalurnya langsung kepada '
         .'pengelola kawasan sebelum merencanakan keberangkatan.',
     'duration_requires_overnight' => 'Estimasi durasi jalur menuntut bermalam, sementara rencana Anda pulang hari.',
-    'elevation_gain_above_goal_limit' => 'Elevation gain jalur melebihi batas yang Anda tentukan.',
+    'elevation_gain_above_goal_limit' => 'Tanjakan jalur melebihi batas yang Anda tentukan.',
 ];

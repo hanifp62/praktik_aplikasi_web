@@ -16,6 +16,11 @@ import { IsianKataSandi } from './IsianKataSandi';
  * server menghapus akunnya: kata sandi yang salah tidak menghapus apa pun. Kunci perangkat
  * ditangkap sebelum kiriman, karena sesudah akun terhapus props bersama tidak lagi membawanya.
  * Respons server juga mengirim Clear-Site-Data sebagai lapis kedua.
+ *
+ * Kartu ini tidak menyuruh mengunduh data dulu (ruling AF-5, audit E2E I-5): Memount tidak punya
+ * fitur unduh atau ekspor data, dan kebijakan bagian 2 tidak menyebut ekspor. Kalimat yang tersisa
+ * mengikuti tabel bagian 2: identitas, rencana, dan trip dihapus; laporan yang sudah disetujui dan
+ * terbit boleh tetap ada tanpa nama penulisnya.
  */
 export function HapusAkun() {
     const { perangkat } = usePage<PropsBersama>().props;
@@ -49,7 +54,7 @@ export function HapusAkun() {
     return (
         <Card
             title="Hapus Akun"
-            subtitle="Setelah akun dihapus, profil, rencana, dan trip Anda hilang permanen. Laporan kondisi jalur yang sudah disetujui tetap disimpan tanpa nama Anda, karena pendaki lain masih memakainya. Unduh dahulu data yang ingin Anda simpan."
+            subtitle="Setelah akun dihapus, profil, rencana, dan trip Anda hilang permanen. Laporan kondisi jalur yang sudah disetujui tetap disimpan tanpa nama Anda, karena pendaki lain masih memakainya."
         >
             <Button variant="danger" onClick={buka}>Hapus Akun</Button>
 

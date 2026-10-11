@@ -134,7 +134,25 @@ class TripIndexPageTest extends TestCase
             'mendatang' => [$dekat->id, $jauh->id],
             'selesai' => [$batal->id, $selesaiLama->id],
         ], $this->idPerKelompok($props));
-        $this->assertSame(['Mendatang', 'Selesai'], array_column($props['kelompok'], 'judul'));
+        // Diubah ruling AF-11 (audit E2E C-6): kelompok ini memuat trip dibatalkan, jadi judulnya
+        // sama dengan arsip, "Selesai dan dibatalkan", bukan "Selesai".
+        $this->assertSame(['Mendatang', 'Selesai dan dibatalkan'], array_column($props['kelompok'], 'judul'));
+    }
+
+    /**
+     * Ruling AF-11: tanpa trip dibatalkan, kelompoknya tetap "Selesai"; satu trip dibatalkan saja
+     * sudah cukup untuk memakai nama arsip.
+     */
+    public function test_the_finished_group_names_cancelled_trips_only_when_it_holds_one(): void
+    {
+        $this->trip('2026-06-01', TripStatus::COMPLETED);
+        $this->trip('2026-07-01', TripStatus::COMPLETED);
+
+        $this->assertSame(['Selesai'], array_column($this->props()['kelompok'], 'judul'));
+
+        $this->trip('2026-08-15', TripStatus::CANCELLED);
+
+        $this->assertSame(['Selesai dan dibatalkan'], array_column($this->props()['kelompok'], 'judul'));
     }
 
     /**

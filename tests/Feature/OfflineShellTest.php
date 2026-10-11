@@ -259,6 +259,10 @@ class OfflineShellTest extends TestCase
      * Koneksi basis data paket tidak menahan penghapusan dan dapat dibuka lagi sesudah gagal
      * (PT9-7), dan penulisan baru selesai sesudah transaksinya benar-benar tersimpan (PT9-20).
      * Dijalankan di Node atas simpan.ts dengan indexedDB tiruan.
+     *
+     * Diubah ruling AF-6: tulisSesi kini membaca rekaman trip itu dulu (get) dan tidak menimpa
+     * rekaman yang sudah berakhir, jadi toko tiruan juga menjawab get (tanpa rekaman). Asersinya
+     * tetap: tulisan baru selesai sesudah oncomplete.
      */
     public function test_the_device_store_releases_its_connection_and_waits_for_commits(): void
     {
@@ -308,7 +312,7 @@ class OfflineShellTest extends TestCase
             const hapusTertunda = await janjiTertunda;
 
             const tx = (akhir) => {
-                const t = { error: null, objectStore: () => ({ put: () => { const r = {}; queueMicrotask(() => { r.result = 1; r.onsuccess?.(); queueMicrotask(() => (akhir === 'batal' ? (t.error = new Error('QuotaExceededError'), t.onerror?.(), t.onabort?.()) : t.oncomplete?.())); }); return r; } }) };
+                const t = { error: null, objectStore: () => ({ get: () => { const r = {}; queueMicrotask(() => { r.result = undefined; r.onsuccess?.(); }); return r; }, put: () => { const r = {}; queueMicrotask(() => { r.result = 1; r.onsuccess?.(); queueMicrotask(() => (akhir === 'batal' ? (t.error = new Error('QuotaExceededError'), t.onerror?.(), t.onabort?.()) : t.oncomplete?.())); }); return r; } }) };
                 return t;
             };
             let tulisBatal = 'selesai';
@@ -408,6 +412,132 @@ class OfflineShellTest extends TestCase
         ], $hasil['sesudah']['ditulis'], 'Semua rekaman yang masih menyala menjadi false, field lain tetap.');
         $this->assertSame(1, $hasil['dibukaSesudahTutup'], 'Kunci yang sudah ditutup tidak dibuka.');
         $this->assertSame(2, $hasil['ditulisSesudahTutup'], 'Kunci yang sudah ditutup tidak ditulis.');
+    }
+
+    /**
+     * Ruling AF-6 (audit E2E I-6): Selesai atau Batal yang berhasil di perangkat ini menandai rekaman
+     * sesi paket trip itu berakhir, dengan jenis dan waktunya, supaya mode lapangan dari paket tidak
+     * lagi menulis pendakian itu sebagai berjalan. Satu kasus per cabang rekamanBerakhir:
+     * - tanpa basis data paket (dan tanpa kunci) tidak ada yang dibuka, jadi tidak ada yang dibuat;
+     * - rekaman yang ada mendapat `berakhir`, field lain tetap;
+     * - yang pertama dicatat yang berlaku: tandai kedua tidak mengubahnya;
+     * - tulisSesi dari mode lapangan yang terlambat atau dari tab lain tidak menimpa rekaman berakhir,
+     *   tetapi tetap menulis rekaman trip lain;
+     * - paket tanpa rekaman: rekaman baru yang tidak berlangsung, tanpa izin rekam jejak;
+     * - tanpa rekaman dan tanpa paket trip itu: tidak ada yang ditulis;
+     * - kunci yang sudah ditutup di tab ini tidak dibuka.
+     */
+    public function test_finishing_or_cancelling_on_this_device_marks_the_session_record_ended(): void
+    {
+        $hasil = $this->node(['simpan' => 'luring/simpan.ts'], <<<'JS'
+            const dibuka = [];
+            let daftar = [];
+            const sesi = new Map();
+            const paket = [[7, 'v1'], [5, 'v2']];
+            globalThis.window = { localStorage: { getItem: () => null } };
+            globalThis.IDBKeyRange = { bound: (bawah, atas) => ({ bawah, atas }) };
+            globalThis.indexedDB = {
+                databases: async () => daftar,
+                open(nama) {
+                    dibuka.push(nama);
+                    const r = {};
+                    queueMicrotask(() => {
+                        r.result = { close() {}, onversionchange: null, transaction() {
+                            const t = { error: null };
+                            let menunggu = 0;
+                            const minta = (isi) => {
+                                menunggu += 1;
+                                const q = {};
+                                queueMicrotask(() => {
+                                    q.result = isi();
+                                    q.onsuccess?.();
+                                    menunggu -= 1;
+                                    if (menunggu === 0) queueMicrotask(() => t.oncomplete?.());
+                                });
+                                return q;
+                            };
+                            t.objectStore = (toko) => toko === 'sesi'
+                                ? { get: (id) => minta(() => sesi.get(id)), put: (x) => { sesi.set(x.tripId, structuredClone(x)); } }
+                                : { getAllKeys: (rentang) => minta(() => paket.filter(([id]) => id === rentang.bawah[0])) };
+                            return t;
+                        } };
+                        r.onsuccess?.();
+                    });
+                    return r;
+                },
+            };
+            const selesai = { jenis: 'selesai', waktu: '2026-10-11T13:40:00.000Z' };
+            const batal = { jenis: 'batal', waktu: '2026-10-11T13:50:00.000Z' };
+            sesi.set(7, { tripId: 7, trip: { berlangsung: true, mulai: 'm7', jedaSejak: null, jedaDetik: 30 }, tercapai: 2, sesiId: 41, rekamJejak: true, jejak: '/j/41', diperbarui: 'd7' });
+
+            await simpan.tandaiSesiBerakhir('k1', 7, selesai);
+            await simpan.tandaiSesiBerakhir(null, 7, selesai);
+            const tanpaBasisData = { dibuka: dibuka.length, rekaman7: sesi.get(7).berakhir ?? null };
+
+            daftar = [{ name: 'memount-luring-k1', version: 1 }];
+            await simpan.tandaiSesiBerakhir('k1', 7, selesai);
+            const ditandai = structuredClone(sesi.get(7));
+            await simpan.tandaiSesiBerakhir('k1', 7, batal);
+            const yangPertama = sesi.get(7).berakhir;
+
+            const db = await simpan.buka('k1');
+            await simpan.tulisSesi(db, { tripId: 7, trip: { berlangsung: true, mulai: 'm7', jedaSejak: null, jedaDetik: 90 }, tercapai: 3, sesiId: 41, rekamJejak: true, jejak: '/j/41', diperbarui: 'd7b' });
+            const sesudahTulisTerlambat = sesi.get(7);
+            await simpan.tulisSesi(db, { tripId: 9, trip: { berlangsung: true, mulai: 'm9', jedaSejak: null, jedaDetik: 0 }, tercapai: 1, sesiId: 50, rekamJejak: false, jejak: null, diperbarui: 'd9' });
+            const tripLainDitulis = sesi.has(9);
+
+            await simpan.tandaiSesiBerakhir('k1', 5, batal);
+            await simpan.tandaiSesiBerakhir('k1', 6, batal);
+            const dibukaSebelumTutup = dibuka.length;
+            simpan.tutupKunci('k1');
+            await simpan.tandaiSesiBerakhir('k1', 9, selesai);
+
+            process.stdout.write(JSON.stringify({
+                tanpaBasisData, ditandai, yangPertama, sesudahTulisTerlambat, tripLainDitulis,
+                paketTanpaRekaman: sesi.get(5), tanpaPaket: sesi.has(6),
+                dibukaSebelumTutup, dibukaSesudahTutup: dibuka.length, rekaman9: sesi.get(9).berakhir ?? null,
+            }));
+            JS);
+
+        $selesai = ['jenis' => 'selesai', 'waktu' => '2026-10-11T13:40:00.000Z'];
+
+        $this->assertSame(['dibuka' => 0, 'rekaman7' => null], $hasil['tanpaBasisData'], 'Tanpa basis data paket atau tanpa kunci, indexedDB.open tidak dipanggil.');
+        $this->assertSame(
+            ['tripId' => 7, 'trip' => ['berlangsung' => true, 'mulai' => 'm7', 'jedaSejak' => null, 'jedaDetik' => 30], 'tercapai' => 2, 'sesiId' => 41, 'rekamJejak' => true, 'jejak' => '/j/41', 'diperbarui' => 'd7', 'berakhir' => $selesai],
+            $hasil['ditandai'],
+            'Rekaman yang ada mendapat berakhir; field lain tetap.',
+        );
+        $this->assertSame($selesai, $hasil['yangPertama'], 'Tandai kedua tidak mengganti yang pertama.');
+        $this->assertSame($hasil['ditandai'], $hasil['sesudahTulisTerlambat'], 'tulisSesi tidak menimpa rekaman yang sudah berakhir.');
+        $this->assertTrue($hasil['tripLainDitulis'], 'tulisSesi tetap menulis rekaman trip yang belum berakhir.');
+        $this->assertSame(
+            ['tripId' => 5, 'trip' => ['berlangsung' => false, 'mulai' => null, 'jedaSejak' => null, 'jedaDetik' => 0], 'tercapai' => 0, 'sesiId' => null, 'rekamJejak' => false, 'jejak' => null, 'diperbarui' => '2026-10-11T13:50:00.000Z', 'berakhir' => ['jenis' => 'batal', 'waktu' => '2026-10-11T13:50:00.000Z']],
+            $hasil['paketTanpaRekaman'],
+        );
+        $this->assertFalse($hasil['tanpaPaket'], 'Tanpa rekaman dan tanpa paket trip itu, tidak ada yang ditulis.');
+        $this->assertSame($hasil['dibukaSebelumTutup'], $hasil['dibukaSesudahTutup'], 'Kunci yang sudah ditutup tidak dibuka lagi.');
+        $this->assertNull($hasil['rekaman9']);
+    }
+
+    /**
+     * Ruling AF-6: rakitan shell dari rekaman berakhir tidak berlangsung dan tanpa izin rekam jejak,
+     * apa pun isi rekaman lainnya, dan membawa `berakhir` untuk kalimat shell. Rekaman yang belum
+     * berakhir tidak berubah perilakunya.
+     */
+    public function test_an_ended_session_record_is_assembled_as_not_running(): void
+    {
+        $lapangan = [
+            'trip' => ['id' => 7, 'nama' => 'Gede akhir pekan', 'jalur' => 'Gede via Cibodas', 'gunung' => 'Gunung Gede', 'berlangsung' => false, 'mulai' => null, 'jedaSejak' => null, 'jedaDetik' => 0],
+            'tercapai' => 0, 'sesiId' => null, 'rekamJejak' => false, 'sumber' => 'paket', 'laporan' => [],
+            'urls' => ['tiba' => '/trips/7/hike/tiba', 'jejak' => null],
+        ];
+        $sesi = ['tripId' => 7, 'trip' => ['berlangsung' => true, 'mulai' => '2026-10-22T21:00:00Z', 'jedaSejak' => null, 'jedaDetik' => 600], 'tercapai' => 2, 'sesiId' => 41, 'rekamJejak' => true, 'jejak' => '/hike/41/track', 'diperbarui' => '2026-10-22T23:10:00Z'];
+        $berakhir = ['jenis' => 'selesai', 'waktu' => '2026-10-23T02:00:00.000Z'];
+
+        [$berjalan, $selesai] = $this->rakit([[$lapangan, ['laporan' => []], $sesi], [$lapangan, ['laporan' => []], [...$sesi, 'berakhir' => $berakhir]]]);
+
+        $this->assertSame([true, true, null], [$berjalan['trip']['berlangsung'], $berjalan['rekamJejak'], $berjalan['berakhir']]);
+        $this->assertSame([false, false, $berakhir, 2, '2026-10-22T21:00:00Z'], [$selesai['trip']['berlangsung'], $selesai['rekamJejak'], $selesai['berakhir'], $selesai['tercapai'], $selesai['trip']['mulai']]);
     }
 
     /**

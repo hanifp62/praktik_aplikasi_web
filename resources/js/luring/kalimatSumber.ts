@@ -23,6 +23,22 @@ export interface KeadaanSumber {
     lama: string;
     /** Waktu rekaman sesi terakhir di perangkat, sudah ditulis dengan zona; null tanpa rekaman. */
     catatan: string | null;
+    /**
+     * Pendakian yang sudah diselesaikan atau dibatalkan di perangkat ini (ruling AF-6), dengan waktu
+     * yang sudah ditulis berzona (null bila waktunya tidak terbaca); tidak ada atau null bila belum.
+     */
+    berakhir?: { jenis: 'selesai' | 'batal'; waktu: string | null } | null;
+}
+
+/**
+ * Kalimat pendakian yang sudah berakhir di perangkat ini (ruling AF-6), untuk shell mode lapangan
+ * dan daftar paket. Waktunya waktu jawaban berhasil diterima di perangkat ini; tanpa waktu yang
+ * terbaca, "pada ..." tidak ditulis.
+ */
+export function kalimatBerakhir(jenis: 'selesai' | 'batal', waktu: string | null): string {
+    const kata = jenis === 'selesai' ? 'diselesaikan' : 'dibatalkan';
+
+    return waktu === null ? `Pendakian ini sudah ${kata} di perangkat ini.` : `Pendakian ini sudah ${kata} di perangkat ini pada ${waktu}.`;
 }
 
 /**
@@ -44,10 +60,20 @@ export { keteranganBerjalan };
  *    bahwa jejak yang terekam lebih dari 10 menit sesudah pendakian diselesaikan atau dibatalkan
  *    tidak disimpan (ruling W6-FH, W6-FT, PenerimaanJejak::dalamPendakian). Sejak W6-FT,
  *    TripLifecycle::cancel() menutup sesi (ended_at) seperti complete(), jadi saringan servernya
- *    kini berlaku juga untuk pendakian yang dibatalkan.
+ *    kini berlaku juga untuk pendakian yang dibatalkan;
+ * 7. shell dengan rekaman berakhir (ruling AF-6): diselesaikan atau dibatalkan di perangkat ini
+ *    pada waktunya, dan tiba di pos serta jeda tidak dicatat lagi. Didahulukan dari cabang 4
+ *    sampai 6, dan keterangannya tanpa lama bergerak, jadi penghitung waktu tidak berjalan.
  */
 export function teksKeadaanLapangan(k: KeadaanSumber): { keterangan: string; kalimat: string | null } {
     const berjalan = keteranganBerjalan(k.dijeda, k.lama);
+
+    if (k.halamanLuring && k.berakhir) {
+        return {
+            keterangan: k.berakhir.jenis === 'selesai' ? 'Sudah diselesaikan' : 'Sudah dibatalkan',
+            kalimat: `Dari paket luring. ${BINGKAI_PAKET} ${kalimatBerakhir(k.berakhir.jenis, k.berakhir.waktu)} Tiba di pos dan jeda tidak dicatat lagi.`,
+        };
+    }
 
     if (!k.halamanLuring) {
         const keterangan = k.berlangsung ? berjalan : 'Belum dimulai';

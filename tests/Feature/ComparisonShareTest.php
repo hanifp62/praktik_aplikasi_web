@@ -9,6 +9,7 @@ use App\Models\TrailConsideration;
 use App\Models\User;
 use App\Services\ConsiderationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Testing\TestResponse;
@@ -289,6 +290,31 @@ class ComparisonShareTest extends TestCase
         $halaman = File::get(resource_path('js/pages/Trails/Saved.tsx'));
         $this->assertStringContainsString('tersedia >= 2 || tautanAktif.length > 0 ? (', $halaman);
         $this->assertStringContainsString('onNetworkError', File::get(resource_path('js/components/trails/banding/LembarBagikan.tsx')));
+    }
+
+    /**
+     * Dua tautan dari hari yang sama tidak berbagi nama tombol Cabut bagi pembaca layar: waktu
+     * dibuat memuat jam dan zonanya, dan nama aksesibel tombol memakai waktu itu. Daftar berurut
+     * dari yang terbaru.
+     */
+    public function test_two_links_from_the_same_day_are_told_apart_by_their_time(): void
+    {
+        $user = $this->pendakiBerprofil();
+        $a = $this->jalur('A');
+        $b = $this->jalur('B');
+        app(ConsiderationService::class)->toggle($user, $a);
+        app(ConsiderationService::class)->toggle($user, $b);
+
+        $this->travelTo(Carbon::parse('2026-10-11 01:05:00', 'UTC'));
+        $this->buat($user, [$a->id, $b->id]);
+        $this->travelTo(Carbon::parse('2026-10-11 14:30:00', 'UTC'));
+        $this->buat($user, [$a->id, $b->id]);
+
+        $this->actingAs($user)->get(route('trails.saved'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('tautanAktif', 2)
+            ->where('tautanAktif.0.dibuat', '11 Okt 21.30 WIB')
+            ->where('tautanAktif.1.dibuat', '11 Okt 08.05 WIB'));
+        $this->assertStringContainsString('Cabut<span className="sr-only"> tautan yang dibuat {t.dibuat}</span>', File::get(resource_path('js/components/trails/banding/LembarBagikan.tsx')));
     }
 
     /**

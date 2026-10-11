@@ -305,7 +305,8 @@ class TripReminderTest extends TestCase
 
         $isi = (new TripReminderNotification($trip->fresh(), 1))->toMail($trip->user)->render();
 
-        $this->assertStringContainsString('Sabtu, 10 Oktober 2026, mulai pukul 05:30 WITA', $isi);
+        // Jam bertitik (05.30): kaidah bahasa Indonesia untuk jam (ruling audit-fix-B BF-1, M-1).
+        $this->assertStringContainsString('Sabtu, 10 Oktober 2026, mulai pukul 05.30 WITA', $isi);
     }
 
     public function test_the_trail_name_is_escaped_in_the_email(): void
@@ -433,7 +434,9 @@ class TripReminderTest extends TestCase
             ->where('pengingat.aktif', true)
             ->where('pengingat.dapatDiatur', true)
             ->where('pengingat.daftar.0.label', '3 hari sebelum berangkat')
-            ->where('pengingat.daftar.0.waktu', 'Rabu, 07 Okt 2026 07:00 WITA')
+            // Jam bertitik (07.00): kaidah bahasa Indonesia untuk jam (ruling audit-fix-B
+            // BF-1, M-1).
+            ->where('pengingat.daftar.0.waktu', 'Rabu, 07 Okt 2026 07.00 WITA')
             ->where('pengingat.daftar.0.keadaan', 'menunggu')
             ->where('pengingat.daftar.1.label', 'Sehari sebelum berangkat'));
 
@@ -442,7 +445,7 @@ class TripReminderTest extends TestCase
 
         $this->actingAs($trip->user)->get(route('trips.show', $trip))->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pengingat.daftar.0.keadaan', 'terkirim')
-            ->where('pengingat.daftar.0.keadaanTeks', 'Terkirim Rabu, 07 Okt 2026 07:00 WITA')
+            ->where('pengingat.daftar.0.keadaanTeks', 'Terkirim Rabu, 07 Okt 2026 07.00 WITA')
             ->where('pengingat.daftar.1.keadaan', 'menunggu'));
     }
 

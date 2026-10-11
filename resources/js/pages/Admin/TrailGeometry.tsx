@@ -175,7 +175,7 @@ export default function TrailGeometry() {
                                 ambangKetinggian={ambangKetinggian}
                                 sibuk={sibuk}
                                 onTerapkan={() =>
-                                    konfirmasiLalu('Ganti elevation gain dan loss jalur ini dengan taksiran dari berkas GPX?', () => kirim('tanjakan', elevation.url({ trail: trail.id })))
+                                    konfirmasiLalu('Ganti tanjakan dan turunan jalur ini dengan taksiran dari berkas GPX?', () => kirim('tanjakan', elevation.url({ trail: trail.id })))
                                 }
                                 onSimpan={() => kirim('simpan', store.url({ trail: trail.id }))}
                             />
@@ -257,13 +257,13 @@ function PratinjauJejak({ pratinjau, namaJalur, ambangKetinggian, sibuk, onTerap
                     <p className="text-sm font-medium text-primary">Ketinggian terbaca dari berkas ini</p>
                     <dl className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                         <div>
-                            <dt className="text-xs text-muted">Taksiran elevation gain</dt>
+                            <dt className="text-xs text-muted">Taksiran tanjakan</dt>
                             <dd className="text-primary">
                                 {pratinjau.tanjakan.gain} <span className="text-secondary">(tercatat: {pratinjau.tanjakan.gainTercatat})</span>
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-xs text-muted">Taksiran elevation loss</dt>
+                            <dt className="text-xs text-muted">Taksiran turunan</dt>
                             <dd className="text-primary">
                                 {pratinjau.tanjakan.loss} <span className="text-secondary">(tercatat: {pratinjau.tanjakan.lossTercatat})</span>
                             </dd>
@@ -278,7 +278,7 @@ function PratinjauJejak({ pratinjau, namaJalur, ambangKetinggian, sibuk, onTerap
                     </Button>
                 </div>
             ) : pratinjau.asal === null ? (
-                <p className="text-sm text-secondary">Berkas ini tidak membawa data ketinggian, jadi profil elevasi dan taksiran elevation gain tidak dapat dihitung darinya.</p>
+                <p className="text-sm text-secondary">Berkas ini tidak membawa data ketinggian, jadi profil elevasi dan taksiran tanjakan tidak dapat dihitung darinya.</p>
             ) : null}
 
             <Button processing={sibuk === 'simpan'} disabled={sibuk !== null} onClick={onSimpan}>Simpan geometri</Button>

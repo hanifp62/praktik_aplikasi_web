@@ -1,8 +1,10 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ChipPilihan } from '@/components/ui/Chip';
 import { Dialog } from '@/components/ui/Lembar';
+import { tandaiSesiBerakhir } from '@/luring/simpan';
+import type { PropsBersama } from '@/types';
 import type { Opsi } from './types';
 
 /**
@@ -43,8 +45,14 @@ import type { Opsi } from './types';
  * sana): `saatTutup()` kini hanya merebut fokus bila fokus memang akan hilang, bukan ketika
  * sudah dipindah dengan sengaja ke luar dialog. Kedua perbaikan (W6-5o di sini, W6-5p di
  * `Lembar.tsx`) saling melengkapi dan tidak saling bergantung pada urutan efek yang pasti.
+ *
+ * Batal yang berhasil menandai rekaman sesi paket trip ini di perangkat ini berakhir (ruling AF-6,
+ * tandaiSesiBerakhir), supaya mode lapangan dari paket tidak lagi menulis pendakian ini sebagai
+ * berjalan. Kunci perangkat dibaca saat render; closure-nya tetap berjalan walau komponen ini sudah
+ * lepas sesudah batal berhasil.
  */
-export function BatalkanTrip({ url, alasan, berlangsung, onHasil }: { url: string; alasan: Opsi[]; berlangsung: boolean; onHasil: (hasil: 'berhasil' | 'ditolak') => void }) {
+export function BatalkanTrip({ tripId, url, alasan, berlangsung, onHasil }: { tripId: number; url: string; alasan: Opsi[]; berlangsung: boolean; onHasil: (hasil: 'berhasil' | 'ditolak') => void }) {
+    const kunci = usePage<PropsBersama>().props.perangkat?.kunci ?? null;
     const [terbuka, setTerbuka] = useState(false);
     const [pilihan, setPilihan] = useState('');
     const [memproses, setMemproses] = useState(false);
@@ -64,6 +72,7 @@ export function BatalkanTrip({ url, alasan, berlangsung, onHasil }: { url: strin
                         onHasil('ditolak');
                     } else {
                         onHasil('berhasil');
+                        void tandaiSesiBerakhir(kunci, tripId, { jenis: 'batal', waktu: new Date().toISOString() }).catch(() => undefined);
                     }
                 },
                 onFinish: () => {

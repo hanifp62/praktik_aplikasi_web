@@ -12,8 +12,14 @@ const pilihan = [
 ] as const;
 
 /**
- * Pemilih tema: tiga radio berlabel teks, dikirim ke server yang menulis cookie dan
- * merender ulang halaman dengan data-theme baru. Setiap pilihan adalah target 44 px.
+ * Pemilih tema: tiga radio berlabel teks, dikirim ke server yang menulis cookie. Setiap
+ * pilihan adalah target 44 px.
+ *
+ * Tema berganti saat itu juga (ruling AF-1, audit E2E I-1): sesudah POST /tema berhasil,
+ * window.terapkanTema (dasar.js) menyamakan data-theme pada <html> dengan cookie baru. Pendengar
+ * navigate di app.tsx tidak cukup di sini, karena POST /tema kembali ke URL yang sama, dan
+ * Inertia 3.7.1 menjadikan kunjungan ke URL yang sama sebagai replace yang tidak memancarkan
+ * navigate. Berlaku di Profil dan di kaki beranda tamu, yang memakai komponen ini.
  */
 export function ThemePicker({ compact = false, className }: { compact?: boolean; className?: string }) {
     const { tema } = usePage<PropsBersama>().props;
@@ -26,7 +32,7 @@ export function ThemePicker({ compact = false, className }: { compact?: boolean;
         setMemproses(true);
         router.post(simpan.url(), { tema: nilai }, {
             preserveScroll: true,
-            // Atribut <html> disamakan dengan cookie baru oleh pendengar navigasi di app.tsx.
+            onSuccess: () => window.terapkanTema(),
             onFinish: () => setMemproses(false),
         });
     };

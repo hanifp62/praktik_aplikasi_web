@@ -63,7 +63,9 @@ final class TautanBagikan
     /**
      * Tautan aktif $user dalam bentuk yang dikirim ke Simpanan dan Banding, supaya pembuatnya
      * dapat mencabut kapan saja (FR-23). Tokennya tidak tersimpan, jadi yang ditunjukkan isinya
-     * dan umurnya. Satu pembentuk untuk kedua halaman (T9-M9 tinjauan akhir W3).
+     * dan umurnya. Satu pembentuk untuk kedua halaman (T9-M9 tinjauan akhir W3). Waktu dibuat
+     * memuat jam dan zonanya, karena dua tautan dari hari yang sama tidak boleh berbagi nama
+     * tombol Cabut yang sama bagi pembaca layar.
      *
      * @return array<int, array{id: int, jumlahJalur: int, dibuat: string, berlakuSampai: string}>
      */
@@ -72,7 +74,7 @@ final class TautanBagikan
         return $this->aktif($user)->map(fn (ComparisonShare $s) => [
             'id' => $s->id,
             'jumlahJalur' => count($s->trail_ids),
-            'dibuat' => $s->created_at->copy()->setTimezone(Timezone::DEFAULT)->translatedFormat('j M'),
+            'dibuat' => Timezone::display($s->created_at, Timezone::DEFAULT, 'j M H.i'),
             'berlakuSampai' => $s->expires_at->copy()->setTimezone(Timezone::DEFAULT)->translatedFormat('j M Y'),
         ])->values()->all();
     }

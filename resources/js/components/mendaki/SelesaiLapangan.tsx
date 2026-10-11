@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { FormulirSelesai, type SelesaiTertahan } from '@/components/trips/FormulirSelesai';
 import { LembarBawah } from '@/components/ui/Lembar';
 import { kelas } from '@/lib/kelas';
-import { antreanSaatIni, gagalTerakhir, putarAntrean, selesaiTertahan } from './antrean';
+import { antreanSaatIni, dengarAntrean, gagalTerakhir, putarAntrean, selesaiTertahan } from './antrean';
 import { tombolLapangan } from './ModeLapangan';
 import type { DataLapangan } from './types';
 
@@ -18,6 +18,10 @@ import type { DataLapangan } from './types';
  * salah. Luring, putaran berhenti tanpa mengirim dan aksinya tetap menunggu; putaran yang sedang
  * berjalan dari pewaktu mode lapangan tidak ditunggu, jadi aksinya dihitung menunggu sampai
  * Simpan berikutnya.
+ *
+ * Kalimat tertahan dinilai ulang setiap kali antrean berubah atau terkirim (ruling AF-8, audit E2E
+ * M-6): pantauTahan mendengar antrean (dengarAntrean) dan menghitung keputusan yang sama dari
+ * antrean saat itu, tanpa memutarnya, jadi kalimat hilang begitu aksi trip ini terkirim.
  */
 export function SelesaiLapangan({ data }: { data: DataLapangan }) {
     const [terbuka, setTerbuka] = useState(false);
@@ -28,6 +32,11 @@ export function SelesaiLapangan({ data }: { data: DataLapangan }) {
 
         return selesaiTertahan(await antreanSaatIni(), data.urls, 'lapangan', gagalTerakhir() === 'sesi');
     };
+
+    const pantauTahan = (perbarui: (hasil: SelesaiTertahan | null) => void) =>
+        dengarAntrean(() => {
+            void antreanSaatIni().then((aksi) => perbarui(selesaiTertahan(aksi, data.urls, 'lapangan', gagalTerakhir() === 'sesi')), () => undefined);
+        });
 
     return (
         <>
@@ -41,7 +50,7 @@ export function SelesaiLapangan({ data }: { data: DataLapangan }) {
                 judul="Selesaikan pendakian"
                 keterangan="Sesudah disimpan, hasilnya masuk ke riwayat Anda. Berbalik sebelum tujuan juga dicatat apa adanya."
             >
-                <FormulirSelesai url={data.urls.selesai} hasil={data.pilihan.hasil} alasan={data.pilihan.alasan} id="selesai-lapangan" tahan={tahan} />
+                <FormulirSelesai tripId={data.trip.id} url={data.urls.selesai} hasil={data.pilihan.hasil} alasan={data.pilihan.alasan} pantauTahan={pantauTahan} id="selesai-lapangan" tahan={tahan} />
             </LembarBawah>
         </>
     );

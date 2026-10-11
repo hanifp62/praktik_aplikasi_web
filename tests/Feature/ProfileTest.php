@@ -5,12 +5,14 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
 {
     use RefreshDatabase;
+    use SumberReact;
 
     public function test_profile_page_is_displayed(): void
     {
@@ -137,5 +139,26 @@ class ProfileTest extends TestCase
             'Setelah akun dihapus, profil, rencana, dan trip Anda hilang permanen dan tidak dapat dikembalikan. Data Memount di perangkat ini, termasuk paket luring dan jejak yang belum terkirim, ikut dihapus. Masukkan kata sandi Anda untuk memastikan.',
             $sumber,
         );
+    }
+
+    /**
+     * Ruling AF-5 (audit E2E I-5): sebelum aksi yang tidak dapat diurungkan, kartu Hapus Akun tidak
+     * menyuruh langkah yang mustahil. Memount tidak punya rute unduh atau ekspor data, jadi kalimat
+     * "Unduh dahulu data yang ingin Anda simpan." dibuang dan tidak ada janji ekspor di kartu atau
+     * dialognya. Kalimat yang tersisa mengikuti KEBIJAKAN-DATA-PRIBADI bagian 2.
+     */
+    public function test_the_delete_account_card_does_not_promise_a_data_download(): void
+    {
+        // Docblock komponen boleh menjelaskan alasannya; yang dijaga adalah teks yang dirender.
+        $sumber = $this->tanpaKomentarJs(File::get(resource_path('js/components/akun/HapusAkun.tsx')));
+
+        $this->assertDoesNotMatchRegularExpression('/[Uu]nduh dahulu|[Ee]kspor data|[Uu]nduh data/', $sumber);
+        $this->assertStringContainsString(
+            'subtitle="Setelah akun dihapus, profil, rencana, dan trip Anda hilang permanen. Laporan kondisi jalur yang sudah disetujui tetap disimpan tanpa nama Anda, karena pendaki lain masih memakainya."',
+            $sumber,
+        );
+
+        $rute = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri())->implode(' ');
+        $this->assertDoesNotMatchRegularExpression('/ekspor|export|unduh-data|download-data/i', $rute, 'Bila rute ekspor data ditambahkan, kalimat kartu ini perlu ditinjau ulang.');
     }
 }

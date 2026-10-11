@@ -13,7 +13,9 @@ import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Lencana } from '@/components/ui/Lencana';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { fokusTerlihat } from '@/components/ui/gaya';
 import { Tautan } from '@/components/ui/Tautan';
+import { useFokusSesudahRender } from '@/components/ui/ToastUrungkan';
 import { kelas } from '@/lib/kelas';
 import { AppLayout } from '@/layouts/AppLayout';
 import { show } from '@/routes/trips';
@@ -143,12 +145,18 @@ function HalDiperiksa({ nomor, judul, children }: { nomor: number; judul: string
  * "Saya sudah meninjau semuanya" pindah ke dua wilayah yang SELALU terpasang tepat di atas
  * grup aksi (role="status" untuk flash, role="alert" untuk penolakan), bukan alert di puncak
  * halaman yang luput dari gulir dan tidak andal diumumkan (I3).
+ *
+ * Fokus sesudah aksi (ruling AF-2, audit E2E I-2): "Simpan hasil cek ini" tetap terpasang, jadi
+ * Button mengembalikan fokusnya sendiri sesudah `processing`. "Saya sudah meninjau semuanya" yang
+ * berhasil diganti kalimat "Tinjauan tercatat ...", jadi fokus pindah ke kalimat itu; yang ditolak
+ * tetap terpasang dan fokusnya kembali lewat Button.
  */
 export default function Readiness() {
     const { kepala, tautanLangkah, keadaan, kecocokan, persiapan, kondisi, sejakTerakhir, hariKeberangkatan, tindakLanjut, bolehKonfirmasi, alasanTanpaTinjauan, preDeparture, penolakan, flash } =
         usePage<Props>().props;
     const [menyimpan, setMenyimpan] = useState(false);
     const [mengonfirmasi, setMengonfirmasi] = useState(false);
+    const fokusKe = useFokusSesudahRender();
 
     const simpanCek = () => {
         setMenyimpan(true);
@@ -157,7 +165,7 @@ export default function Readiness() {
 
     const konfirmasi = () => {
         setMengonfirmasi(true);
-        router.post(confirm.url(kepala.id), {}, { preserveScroll: true, onFinish: () => setMengonfirmasi(false) });
+        router.post(confirm.url(kepala.id), {}, { preserveScroll: true, onSuccess: () => fokusKe('tinjauan-tercatat'), onFinish: () => setMengonfirmasi(false) });
     };
 
     const prakiraan = kondisi.prakiraan;
@@ -443,7 +451,9 @@ export default function Readiness() {
                         // I2: tombol tidak ditawarkan lagi sesudah tinjauan tercatat -- menekannya
                         // kedua kali hanya akan ditolak server, dan tanda tinjauannya sendiri harus
                         // tetap terbaca di sini meski "Simpan hasil cek ini" menulis baris baru.
-                        <p className="text-kecil font-bold text-primary">Tinjauan tercatat {preDeparture.dicatat}.</p>
+                        <p id="tinjauan-tercatat" tabIndex={-1} className={kelas('rounded-kecil text-kecil font-bold text-primary', fokusTerlihat)}>
+                            Tinjauan tercatat {preDeparture.dicatat}.
+                        </p>
                     ) : bolehKonfirmasi ? (
                         // m-1: tombol ini bukan aksi utama selama masih ada butir yang tersisa,
                         // termasuk yang menunggu BMKG -- naik jadi primer baru ketika benar-benar

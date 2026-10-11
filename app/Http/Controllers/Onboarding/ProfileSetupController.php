@@ -128,11 +128,11 @@ class ProfileSetupController extends Controller
             ['label' => 'Medan yang pernah dilalui', 'nilai' => $medan !== '' ? $medan : $belum],
             ['label' => 'Pengalaman navigasi', 'nilai' => $pengalaman?->navigation_experience?->label() ?? $belum],
             ['label' => 'Durasi pendakian terlama', 'nilai' => $pengalaman?->longest_hike_duration_minutes ? Durasi::panjang($pengalaman->longest_hike_duration_minutes) : $belum],
-            ['label' => 'Elevation gain tertinggi', 'nilai' => $meter($pengalaman?->highest_elevation_gain_m)],
+            ['label' => 'Tanjakan tertinggi', 'nilai' => $meter($pengalaman?->highest_elevation_gain_m)],
             ['label' => 'Durasi yang Anda sukai', 'nilai' => $preferensi?->preferred_duration?->label() ?? $belum],
             ['label' => 'Tipe perjalanan', 'nilai' => $preferensi?->preferred_trip_type?->label() ?? $belum],
             ['label' => 'Tingkat tantangan yang dicari', 'nilai' => $preferensi?->preferred_challenge?->label() ?? 'Tidak ada preferensi'],
-            ['label' => 'Batas elevation gain yang nyaman', 'nilai' => $meter($preferensi?->max_elevation_gain_preference_m)],
+            ['label' => 'Batas tanjakan yang nyaman', 'nilai' => $meter($preferensi?->max_elevation_gain_preference_m)],
         ];
     }
 

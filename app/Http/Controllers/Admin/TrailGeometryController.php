@@ -165,7 +165,7 @@ class TrailGeometryController extends Controller
             'sumber' => 'taksiran dari berkas GPX',
         ]);
 
-        return back(fallback: route('trails.geometry', $trail))->with('status', 'Elevation gain dan loss diperbarui dari berkas GPX.');
+        return back(fallback: route('trails.geometry', $trail))->with('status', 'Tanjakan dan turunan diperbarui dari berkas GPX.');
     }
 
     public function store(Request $request, Trail $trail, AuditLogService $audit): RedirectResponse

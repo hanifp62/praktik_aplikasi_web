@@ -78,14 +78,46 @@ class TripReactPagesTest extends TestCase
     /**
      * Mode pendakian memakai tata letak minim sendiri, tetapi tetap punya landmark utama
      * sasaran tautan lewati di templat akar, dan jalan kembali ke tripnya.
+     *
+     * Diubah ruling AF-10 (audit E2E M-8): halaman induknya disebut "Ruang kerja trip" di semua
+     * tombol kembali, termasuk di sini, bukan "detail trip" atau "Rincian trip".
      */
     public function test_the_hike_layout_keeps_the_main_landmark_and_a_way_back(): void
     {
         $tataLetak = File::get(resource_path('js/components/trips/TataLetakPendakian.tsx'));
 
         $this->assertStringContainsString('id="konten"', $tataLetak);
-        $this->assertStringContainsString('Kembali ke detail trip', $tataLetak);
-        $this->assertStringContainsString('<TataLetakPendakian', File::get(resource_path('js/pages/Trips/Hike.tsx')));
+        // "Pendakian tetap berjalan" hanya selama pendakian berjalan; sebelum mulai kalimat itu salah.
+        $this->assertStringContainsString("aria-label={berlangsung ? 'Kembali ke Ruang kerja trip. Pendakian tetap berjalan.' : 'Kembali ke Ruang kerja trip'}", $tataLetak);
+        $this->assertStringContainsString('<TataLetakPendakian kembali={daring ? data.urls.ruangKerja : null} berlangsung={data.trip.berlangsung} ', File::get(resource_path('js/pages/Trips/Hike.tsx')));
+    }
+
+    /**
+     * Ruling AF-10 (audit E2E M-8): satu nama untuk ruang kerja trip di setiap tombol kembali
+     * menuju trips.show. Sapuan, bukan daftar: halaman baru yang menulis nama lain ikut merah.
+     */
+    public function test_every_way_back_to_the_trip_workspace_uses_one_name(): void
+    {
+        $pelanggar = [];
+
+        foreach (File::allFiles(resource_path('js')) as $berkas) {
+            $isi = $berkas->getContents();
+
+            if (preg_match('/[Rr]incian trip|[Dd]etail trip/', $isi)) {
+                $pelanggar[] = $berkas->getRelativePathname();
+            }
+
+            preg_match_all("/induk=\{\{ href: show\.url\([^)]*\), label: '([^']+)' \}\}/", $isi, $label);
+
+            foreach ($label[1] as $nama) {
+                if ($nama !== 'Ruang kerja trip') {
+                    $pelanggar[] = $berkas->getRelativePathname().": {$nama}";
+                }
+            }
+        }
+
+        $this->assertSame([], $pelanggar);
+        $this->assertStringContainsString("induk={{ href: show.url(trip.id), label: 'Ruang kerja trip' }}", File::get(resource_path('js/pages/Trips/Edit.tsx')));
     }
 
     /**

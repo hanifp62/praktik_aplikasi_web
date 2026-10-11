@@ -57,7 +57,7 @@ export function KartuHasil({ hasil, dibandingkan, onBandingkan, onPilih, memilih
                     <dd className="font-medium text-primary">{hasil.angka.jarak}</dd>
                 </div>
                 <div>
-                    <dt className="text-muted">Elevation gain</dt>
+                    <dt className="text-muted">Tanjakan</dt>
                     <dd className="font-medium text-primary">{hasil.angka.tanjakan}</dd>
                 </div>
                 <div>

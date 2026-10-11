@@ -6,7 +6,7 @@
     // pola yang dipakai trail-row.blade.php dan App\Http\Resources\TrailRowResource.
     $ringkas = $trail->name.' di '.$trail->mountain->name.', '.$trail->mountain->province.'. '
         .((float) $trail->distance_km ? 'Jarak '.$trail->distance_km.' km. ' : '')
-        .($trail->elevation_gain_m ? 'Elevation gain '.number_format($trail->elevation_gain_m, 0, ',', '.').' m. ' : '')
+        .($trail->elevation_gain_m ? 'Tanjakan '.number_format($trail->elevation_gain_m, 0, ',', '.').' m. ' : '')
         .'Karakteristik jalur, daftar pos, dan profil elevasi.';
 @endphp
 
@@ -92,7 +92,7 @@
                         <dd class="font-medium text-primary">{{ $trail->distance_km ?? '-' }} km</dd>
                     </div>
                     <div>
-                        <dt class="text-muted">Elevation gain</dt>
+                        <dt class="text-muted">Tanjakan</dt>
                         <dd class="font-medium text-primary">
                             {{ $trail->elevation_gain_m ? number_format($trail->elevation_gain_m, 0, ',', '.') : '-' }} m
                         </dd>

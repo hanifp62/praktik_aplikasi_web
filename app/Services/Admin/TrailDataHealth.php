@@ -54,7 +54,7 @@ class TrailDataHealth
                 'lingkup' => fn (Builder $query) => $query->whereDoesntHave('officialStatuses'),
             ],
             'karakteristik' => [
-                'label' => 'Karakteristik dasar belum lengkap (jarak, elevation gain, estimasi durasi)',
+                'label' => 'Karakteristik dasar belum lengkap (jarak, tanjakan, estimasi durasi)',
                 'lingkup' => fn (Builder $query) => $query->where(fn (Builder $kosong) => $kosong
                     ->whereNull('distance_km')
                     ->orWhereNull('elevation_gain_m')

@@ -46,7 +46,7 @@ class TripReminderNotification extends Notification
         $tanggal = $this->trip->planned_date->translatedFormat('l, d F Y');
 
         $waktu = $this->trip->start_time
-            ? sprintf('%s, mulai pukul %s %s', $tanggal, Carbon::parse($this->trip->start_time)->format('H:i'), $zona)
+            ? sprintf('%s, mulai pukul %s %s', $tanggal, Carbon::parse($this->trip->start_time)->format('H.i'), $zona)
             : sprintf('%s (%s)', $tanggal, $zona);
 
         $kapan = $this->sisaHari <= 1 ? 'besok' : $this->sisaHari.' hari lagi';

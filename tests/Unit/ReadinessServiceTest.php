@@ -88,6 +88,12 @@ class ReadinessServiceTest extends TestCase
 
         $this->assertSame(ReadinessState::NEEDS_PREPARATION, $check->computed_state);
         $this->assertNotEmpty($check->explanation['outstanding']);
+
+        // Hitungan butir, bukan persen (R-005).
+        $berlaku = $trip->preparationItems()->where('status', '!=', PreparationStatus::NOT_APPLICABLE->value)->count();
+        $this->assertGreaterThan(0, $berlaku);
+        $this->assertContains("0 dari {$berlaku} butir persiapan yang berlaku sudah dikonfirmasi.", $check->explanation['outstanding']);
+        $this->assertStringNotContainsString('%', implode(' ', $check->explanation['outstanding']));
     }
 
     public function test_case_c_closed_status_is_not_recommended(): void

@@ -28,7 +28,8 @@ interface Props extends PropsBersama {
         elevasiBelumDiketahui: string | null;
         elevasiTertinggi: string;
     } | null;
-    laporan: { terbit: number; terimaKasih: number };
+    /** `menunggu`: laporan pengguna ini yang masih menunggu moderasi, termasuk FLAGGED (ruling AF-3). */
+    laporan: { terbit: number; menunggu: number; terimaKasih: number };
     grafik: TitikTanjakan[];
 }
 
@@ -82,7 +83,7 @@ export default function HikerProgress() {
                                     </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-sm text-muted">Total elevation gain</dt>
+                                    <dt className="text-sm text-muted">Total tanjakan</dt>
                                     <dd className="mt-1">
                                         <span data-angka className="block text-2xl font-semibold text-primary">{angka.elevasiTotal}</span>
                                         {angka.elevasiBelumDiketahui ? <span className="mt-1 block text-xs text-warn-900">{angka.elevasiBelumDiketahui}</span> : null}
@@ -97,10 +98,16 @@ export default function HikerProgress() {
 
                         <GrafikTanjakan titik={grafik} />
 
-                        {/* Dikalimatkan sebagai dampak pada orang lain, bukan sebagai skor. */}
+                        {/* Dikalimatkan sebagai dampak pada orang lain, bukan sebagai skor. Laporan yang
+                            masih menunggu moderasi bukan "belum ada laporan", dan ajakan menulis tidak
+                            ditawarkan di cabang itu supaya tidak terkirim laporan ganda (ruling AF-3). */}
                         <section aria-labelledby="progres-laporan">
                             <h2 id="progres-laporan" className="text-base font-semibold text-primary">Laporan kondisi</h2>
-                            {laporan.terbit === 0 ? (
+                            {laporan.terbit === 0 && laporan.menunggu > 0 ? (
+                                <p className="mt-2 text-sm text-secondary">
+                                    <span data-angka>{laporan.menunggu}</span> laporan kondisi Anda sedang menunggu moderasi. Laporan tampil untuk pendaki lain sesudah disetujui.
+                                </p>
+                            ) : laporan.terbit === 0 ? (
                                 <>
                                     <p className="mt-2 text-sm text-secondary">
                                         Belum ada laporan kondisi dari Anda. Setelah turun, keterangan tentang jalur yang baru Anda lalui adalah hal yang paling dibutuhkan pendaki

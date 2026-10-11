@@ -337,7 +337,7 @@ class Trail extends Model
         $menunggu = [];
 
         if ($this->distance_km === null || $this->elevation_gain_m === null || $this->estimated_duration_minutes === null) {
-            $menunggu[] = 'Jarak, elevation gain, dan estimasi durasi';
+            $menunggu[] = 'Jarak, tanjakan, dan estimasi durasi';
         }
 
         if ($this->countFor('checkpoints') === 0) {
@@ -373,7 +373,7 @@ class Trail extends Model
         }
 
         if ($this->distance_km === null || $this->elevation_gain_m === null || $this->estimated_duration_minutes === null) {
-            $missing[] = 'Karakteristik dasar belum lengkap (jarak, elevation gain, estimasi durasi).';
+            $missing[] = 'Karakteristik dasar belum lengkap (jarak, tanjakan, estimasi durasi).';
         }
 
         // Memakai hasil withCount() bila pemanggil sudah memuatnya. Tanpa ini setiap

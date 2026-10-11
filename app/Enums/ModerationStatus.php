@@ -21,6 +21,20 @@ enum ModerationStatus: string
         };
     }
 
+    /**
+     * Status yang dibaca pelapor laporannya sendiri. FLAGGED adalah tanda kerja moderator
+     * (laporan ditandai untuk ditinjau lebih teliti), jadi bagi pelapor laporan itu masih
+     * menunggu moderasi, sama dengan Ringkasan (HasilPendakian::laporan) dan Progres
+     * (HikerProgressController, ruling AF-3). Antrean moderasi tetap memakai label().
+     */
+    public function labelUntukPelapor(): string
+    {
+        return match ($this) {
+            self::PENDING, self::FLAGGED => self::PENDING->label(),
+            default => $this->label(),
+        };
+    }
+
     public function isPubliclyVisible(): bool
     {
         return $this === self::APPROVED;

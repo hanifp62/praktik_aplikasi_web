@@ -111,8 +111,8 @@ export default function Create() {
                         name="max_elevation_gain_m"
                         type="number"
                         min={0}
-                        label="Batas elevation gain (meter, opsional)"
-                        hint="Jalur dengan elevation gain di atas batas ini tidak akan masuk rekomendasi."
+                        label="Batas tanjakan (meter, opsional)"
+                        hint="Jalur dengan tanjakan di atas batas ini tidak akan masuk rekomendasi."
                         value={form.data.max_elevation_gain_m}
                         onChange={(e) => form.setData('max_elevation_gain_m', e.target.value)}
                         error={form.errors.max_elevation_gain_m}

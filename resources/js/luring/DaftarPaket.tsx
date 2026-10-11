@@ -4,14 +4,17 @@ import { fokusTerlihat, umpanTekan } from '@/components/ui/gaya';
 import { Icon } from '@/components/ui/Icon';
 import { Lencana } from '@/components/ui/Lencana';
 import { kelas } from '@/lib/kelas';
+import { kalimatBerakhir } from './kalimatSumber';
 import { kalimatAreaTerbatas, kalimatPembatasan, kalimatStatusLuring } from './kesegaran';
 import { barisCuacaPaket, kalimatLaporanPaket, kalimatPersiapanPaket, labelPaket, urutDaftarPaket, type DinamisPaket, type RencanaPaket } from './rakit';
-import type { RekamanPaket } from './simpan';
+import type { RekamanPaket, SesiBerakhir } from './simpan';
 
 export interface PaketDiPerangkat {
     rekaman: RekamanPaket;
     rencana: RencanaPaket;
     dinamis: DinamisPaket;
+    /** Pendakian trip ini sudah diselesaikan atau dibatalkan di perangkat ini (ruling AF-6); null bila belum. */
+    berakhir?: SesiBerakhir | null;
 }
 
 /** Kegagalan membuka mode lapangan dari satu paket, ditulis di kartu paket itu (tinjauan m-1). */
@@ -39,6 +42,13 @@ function jenisSumber(jenis: string | null): JenisSumber | null {
 
 /** Jam di perangkat ini, dengan penanda zonanya (butir 6). */
 const waktuPerangkat = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+
+/** Waktu berakhir di perangkat ini, ditulis berzona; null bila tidak terbaca (Intl melempar untuk tanggal tidak sah). */
+function waktuBerakhir(iso: string): string | null {
+    const ms = Date.parse(iso);
+
+    return Number.isFinite(ms) ? waktuPerangkat.format(ms) : null;
+}
 
 function kunciPaket(p: PaketDiPerangkat): string {
     return `${p.rekaman.tripId}-${p.rekaman.versi}`;
@@ -137,6 +147,10 @@ function RencanaDanAturan({ rencana }: { rencana: RencanaPaket }) {
  * ditulis di sana dan fokus pindah ke sana (tinjauan m-1). Label paket menyebut tanggal trip,
  * jadi dua paket di jalur yang sama terbedakan. Bingkai sistem kedua ditulis sekali di sini, tanpa
  * janji keselamatan.
+ *
+ * Paket trip yang pendakiannya sudah diselesaikan atau dibatalkan di perangkat ini menyebut keadaan
+ * itu di bawah tanggalnya (ruling AF-6), dengan kalimat yang sama dengan shell mode lapangan
+ * (kalimatBerakhir). Paketnya tetap dapat dibuka untuk meninjau pos dan peta.
  */
 export function DaftarPaket({ paket, sekarangMs, onBuka, galat = null }: DaftarPaketProps) {
     const [sekarang, setSekarang] = useState(sekarangMs);
@@ -184,6 +198,7 @@ export function DaftarPaket({ paket, sekarangMs, onBuka, galat = null }: DaftarP
                             <h3 className="min-w-0 [overflow-wrap:anywhere] text-subjudul text-primary">{trip.nama}</h3>
                             <p className="min-w-0 [overflow-wrap:anywhere] text-kecil text-secondary">{[trip.jalur, trip.gunung].filter(Boolean).join(', ')}</p>
                             <p className="text-kecil text-secondary [overflow-wrap:anywhere]">{p.rencana.rencana.tanggal}</p>
+                            {p.berakhir ? <p className="mt-2 text-isi font-bold text-primary">{kalimatBerakhir(p.berakhir.jenis, waktuBerakhir(p.berakhir.waktu))}</p> : null}
                             {p.rekaman.manifest.dataContoh ? (
                                 <Lencana nada="netral" garis="putus" className="mt-2">
                                     Data contoh

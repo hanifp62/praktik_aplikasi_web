@@ -6,6 +6,7 @@ import { kirimAksi, pakaiPenyimpanan, pasangAntrean, payloadJeda, payloadTiba, p
 import {
     detikBergerak,
     keadaanKartu,
+    keteranganNaikKosong,
     kmPadaProfil,
     naikDiantara,
     panjangGaris,
@@ -30,6 +31,8 @@ export interface ModeLapangan {
     lokasi: KeadaanLokasi;
     sisa: { meter: number; cara: 'jalur' | 'garis lurus' } | null;
     naik: { meter: number; sumber: string } | null;
+    /** Keterangan petak "Naik lagi" saat `naik` null, dari sebab nyata cabangnya (ruling AF-9). */
+    naikKosong: string;
     perkiraan: { teks: string; rekaman: number } | null;
     keputusan: KeputusanTiba;
     /** Kartu lapangan yang pantas sekarang (W6-3m): satu keputusan dari hitung.ts, komponen hanya merender ini. */
@@ -151,6 +154,13 @@ export function useModeLapangan(data: DataLapangan): ModeLapangan {
             : tujuan?.elevasi != null && posLalu?.elevasi != null
               ? { meter: Math.max(0, tujuan.elevasi - posLalu.elevasi), sumber: 'dari ketinggian pos' }
               : null;
+    // Sebab angka kosong dari syarat yang sama dengan kedua cabang di atas (ruling AF-9).
+    const naikKosong = keteranganNaikKosong({
+        profil: (data.profil?.length ?? 0) >= 2,
+        letakDiGaris: sepanjangTujuan !== null && dari !== null,
+        tercapai,
+        ketinggianPos: tujuan?.elevasi != null && posLalu?.elevasi != null,
+    });
 
     const ruas = tujuan ? data.ruas.find((r) => r.ke === tujuan.urutan) : undefined;
     const perkiraan = ruas?.perkiraan ? { teks: ruas.perkiraan, rekaman: ruas.rekaman ?? 0 } : null;
@@ -229,6 +239,7 @@ export function useModeLapangan(data: DataLapangan): ModeLapangan {
         lokasi,
         sisa,
         naik,
+        naikKosong,
         perkiraan,
         keputusan,
         kartu,

@@ -473,6 +473,9 @@ class FieldModeFiguresTest extends TestCase
     /**
      * PT7-3a: tanpa posisi baru, kartu darurat menyebut alasannya per keadaan lokasi
      * (usePosisiLapangan); "belum" hanya untuk keadaan yang memang masih menunggu.
+     *
+     * Diubah ruling AF-6: lokasi juga mati di shell untuk pendakian yang sudah berakhir di
+     * perangkat ini, dan kalimat lama ("dijeda atau belum dimulai") salah di keadaan itu.
      */
     public function test_the_emergency_card_says_why_there_is_no_fresh_position(): void
     {
@@ -481,7 +484,7 @@ class FieldModeFiguresTest extends TestCase
             'Posisi belum terbaca; perangkat mencoba lagi.',
             'Izin lokasi ditolak, jadi koordinat tidak dapat dibaca. Izinkan lokasi untuk peramban ini di pengaturan perangkat.',
             'Peramban ini tidak dapat membaca lokasi.',
-            'Lokasi tidak dibaca selama pendakian dijeda atau belum dimulai.',
+            'Lokasi tidak dibaca selama pendakian dijeda, belum dimulai, atau sudah berakhir.',
         ], $this->hitung([
             ['kalimatPosisiDarurat', ['menunggu']],
             ['kalimatPosisiDarurat', ['galat']],
@@ -576,6 +579,42 @@ class FieldModeFiguresTest extends TestCase
                 ['teksSekitar', [1260]],
             ])
         );
+    }
+
+    /**
+     * Ruling AF-9 (audit E2E M-7): petak "Naik lagi" tanpa angka menyebut sebab nyata kedua sumber
+     * yang gagal (profil sepanjang garis, lalu ketinggian pos), satu frasa per cabang. Kasus audit:
+     * profil ada, garis tidak ada, dan belum ada pos dicapai, dulu tertulis "profil elevasi belum
+     * ada". Sambungannya di hook memakai syarat yang sama dengan kedua cabang angka.
+     */
+    public function test_an_empty_remaining_climb_names_its_real_cause(): void
+    {
+        $sebab = fn (bool $profil, bool $letak, int $tercapai, bool $ketinggian) => ['keteranganNaikKosong', [['profil' => $profil, 'letakDiGaris' => $letak, 'tercapai' => $tercapai, 'ketinggianPos' => $ketinggian]]];
+
+        $this->assertSame([
+            'garis jalur atau koordinat pos belum dapat dipakai dan belum ada pos yang dicapai',
+            'garis jalur atau koordinat pos belum dapat dipakai dan ketinggian pos belum tercatat',
+            'profil elevasi belum ada dan belum ada pos yang dicapai',
+            'profil elevasi belum ada dan ketinggian pos belum tercatat',
+            'belum ada pos yang dicapai',
+            'belum dapat dihitung',
+        ], $this->hitung([
+            $sebab(true, false, 0, false),
+            $sebab(true, false, 2, false),
+            $sebab(false, true, 0, true),
+            $sebab(false, false, 3, false),
+            $sebab(true, true, 0, false),
+            $sebab(true, true, 2, true),
+        ]));
+
+        $hook = File::get(resource_path('js/components/mendaki/useModeLapangan.ts'));
+        $this->assertMatchesRegularExpression(
+            '/const naikKosong = keteranganNaikKosong\(\{\s*profil: \(data\.profil\?\.length \?\? 0\) >= 2,\s*letakDiGaris: sepanjangTujuan !== null && dari !== null,\s*tercapai,\s*ketinggianPos: tujuan\?\.elevasi != null && posLalu\?\.elevasi != null,\s*\}\);/',
+            $hook,
+        );
+        $mode = File::get(resource_path('js/components/mendaki/ModeLapangan.tsx'));
+        $this->assertStringContainsString('keterangan={mode.naik?.sumber ?? mode.naikKosong}', $mode);
+        $this->assertStringNotContainsString("'profil elevasi belum ada'", $mode);
     }
 
     /**

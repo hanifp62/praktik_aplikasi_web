@@ -61,8 +61,8 @@ class WeatherTimezoneTest extends TestCase
             Timezone::forTrail($trail)
         );
 
-        // 15:00 UTC = 23:00 WITA
-        $this->assertStringContainsString('23:00', $rendered);
+        // 15:00 UTC = 23.00 WITA. Jam bertitik, bukan berkolon (ruling audit-fix-B BF-1, M-1).
+        $this->assertStringContainsString('23.00', $rendered);
         $this->assertStringContainsString('WITA', $rendered);
     }
 

@@ -256,6 +256,12 @@ class ProgressiveWebAppTest extends TestCase
      * dari graf shell, jadi aturan "impor dinamis entri app tidak diikuti" dijaga
      * test_the_pack_shell_list_follows_only_the_shell_graph; batas ini baru merah bila kelak graf
      * shell menjangkau entri app dan 50 halamannya ikut (tinjauan T9b m-3).
+     *
+     * Diubah ruling AF-6 (audit E2E I-6): daftar paket di shell kini memakai kalimatBerakhir dari
+     * luring/kalimatSumber.ts, yang juga dipakai halaman mode lapangan. Modul itu karena itu menjadi
+     * potongan bersama tersendiri, dan build ini berisi 25 berkas. Batasnya dinaikkan menjadi 30,
+     * dengan alasan yang sama seperti batas 24 sebelumnya (ruang untuk potongan bersama yang
+     * terbelah); kebocoran entri app beserta 50 halamannya tetap merah.
      */
     public function test_the_pack_shell_list_from_the_real_build_holds_the_shell_and_nothing_else(): void
     {
@@ -298,7 +304,7 @@ class ProgressiveWebAppTest extends TestCase
             $this->assertStringStartsWith('/build/assets/', $berkas);
         }
 
-        $this->assertLessThanOrEqual(24, count($paket));
+        $this->assertLessThanOrEqual(30, count($paket));
     }
 
     /**

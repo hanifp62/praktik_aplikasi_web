@@ -78,6 +78,57 @@ class DemoSeederTest extends TestCase
     }
 
     /**
+     * Tanjakan total jalur (elevation_gain_m, "Angka jalur") tidak boleh lebih kecil dari
+     * kenaikan kumulatif antar pos berurutannya ("Pos di jalur ini"), karena pengguna
+     * membaca keduanya berdampingan di satu halaman dan angka yang bertentangan terbaca
+     * sebagai data yang tidak bisa dipercaya. Jalur Andong via Sawit pernah mencatat
+     * tanjakan 380 m padahal pos keduanya naik 386 m (temuan audit E2E M-4, ruling
+     * audit-fix-B BF-4); sapuan ini melindungi setiap jalur contoh dari kesalahan yang sama,
+     * bukan hanya Andong.
+     */
+    public function test_the_total_climb_is_never_smaller_than_the_cumulative_checkpoint_climb(): void
+    {
+        $this->seed(DemoSeeder::class);
+
+        $pelanggar = [];
+
+        foreach (Trail::with('checkpoints')->get() as $jalur) {
+            if ($jalur->elevation_gain_m === null) {
+                continue;
+            }
+
+            $pos = $jalur->checkpoints->sortBy('sequence')->values();
+            $kumulatif = 0;
+
+            for ($i = 1; $i < $pos->count(); $i++) {
+                $sebelum = $pos[$i - 1]->elevation_m;
+                $sekarang = $pos[$i]->elevation_m;
+
+                if ($sebelum === null || $sekarang === null) {
+                    continue;
+                }
+
+                $delta = $sekarang - $sebelum;
+
+                if ($delta > 0) {
+                    $kumulatif += $delta;
+                }
+            }
+
+            if ($kumulatif > $jalur->elevation_gain_m) {
+                $pelanggar[] = sprintf(
+                    '%s: tanjakan tercatat %d m, tetapi kenaikan kumulatif pos %d m',
+                    $jalur->name,
+                    $jalur->elevation_gain_m,
+                    $kumulatif,
+                );
+            }
+        }
+
+        $this->assertSame([], $pelanggar);
+    }
+
+    /**
      * Setiap teks yang dapat terbaca sebagai fakta membawa penanda DATA CONTOH.
      *
      * Diperbarui perbaikan akhir W2 (kandidat 1): sumber aturan izin ikut diperiksa, karena

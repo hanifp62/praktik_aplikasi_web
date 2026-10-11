@@ -250,7 +250,7 @@ export default function ProfileSetup() {
                                             name="highest_elevation_gain_m"
                                             type="number"
                                             min={0}
-                                            label="Elevation gain tertinggi (meter)"
+                                            label="Tanjakan tertinggi (meter)"
                                             value={form.data.highest_elevation_gain_m}
                                             onChange={(ev) => form.setData('highest_elevation_gain_m', ev.target.value)}
                                             error={galat.highest_elevation_gain_m}
@@ -294,7 +294,7 @@ export default function ProfileSetup() {
                                         name="max_elevation_gain_preference_m"
                                         type="number"
                                         min={0}
-                                        label="Batas elevation gain yang nyaman (meter, opsional)"
+                                        label="Batas tanjakan yang nyaman (meter, opsional)"
                                         value={form.data.max_elevation_gain_preference_m}
                                         onChange={(ev) => form.setData('max_elevation_gain_preference_m', ev.target.value)}
                                         error={galat.max_elevation_gain_preference_m}

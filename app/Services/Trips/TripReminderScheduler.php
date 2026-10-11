@@ -51,7 +51,7 @@ class TripReminderScheduler
     /** Trip per putaran pengiriman, supaya memori tidak tumbuh bersama antrean. */
     private const PER_PUTARAN = 100;
 
-    private const FORMAT_WAKTU = 'l, d M Y H:i';
+    private const FORMAT_WAKTU = 'l, d M Y H.i';
 
     /** Jenis pengingat hari pemesanan izin dibuka; muat di kolom jenis (8 karakter). */
     public const JENIS_IZIN = 'IZIN';
@@ -280,7 +280,7 @@ class TripReminderScheduler
         $hari = array_map(fn (int $h) => $h === 1 ? 'sehari' : $h.' hari', $this->hariSebelum());
 
         return sprintf(
-            'Pengingat dikirim %s sebelum tanggal mulai, pukul %02d:00 waktu setempat gunungnya (WIB, WITA, atau WIT). Bila aturan izin jalurnya mencatat kapan pemesanan dibuka, satu pengingat juga dikirim pada hari itu.',
+            'Pengingat dikirim %s sebelum tanggal mulai, pukul %02d.00 waktu setempat gunungnya (WIB, WITA, atau WIT). Bila aturan izin jalurnya mencatat kapan pemesanan dibuka, satu pengingat juga dikirim pada hari itu.',
             implode(' dan ', $hari),
             (int) config('hiking.reminders.local_hour'),
         );

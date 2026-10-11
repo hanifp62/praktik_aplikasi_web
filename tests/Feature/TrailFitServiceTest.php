@@ -578,9 +578,11 @@ class TrailFitServiceTest extends TestCase
 
         $this->assertSame('PERLU_PERSIAPAN', $fit['label']);
         $this->assertSame('Estimasi durasi jalur (20 jam) melebihi target waktu Anda.', $fit['alasan']);
+        // Kalimat Indonesia dengan titik ribuan, bukan kalimat mesin "Elevation gain" dan
+        // angka tanpa titik ribuan (ruling audit-fix-B BF-3, M-3).
         $this->assertSame([
             'Status resmi jalur ini belum diketahui.',
-            'Elevation gain 2400 m lebih besar dari referensi pengalaman Anda (1200 m).',
+            'Tanjakan 2.400 m lebih besar dari referensi pengalaman Anda (1.200 m).',
         ], $fit['perluDiperhatikan']);
     }
 

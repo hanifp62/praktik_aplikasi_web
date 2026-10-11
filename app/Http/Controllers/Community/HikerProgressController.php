@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Community;
 
+use App\Enums\ModerationStatus;
 use App\Http\Controllers\Controller;
+use App\Models\TrailConditionReport;
 use App\Services\HikerProgressService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,6 +13,11 @@ use Inertia\Response;
 /**
  * Progres pendaki, dipantulkan kembali kepadanya sendiri (R-015). Tidak ada perbandingan
  * dengan pendaki lain: angka di sini hanya milik pemiliknya.
+ *
+ * `laporan.menunggu` (ruling AF-3, audit E2E I-3): jumlah laporan kondisi pengguna ini yang masih
+ * menunggu moderasi, satu COUNT tanpa N+1. FLAGGED ikut terhitung, karena laporan itu tampil ke
+ * pelapornya sebagai menunggu moderasi (ruling W6-6c2, HasilPendakian::laporan()). Tanpa angka
+ * ini halaman menulis "Belum ada laporan kondisi dari Anda" sesudah laporan dikirim.
  */
 class HikerProgressController extends Controller
 {
@@ -18,6 +25,10 @@ class HikerProgressController extends Controller
     {
         $user = $request->user();
         $angka = $progres->forUser($user);
+        $menunggu = TrailConditionReport::query()
+            ->where('user_id', $user->id)
+            ->whereIn('moderation_status', [ModerationStatus::PENDING->value, ModerationStatus::FLAGGED->value])
+            ->count();
         $gunung = $progres->summitedMountains($user);
         $tanpaKoordinat = max(0, $angka['gunung'] - count($gunung));
 
@@ -49,6 +60,7 @@ class HikerProgressController extends Controller
             ],
             'laporan' => [
                 'terbit' => $angka['laporan_terbit'],
+                'menunggu' => $menunggu,
                 'terimaKasih' => $angka['terima_kasih'],
             ],
             'grafik' => array_map(fn (array $p) => [

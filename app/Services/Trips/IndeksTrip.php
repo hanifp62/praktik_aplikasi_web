@@ -105,6 +105,12 @@ final class IndeksTrip
         ] as $kunci => [$judul, $trip]) {
             $sisa = $trip->reject(fn (TripPlan $t) => $t->is($utama))->values();
 
+            // Kelompok yang memuat trip dibatalkan memakai nama arsipnya, "Selesai dan dibatalkan"
+            // (ruling AF-11, audit E2E C-6; Trips/Index.tsx), bukan "Selesai" saja.
+            if ($kunci === 'selesai' && $sisa->contains(fn (TripPlan $t) => $t->status === TripStatus::CANCELLED)) {
+                $judul = 'Selesai dan dibatalkan';
+            }
+
             if ($sisa->isNotEmpty()) {
                 $kelompok[] = ['kunci' => $kunci, 'judul' => $judul, 'trip' => $sisa->map($kartu)->all()];
             }

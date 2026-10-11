@@ -48,7 +48,9 @@ export function useDataPaket(kunci: string | null, aktif: boolean, tripId: numbe
  *
  * Hanya tulisan terakhir yang dimulai yang menulis: dua perubahan berdekatan tidak dapat saling
  * mendahului, sehingga rekaman tidak mundur ke keadaan yang lebih lama. Tulisan terakhir tetap
- * berjalan walau halaman ditinggalkan sebelum selesai.
+ * berjalan walau halaman ditinggalkan sebelum selesai. Rekaman yang sudah ditandai berakhir sesudah
+ * Selesai atau Batal di perangkat ini tidak ditimpa (tulisSesi, ruling AF-6), juga dari tab lain
+ * yang masih membuka mode lapangan trip yang sama.
  */
 export function useSimpanSesiPaket(kunci: string | null, aktif: boolean, data: DataLapangan, mode: ModeLapangan): void {
     const { tercapai, jedaSejak, jedaDetik } = mode;

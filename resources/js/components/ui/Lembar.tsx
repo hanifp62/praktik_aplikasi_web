@@ -107,6 +107,12 @@ interface LapisanProps {
 /**
  * Lembar bawah: naik dari tepi bawah di ponsel (sudut atas 26 px, pegangan hiasan), menjadi
  * panel tengah mulai sm. Isi yang panjang bergulir di dalam lembar; kaki aksi tetap terlihat.
+ *
+ * Margin letak memakai penanda penting Tailwind (!mt-auto, !mb-0, sm:!mb-auto; ruling AF-7,
+ * audit E2E M-5). <dialog> dirender di tempat pemanggil, dan bila ia anak bukan-pertama wadah
+ * space-y-*, aturan `.space-y-4 > :not([hidden]) ~ :not([hidden])` (spesifisitas tiga kelas)
+ * mengalahkan mt-auto dan mb-auto (satu kelas): lembar menempel 16 px dari atas layar, bukan duduk
+ * di bawah. Dialog tengah memakai !m-auto karena alasan yang sama.
  */
 export function LembarBawah({ terbuka, onTutup, judul, keterangan, aksi, pemicu, children }: LapisanProps) {
     const ref = useDialogAsli(terbuka, onTutup, pemicu);
@@ -118,7 +124,7 @@ export function LembarBawah({ terbuka, onTutup, judul, keterangan, aksi, pemicu,
             aria-labelledby={`${id}-judul`}
             aria-describedby={keterangan ? `${id}-keterangan` : undefined}
             onClick={tutupBilaTirai}
-            className="lembar mb-0 mt-auto max-h-[90dvh] w-full max-w-none rounded-t-lembar border border-subtle bg-surface p-0 text-primary shadow-overlay sm:mb-auto sm:max-w-lg sm:rounded-lembar"
+            className="lembar !mb-0 !mt-auto max-h-[90dvh] w-full max-w-none rounded-t-lembar border border-subtle bg-surface p-0 text-primary shadow-overlay sm:!mb-auto sm:max-w-lg sm:rounded-lembar"
         >
             <div className="flex max-h-[90dvh] flex-col">
                 <div aria-hidden="true" className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-control sm:hidden" />
@@ -156,7 +162,7 @@ export function Dialog({ terbuka, onTutup, judul, keterangan, aksi, pemicu, chil
             aria-labelledby={`${id}-judul`}
             aria-describedby={keterangan ? `${id}-keterangan` : undefined}
             onClick={tutupBilaTirai}
-            className="dialog-tengah m-auto w-[calc(100%-2rem)] max-w-md rounded-utama border border-subtle bg-surface p-0 text-primary shadow-overlay"
+            className="dialog-tengah !m-auto w-[calc(100%-2rem)] max-w-md rounded-utama border border-subtle bg-surface p-0 text-primary shadow-overlay"
         >
             <div className="px-5 pt-5">
                 <h2 id={`${id}-judul`} className="text-judul-kartu text-primary">

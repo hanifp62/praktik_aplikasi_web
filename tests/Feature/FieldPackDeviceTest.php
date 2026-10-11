@@ -1018,6 +1018,74 @@ class FieldPackDeviceTest extends TestCase
     }
 
     /**
+     * Ruling AF-6 (audit E2E I-6), cabang 7 teksKeadaanLapangan: shell yang rekaman sesinya sudah
+     * berakhir di perangkat ini menulis diselesaikan atau dibatalkan beserta waktunya, dan bahwa
+     * tiba di pos dan jeda tidak dicatat lagi. Cabang ini didahulukan dari cabang shell berlangsung
+     * dan keterangannya tanpa lama bergerak, jadi penghitung waktu tidak berjalan, juga bila
+     * rekamannya sedang jeda. Halaman daring tidak memakai cabang ini (keadaan server lebih baru).
+     * kalimatBerakhir yang sama dipakai daftar paket, dan tanpa waktu yang terbaca "pada" tidak ditulis.
+     */
+    public function test_an_ended_hike_in_the_shell_is_named_ended_and_never_running(): void
+    {
+        $h = $this->node(['sumber' => 'luring/kalimatSumber.ts'], <<<'JS'
+            const k = (halamanLuring, berakhir, dijeda = false, berlangsung = true) => sumber.teksKeadaanLapangan({ halamanLuring, sumber: 'paket', berlangsung, dijeda, lama: '2 jam 15 menit', catatan: '9 Okt 14.05 WIB', berakhir });
+            process.stdout.write(JSON.stringify({
+                selesai: k(true, { jenis: 'selesai', waktu: '11 Okt 20.45 WIB' }),
+                batalJeda: k(true, { jenis: 'batal', waktu: '11 Okt 20.50 WIB' }, true, false),
+                daring: k(false, { jenis: 'selesai', waktu: '11 Okt 20.45 WIB' }),
+                tanpaBerakhir: k(true, null).keterangan,
+                daftar: [sumber.kalimatBerakhir('selesai', '11 Okt 2026 20.45 WIB'), sumber.kalimatBerakhir('batal', null)],
+            }));
+            JS);
+
+        $b = 'Paket luring membantu mengikuti jalur resmi. Bawa cadangan: peta cetak atau perangkat lain.';
+
+        $this->assertSame(['keterangan' => 'Sudah diselesaikan', 'kalimat' => "Dari paket luring. {$b} Pendakian ini sudah diselesaikan di perangkat ini pada 11 Okt 20.45 WIB. Tiba di pos dan jeda tidak dicatat lagi."], $h['selesai']);
+        $this->assertSame(['keterangan' => 'Sudah dibatalkan', 'kalimat' => "Dari paket luring. {$b} Pendakian ini sudah dibatalkan di perangkat ini pada 11 Okt 20.50 WIB. Tiba di pos dan jeda tidak dicatat lagi."], $h['batalJeda']);
+        $this->assertSame('Berjalan, 2 jam 15 menit bergerak', $h['daring']['keterangan'], 'Halaman daring tidak memakai rekaman berakhir di perangkat.');
+        $this->assertSame('Berjalan, 2 jam 15 menit bergerak', $h['tanpaBerakhir']);
+        $this->assertSame(['Pendakian ini sudah diselesaikan di perangkat ini pada 11 Okt 2026 20.45 WIB.', 'Pendakian ini sudah dibatalkan di perangkat ini.'], $h['daftar']);
+    }
+
+    /**
+     * Sambungan ruling AF-6 (asersi sumber, karena React tidak dijalankan di suite ini): jalur sukses
+     * Selesai (FormulirSelesai, dari mode lapangan maupun ruang kerja) dan Batal (BatalkanTrip, ruang
+     * kerja) menandai rekaman sesi paket trip itu berakhir dengan jenisnya; cabang penolakan tidak.
+     * Kedua pemanggil meneruskan id tripnya. Shell membaca rekaman itu untuk daftar paket dan mode
+     * lapangan, dan rakitannya memakai `trip.berlangsung` yang mati untuk menyembunyikan Jeda, Lanjut,
+     * tiba di pos, dan Selesai.
+     */
+    public function test_the_success_paths_mark_the_device_session_ended_and_the_shell_reads_it(): void
+    {
+        $formulir = File::get(resource_path('js/components/trips/FormulirSelesai.tsx'));
+
+        $this->assertMatchesRegularExpression(
+            "/onSuccess: \\(page\\) => \\{\\s*ditolak = Boolean\\(page\\.props\\.penolakan\\);\\s*if \\(!ditolak\\) \\{\\s*void tandaiSesiBerakhir\\(kunci, tripId, \\{ jenis: 'selesai', waktu: new Date\\(\\)\\.toISOString\\(\\) \\}\\)\\.catch\\(\\(\\) => undefined\\);\\s*\\}\\s*\\},/",
+            $formulir,
+        );
+        $this->assertSame(1, substr_count($formulir, 'tandaiSesiBerakhir('));
+        $this->assertStringContainsString('const kunci = usePage<PropsBersama>().props.perangkat?.kunci ?? null;', $formulir);
+
+        $batal = File::get(resource_path('js/components/trips/BatalkanTrip.tsx'));
+        $this->assertSame(1, substr_count($batal, "tandaiSesiBerakhir(kunci, tripId, { jenis: 'batal'"));
+
+        $show = File::get(resource_path('js/pages/Trips/Show.tsx'));
+        $this->assertStringContainsString('<BatalkanTrip tripId={trip.id} ', $show);
+        $this->assertStringContainsString('<FormulirSelesai tripId={trip.id} ', $show);
+        $this->assertStringContainsString('<FormulirSelesai tripId={data.trip.id} ', File::get(resource_path('js/components/mendaki/SelesaiLapangan.tsx')));
+
+        $shell = File::get(resource_path('js/luring/shell.tsx'));
+        $this->assertStringContainsString('const sesi = await bacaSesi(db, r.tripId).catch(() => null);', $shell);
+        $this->assertStringContainsString('berakhir: sesi?.berakhir ?? null', $shell);
+        $this->assertStringContainsString('{p.berakhir ? <p className="mt-2 text-isi font-bold text-primary">{kalimatBerakhir(p.berakhir.jenis, waktuBerakhir(p.berakhir.waktu))}</p> : null}', File::get(resource_path('js/luring/DaftarPaket.tsx')));
+        $this->assertStringContainsString('berakhir: data.berakhir ? { jenis: data.berakhir.jenis, waktu: teksWaktu(data.berakhir.waktu) } : null,', File::get(resource_path('js/pages/Trips/Hike.tsx')));
+
+        $mode = File::get(resource_path('js/components/mendaki/ModeLapangan.tsx'));
+        $this->assertStringContainsString('{tujuan && data.trip.berlangsung ? (', $mode, 'Tiba di pos hanya selama pendakian berlangsung.');
+        $this->assertStringContainsString("{data.trip.berlangsung ? (\n                <div className=\"flex gap-3\">", $mode, 'Jeda, Lanjut, dan Selesai hanya selama pendakian berlangsung.');
+    }
+
+    /**
      * Penjaga N-2 (ruling W6-FH, temuan pemeriksa final-fix-check), kalimatnya disesuaikan ruling
      * W6-FT: angka menit di kalimat shell ("jejak yang terekam lebih dari N menit sesudah
      * pendakian diselesaikan atau dibatalkan tidak disimpan") wajib sama dengan

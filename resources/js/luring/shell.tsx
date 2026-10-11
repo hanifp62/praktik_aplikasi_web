@@ -6,7 +6,7 @@ import { pakaiPenyimpanan, penyimpananGabungan, penyimpananIndexedDb, penyimpana
 import { dataLapanganDariPaket, teksBagian, terbaruPerTrip } from './baca';
 import { DaftarPaket, type GalatPaket, type PaketDiPerangkat } from './DaftarPaket';
 import { kalimatGagalBuka, labelPaket, propsHalamanLuring } from './rakit';
-import { bacaBagian, buka, kunciTersimpan, semuaPaket, type RekamanPaket } from './simpan';
+import { bacaBagian, bacaSesi, buka, kunciTersimpan, semuaPaket, type RekamanPaket } from './simpan';
 
 /*
  * Shell luring (spec v3 bagian 10.4; rencana induk W6 butir 3; ruling W6-R9). Dibuka service
@@ -155,8 +155,11 @@ async function mulai(): Promise<void> {
     const hasil = await Promise.allSettled(
         rekaman.map(async (r): Promise<PaketDiPerangkat> => {
             const bagian = await bacaBagian(db, r.tripId, r.versi);
+            // Daftar menyebut pendakian yang sudah berakhir di perangkat ini (ruling AF-6). Rekaman sesi
+            // yang tidak terbaca tidak membuat paketnya tidak terbaca: keadaannya saja yang tidak disebut.
+            const sesi = await bacaSesi(db, r.tripId).catch(() => null);
 
-            return { rekaman: r, rencana: JSON.parse(teksBagian(bagian, 'rencana')), dinamis: JSON.parse(teksBagian(bagian, 'dinamis')) };
+            return { rekaman: r, rencana: JSON.parse(teksBagian(bagian, 'rencana')), dinamis: JSON.parse(teksBagian(bagian, 'dinamis')), berakhir: sesi?.berakhir ?? null };
         }),
     );
     const paket = hasil.flatMap((h) => (h.status === 'fulfilled' ? [h.value] : []));

@@ -213,7 +213,9 @@ class RecommendationFlowTest extends TestCase
                 ->where('title', 'Profil Pendaki')
                 ->where('nilai.experience_level', ExperienceLevel::INTERMEDIATE->value)
                 ->where('ringkasan.0.nilai', ExperienceLevel::INTERMEDIATE->label())
-                ->where('ringkasan.6.label', 'Elevation gain tertinggi')
+                // Label diterjemahkan dari "Elevation gain tertinggi" menjadi "Tanjakan
+                // tertinggi" (ruling audit-fix-B BF-7a, M-3 sisa).
+                ->where('ringkasan.6.label', 'Tanjakan tertinggi')
                 ->where('ringkasan.6.nilai', 'Belum diisi'));
     }
 

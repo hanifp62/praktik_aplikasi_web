@@ -77,10 +77,8 @@ export default function HikingHistory() {
                                                 Jarak jalur {e.jarak} &middot; Lama pendakian {e.durasi}
                                             </p>
                                         </div>
-                                        <div className="text-right text-sm">
-                                            <p className="text-muted">Persiapan saat itu</p>
-                                            <p className="font-semibold text-primary">{e.persiapan}</p>
-                                        </div>
+                                        {/* Hitungan butir dari server, bukan persen (ruling AF-4, R-005, R-007). */}
+                                        <p className="text-sm text-secondary sm:max-w-[14rem] sm:text-right">{e.persiapan}</p>
                                     </div>
 
                                     {e.catatan ? <p className="mt-3 text-sm text-secondary">{e.catatan}</p> : null}

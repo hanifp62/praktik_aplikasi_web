@@ -223,9 +223,10 @@ export function ModeLapangan({ data, mode, selesai, pengaturan = null }: { data:
                     <Petak
                         judul="Sisa jarak"
                         nilai={mode.sisa ? teksJarak(mode.sisa.meter) : null}
-                        keterangan={mode.sisa ? (mode.sisa.cara === 'jalur' ? 'menyusuri jalur' : 'garis lurus') : tujuan.lat === null ? 'pos tanpa koordinat' : 'menunggu posisi'}
+                        keterangan={mode.sisa ? (mode.sisa.cara === 'jalur' ? 'menyusuri jalur' : 'garis lurus') : tujuan.lat === null ? 'pos tanpa koordinat' : data.trip.berlangsung ? 'menunggu posisi' : 'lokasi tidak dibaca'}
                     />
-                    <Petak judul="Naik lagi" nilai={mode.naik ? teksNaik(mode.naik.meter) : null} keterangan={mode.naik?.sumber ?? 'profil elevasi belum ada'} />
+                    {/* Tanpa angka, keterangannya sebab nyata dari cabang useModeLapangan (ruling AF-9). */}
+                    <Petak judul="Naik lagi" nilai={mode.naik ? teksNaik(mode.naik.meter) : null} keterangan={mode.naik?.sumber ?? mode.naikKosong} />
                     <Petak judul="Perkiraan" nilai={mode.perkiraan?.teks ?? null} keterangan={mode.perkiraan ? `ruas ini, ${mode.perkiraan.rekaman} rekaman` : 'belum ada data waktu tempuh'} />
                 </dl>
             ) : null}
@@ -236,7 +237,10 @@ export function ModeLapangan({ data, mode, selesai, pengaturan = null }: { data:
                         <span className="tabular-nums">{teksAkurasi(posisi.akurasi)}</span> · {umur !== null ? teksUmur(umur) : null}
                     </p>
                 ) : (
-                    <p className="text-kecil text-secondary">{kalimatLokasi[mode.lokasi] ?? kalimatLokasi.menunggu}</p>
+                    // Lokasi hanya dibaca selama pendakian berjalan (usePosisiLapangan). Pendakian yang
+                    // belum dimulai atau sudah berakhir di perangkat ini (ruling AF-6) tidak ditulis
+                    // "selama jeda", walau keadaan lokasinya sama-sama mati.
+                    <p className="text-kecil text-secondary">{data.trip.berlangsung ? (kalimatLokasi[mode.lokasi] ?? kalimatLokasi.menunggu) : 'Lokasi hanya dibaca selama pendakian berjalan.'}</p>
                 )}
                 {posisi && posisi.akurasi > AKURASI_LEMAH_M ? (
                     <p className="flex items-start gap-2 text-kecil font-bold text-primary">

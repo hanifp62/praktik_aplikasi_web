@@ -483,7 +483,7 @@ class DemoSeeder extends Seeder
                 'profil' => [['km' => 0, 'm' => 1890], ['km' => 2.0, 'm' => 2150], ['km' => 4.0, 'm' => 2400], ['km' => 6.1, 'm' => 2590]],
             ],
             'andong-via-sawit' => [
-                'gunung' => 'andong', 'nama' => 'Andong via Sawit', 'jarak' => 2.8, 'naik' => 380, 'menit' => 120,
+                'gunung' => 'andong', 'nama' => 'Andong via Sawit', 'jarak' => 2.8, 'naik' => 400, 'menit' => 120,
                 'teknis' => TechnicalDemand::LOW, 'navigasi' => NavigationComplexity::LOW, 'air' => WaterAvailability::SCARCE,
                 'medan' => ['FOREST', 'EXPOSED_RIDGE'], 'kemah' => true, 'awal' => 'Basecamp Sawit',
                 'keterangan' => 'Pendakian pendek ke punggungan terbuka.',
@@ -495,7 +495,7 @@ class DemoSeeder extends Seeder
                 'profil' => [['km' => 0, 'm' => 1340], ['km' => 1.4, 'm' => 1550], ['km' => 2.8, 'm' => 1726]],
             ],
             'batur-via-toya-bungkah' => [
-                'gunung' => 'batur', 'nama' => 'Batur via Toya Bungkah', 'jarak' => 4.6, 'naik' => 600, 'menit' => 150,
+                'gunung' => 'batur', 'nama' => 'Batur via Toya Bungkah', 'jarak' => 4.6, 'naik' => 630, 'menit' => 150,
                 'teknis' => TechnicalDemand::LOW, 'navigasi' => NavigationComplexity::LOW, 'air' => WaterAvailability::SCARCE,
                 'medan' => ['SAND', 'ROCKY'], 'kemah' => false, 'awal' => 'Toya Bungkah',
                 'keterangan' => 'Pendakian dini hari di pasir vulkanik.',

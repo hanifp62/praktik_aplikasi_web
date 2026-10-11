@@ -176,4 +176,41 @@ class ReporterImpactTest extends TestCase
         $this->assertStringContainsString('Belum ada laporan kondisi dari Anda.', $sumber);
         $this->assertStringContainsString('laporan.terimaKasih > 0 ?', $sumber);
     }
+
+    /**
+     * Ruling AF-3 (audit E2E I-3): laporan yang menunggu moderasi bukan "belum ada laporan".
+     * Halaman menerima jumlah laporan pengguna ini yang menunggu, termasuk FLAGGED yang tampil ke
+     * pelapornya sebagai menunggu (ruling W6-6c2), dari satu COUNT. Laporan yang ditolak dan
+     * laporan pengguna lain tidak terhitung. Selama belum ada yang terbit, kalimatnya menyebut
+     * jumlah itu dan ajakan "Tulis laporan kondisi" tidak ditawarkan, supaya tidak terkirim laporan
+     * ganda; cabang lain tetap.
+     */
+    public function test_reports_waiting_for_moderation_are_named_and_no_second_report_is_invited(): void
+    {
+        $pelapor = User::factory()->create();
+        $this->laporan($pelapor, ModerationStatus::PENDING);
+        $this->laporan($pelapor, ModerationStatus::FLAGGED);
+        $this->laporan($pelapor, ModerationStatus::REJECTED);
+        $this->laporan(User::factory()->create(), ModerationStatus::PENDING);
+
+        $this->actingAs($pelapor)->get(route('progress'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('laporan.terbit', 0)
+            ->where('laporan.menunggu', 2));
+
+        $kosong = User::factory()->create();
+        $this->actingAs($kosong)->get(route('progress'))->assertInertia(fn (AssertableInertia $page) => $page->where('laporan.menunggu', 0));
+
+        $sumber = $this->sumber();
+        $mulai = strpos($sumber, '{laporan.terbit === 0 && laporan.menunggu > 0 ? (');
+        $cabangLain = strpos($sumber, ') : laporan.terbit === 0 ? (');
+
+        $this->assertNotFalse($mulai, 'Cabang laporan menunggu harus diperiksa lebih dulu daripada cabang belum ada laporan.');
+        $this->assertNotFalse($cabangLain);
+        $this->assertLessThan($cabangLain, $mulai);
+
+        $cabang = substr($sumber, $mulai, $cabangLain - $mulai);
+        $this->assertStringContainsString('<span data-angka>{laporan.menunggu}</span> laporan kondisi Anda sedang menunggu moderasi. Laporan tampil untuk pendaki lain sesudah disetujui.', $cabang);
+        $this->assertStringNotContainsString('reportsCreate', $cabang);
+        $this->assertStringNotContainsString('Tulis laporan kondisi', $cabang);
+    }
 }

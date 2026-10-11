@@ -19,7 +19,7 @@ enum CompatibilityFactor: string
             self::DURATION_MATCH => 'Kesesuaian durasi',
             self::TERRAIN_MATCH => 'Kesesuaian medan',
             self::TECHNICAL_MATCH => 'Kesesuaian tingkat teknis',
-            self::ELEVATION_GAIN_MATCH => 'Kesesuaian elevation gain',
+            self::ELEVATION_GAIN_MATCH => 'Kesesuaian tanjakan',
             self::NAVIGATION_MATCH => 'Kesesuaian navigasi',
             self::TRIP_PREFERENCE => 'Preferensi perjalanan',
         };

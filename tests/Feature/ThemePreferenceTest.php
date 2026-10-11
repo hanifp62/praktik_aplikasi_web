@@ -129,4 +129,23 @@ class ThemePreferenceTest extends TestCase
             $this->assertStringNotContainsString('livewire:navigated', $berkas->getContents(), $berkas->getRelativePathname());
         }
     }
+
+    /**
+     * Ruling AF-1 (audit E2E I-1): POST /tema kembali ke URL yang sama, dan Inertia 3.7.1 tidak
+     * memancarkan navigate untuk kunjungan replace ke URL yang sama, jadi pendengar di app.tsx
+     * tidak pernah berjalan dan tema baru baru terlihat sesudah pindah halaman. Pemilih tema
+     * karena itu menerapkan cookie baru sendiri begitu kirimannya berhasil, di Profil dan di kaki
+     * beranda tamu yang memakai komponen yang sama.
+     */
+    public function test_the_picker_applies_the_new_theme_as_soon_as_the_server_accepts_it(): void
+    {
+        $pemilih = File::get(resource_path('js/components/ui/ThemePicker.tsx'));
+
+        $this->assertMatchesRegularExpression(
+            '/router\.post\(simpan\.url\(\), \{ tema: nilai \}, \{[^}]*onSuccess: \(\) => window\.terapkanTema\(\),/s',
+            $pemilih,
+        );
+        $this->assertStringContainsString('<ThemePicker />', File::get(resource_path('js/pages/Profile/Edit.tsx')));
+        $this->assertStringContainsString('<ThemePicker compact />', File::get(resource_path('js/pages/Welcome.tsx')));
+    }
 }

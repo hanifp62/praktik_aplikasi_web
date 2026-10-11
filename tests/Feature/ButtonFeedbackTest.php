@@ -38,6 +38,62 @@ class ButtonFeedbackTest extends TestCase
     }
 
     /**
+     * Ruling AF-2 (audit E2E I-2, daftar periksa butir 7): tombol yang difokus menjadi `disabled`
+     * selama `processing`, dan peramban menjatuhkan fokusnya ke body. Button karena itu mencatat
+     * bila ia diaktifkan pengguna (onClick, termasuk klik sintetis submit implisit), dan saat
+     * `processing` kembali false sesudah sempat true, fokus kembali ke tombol itu hanya bila fokus
+     * sedang di body atau tidak ada dan tombolnya masih terpasang. `disabled` tidak berubah, jadi
+     * kiriman ganda tetap tercegah, dan onClick pemanggil tetap berjalan sesudah tanda dicatat.
+     */
+    public function test_a_button_takes_its_focus_back_when_its_action_finishes(): void
+    {
+        $tombol = $this->tombol();
+
+        $this->assertMatchesRegularExpression(
+            '/useEffect\(\(\) => \{\s*if \(sibuk === sibukLalu\.current\) \{\s*return;\s*\}\s*sibukLalu\.current = sibuk;\s*if \(sibuk \|\| !ditekan\.current\) \{\s*return;\s*\}\s*ditekan\.current = false;\s*const aktif = document\.activeElement;\s*if \(\(aktif === null \|\| aktif === document\.body\) && tombol\.current\?\.isConnected\) \{\s*tombol\.current\.focus\(\);\s*\}\s*\}, \[sibuk\]\);/',
+            $tombol,
+        );
+        $this->assertStringContainsString('const { tombol, tandai } = useFokusKembali(processing);', $tombol);
+        $this->assertMatchesRegularExpression('/<button\s+ref=\{tombol\}[^>]*?onClick=\{\(e\) => \{\s*tandai\(\);\s*onClick\?\.\(e\);\s*\}\}\s*\{\.\.\.rest\}\s*>/s', $tombol);
+        $this->assertStringContainsString('disabled={disabled || processing}', $tombol);
+
+        // TombolIkon tidak punya processing: TombolSimpan memakai hook yang sama untuk bentuk ikon dan bar.
+        $simpan = File::get(resource_path('js/components/trails/TombolSimpan.tsx'));
+        $this->assertStringContainsString('const fokusKembali = useFokusKembali(memproses);', $simpan);
+        $this->assertMatchesRegularExpression('/const tekan = \(e: MouseEvent<HTMLButtonElement>\) => \{\s*papanKetik\.current = e\.detail === 0;\s*pemicu\.current = e\.currentTarget;\s*fokusKembali\.tandai\(e\);/', $simpan);
+        // Urungkan sesudah lepas menyimpan lagi lewat tombol yang sama; tombol itu `disabled` saat
+        // toast mengembalikan fokus kepadanya, jadi tandanya dicatat supaya fokus tidak jatuh ke body.
+        $this->assertMatchesRegularExpression('/\(\) => \{\s*fokusKembali\.tandai\(\);\s*simpan\(terhapus\?\.catatan \?\? null, false\);\s*\}/', $simpan);
+        // Kartu Simpanan lepas bersama tombol hapusnya, jadi fokus pindah ke Urungkan juga dari tetikus.
+        $this->assertStringContainsString("{ fokus: papanKetik.current || bentuk === 'hapus' },", $simpan);
+    }
+
+    /**
+     * Ruling AF-2: aksi yang melepas tombolnya sendiri memberi tujuan fokus yang disengaja.
+     * - "Kosongkan pencarian" memfokus kotak cari di penangan yang sama;
+     * - "Buat tautan" memfokus blok tautan baru, yang bernama judulnya dan dijelaskan URL-nya, dan
+     *   pengumuman server dibacakan wilayah status di dalam lembar (wilayah halaman inert selama
+     *   dialog modal terbuka); "Cabut" memfokus wilayah status itu;
+     * - "Saya sudah meninjau semuanya" yang berhasil memfokus kalimat "Tinjauan tercatat".
+     */
+    public function test_actions_that_remove_their_own_button_move_focus_on_purpose(): void
+    {
+        $cari = File::get(resource_path('js/components/trails/jelajah/KotakCari.tsx'));
+        $this->assertMatchesRegularExpression("/onClick=\{\(\) => \{\s*onUbah\(''\);\s*isian\.current\?\.focus\(\);\s*\}\}/", $cari);
+        $this->assertStringContainsString('ref={isian}', $cari);
+
+        $bagikan = File::get(resource_path('js/components/trails/banding/LembarBagikan.tsx'));
+        $this->assertMatchesRegularExpression('/onSuccess: \(halaman\) => \{\s*setKabar\(pengumumanDari\(halaman\.props\)\);\s*if \(\(halaman\.props as unknown as PropsBersama\)\.flash\.tautanBagikan\) \{\s*fokusKe\(idBaru\);\s*\}\s*\},/', $bagikan);
+        $this->assertMatchesRegularExpression('/onSuccess: \(halaman\) => \{\s*setKabar\(pengumumanDari\(halaman\.props\)\);\s*fokusKe\(idKabar\);\s*\},/', $bagikan);
+        $this->assertMatchesRegularExpression('/<div\s+id=\{idBaru\}\s+role="group"\s+tabIndex=\{-1\}\s+aria-labelledby=\{`\$\{idBaru\}-judul`\}\s+aria-describedby=\{`\$\{idBaru\}-url`\}/', $bagikan);
+        $this->assertStringContainsString('<p id={idKabar} role="status" tabIndex={-1}', $bagikan);
+
+        $kesiapan = File::get(resource_path('js/pages/Trips/Readiness.tsx'));
+        $this->assertStringContainsString("onSuccess: () => fokusKe('tinjauan-tercatat')", $kesiapan);
+        $this->assertStringContainsString('<p id="tinjauan-tercatat" tabIndex={-1}', $kesiapan);
+    }
+
+    /**
      * Setiap tombol kirim menunggu formulirnya sendiri.
      *
      * Tombol yang tidak diberi status formulirnya tetap dapat ditekan berulang selama

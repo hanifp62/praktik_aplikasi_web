@@ -2,7 +2,7 @@ import type { AksiAntrean } from '@/components/mendaki/antrean';
 import type { DataLapangan, LaporanLapangan } from '@/components/mendaki/types';
 import type { PropsBersama } from '@/types';
 import type { StatusPaket } from './kesegaran';
-import type { ManifestPaket, RekamanPaket, RekamanSesi } from './simpan';
+import type { ManifestPaket, RekamanPaket, RekamanSesi, SesiBerakhir } from './simpan';
 
 /**
  * Data mode lapangan dan daftar paket dari paket di perangkat (spec v3 bagian 10.4: satu pohon
@@ -26,7 +26,7 @@ export interface CatatanSesi {
     diperbarui: string;
 }
 
-export type DataPaket = DataLapangan & { dataContoh?: boolean; catatanSesi?: CatatanSesi | null };
+export type DataPaket = DataLapangan & { dataContoh?: boolean; catatanSesi?: CatatanSesi | null; berakhir?: SesiBerakhir | null };
 
 /** Bagian rencana paket (kontrak keluaran Tugas 8; CetakTrip::rencanaDanAturan dan TripSteps). */
 export interface RencanaPaket {
@@ -52,22 +52,30 @@ export interface DinamisPaket {
     laporan: LaporanLapangan[];
 }
 
+/**
+ * Rekaman yang ditandai berakhir (ruling AF-6: Selesai atau Batal berhasil di perangkat ini) membuat
+ * pendakian tidak berlangsung dan tanpa izin rekam jejak, apa pun isi rekaman lainnya. Mode lapangan
+ * lalu menyembunyikan Jeda, Lanjut, tiba di pos, dan Selesai, tidak membaca lokasi, dan tidak
+ * merekam, karena semuanya bergantung pada `trip.berlangsung` (ModeLapangan, useModeLapangan, Hike).
+ */
 export function rakitDataLapangan(lapangan: DataPaket, dinamis: { laporan: LaporanLapangan[] }, sesi: RekamanSesi | null): DataPaket {
     // Rekaman trip lain (tidak pernah dibaca shell, tetapi rekaman tetap data dari perangkat) diabaikan.
     const milikTrip = sesi !== null && sesi.tripId === lapangan.trip.id ? sesi : null;
+    const berakhir = milikTrip?.berakhir ?? null;
 
     return {
         ...lapangan,
         sumber: 'paket',
         laporan: dinamis.laporan,
         trip: milikTrip
-            ? { ...lapangan.trip, berlangsung: milikTrip.trip.berlangsung, mulai: milikTrip.trip.mulai, jedaSejak: milikTrip.trip.jedaSejak, jedaDetik: milikTrip.trip.jedaDetik }
+            ? { ...lapangan.trip, berlangsung: berakhir === null && milikTrip.trip.berlangsung, mulai: milikTrip.trip.mulai, jedaSejak: milikTrip.trip.jedaSejak, jedaDetik: milikTrip.trip.jedaDetik }
             : lapangan.trip,
         tercapai: milikTrip?.tercapai ?? lapangan.tercapai,
         sesiId: milikTrip?.sesiId ?? lapangan.sesiId,
-        rekamJejak: milikTrip?.rekamJejak ?? lapangan.rekamJejak,
+        rekamJejak: berakhir === null && (milikTrip?.rekamJejak ?? lapangan.rekamJejak),
         urls: { ...lapangan.urls, jejak: milikTrip?.jejak ?? lapangan.urls.jejak },
         catatanSesi: milikTrip ? { diperbarui: milikTrip.diperbarui } : null,
+        berakhir,
     };
 }
 

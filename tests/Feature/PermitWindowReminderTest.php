@@ -276,9 +276,11 @@ class PermitWindowReminderTest extends TestCase
         $this->get(route('trips.show', $trip))->assertInertia(fn (AssertableInertia $page) => $page
             ->has('pengingat.daftar', 3)
             ->where('pengingat.daftar.0.label', 'Saat pemesanan izin dibuka')
-            ->where('pengingat.daftar.0.waktu', 'Rabu, 21 Okt 2026 07:00 WITA')
+            // Jam bertitik (07.00), bukan berkolon (07:00): kaidah bahasa Indonesia untuk
+            // jam (ruling audit-fix-B BF-1, M-1).
+            ->where('pengingat.daftar.0.waktu', 'Rabu, 21 Okt 2026 07.00 WITA')
             ->where('pengingat.daftar.0.keadaan', 'menunggu')
-            ->where('pengingat.jadwal', 'Pengingat dikirim 3 hari dan sehari sebelum tanggal mulai, pukul 07:00 waktu setempat gunungnya (WIB, WITA, atau WIT). Bila aturan izin jalurnya mencatat kapan pemesanan dibuka, satu pengingat juga dikirim pada hari itu.'));
+            ->where('pengingat.jadwal', 'Pengingat dikirim 3 hari dan sehari sebelum tanggal mulai, pukul 07.00 waktu setempat gunungnya (WIB, WITA, atau WIT). Bila aturan izin jalurnya mencatat kapan pemesanan dibuka, satu pengingat juga dikirim pada hari itu.'));
     }
 
     /**

@@ -73,8 +73,8 @@ export function FormulirJalur({ judul, form, pilihan, onSubmit, onBatal }: Formu
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <FormField name="distance_km" type="number" step="any" label="Jarak (km)" value={data.distance_km} onChange={teks('distance_km')} error={errors.distance_km} />
-                <FormField name="elevation_gain_m" type="number" label="Elevation gain (m)" value={data.elevation_gain_m} onChange={teks('elevation_gain_m')} error={errors.elevation_gain_m} />
-                <FormField name="elevation_loss_m" type="number" label="Elevation loss (m)" value={data.elevation_loss_m} onChange={teks('elevation_loss_m')} error={errors.elevation_loss_m} />
+                <FormField name="elevation_gain_m" type="number" label="Tanjakan (m)" value={data.elevation_gain_m} onChange={teks('elevation_gain_m')} error={errors.elevation_gain_m} />
+                <FormField name="elevation_loss_m" type="number" label="Turunan (m)" value={data.elevation_loss_m} onChange={teks('elevation_loss_m')} error={errors.elevation_loss_m} />
             </div>
 
             <FormField name="estimated_duration_minutes" type="number" label="Estimasi durasi (menit)" value={data.estimated_duration_minutes} onChange={teks('estimated_duration_minutes')} error={errors.estimated_duration_minutes} />

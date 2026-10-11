@@ -432,6 +432,43 @@ class AntreanLapanganTest extends TestCase
     }
 
     /**
+     * Ruling AF-8 (audit E2E M-6): kalimat Selesai tertahan dinilai ulang setiap kali antrean berubah
+     * atau terkirim, tanpa menunggu tekan Simpan berikutnya (asersi sumber; keputusannya sendiri,
+     * selesaiTertahan, diuji di Node di atas):
+     * - FormulirSelesai memasang pemantau dari pemanggil selama kalimat tertahan tampil, dan setiap
+     *   keputusan barunya menggantikan kalimat itu, kecuali selama pemeriksaan Simpan sendiri berjalan;
+     *   pemasangannya hanya mengikuti ada-tidaknya kalimat, bukan identitas fungsi pemantau;
+     * - mode lapangan memantau lewat dengarAntrean dan menghitung dari antrean saat itu tanpa
+     *   memutarnya, jadi kegagalan kirim tidak memicu putaran ulang tanpa henti;
+     * - ruang kerja membaca ulang lewat tahanSelesai saat tab kembali terlihat atau difokus, tetap
+     *   tanpa memutar antrean dan tanpa efek saat dipasang.
+     */
+    public function test_a_held_finish_sentence_is_re_evaluated_whenever_the_queue_changes(): void
+    {
+        $formulir = File::get(resource_path('js/components/trips/FormulirSelesai.tsx'));
+
+        $this->assertMatchesRegularExpression(
+            '/useEffect\(\(\) => \{\s*const pantau = pantauTerakhir\.current;\s*if \(!adaTertahan \|\| !pantau\) \{\s*return;\s*\}\s*let terpasang = true;\s*const lepas = pantau\(\(hasilBaru\) => \{\s*if \(terpasang && !memeriksaRef\.current\) \{\s*setTertahan\(hasilBaru\);\s*\}\s*\}\);\s*return \(\) => \{\s*terpasang = false;\s*lepas\(\);\s*\};\s*\}, \[adaTertahan\]\);/',
+            $formulir,
+        );
+        $this->assertStringContainsString('const adaTertahan = tertahan !== null;', $formulir);
+
+        $lembar = File::get(resource_path('js/components/mendaki/SelesaiLapangan.tsx'));
+        $this->assertMatchesRegularExpression(
+            '/const pantauTahan = \(perbarui: \(hasil: SelesaiTertahan \| null\) => void\) =>\s*dengarAntrean\(\(\) => \{\s*void antreanSaatIni\(\)\.then\(\(aksi\) => perbarui\(selesaiTertahan\(aksi, data\.urls, \'lapangan\', gagalTerakhir\(\) === \'sesi\'\)\), \(\) => undefined\);\s*\}\);/',
+            $lembar,
+        );
+        $this->assertSame(1, substr_count($lembar, 'putarAntrean()'), 'Hanya tahan (tekan Simpan) yang memutar antrean; pemantau tidak.');
+        $this->assertStringContainsString('pantauTahan={pantauTahan} id="selesai-lapangan" tahan={tahan} />', $lembar);
+
+        $show = File::get(resource_path('js/pages/Trips/Show.tsx'));
+        $this->assertMatchesRegularExpression("/const periksa = \(\) => \{\s*if \(document\.visibilityState === 'visible'\) \{\s*void tahanSelesai\(\)\.then\(perbarui, \(\) => undefined\);/", $show);
+        $this->assertStringContainsString("window.addEventListener('focus', periksa);", $show);
+        $this->assertStringContainsString("document.addEventListener('visibilitychange', periksa);", $show);
+        $this->assertStringContainsString('pantauTahan={pantauTahanSelesai} id="selesai-ruang-kerja" tahan={tahanSelesai} />', $show);
+    }
+
+    /**
      * Menjalankan satu skenario di Node atas berkas antrean.ts yang sebenarnya, dengan fetch,
      * cookie, dan navigator tiruan. $argumen menjadi process.argv[3] (status HTTP untuk
      * skenario yang mengulang beberapa status).

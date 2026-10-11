@@ -122,12 +122,12 @@ export default function Show() {
                         ) : penyebabKosong === 'wilayah' ? (
                             <p className="text-sm text-secondary">
                                 Belum ada jalur berdata di {wilayah}. Jalur di wilayah itu mungkin sudah dikenali sistem, tetapi keterangannya belum dimasukkan
-                                pihak yang berwenang, jadi tidak ada yang dapat diuji terhadap rencana Anda. Mengubah durasi atau batas elevation gain tidak akan
+                                pihak yang berwenang, jadi tidak ada yang dapat diuji terhadap rencana Anda. Mengubah durasi atau batas tanjakan tidak akan
                                 mengubah hasil ini; kosongkan wilayahnya untuk melihat jalur di daerah lain.
                             </p>
                         ) : (
                             <p className="text-sm text-secondary">
-                                Tidak ada jalur yang memenuhi batasan rencana Anda saat ini. Anda dapat melonggarkan target durasi atau batas elevation gain, atau
+                                Tidak ada jalur yang memenuhi batasan rencana Anda saat ini. Anda dapat melonggarkan target durasi atau batas tanjakan, atau
                                 menelusuri jalur secara manual.
                             </p>
                         )}

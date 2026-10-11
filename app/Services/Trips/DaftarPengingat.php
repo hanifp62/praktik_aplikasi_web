@@ -26,7 +26,7 @@ class DaftarPengingat
 {
     private const TRIP_MAKS = 10;
 
-    private const FORMAT_WAKTU = 'l, d M Y H:i';
+    private const FORMAT_WAKTU = 'l, d M Y H.i';
 
     public function __construct(private PermitService $izin, private TenggatIzin $tenggat) {}
 

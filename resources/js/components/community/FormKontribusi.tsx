@@ -77,8 +77,8 @@ export function FormKontribusi({ isian, pilihan }: { isian: IsianKontribusi; pil
             <form onSubmit={simpan} className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <FormField name="distance_km" type="number" step="any" label="Jarak (km)" value={form.data.distance_km} onChange={(e) => form.setData('distance_km', e.target.value)} error={form.errors.distance_km} />
-                    <FormField name="elevation_gain_m" type="number" label="Elevation gain (m)" value={form.data.elevation_gain_m} onChange={(e) => form.setData('elevation_gain_m', e.target.value)} error={form.errors.elevation_gain_m} />
-                    <FormField name="elevation_loss_m" type="number" label="Elevation loss (m)" value={form.data.elevation_loss_m} onChange={(e) => form.setData('elevation_loss_m', e.target.value)} error={form.errors.elevation_loss_m} />
+                    <FormField name="elevation_gain_m" type="number" label="Tanjakan (m)" value={form.data.elevation_gain_m} onChange={(e) => form.setData('elevation_gain_m', e.target.value)} error={form.errors.elevation_gain_m} />
+                    <FormField name="elevation_loss_m" type="number" label="Turunan (m)" value={form.data.elevation_loss_m} onChange={(e) => form.setData('elevation_loss_m', e.target.value)} error={form.errors.elevation_loss_m} />
                 </div>
 
                 <FormField

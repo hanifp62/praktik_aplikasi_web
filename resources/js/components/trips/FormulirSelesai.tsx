@@ -1,5 +1,5 @@
-import { useForm } from '@inertiajs/react';
-import { useRef, useState, type FormEvent } from 'react';
+import { useForm, usePage } from '@inertiajs/react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ChipPilihan } from '@/components/ui/Chip';
 import { InputError, Label, Textarea } from '@/components/ui/Field';
@@ -7,6 +7,8 @@ import { fokusDiDalam, fokusTerlihat } from '@/components/ui/gaya';
 import { Tautan } from '@/components/ui/Tautan';
 import { useFokusSesudahRender } from '@/components/ui/ToastUrungkan';
 import { kelas } from '@/lib/kelas';
+import { tandaiSesiBerakhir } from '@/luring/simpan';
+import type { PropsBersama } from '@/types';
 import type { Opsi } from './types';
 
 /** Kalimat dan tautan bila Selesai tertahan aksi lapangan yang belum terkirim (ruling W6-FC). */
@@ -16,6 +18,8 @@ export interface SelesaiTertahan {
 }
 
 interface FormulirSelesaiProps {
+    /** Trip yang diselesaikan; rekaman sesi paketnya di perangkat ini ditandai berakhir sesudah berhasil (ruling AF-6). */
+    tripId: number;
     url: string;
     hasil: Opsi[];
     alasan: Opsi[];
@@ -27,6 +31,12 @@ interface FormulirSelesaiProps {
      * dikirim; pemeriksaan yang melempar juga dianggap boleh (perilaku sebelum ruling).
      */
     tahan?: () => Promise<SelesaiTertahan | null>;
+    /**
+     * Pemantau keadaan tertahan (ruling AF-8): dipasang selama kalimat tertahan tampil, memanggil
+     * `perbarui` dengan keputusan baru setiap kali antrean berubah atau terkirim, dan mengembalikan
+     * fungsi pelepas. Hanya membaca antrean, tidak mengirim apa pun.
+     */
+    pantauTahan?: (perbarui: (hasil: SelesaiTertahan | null) => void) => () => void;
 }
 
 const tautanTeks = kelas('inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900', fokusTerlihat);
@@ -91,17 +101,56 @@ const tautanTeks = kelas('inline-flex min-h-11 items-center text-kecil font-bold
  * `onHttpException` yang mengembalikan false, sehingga dialog galat bawaan Inertia tidak terbuka
  * (pola W6-11c). Kalimatnya "belum pasti", karena server bisa sudah menyimpan sebelum jawaban yang
  * tidak dapat dibaca itu (daftar periksa butir 2).
+ *
+ * Kalimat tertahan dinilai ulang tanpa menunggu tekan Simpan berikutnya (ruling AF-8, audit E2E
+ * M-6): selama kalimat itu tampil, `pantauTahan` dari pemanggil dipasang dan setiap keputusan
+ * barunya menggantikan kalimat itu, jadi kalimat hilang begitu aksi trip ini tidak lagi menunggu.
+ * Pemantau dibaca lewat ref, sehingga fungsi baru di setiap render pemanggil tidak memasang ulang
+ * pemantau; pemasangannya hanya mengikuti ada-tidaknya kalimat. Selama pemeriksaan Simpan sendiri
+ * berjalan, keputusan pemantau diabaikan.
+ *
+ * Selesai yang berhasil (bukan penolakan) menandai rekaman sesi paket trip ini di perangkat ini
+ * berakhir (ruling AF-6, tandaiSesiBerakhir), dari mode lapangan maupun ruang kerja, supaya mode
+ * lapangan dari paket tidak lagi menulis pendakian ini sebagai berjalan. Kegagalan menandai tidak
+ * mengubah apa pun yang sudah disimpan server.
  */
-export function FormulirSelesai({ url, hasil, alasan, id, tahan }: FormulirSelesaiProps) {
+export function FormulirSelesai({ tripId, url, hasil, alasan, id, tahan, pantauTahan }: FormulirSelesaiProps) {
     const form = useForm<{ completion_state: string; alasan: string; personal_notes: string }>({ completion_state: 'COMPLETED', alasan: '', personal_notes: '' });
+    const kunci = usePage<PropsBersama>().props.perangkat?.kunci ?? null;
     const berbalik = form.data.completion_state === 'ABANDONED';
     const [galatJaringan, setGalatJaringan] = useState(false);
     const [galatHttp, setGalatHttp] = useState(false);
     const [tertahan, setTertahan] = useState<SelesaiTertahan | null>(null);
     const [memeriksa, setMemeriksa] = useState(false);
     const memeriksaRef = useRef(false);
+    const pantauTerakhir = useRef(pantauTahan);
     const fokusKe = useFokusSesudahRender();
     const idSimpan = `${id}-simpan`;
+    const adaTertahan = tertahan !== null;
+
+    useEffect(() => {
+        pantauTerakhir.current = pantauTahan;
+    });
+
+    useEffect(() => {
+        const pantau = pantauTerakhir.current;
+
+        if (!adaTertahan || !pantau) {
+            return;
+        }
+
+        let terpasang = true;
+        const lepas = pantau((hasilBaru) => {
+            if (terpasang && !memeriksaRef.current) {
+                setTertahan(hasilBaru);
+            }
+        });
+
+        return () => {
+            terpasang = false;
+            lepas();
+        };
+    }, [adaTertahan]);
 
     const kirim = async (e: FormEvent) => {
         e.preventDefault();
@@ -153,6 +202,10 @@ export function FormulirSelesai({ url, hasil, alasan, id, tahan }: FormulirSeles
             },
             onSuccess: (page) => {
                 ditolak = Boolean(page.props.penolakan);
+
+                if (!ditolak) {
+                    void tandaiSesiBerakhir(kunci, tripId, { jenis: 'selesai', waktu: new Date().toISOString() }).catch(() => undefined);
+                }
             },
             onFinish: () => {
                 fokusKe(ditolak ? 'penolakan-trip' : idSimpan);

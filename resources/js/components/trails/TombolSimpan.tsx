@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useRef, useState, type MouseEvent } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button, useFokusKembali } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Dialog } from '@/components/ui/Lembar';
 import { TombolIkon } from '@/components/ui/TombolIkon';
@@ -52,6 +52,11 @@ const opsi = { preserveScroll: true, preserveState: true } as const;
  * sudah ada sebelum tombol ini ditekan (tab atau perangkat lain), sehingga
  * Urungkan-sebagai-hapus akan menghapus baris dan catatan yang tidak dibuat tombol ini (ruling
  * W3-4b). Flash simpanan dan penghapusan dibaca hanya bila id jalurnya cocok (pola W4-4e).
+ *
+ * Bentuk ikon dan bar memakai TombolIkon yang `disabled` selama memproses, jadi fokusnya
+ * dikembalikan lewat useFokusKembali yang sama dengan Button (ruling AF-2, audit E2E I-2): klik
+ * tetikus yang memfokus tombol tidak lagi meninggalkan fokus di body. Bentuk tombol dan hapus
+ * memakai Button, yang sudah melakukannya sendiri.
  */
 export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolSimpanProps) {
     const [memproses, setMemproses] = useState(false);
@@ -59,6 +64,7 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
     const [penuh, setPenuh] = useState<string | null>(null);
     const papanKetik = useRef(false);
     const pemicu = useRef<HTMLButtonElement | null>(null);
+    const fokusKembali = useFokusKembali(memproses);
 
     const simpan = (catatan: string | null = null, urungkan = true) => {
         setMemproses(true);
@@ -98,7 +104,19 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
                     return;
                 }
 
-                tampilkanToast(`${jalur.name} dihapus dari simpanan.`, () => simpan(terhapus?.catatan ?? null, false), { fokus: papanKetik.current });
+                // Urungkan menyimpan lagi lewat tombol ini, yang `disabled` selama kirimannya, jadi
+                // pengembalian fokus toast ke tombol itu gagal dan jatuh ke body. Tanda dicatat di
+                // sini supaya fokus kembali ke tombol sesudah kiriman selesai (ruling AF-2).
+                // Bentuk hapus (kartu Simpanan) lepas bersama kartunya, jadi fokus pindah ke Urungkan
+                // juga dari tetikus: tombolnya tidak ada lagi untuk menerima fokus kembali.
+                tampilkanToast(
+                    `${jalur.name} dihapus dari simpanan.`,
+                    () => {
+                        fokusKembali.tandai();
+                        simpan(terhapus?.catatan ?? null, false);
+                    },
+                    { fokus: papanKetik.current || bentuk === 'hapus' },
+                );
             },
         });
     };
@@ -106,6 +124,7 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
     const tekan = (e: MouseEvent<HTMLButtonElement>) => {
         papanKetik.current = e.detail === 0;
         pemicu.current = e.currentTarget;
+        fokusKembali.tandai(e);
 
         if (!jalur.ditimbang) {
             simpan();

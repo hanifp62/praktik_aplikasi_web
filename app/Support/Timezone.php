@@ -91,7 +91,7 @@ class Timezone
      * Instan UTC menjadi teks siap tampil, lengkap dengan penanda zonanya.
      * Tanpa penanda itu pengguna tidak punya cara tahu jam mana yang dimaksud.
      */
-    public static function display(?Carbon $instant, string $timezone, string $format = 'd M Y H:i'): ?string
+    public static function display(?Carbon $instant, string $timezone, string $format = 'd M Y H.i'): ?string
     {
         if ($instant === null) {
             return null;

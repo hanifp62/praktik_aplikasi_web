@@ -81,7 +81,7 @@ class RecommendationExplanationService
         }
 
         if (($trail->elevation_gain_m ?? 0) >= 1200) {
-            $lines[] = sprintf('Elevation gain jalur ini tinggi (%d m).', $trail->elevation_gain_m);
+            $lines[] = sprintf('Tanjakan jalur ini tinggi (%s m).', number_format($trail->elevation_gain_m, 0, ',', '.'));
         }
 
         return array_values(array_unique($lines));
@@ -102,7 +102,7 @@ class RecommendationExplanationService
                     'technical_match' => 'Pelajari bagian teknis jalur dan siapkan perlengkapan yang sesuai.',
                     'navigation_match' => 'Siapkan referensi navigasi jalur dan pelajari titik percabangan.',
                     'terrain_match' => 'Pelajari karakter medan jalur yang belum pernah Anda lalui.',
-                    'elevation_gain_match' => 'Siapkan kondisi fisik untuk elevation gain yang lebih besar dari pengalaman Anda sebelumnya.',
+                    'elevation_gain_match' => 'Siapkan kondisi fisik untuk tanjakan yang lebih besar dari pengalaman Anda sebelumnya.',
                     'duration_match' => 'Sesuaikan rencana waktu Anda dengan estimasi durasi jalur.',
                     default => null,
                 };

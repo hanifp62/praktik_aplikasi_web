@@ -73,6 +73,16 @@ export interface RekamanPaket {
     diverifikasi: string | null;
 }
 
+/**
+ * Pendakian yang sudah diselesaikan atau dibatalkan DI PERANGKAT INI (ruling AF-6, audit E2E I-6):
+ * jenisnya dan waktu jawaban berhasil diterima di perangkat ini (ISO 8601). Selesai atau batal di
+ * perangkat lain tidak tercatat di sini (OPEN ISSUE W6-FC).
+ */
+export interface SesiBerakhir {
+    jenis: 'selesai' | 'batal';
+    waktu: string;
+}
+
 /** Keadaan sesi terakhir yang dilihat mode lapangan daring; paket sendiri tidak membawanya. */
 export interface RekamanSesi {
     tripId: number;
@@ -82,6 +92,8 @@ export interface RekamanSesi {
     rekamJejak: boolean;
     jejak: string | null;
     diperbarui: string;
+    /** Tidak ada (rekaman lama) atau null: pendakian belum diselesaikan atau dibatalkan di perangkat ini. */
+    berakhir?: SesiBerakhir | null;
 }
 
 /** Kunci satu bagian di toko `bagian`: [tripId, versi, nama]. */
@@ -364,8 +376,90 @@ export async function gantiVersi(db: IDBDatabase, rekaman: RekamanPaket): Promis
     await selesai;
 }
 
+/**
+ * Menulis rekaman sesi dari mode lapangan daring (useSimpanSesiPaket), KECUALI rekaman trip itu
+ * sudah ditandai berakhir di perangkat ini (ruling AF-6): tulisan yang terlambat, atau tab lain yang
+ * masih membuka mode lapangan trip yang sama, tidak menghidupkan lagi pendakian yang sudah selesai
+ * atau batal. Baca dan tulis dalam satu transaksi readwrite, jadi tidak ada tulisan lain di antaranya.
+ * Selesai sesudah transaksinya tersimpan (PT9-20).
+ */
 export async function tulisSesi(db: IDBDatabase, rekaman: RekamanSesi): Promise<void> {
-    await tulisSatu(db, SESI, rekaman);
+    const transaksi = db.transaction(SESI, 'readwrite');
+    const selesai = selesaiTransaksi(transaksi);
+    const tokoSesi = transaksi.objectStore(SESI);
+    const ada = tokoSesi.get(rekaman.tripId) as IDBRequest<RekamanSesi | undefined>;
+
+    ada.onsuccess = () => {
+        if (!ada.result?.berakhir) {
+            tokoSesi.put(rekaman);
+        }
+    };
+
+    await selesai;
+}
+
+/**
+ * Rekaman sesi yang ditulis sesudah Selesai atau Batal berhasil di perangkat ini (ruling AF-6),
+ * fungsi murni; null berarti tidak ada yang ditulis:
+ * - rekaman yang sudah berakhir tetap seperti adanya (yang pertama dicatat yang berlaku);
+ * - rekaman yang ada mendapat `berakhir`, field lain tetap;
+ * - tanpa rekaman tetapi dengan paket trip ini: rekaman baru yang tidak berlangsung dan tanpa izin
+ *   rekam jejak, supaya shell tetap tahu pendakian ini sudah berakhir;
+ * - tanpa rekaman dan tanpa paket: tidak ada yang ditulis.
+ */
+export function rekamanBerakhir(ada: RekamanSesi | null, adaPaket: boolean, tripId: number, berakhir: SesiBerakhir): RekamanSesi | null {
+    if (ada?.berakhir) {
+        return null;
+    }
+
+    if (ada) {
+        return { ...ada, berakhir };
+    }
+
+    if (!adaPaket) {
+        return null;
+    }
+
+    return { tripId, trip: { berlangsung: false, mulai: null, jedaSejak: null, jedaDetik: 0 }, tercapai: 0, sesiId: null, rekamJejak: false, jejak: null, diperbarui: berakhir.waktu, berakhir };
+}
+
+/**
+ * Menandai rekaman sesi paket satu trip berakhir sesudah Selesai atau Batal berhasil di perangkat
+ * ini (ruling AF-6). Tanpa kunci perangkat tidak ada apa pun; basis data paket yang tidak ada tidak
+ * dibuat (adaBasisData, pola W6-P2); kunci yang sudah ditutup di tab ini tidak disentuh (W6-11d).
+ * Rekaman sesi dan rekaman paket trip itu dibaca dalam satu transaksi readwrite, lalu
+ * rekamanBerakhir menentukan yang ditulis. Selesai sesudah transaksinya tersimpan.
+ */
+export async function tandaiSesiBerakhir(kunci: string | null, tripId: number, berakhir: SesiBerakhir): Promise<void> {
+    if (kunci === null || !(await adaBasisData(kunci))) {
+        return;
+    }
+
+    const db = await buka(kunci);
+    const transaksi = db.transaction([SESI, PAKET], 'readwrite');
+    const selesai = selesaiTransaksi(transaksi);
+    const tokoSesi = transaksi.objectStore(SESI);
+    const bacaSesi = tokoSesi.get(tripId) as IDBRequest<RekamanSesi | undefined>;
+    const bacaPaket = transaksi.objectStore(PAKET).getAllKeys(rentangTrip(tripId));
+    let sisa = 2;
+
+    const lanjut = () => {
+        sisa -= 1;
+
+        if (sisa > 0) {
+            return;
+        }
+
+        const rekaman = rekamanBerakhir(bacaSesi.result ?? null, bacaPaket.result.length > 0, tripId, berakhir);
+
+        if (rekaman !== null) {
+            tokoSesi.put(rekaman);
+        }
+    };
+
+    bacaSesi.onsuccess = lanjut;
+    bacaPaket.onsuccess = lanjut;
+    await selesai;
 }
 
 export async function bacaSesi(db: IDBDatabase, tripId: number): Promise<RekamanSesi | null> {

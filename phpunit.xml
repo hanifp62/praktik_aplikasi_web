@@ -74,6 +74,17 @@
         <server name="DB_PORT" value="5432"/>
         <server name="DB_USERNAME" value="tidak_ada"/>
         <server name="DB_PASSWORD" value=""/>
+        <!--
+            Sakelar fitur W6 dan penyaji data contoh dipaksa mati seperti di CI, supaya .env lokal (misalnya
+            inspeksi dengan data contoh, FIELD_PACK_ENABLED=true) tidak mengubah hasil test. Test yang butuh
+            sakelar menyalakannya sendiri lewat config().
+        -->
+        <env name="FIELD_PACK_ENABLED" value="false" force="true"/>
+        <env name="FIELD_SAFETY_ENABLED" value="false" force="true"/>
+        <env name="APP_DEMO" value="false" force="true"/>
+        <server name="FIELD_PACK_ENABLED" value="false"/>
+        <server name="FIELD_SAFETY_ENABLED" value="false"/>
+        <server name="APP_DEMO" value="false"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

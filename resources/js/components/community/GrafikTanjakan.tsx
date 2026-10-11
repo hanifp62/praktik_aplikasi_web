@@ -31,7 +31,7 @@ export function GrafikTanjakan({ titik }: { titik: TitikTanjakan[] }) {
             ) : (
                 <>
                     <p className="mt-1 max-w-prose text-sm text-secondary">
-                        Elevation gain jalur pada pendakian yang selesai sampai target, dari yang paling awal. Angkanya milik jalur, bukan rekaman GPS perjalanan Anda.
+                        Tanjakan jalur pada pendakian yang selesai sampai target, dari yang paling awal. Angkanya milik jalur, bukan rekaman GPS perjalanan Anda.
                     </p>
                     <ol className="mt-4 space-y-3">
                         {titik.map((t, i) => (

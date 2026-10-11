@@ -134,7 +134,7 @@ class CompatibilityScorer
         $score = $this->rankScore($experienceRank, $demand['rank']);
 
         $detail = match (true) {
-            ! $demand['known'] => 'Karakteristik fisik jalur (jarak, elevation gain, estimasi durasi) '
+            ! $demand['known'] => 'Karakteristik fisik jalur (jarak, tanjakan, estimasi durasi) '
                 .'belum tersedia, sehingga kecocokan dengan pengalaman Anda belum dapat dinilai.',
             $score >= $this->strongThreshold() => 'Tingkat pengalaman Anda sesuai dengan beban fisik jalur ini.',
             default => 'Beban fisik jalur ini lebih berat dibandingkan tingkat pengalaman yang Anda isi.',
@@ -248,7 +248,7 @@ class CompatibilityScorer
                 CompatibilityFactor::ELEVATION_GAIN_MATCH,
                 0.6,
                 $weight,
-                'Data elevation gain jalur ini belum tersedia.',
+                'Data tanjakan jalur ini belum tersedia.',
                 isUnknown: true,
             );
         }
@@ -261,8 +261,8 @@ class CompatibilityScorer
         $score = $ratio <= 1 ? 1.0 : max(0.0, 1.0 - ($ratio - 1));
 
         $detail = $score >= $this->strongThreshold()
-            ? sprintf('Elevation gain %d m masih sebanding dengan pengalaman Anda.', $gain)
-            : sprintf('Elevation gain %d m lebih besar dari referensi pengalaman Anda (%d m).', $gain, $reference);
+            ? sprintf('Tanjakan %s m masih sebanding dengan pengalaman Anda.', number_format($gain, 0, ',', '.'))
+            : sprintf('Tanjakan %s m lebih besar dari referensi pengalaman Anda (%s m).', number_format($gain, 0, ',', '.'), number_format($reference, 0, ',', '.'));
 
         return new FactorScore(CompatibilityFactor::ELEVATION_GAIN_MATCH, $score, $weight, $detail);
     }

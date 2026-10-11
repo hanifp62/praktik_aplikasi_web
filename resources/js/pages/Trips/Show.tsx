@@ -122,6 +122,27 @@ export default function Show() {
     };
 
     /**
+     * Pemantau kalimat Selesai tertahan di ruang kerja (ruling AF-8). Tab ini tidak memutar antrean,
+     * jadi antreannya hanya berubah oleh mode lapangan di tab lain; keputusan dibaca ulang lewat
+     * tahanSelesai (baca saja, tanpa mengirim) setiap kali tab ini kembali terlihat atau difokus.
+     */
+    const pantauTahanSelesai = (perbarui: (hasil: SelesaiTertahan | null) => void) => {
+        const periksa = () => {
+            if (document.visibilityState === 'visible') {
+                void tahanSelesai().then(perbarui, () => undefined);
+            }
+        };
+
+        window.addEventListener('focus', periksa);
+        document.addEventListener('visibilitychange', periksa);
+
+        return () => {
+            window.removeEventListener('focus', periksa);
+            document.removeEventListener('visibilitychange', periksa);
+        };
+    };
+
+    /**
      * Fokus sesudah batal berhasil atau ditolak (ruling W6-5o putaran perbaikan 3): Show
      * memegang `useFokusSesudahRender` sendiri dan meneruskan fungsi biasa ini ke BatalkanTrip
      * lewat prop `onHasil`, supaya target fokusnya tetap tercapai walau BatalkanTrip sendiri
@@ -245,7 +266,7 @@ export default function Show() {
                                             Mulai pendakian
                                         </Button>
                                     )}
-                                    <BatalkanTrip url={cancel.url(trip.id)} alasan={alasanBatal} berlangsung={trip.berlangsung} onHasil={kabarBatal} />
+                                    <BatalkanTrip tripId={trip.id} url={cancel.url(trip.id)} alasan={alasanBatal} berlangsung={trip.berlangsung} onHasil={kabarBatal} />
                                 </div>
                                 <p role="status" className={kelas('text-kecil font-bold text-warn-900', pesanMulai !== '' && 'mt-3')}>
                                     {pesanMulai}
@@ -260,7 +281,7 @@ export default function Show() {
                             sengaja disembunyikan kepala trip (R-014). */}
                         {trip.berlangsung ? (
                             <Card title="Selesaikan trip" subtitle="Tandai trip selesai untuk menyimpannya ke riwayat dan melaporkan kondisi jalur.">
-                                <FormulirSelesai url={complete.url(trip.id)} hasil={completionStates} alasan={alasanBatal} id="selesai-ruang-kerja" tahan={tahanSelesai} />
+                                <FormulirSelesai tripId={trip.id} url={complete.url(trip.id)} hasil={completionStates} alasan={alasanBatal} pantauTahan={pantauTahanSelesai} id="selesai-ruang-kerja" tahan={tahanSelesai} />
                             </Card>
                         ) : null}
 

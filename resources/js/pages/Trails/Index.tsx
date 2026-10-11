@@ -259,7 +259,11 @@ export default function Index() {
                                     {ringkasan.jumlah}
                                 </span>{' '}
                                 jalur
-                                {jumlahTersembunyi > 0 ? `, ${jumlahTersembunyi} disembunyikan ${olehSaringan}` : null}
+                                {jumlahTersembunyi > 0
+                                    ? filter.tampilkanSemua
+                                        ? `, termasuk ${jumlahTersembunyi} tampil karena Tampilkan juga meski tidak lolos ${olehSaringan}`
+                                        : `, ${jumlahTersembunyi} disembunyikan ${olehSaringan}`
+                                    : null}
                             </p>
                             <p className="hidden text-kecil text-secondary sm:block">
                                 Urut: <span className="font-bold text-primary">{ringkasan.urutan}</span>
@@ -342,7 +346,8 @@ export default function Index() {
                             {jumlahTersembunyi > 0 && trails.data.length > 0 ? (
                                 <div className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-sunken p-4">
                                     <p className="min-w-0 flex-1 text-kecil text-secondary">
-                                        <span data-angka="">{jumlahTersembunyi}</span> jalur disembunyikan {olehSaringan}.
+                                        <span data-angka="">{jumlahTersembunyi}</span> jalur{' '}
+                                        {filter.tampilkanSemua ? 'tampil karena Anda memilih Tampilkan juga, meski tidak lolos' : 'disembunyikan'} {olehSaringan}.
                                     </p>
                                     <Button variant="secondary" size="sm" onClick={() => terapkan(draf, !filter.tampilkanSemua)}>
                                         {filter.tampilkanSemua ? 'Sembunyikan lagi' : 'Tampilkan juga'}

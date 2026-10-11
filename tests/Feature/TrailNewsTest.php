@@ -418,6 +418,29 @@ class TrailNewsTest extends TestCase
     }
 
     /**
+     * Regresi BF-7c (ruling audit-fix-B BF-5, M-1 sisa): "Prakiraan pukul" di Kabar
+     * ditulis bertitik (07.00), bukan berkolon, kaidah bahasa Indonesia untuk jam. Diuji
+     * dengan snapshot sungguhan lewat permintaan HTTP nyata, bukan sekadar sumber.
+     */
+    public function test_the_forecast_time_sentence_is_written_with_a_dot(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+
+        WeatherSnapshot::factory()->create([
+            'adm4_code' => $trail->weather_adm4_code,
+            'forecast_at' => now()->addHour(),
+            'fetched_at' => now()->subHour(),
+        ]);
+
+        $waktuPrakiraan = $this->halaman($user)->viewData('page')['props']['cuaca'][0]['wilayah'][0]['waktuPrakiraan'];
+
+        $this->assertMatchesRegularExpression('/^Prakiraan pukul \d{2}\.\d{2} [A-Z]+$/', $waktuPrakiraan, "Kalimat tidak berbentuk \"Prakiraan pukul HH.ii ZONA\": {$waktuPrakiraan}");
+        $this->assertStringNotContainsString(':', $waktuPrakiraan);
+    }
+
+    /**
      * R-013: snapshot yang sudah lama tidak dibacakan sebagai cuaca saat ini. Yang
      * tampil adalah kapan data terakhir tersedia.
      */

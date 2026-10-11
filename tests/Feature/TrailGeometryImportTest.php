@@ -258,7 +258,9 @@ class TrailGeometryImportTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('trails.geometry.elevation', $trail))
-            ->assertSessionHas('status', 'Elevation gain dan loss diperbarui dari berkas GPX.');
+            // Pesan diterjemahkan menjadi "Tanjakan dan turunan..." (ruling audit-fix-B
+            // BF-7a, M-3 sisa).
+            ->assertSessionHas('status', 'Tanjakan dan turunan diperbarui dari berkas GPX.');
 
         $this->assertSame(150, $trail->fresh()->elevation_gain_m);
         $this->assertSame(0, $trail->fresh()->elevation_loss_m);

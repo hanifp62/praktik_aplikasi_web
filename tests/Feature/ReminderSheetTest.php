@@ -57,7 +57,9 @@ class ReminderSheetTest extends TestCase
                 ->has('daftarPengingat.pengingat', 2)
                 ->where('daftarPengingat.pengingat.0.trip', 'Gede via Cibodas')
                 ->where('daftarPengingat.pengingat.0.jenis', '3 hari sebelum berangkat')
-                ->where('daftarPengingat.pengingat.0.waktu', 'Jumat, 09 Okt 2026 07:00 WIB')
+                // Jam bertitik (07.00): kaidah bahasa Indonesia untuk jam (ruling audit-fix-B
+                // BF-1, M-1).
+                ->where('daftarPengingat.pengingat.0.waktu', 'Jumat, 09 Okt 2026 07.00 WIB')
                 ->where('daftarPengingat.pengingat.0.url', '/trips/'.$trip->id)
                 ->where('daftarPengingat.pengingat.1.jenis', 'Sehari sebelum berangkat')
                 ->has('daftarPengingat.tenggatIzin', 1)

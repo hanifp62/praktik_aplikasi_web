@@ -125,7 +125,29 @@ class IndonesianInterfaceTest extends TestCase
         )->errors()->first('elevation_gain_m');
 
         $this->assertStringNotContainsString('elevation_gain_m', $pesan);
-        $this->assertSame('Elevation gain (m) harus berupa bilangan bulat.', $pesan);
+        // Label diterjemahkan dari "Elevation gain (m)" menjadi "Tanjakan (m)" (ruling
+        // audit-fix-B BF-6, M-3 sisa): nama kolom dieja dalam kata, dan katanya sendiri
+        // tidak lagi berbahasa Inggris.
+        $this->assertSame('Tanjakan (m) harus berupa bilangan bulat.', $pesan);
+    }
+
+    /**
+     * Ruling audit-fix-B BF-7d: booking_closes_days_before tidak punya entri attributes
+     * sama sekali (ditemukan ronde BF-6), sehingga pesan galatnya jatuh ke nama kolom
+     * mentah. Istilahnya disamakan dengan label formulir nyatanya,
+     * `resources/js/pages/Admin/Permits.tsx` ("Pemesanan ditutup H-") dan pesan `.lte`
+     * yang sudah ada di `PermitRequirementRequest::messages()` ("Penutupan pemesanan
+     * tidak boleh lebih awal daripada pembukaannya."), bukan istilah baru.
+     */
+    public function test_the_booking_closing_window_attribute_matches_its_real_form_label(): void
+    {
+        $pesan = Validator::make(
+            ['booking_closes_days_before' => 'bukan angka'],
+            ['booking_closes_days_before' => ['integer']]
+        )->errors()->first('booking_closes_days_before');
+
+        $this->assertStringNotContainsString('booking_closes_days_before', $pesan);
+        $this->assertSame('Penutupan pemesanan (hari sebelum) harus berupa bilangan bulat.', $pesan);
     }
 
     public function test_a_failed_login_answers_in_indonesian(): void
@@ -144,6 +166,62 @@ class IndonesianInterfaceTest extends TestCase
     public function test_the_account_deletion_copy_matches_what_actually_happens(): void
     {
         $this->assertStringContainsString('tetap disimpan tanpa nama Anda', $this->sumberProfil());
+    }
+
+    /**
+     * Sapuan BF-7b (ruling audit-fix-B, M-3 sisa): "Elevation gain"/"Elevation loss" tidak
+     * boleh muncul lagi sebagai PROSA bertampil (dengan spasi), di app/, resources/js,
+     * resources/views, atau nilai lang/id/*.php. Identifier kode bergaris bawah
+     * (elevation_gain_m dan seterusnya) sengaja TIDAK disentuh pola ini, karena polanya
+     * menuntut spasi literal antara "elevation" dan "gain"/"loss".
+     *
+     * Komentar dan docblock yang memang tidak pernah dirender ke pengguna dilucuti dulu
+     * (`/* ... *\/`, `{{-- ... --}}`, dan `//` yang tidak didahului titik dua supaya
+     * "https://" tidak ikut terpotong), supaya sapuan ini hanya menjaga teks yang
+     * sungguh tampil, bukan menolak penjelasan teknis berbahasa Inggris di balik kode.
+     * Tanpa pengecualian: "Total elevation gain" di HikerProgress.tsx, yang sempat
+     * dikecualikan selama Kelompok A bekerja di berkas itu, kini "Total tanjakan".
+     */
+    public function test_the_english_elevation_phrase_does_not_appear_in_displayed_text(): void
+    {
+        $pola = '/elevation[ \t]+(?:gain|loss)/i';
+        $pelanggar = [];
+
+        foreach ([app_path(), resource_path('js'), resource_path('views'), lang_path('id')] as $akar) {
+            if (! is_dir($akar)) {
+                continue;
+            }
+
+            foreach (File::allFiles($akar) as $berkas) {
+                $namaBerkas = $berkas->getFilename();
+                $isBlade = str_ends_with($namaBerkas, '.blade.php');
+
+                if (! $isBlade && ! in_array($berkas->getExtension(), ['php', 'tsx', 'ts'], true)) {
+                    continue;
+                }
+
+                $jalurUnix = str_replace('\\', '/', $berkas->getRelativePathname());
+
+                $isi = $berkas->getContents();
+
+                if ($isBlade) {
+                    $isi = (string) preg_replace('/\{\{--.*?--\}\}/s', '', $isi);
+                }
+
+                $isi = (string) preg_replace('#/\*.*?\*/#s', '', $isi);
+                $isi = (string) preg_replace('#(?<!:)//[^\n]*#', '', $isi);
+
+                if (preg_match($pola, $isi)) {
+                    $pelanggar[] = $jalurUnix;
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            'Prosa "elevation gain/loss" masih tampil ke pengguna di: '.implode(', ', $pelanggar)
+        );
     }
 
     /**

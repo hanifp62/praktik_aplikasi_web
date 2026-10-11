@@ -253,7 +253,7 @@ class KabarJalur
 
         $dasar['sumber'] = $terdekat->source ?: WeatherService::SOURCE;
         $dasar['area'] = $terdekat->reference_area ?? $dasar['area'];
-        $dasar['waktuPrakiraan'] = 'Prakiraan pukul '.Timezone::display($terdekat->forecast_at, $zona, 'H:i');
+        $dasar['waktuPrakiraan'] = 'Prakiraan pukul '.Timezone::display($terdekat->forecast_at, $zona, 'H.i');
         $dasar['ringkasan'] = implode(' · ', array_filter([
             $terdekat->weather_description,
             $terdekat->temperature_c !== null ? number_format((float) $terdekat->temperature_c, 0, ',', '.').' °C' : null,

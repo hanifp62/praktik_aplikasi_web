@@ -243,7 +243,7 @@ class ReadinessService
                         .'tidak lagi diperbarui di sini. Tanyakan keadaan jalurnya langsung kepada '
                         .'pengelola kawasan sebelum merencanakan keberangkatan.',
                     'duration_requires_overnight' => 'Durasi jalur tidak sesuai dengan rencana pulang hari.',
-                    'elevation_gain_above_goal_limit' => 'Elevation gain jalur melebihi batas yang Anda tentukan.',
+                    'elevation_gain_above_goal_limit' => 'Tanjakan jalur melebihi batas yang Anda tentukan.',
                     default => $rule,
                 };
             }
@@ -261,8 +261,15 @@ class ReadinessService
             );
         }
 
-        if (($preparationState['completion_percent'] ?? 0) < 100) {
-            $outstanding[] = sprintf('Persiapan baru %d%% dikonfirmasi.', $preparationState['completion_percent'] ?? 0);
+        // Hitungan butir yang berlaku, bukan persen (R-005, pola Riwayat ruling AF-4). Daftar
+        // yang semua butirnya Tidak berlaku tidak menyisakan apa pun untuk dikonfirmasi.
+        $butirBerlaku = (int) ($preparationState['total_items'] ?? 0) - (int) ($preparationState['not_applicable'] ?? 0);
+        $butirSiap = (int) ($preparationState['confirmed'] ?? 0);
+
+        if ((int) ($preparationState['total_items'] ?? 0) === 0) {
+            $outstanding[] = 'Daftar persiapan belum ada.';
+        } elseif ($butirBerlaku > 0 && $butirSiap < $butirBerlaku) {
+            $outstanding[] = sprintf('%d dari %d butir persiapan yang berlaku sudah dikonfirmasi.', $butirSiap, $butirBerlaku);
         }
 
         // Pengguna harus tahu bahwa yang menahan kesiapannya adalah data cuaca, bukan

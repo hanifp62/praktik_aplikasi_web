@@ -73,7 +73,7 @@ class ProgressHierarchyTest extends TestCase
 
         $sumber = $this->sumber();
         $peta = strpos($sumber, '<PetaGaris');
-        $angka = strpos($sumber, 'Total elevation gain');
+        $angka = strpos($sumber, 'Total tanjakan');
 
         $this->assertNotFalse($peta, 'Peta gunung yang sudah didaki harus ada.');
         $this->assertLessThan($angka, $peta, 'Peta adalah muatan utama halaman ini, jadi ia dibaca lebih dulu.');
@@ -110,7 +110,7 @@ class ProgressHierarchyTest extends TestCase
     public function test_the_figures_are_one_group_not_four_competing_cards(): void
     {
         $this->assertMatchesRegularExpression(
-            '/<dl[^>]*>.*Pendakian.*Gunung berbeda.*Total elevation gain.*<\/dl>/s',
+            '/<dl[^>]*>.*Pendakian.*Gunung berbeda.*Total tanjakan.*<\/dl>/s',
             $this->sumber(),
             'Angkanya satu kelompok, bukan empat klaim setara.'
         );

@@ -125,6 +125,32 @@ class TrailDetailPageTest extends TestCase
     }
 
     /**
+     * Regresi BF-7c (ruling audit-fix-B BF-5, M-1 sisa): jam prakiraan cuaca di rincian
+     * jalur ditulis bertitik (07.00), bukan berkolon, kaidah bahasa Indonesia untuk jam.
+     * Diuji dengan snapshot sungguhan lewat permintaan HTTP nyata, bukan sekadar sumber.
+     */
+    public function test_the_forecast_time_is_written_with_a_dot(): void
+    {
+        $jalur = $this->jalur();
+
+        WeatherSnapshot::factory()->create([
+            'adm4_code' => $jalur->weather_adm4_code,
+            'forecast_at' => now()->addHour(),
+            'fetched_at' => now(),
+        ]);
+
+        $cuaca = $this->actingAs(User::factory()->create())
+            ->get(route('trails.show', $jalur))
+            ->viewData('page')['props']['cuaca'];
+
+        $this->assertTrue($cuaca['available']);
+        $waktu = $cuaca['forecast'][0]['waktu'];
+
+        $this->assertMatchesRegularExpression('/^\d{2} [^\s0-9]+ \d{2}\.\d{2}$/u', $waktu, "Jam prakiraan tidak berbentuk \"dd Bulan HH.ii\": {$waktu}");
+        $this->assertStringNotContainsString(':', $waktu);
+    }
+
+    /**
      * R-013: kegagalan sumber cuaca tidak pernah menghasilkan cuaca karangan.
      */
     public function test_missing_weather_is_reported_not_invented(): void

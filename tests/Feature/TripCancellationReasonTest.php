@@ -293,8 +293,12 @@ class TripCancellationReasonTest extends TestCase
             $batal,
             'BatalkanTrip tidak lagi memegang fokusnya sendiri (ruling W6-5o): komponen ini bisa lepas sebelum onFinish berefek pada cabang berhasil.'
         );
+        // Diubah ruling AF-6 (audit E2E I-6): cabang berhasil kini juga menandai rekaman sesi paket
+        // trip ini berakhir di perangkat ini, SESUDAH onHasil('berhasil'), jadi pola cabang itu
+        // mengizinkan tepat satu pemanggilan tandaiSesiBerakhir jenis batal di belakangnya. Cabang
+        // ditolak tidak boleh menandai apa pun.
         $this->assertMatchesRegularExpression(
-            "/onSuccess: \\(page\\) => \\{\\s*setTerbuka\\(false\\);\\s*\\s*if \\(page\\.props\\.penolakan\\) \\{\\s*onHasil\\('ditolak'\\);\\s*\\} else \\{\\s*onHasil\\('berhasil'\\);\\s*\\}\\s*\\},/",
+            "/onSuccess: \\(page\\) => \\{\\s*setTerbuka\\(false\\);\\s*\\s*if \\(page\\.props\\.penolakan\\) \\{\\s*onHasil\\('ditolak'\\);\\s*\\} else \\{\\s*onHasil\\('berhasil'\\);\\s*void tandaiSesiBerakhir\\(kunci, tripId, \\{ jenis: 'batal', waktu: new Date\\(\\)\\.toISOString\\(\\) \\}\\)\\.catch\\(\\(\\) => undefined\\);\\s*\\}\\s*\\},/",
             $batal,
             'onHasil wajib dipanggil di KEDUA cabang secara terpisah, dari onSuccess BatalkanTrip.'
         );
