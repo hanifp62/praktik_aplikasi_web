@@ -15,6 +15,7 @@ use App\Models\TrailSegment;
 use App\Services\AuditLogService;
 use App\Services\DataFreshnessService;
 use App\Support\PaginasiInertia;
+use App\Support\Timezone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -95,15 +96,18 @@ class OfficialStatusController extends Controller
     }
 
     /**
+     * Tanggal dari instan UTC ditulis sebagai tanggal kalender WIB (Timezone::DEFAULT, ruling FF-1), sama dengan
+     * OfficialStatusRowResource: halaman admin tidak berkonteks satu jalur.
+     *
      * @return array<string, mixed>
      */
     private function barisTinjau(OfficialStatus $s, string $kategori): array
     {
         $keterangan = $kategori === 'basi'
             ? ($s->verified_at
-                ? 'terakhir diverifikasi '.$s->verified_at->translatedFormat('d M Y')
+                ? 'terakhir diverifikasi '.$s->verified_at->copy()->setTimezone(Timezone::DEFAULT)->translatedFormat('d M Y')
                 : 'belum pernah diverifikasi')
-            : 'berlaku sampai '.$s->expires_at->translatedFormat('d M Y');
+            : 'berlaku sampai '.$s->expires_at->copy()->setTimezone(Timezone::DEFAULT)->translatedFormat('d M Y');
 
         return [
             'id' => $s->id,

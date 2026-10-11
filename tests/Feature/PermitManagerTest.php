@@ -9,6 +9,7 @@ use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -155,6 +156,44 @@ class PermitManagerTest extends TestCase
 
         $this->assertSame(0, PermitRequirement::count());
         $this->assertTrue(AuditLog::where('action', 'permit_requirement.deleted')->exists());
+    }
+
+    /**
+     * Ruling EF-6 (tinjauan ulang TB-m6, kelas I-2): baris yang dihapus lepas bersama tombol Hapus
+     * yang difokus. Tujuan fokus dihitung dari urutan halaman daftar sebelum hapus, lewat id stabil
+     * per baris: tombol Hapus baris sesudahnya, lalu baris sebelumnya, lalu judul daftar. Daftar
+     * kosong tidak punya kartu berjudul, jadi id judul dipasang pada pembungkus keadaan kosongnya.
+     * Hapus selalu kembali ke halaman pertama (test_an_admin_can_delete_a_rule), jadi tujuan dari
+     * halaman lain tidak ditemukan dan fokus berakhir di judul. Pemindahan hanya terjadi bila
+     * barisnya sudah hilang dan fokus di body, tidak ada, atau #konten (pola CC-3). Asersi sumber
+     * karena halaman React dirender di klien.
+     */
+    public function test_deleting_a_rule_moves_focus_to_a_neighbouring_delete_button_or_the_list_heading(): void
+    {
+        $isi = File::get(resource_path('js/pages/Admin/Permits.tsx'));
+
+        $this->assertStringContainsString('const idHapus = (id: number): string => `hapus-izin-${id}`;', $isi);
+        $this->assertStringContainsString("const ID_JUDUL_DAFTAR = 'judul-daftar-izin';", $isi);
+        $this->assertStringContainsString('<Button id={idHapus(r.id)} variant="danger" size="sm" onClick={() => hapus(r.id)}', $isi);
+        $this->assertMatchesRegularExpression(
+            "/<h2 id=\\{ID_JUDUL_DAFTAR\\} tabIndex=\\{-1\\} className=\\{kelas\\('rounded-kecil text-bagian text-primary', fokusTerlihat\\)\\}>\\s*Aturan tercatat\\s*<\\/h2>/",
+            $isi,
+        );
+        $this->assertMatchesRegularExpression(
+            "/<div id=\\{ID_JUDUL_DAFTAR\\} tabIndex=\\{-1\\} className=\\{kelas\\('rounded-lg', fokusTerlihat\\)\\}>\\s*<EmptyState\\s+jenis=\"pertama\"\\s+title=\"Belum ada aturan perizinan tercatat\"/",
+            $isi,
+            'Daftar kosong tetap punya tujuan fokus terakhir.',
+        );
+        $this->assertMatchesRegularExpression(
+            '/const posisi = rules\.data\.findIndex\(\(r\) => r\.id === id\);\s*const tujuan = posisi < 0 \? \[\] : \[rules\.data\[posisi \+ 1\], rules\.data\[posisi - 1\]\]\.flatMap\(\(r\) => \(r \? \[idHapus\(r\.id\)\] : \[\]\)\);/',
+            $isi,
+            'Baris sesudahnya lebih dulu, lalu baris sebelumnya, dihitung sebelum hapus.',
+        );
+        $this->assertMatchesRegularExpression(
+            '/const aktif = document\.activeElement;\s*if \(document\.getElementById\(idHapus\(id\)\) !== null \|\| \(aktif !== null && aktif !== document\.body && aktif\.id !== \'konten\'\)\) \{\s*return;\s*\}\s*\[\.\.\.tujuan, ID_JUDUL_DAFTAR\]\.map\(\(t\) => document\.getElementById\(t\)\)\.find\(\(unsur\) => unsur !== null\)\?\.focus\(\);/',
+            $isi,
+            'Fokus dipindah hanya bila barisnya hilang dan fokus belum dipindah pengguna; judul daftar tujuan terakhir.',
+        );
     }
 
     /**

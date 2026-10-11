@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\HikingHistory;
 use App\Models\TripPlan;
 use App\Services\Community\HasilPendakian;
+use App\Support\Timezone;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -51,7 +52,9 @@ class HikingHistoryController extends Controller
                     'trailId' => $h->trail_id,
                     'jalur' => $h->trail?->name,
                     'gunung' => $h->trail?->mountain?->name,
-                    'tanggal' => $h->completed_at->translatedFormat('d M Y'),
+                    // Ruling FF-1: tanggal kalender di zona gunung, sama dengan ringkasan
+                    // pendakian (HasilPendakian); trail.mountain sudah dimuat di atas.
+                    'tanggal' => $h->completed_at->copy()->setTimezone(Timezone::forTrail($h->trail))->translatedFormat('d M Y'),
                     'jenisTrip' => $h->trip_type?->label(),
                     'hasil' => $h->completion_state?->label(),
                     'persiapan' => self::persiapan($h->tripPlan),

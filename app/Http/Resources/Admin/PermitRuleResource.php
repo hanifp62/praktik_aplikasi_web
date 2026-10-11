@@ -3,12 +3,16 @@
 namespace App\Http\Resources\Admin;
 
 use App\Models\PermitRequirement;
+use App\Support\Timezone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Aturan perizinan untuk daftar admin: teks tampilan sudah jadi, plus nilai mentah
  * isian supaya form ubah dapat diisi dari baris tanpa kunjungan server.
+ *
+ * Tanggal dari instan UTC ditulis sebagai tanggal kalender WIB (Timezone::DEFAULT, ruling FF-1): halaman admin
+ * tidak berkonteks satu jalur, jadi tanggal UTC server tidak pernah tampil.
  *
  * @mixin PermitRequirement
  */
@@ -25,7 +29,7 @@ class PermitRuleResource extends JsonResource
             'sasaranKeterangan' => $this->trail ? $this->trail->mountain->name : 'Seluruh jalur',
             'authority' => $this->authority,
             'ringkasan' => $this->summary(),
-            'diverifikasi' => $this->verified_at?->translatedFormat('d M Y') ?? 'Belum',
+            'diverifikasi' => $this->verified_at?->copy()->setTimezone(Timezone::DEFAULT)->translatedFormat('d M Y') ?? 'Belum',
             'sumber' => $this->source ?? 'Sumber belum dicatat',
             'isian' => [
                 'scope' => $this->trail_id !== null ? 'trail' : 'mountain',

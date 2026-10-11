@@ -18,6 +18,7 @@ import { LembarBawah } from '@/components/ui/Lembar';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { fokusTerlihat } from '@/components/ui/gaya';
 import { AppLayout } from '@/layouts/AppLayout';
 import { useKerangka } from '@/layouts/Kerangka';
 import { TautanSimpanan } from '@/layouts/TautanSimpanan';
@@ -52,6 +53,9 @@ const pilihanTampilan = [
     { nilai: 'daftar' as const, label: 'Daftar', ikon: 'list' as const },
     { nilai: 'peta' as const, label: 'Peta', ikon: 'map-trifold' as const },
 ];
+
+/** Kalimat ringkasan di atas daftar, tujuan fokus sesudah keadaan kosong lepas (sapuan EF-6). */
+const ID_RINGKASAN = 'ringkasan-jelajah';
 
 /**
  * Apakah kueri media cocok, mengikuti perubahan ukuran layar. Dipakai supaya peta Jelajah
@@ -121,10 +125,20 @@ export default function Index() {
     const nSaringan = jumlahSaringan(filter, saringan.teknisRendah.aktif);
     const pratinjau = hitungLolos(atribut, draf, dinilai);
 
-    const kunjungi = (kueri: Record<string, string | number>) =>
-        router.get(trailsIndex.url({ query: kueri }), {}, { preserveState: true, preserveScroll: true, replace: true });
+    const kunjungi = (kueri: Record<string, string | number>, onSuccess?: () => void) =>
+        router.get(trailsIndex.url({ query: kueri }), {}, { preserveState: true, preserveScroll: true, replace: true, onSuccess });
 
-    const terapkan = (d: DrafSaringan, semua = filter.tampilkanSemua) => kunjungi(kueriDari(filter, d, tafsiranTeknis, semua));
+    const terapkan = (d: DrafSaringan, semua = filter.tampilkanSemua, onSuccess?: () => void) => kunjungi(kueriDari(filter, d, tafsiranTeknis, semua), onSuccess);
+
+    // Tombol di keadaan kosong lepas bersama keadaan kosongnya begitu saringan berubah, jadi fokus
+    // pindah ke kalimat ringkasan yang baru, hanya bila fokus jatuh ke body atau #konten (sapuan EF-6).
+    const fokusRingkasan = () => {
+        const aktif = document.activeElement;
+
+        if (aktif === null || aktif === document.body || aktif.id === 'konten') {
+            document.getElementById(ID_RINGKASAN)?.focus();
+        }
+    };
 
     // Panel layar lebar menerapkan saringan langsung. Isian tanjakan berubah setiap ketukan dan
     // setiap kunjungan menilai ulang sampai 500 kandidat, jadi perubahan tanjakan ditunda 400 ms
@@ -248,7 +262,12 @@ export default function Index() {
                                     Saring{nSaringan > 0 ? <span data-angka=""> ({nSaringan})</span> : null}
                                 </span>
                             </Button>
-                            <p aria-live="polite" className="order-last min-w-0 basis-full text-kecil text-secondary sm:order-none sm:flex-1 sm:basis-auto">
+                            <p
+                                id={ID_RINGKASAN}
+                                tabIndex={-1}
+                                aria-live="polite"
+                                className={kelas('order-last min-w-0 basis-full rounded-kecil text-kecil text-secondary sm:order-none sm:flex-1 sm:basis-auto', fokusTerlihat)}
+                            >
                                 <span data-angka="" className="font-bold text-primary">
                                     {kalimat.angka}
                                 </span>
@@ -308,11 +327,11 @@ export default function Index() {
                                     description={jumlahTersembunyi > 0 ? `${jumlahTersembunyi} jalur disembunyikan ${olehSaringan}. Lepas salah satu saringan, atau tampilkan juga jalur yang disembunyikan.` : 'Coba kalimat atau kata kunci lain.'}
                                 >
                                     {jumlahTersembunyi > 0 ? (
-                                        <Button variant="secondary" size="sm" onClick={() => terapkan(draf, true)}>
+                                        <Button variant="secondary" size="sm" onClick={() => terapkan(draf, true, fokusRingkasan)}>
                                             Tampilkan juga
                                         </Button>
                                     ) : null}
-                                    <Button variant="secondary" size="sm" onClick={() => kunjungi({})}>
+                                    <Button variant="secondary" size="sm" onClick={() => kunjungi({}, fokusRingkasan)}>
                                         Hapus semua saringan
                                     </Button>
                                 </EmptyState>

@@ -7,9 +7,21 @@ import { kelas } from '@/lib/kelas';
 /**
  * Wilayah alasan penolakan di ruang kerja trip (`<p role="alert" id="penolakan-trip">`,
  * Trips/Show.tsx). Penolakan mulai selalu dialihkan server ke ruang kerja trip itu
- * (TripLifecycleController::start()), dari tab Mendaki maupun dari ruang kerja sendiri.
+ * (TripLifecycleController::start()), dari tab Mendaki maupun dari ruang kerja sendiri. Wilayah
+ * itu selalu terpasang di ruang kerja dan hanya isinya yang bersyarat, jadi sesudah penolakan
+ * ia selalu ditemukan; tombol Mulai hanya cadangan untuk halaman tanpa wilayah itu (ruling EF-7).
  */
 export const ID_PENOLAKAN_TRIP = 'penolakan-trip';
+
+/**
+ * Fokus belum dipindah pengguna: masih di body, tidak ada, atau di `#konten` (pola useFokusKembali).
+ * Penjaga setiap pemindahan fokus sesudah penolakan (ruling CC-1 dan EF-5).
+ */
+function fokusBelumDipindah(): boolean {
+    const aktif = document.activeElement;
+
+    return aktif === null || aktif === document.body || aktif.id === 'konten';
+}
 
 interface MulaiPendakianProps {
     id: number;
@@ -71,16 +83,20 @@ interface MulaiPendakianProps {
  *
  * Penolakan server (ruling CC-1), misalnya pendakian lain masih berjalan atau trip tidak dapat
  * dimulai, mengalihkan ke ruang kerja trip itu dengan props `penolakan`. Sesudahnya fokus pindah
- * ke tombol "Mulai pendakian" trip itu (id stabil `mulai-{id}`) bila masih ada, selain itu ke
- * wilayah alasan penolakan, dan tidak pernah tertinggal di body. Ada dua keadaan:
+ * ke wilayah alasan penolakan (`#penolakan-trip`) bila ada, selain itu ke tombol "Mulai pendakian"
+ * trip itu (id stabil `mulai-{id}`), dan tidak pernah tertinggal di body. Wilayah alasan
+ * didahulukan karena ia berada di puncak ruang kerja: fokus menggulirnya ke layar, sedangkan fokus
+ * di tombol Mulai di kartu Tindakan meninggalkan alasannya di luar layar bagi pengguna awas
+ * (ruling EF-7, audit E2E akhir F-2). Fokus yang sudah dipindah pengguna selama jawaban server
+ * ditunggu tidak direbut: pemindahan hanya terjadi selama fokus di body, tidak ada, atau di
+ * `#konten` (ruling EF-5, pola useFokusKembali). Ada dua keadaan:
  * - Instans ini masih terpasang, yaitu ruang kerja yang menolak trip yang masih dapat dimulai.
  *   `router.post` Inertia v3 mempertahankan keadaan halaman, jadi konfirmasi masih terbuka.
- *   Konfirmasi ditutup karena mulainya tidak terjadi, lalu onFinish memfokus "Mulai pendakian".
+ *   Konfirmasi ditutup karena mulainya tidak terjadi, lalu onFinish memindah fokus.
  * - Instans ini sudah lepas, yaitu penolakan dari tab Mendaki yang berpindah halaman, atau
  *   ruang kerja yang kini tidak lagi menawarkan mulai. `fokusKe` milik instans ini tidak lagi
  *   berefek. Halaman baru sudah dirender sebelum `onSuccess` (swap Inertia memakai flushSync),
- *   jadi di sana fokus dipindah langsung lewat id, hanya selama fokus di body atau `#konten`.
- *   Fokus yang sudah dipindah pengguna tidak direbut (pola useFokusKembali).
+ *   jadi di sana fokus dipindah langsung lewat id.
  */
 export function MulaiPendakian({ id, nama, gunung, url, besar = false, utama = besar, rapat = false, tanggalRencana = null }: MulaiPendakianProps) {
     const [yakin, setYakin] = useState(false);
@@ -102,6 +118,8 @@ export function MulaiPendakian({ id, nama, gunung, url, besar = false, utama = b
     const idMulai = `mulai-${id}`;
     const idKonfirmasi = `konfirmasi-${id}`;
     const idPeringatan = `peringatan-${id}`;
+    // Tujuan fokus sesudah penolakan (ruling EF-7): alasan penolakan lebih dulu, lalu "Mulai pendakian".
+    const tujuanPenolakan = () => (document.getElementById(ID_PENOLAKAN_TRIP) ? ID_PENOLAKAN_TRIP : idMulai);
 
     const buka = () => {
         setYakin(true);
@@ -135,10 +153,8 @@ export function MulaiPendakian({ id, nama, gunung, url, besar = false, utama = b
                         return;
                     }
 
-                    const aktif = document.activeElement;
-
-                    if (aktif === null || aktif === document.body || aktif.id === 'konten') {
-                        (document.getElementById(idMulai) ?? document.getElementById(ID_PENOLAKAN_TRIP))?.focus();
+                    if (fokusBelumDipindah()) {
+                        document.getElementById(tujuanPenolakan())?.focus();
                     }
                 },
                 onNetworkError: () => {
@@ -153,7 +169,16 @@ export function MulaiPendakian({ id, nama, gunung, url, besar = false, utama = b
                 },
                 onFinish: () => {
                     setMemproses(false);
-                    fokusKe(ditolak ? idMulai : idKonfirmasi);
+
+                    if (!ditolak) {
+                        fokusKe(idKonfirmasi);
+
+                        return;
+                    }
+
+                    if (fokusBelumDipindah()) {
+                        fokusKe(tujuanPenolakan());
+                    }
                 },
             },
         );

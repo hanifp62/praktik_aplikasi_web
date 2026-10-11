@@ -199,6 +199,34 @@ class CheckpointManagementTest extends TestCase
         $this->assertMatchesRegularExpression('/onFinish: \(\) => \{\s*sedangPindah\.current = false;\s*\},/', $isi);
     }
 
+    /**
+     * Ruling EF-6 (tinjauan ulang TB-m6, kelas I-2): baris yang dihapus lepas bersama tombol Hapus
+     * yang difokus. Tujuan fokus dihitung dari urutan daftar sebelum hapus, lewat id stabil per
+     * baris: tombol Hapus baris sesudahnya, lalu baris sebelumnya, lalu judul daftar yang dapat
+     * difokus, juga saat daftar kosong. Pemindahan hanya terjadi bila barisnya sudah hilang
+     * (penolakan gerbang publikasi membiarkannya, CheckpointDeletionGuardTest) dan fokus di body,
+     * tidak ada, atau #konten (pola CC-3). Asersi sumber karena halaman React dirender di klien.
+     */
+    public function test_deleting_a_checkpoint_moves_focus_to_a_neighbouring_delete_button_or_the_list_heading(): void
+    {
+        $isi = File::get(resource_path('js/pages/Admin/Checkpoints.tsx'));
+
+        $this->assertStringContainsString('const idHapus = (id: number): string => `hapus-checkpoint-${id}`;', $isi);
+        $this->assertStringContainsString("const ID_JUDUL_DAFTAR = 'judul-daftar-checkpoint';", $isi);
+        $this->assertStringContainsString('<Button id={idHapus(c.id)} variant="danger" size="sm" onClick={() => hapus(c.id)}', $isi);
+        $this->assertStringContainsString("<h2 id={ID_JUDUL_DAFTAR} tabIndex={-1} className={kelas('rounded-kecil text-bagian text-primary', fokusTerlihat)}>", $isi);
+        $this->assertMatchesRegularExpression(
+            '/const posisi = checkpoints\.findIndex\(\(c\) => c\.id === id\);\s*const tujuan = posisi < 0 \? \[\] : \[checkpoints\[posisi \+ 1\], checkpoints\[posisi - 1\]\]\.flatMap\(\(c\) => \(c \? \[idHapus\(c\.id\)\] : \[\]\)\);/',
+            $isi,
+            'Baris sesudahnya lebih dulu, lalu baris sebelumnya, dihitung sebelum hapus.',
+        );
+        $this->assertMatchesRegularExpression(
+            '/onSuccess: \(\) => \{\s*const aktif = document\.activeElement;\s*if \(document\.getElementById\(idHapus\(id\)\) !== null \|\| \(aktif !== null && aktif !== document\.body && aktif\.id !== \'konten\'\)\) \{\s*return;\s*\}\s*\[\.\.\.tujuan, ID_JUDUL_DAFTAR\]\.map\(\(t\) => document\.getElementById\(t\)\)\.find\(\(unsur\) => unsur !== null\)\?\.focus\(\);\s*\},/',
+            $isi,
+            'Fokus dipindah hanya bila barisnya hilang dan fokus belum dipindah pengguna; judul daftar tujuan terakhir.',
+        );
+    }
+
     public function test_a_hiker_cannot_change_checkpoints(): void
     {
         $trail = Trail::factory()->create();

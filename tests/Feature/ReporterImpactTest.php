@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\CompletionState;
 use App\Enums\ModerationStatus;
 use App\Models\HikingHistory;
+use App\Models\ModerationAction;
 use App\Models\ReportThank;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
@@ -224,16 +225,51 @@ class ReporterImpactTest extends TestCase
      * pendakian untuk laporan yang sama menulis "Ditolak", jadi kontradiksi antarhalaman
      * (sejenis I-3) harus ditutup di sini juga. Ajakan menulis laporan baru tetap ada,
      * berbeda dari cabang "menunggu" yang sengaja tanpa ajakan.
+     *
+     * Diubah ruling EF-2 dan EF-3 (tinjauan ulang TB-m2, TB-m3): fixture lama hanya berisi satu
+     * laporan REJECTED lepas tanpa pendakian, jadi `kosong` true dan halaman merender kartu
+     * "Belum ada pendakian yang tercatat", bukan cabang ini. Kini fixture berisi satu riwayat
+     * pendakian selesai (`kosong` false), satu laporan REJECTED beralasan yang tertaut ke riwayat
+     * itu, dan satu laporan REMOVED, sehingga `ditolak` 2 hanya benar bila REMOVED ikut dihitung.
+     * Riwayat pendakian juga diperiksa memuat alasan laporan tertaut itu.
+     *
+     * Diubah ruling EF-1 (TB-m1): alasan moderator opsional, dan Riwayat hanya memuat laporan yang
+     * tertaut ke riwayat, jadi kalimatnya tidak lagi menjanjikan alasan untuk setiap laporan.
      */
     public function test_a_reporter_with_only_rejected_reports_is_told_where_the_reason_lives(): void
     {
         $pelapor = User::factory()->create();
-        $this->laporan($pelapor, ModerationStatus::REJECTED);
+        $trail = Trail::factory()->easy()->create();
+        $riwayat = HikingHistory::create([
+            'user_id' => $pelapor->id,
+            'trip_plan_id' => TripPlan::factory()->create(['user_id' => $pelapor->id, 'trail_id' => $trail->id])->id,
+            'trail_id' => $trail->id,
+            'trip_type' => 'CAMPING',
+            'completion_state' => CompletionState::COMPLETED->value,
+            'preparation_completion_percent' => 80,
+            'completed_at' => now()->subDay(),
+        ]);
+
+        $ditolak = $this->laporan($pelapor, ModerationStatus::REJECTED);
+        ModerationAction::create([
+            'moderator_id' => User::factory()->create()->id,
+            'moderatable_type' => $ditolak->getMorphClass(),
+            'moderatable_id' => $ditolak->id,
+            'action' => 'REJECT',
+            'reason' => 'Foto tidak menunjukkan jalurnya.',
+        ]);
+        $riwayat->update(['trail_condition_report_id' => $ditolak->id]);
+        $this->laporan($pelapor, ModerationStatus::REMOVED);
 
         $this->actingAs($pelapor)->get(route('progress'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('kosong', false)
             ->where('laporan.terbit', 0)
             ->where('laporan.menunggu', 0)
-            ->where('laporan.ditolak', 1));
+            ->where('laporan.ditolak', 2));
+
+        $this->actingAs($pelapor)->get(route('history'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('entri.data.0.laporan.status', 'Ditolak')
+            ->where('entri.data.0.laporan.alasanDitolak', 'Foto tidak menunjukkan jalurnya.'));
 
         $sumber = $this->sumber();
         $mulai = strpos($sumber, ') : laporan.terbit === 0 && laporan.menunggu === 0 && laporan.ditolak > 0 ? (');
@@ -243,9 +279,15 @@ class ReporterImpactTest extends TestCase
         $this->assertNotFalse($cabangLain);
 
         $cabang = substr($sumber, $mulai, $cabangLain - $mulai);
-        $this->assertStringContainsString('Belum ada laporan Anda yang terbit.', $cabang);
-        $this->assertStringContainsString('{laporan.ditolak}', $cabang);
-        $this->assertStringContainsString('Riwayat pendakian', $cabang);
+        $this->assertStringContainsString(
+            'Belum ada laporan Anda yang terbit. {laporan.ditolak} laporan ditolak atau dihapus moderator. Alasan moderator, bila ada, tercantum di{\' \'}',
+            $cabang,
+        );
+        $this->assertMatchesRegularExpression(
+            '/<Tautan href=\{history\.url\(\)\}[^>]*>\s*Riwayat pendakian\s*<\/Tautan>\{\' \'\}\s*untuk laporan yang terhubung ke sebuah pendakian\.\s*<\/p>/',
+            $cabang,
+        );
+        $this->assertStringNotContainsString('alasannya tercantum', $cabang, 'Alasan tidak dijanjikan untuk setiap laporan (EF-1).');
         $this->assertStringContainsString('reportsCreate', $cabang, 'Ajakan menulis laporan baru harus tetap ada di cabang ini.');
         $this->assertStringContainsString('Tulis laporan kondisi', $cabang);
     }

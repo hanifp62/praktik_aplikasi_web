@@ -433,11 +433,14 @@ class TrackTabTest extends TestCase
         $this->assertNotEmpty($tombolBatal, 'Tombol Batal wajib memanggil batal() langsung lewat onClick={batal}.');
 
         // (f) onFinish mengembalikan fokus ke konfirmasi sesudah tombolnya aktif lagi (R-1).
-        // Diubah ruling CC-1: sesudah penolakan server konfirmasi ditutup, jadi tujuannya idMulai;
-        // di cabang lain, termasuk galat jaringan, tetap idKonfirmasi.
-        preg_match('/onFinish: \(\) => \{(.*?)\},/s', $komponen, $fnFinish);
+        // Diubah ruling CC-1: sesudah penolakan server konfirmasi ditutup, jadi tujuannya bukan
+        // idKonfirmasi; di cabang lain, termasuk galat jaringan, tetap idKonfirmasi tanpa syarat.
+        // Diubah ruling EF-5 dan EF-7: cabang penolakan kini dijaga dan bertujuan alasan penolakan
+        // lebih dulu (diasersikan test_a_refused_start_moves_focus_to_the_refusal_or_the_trip_start_button);
+        // yang diasersikan di sini cabang tanpa penolakan, yang tetap tanpa penjaga.
+        preg_match('/onFinish: \(\) => \{(.*?)\n                \},/s', $komponen, $fnFinish);
         $this->assertNotEmpty($fnFinish, 'onFinish tidak ditemukan.');
-        $this->assertStringContainsString('fokusKe(ditolak ? idMulai : idKonfirmasi)', $fnFinish[1], 'onFinish wajib mengembalikan fokus ke konfirmasi sesudah galat jaringan, jika tidak fokus jatuh ke body (R-1).');
+        $this->assertMatchesRegularExpression('/^\s*setMemproses\(false\);\s*if \(!ditolak\) \{\s*fokusKe\(idKonfirmasi\);\s*return;\s*\}/', $fnFinish[1], 'onFinish wajib mengembalikan fokus ke konfirmasi sesudah galat jaringan, tanpa syarat, jika tidak fokus jatuh ke body (R-1).');
     }
 
     /**
@@ -560,6 +563,32 @@ class TrackTabTest extends TestCase
     }
 
     /**
+     * Ruling EF-4 (tinjauan ulang TB-m4): kartu hari-H, yang justru dipakai pada hari berangkat,
+     * membawa `hariBerangkat` true pada tanggal rencananya sendiri di zona gunung. Waktu dibekukan
+     * pada 10 Okt 00.30 WITA, saat WIB dan UTC masih 9 Okt, jadi predikat yang memakai zona lain
+     * memberi false. Trip H-1 (11 Okt) di gunung yang sama, sebagai kartu hari-H pengguna lain,
+     * belum hari berangkat. Predikat `tanggalRencanaLewat()` (hanya tanggal yang sudah lewat)
+     * memberi false pada hari berangkat, jadi pertukaran itu merah di sini.
+     */
+    public function test_the_day_preview_is_the_departure_day_on_its_planned_date_in_the_mountains_zone(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-10 00:30:00', 'Asia/Makassar'));
+
+        $gunungWita = Mountain::factory()->create(['timezone' => 'Asia/Makassar']);
+        $hariIni = TripPlan::factory()->for(User::factory())->for(Trail::factory()->for($gunungWita))->create(['status' => TripStatus::PLANNED->value, 'planned_date' => '2026-10-10']);
+        $besok = TripPlan::factory()->for(User::factory())->for(Trail::factory()->for($gunungWita))->create(['status' => TripStatus::PLANNED->value, 'planned_date' => '2026-10-11']);
+
+        $this->actingAs($hariIni->user)->get(route('track'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('hariH.id', $hariIni->id)
+            ->where('hariH.hariBerangkat', true));
+
+        $this->actingAs($besok->user)->get(route('track'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('hariH.id', $besok->id)
+            ->where('hariH.hariBerangkat', false)
+            ->where('hariH.tanggalRencana', '11 Okt 2026'));
+    }
+
+    /**
      * T3/ruling W6-4e dan M-6/ruling W6-4k: cabang galat jaringan sesudah "Ya, mulai sekarang"
      * tidak lagi menyatakan "Belum dimulai" begitu saja, karena server mungkin sudah memproses
      * permintaannya sebelum jawabannya hilang di jaringan (TripLifecycle::start() commit lebih
@@ -649,27 +678,51 @@ class TrackTabTest extends TestCase
 
     /**
      * Ruling CC-1 (kekhawatiran 4 audit-fix-C, daftar periksa butir 7): penolakan mulai dialihkan
-     * ke ruang kerja trip dengan props `penolakan`, lalu fokus pindah ke "Mulai pendakian" trip itu
-     * (id stabil `mulai-{id}`) bila masih ada, selain itu ke wilayah alasan penolakan.
+     * ke ruang kerja trip dengan props `penolakan`, lalu fokus dipindah dengan sengaja, tidak
+     * tertinggal di body.
      * - Instans yang masih terpasang (ruang kerja; `router.post` Inertia v3 mempertahankan keadaan)
-     *   menutup konfirmasinya, dan onFinish memfokus `idMulai`, bukan `idKonfirmasi`.
+     *   menutup konfirmasinya, lalu onFinish memindah fokus, bukan ke `idKonfirmasi`.
      * - Instans yang sudah lepas (tab Mendaki yang berpindah halaman, atau ruang kerja yang tidak lagi
-     *   menawarkan mulai) memindah fokus langsung lewat id di onSuccess, hanya selama fokus di body
-     *   atau #konten. Penanda terpasang memakai layout effect supaya sudah false sebelum onSuccess.
+     *   menawarkan mulai) memindah fokus langsung lewat id di onSuccess. Penanda terpasang memakai
+     *   layout effect supaya sudah false sebelum onSuccess.
+     *
+     * Diubah ruling EF-7 (audit E2E akhir F-2): urutan tujuannya dibalik. Alasan penolakan
+     * (`#penolakan-trip`, di puncak ruang kerja) lebih dulu, karena fokus menggulirnya ke layar;
+     * tombol "Mulai pendakian" (`mulai-{id}`) hanya bila wilayah itu tidak ada. Satu fungsi
+     * `tujuanPenolakan` dipakai kedua keadaan.
+     *
+     * Diubah ruling EF-5 (tinjauan ulang TB-m5): penjaga "fokus belum dipindah pengguna" (body,
+     * tidak ada, atau #konten) kini berlaku di kedua keadaan, termasuk instans terpasang yang dulu
+     * memindah fokus tanpa syarat. Cabang galat jaringan tidak memakai penjaga ini (ruling W6-4q).
+     *
      * Asersi sumber karena komponennya dirender di klien; kontrak server yang dibaca cabang itu
-     * diuji test sesudah ini, dan perilakunya dibuktikan di peramban (laporan audit-fix-C).
+     * diuji test sesudah ini.
      */
-    public function test_a_refused_start_moves_focus_to_the_trip_start_button_or_the_refusal(): void
+    public function test_a_refused_start_moves_focus_to_the_refusal_or_the_trip_start_button(): void
     {
         $komponen = $this->komponenMulai();
 
         $this->assertStringContainsString("export const ID_PENOLAKAN_TRIP = 'penolakan-trip';", $komponen);
-        $this->assertMatchesRegularExpression('/useLayoutEffect\(\(\) => \{\s*terpasang\.current = true;\s*return \(\) => \{\s*terpasang\.current = false;\s*\};\s*\}, \[\]\);/', $komponen);
         $this->assertMatchesRegularExpression(
-            '/onSuccess: \(halaman\) => \{\s*if \(!\(halaman\.props as \{ penolakan\?: unknown \}\)\.penolakan\) \{\s*return;\s*\}\s*ditolak = true;\s*if \(terpasang\.current\) \{\s*setYakin\(false\);\s*return;\s*\}\s*const aktif = document\.activeElement;\s*if \(aktif === null \|\| aktif === document\.body \|\| aktif\.id === \'konten\'\) \{\s*\(document\.getElementById\(idMulai\) \?\? document\.getElementById\(ID_PENOLAKAN_TRIP\)\)\?\.focus\(\);\s*\}\s*\},/',
+            "/function fokusBelumDipindah\(\): boolean \{\s*const aktif = document\.activeElement;\s*return aktif === null \|\| aktif === document\.body \|\| aktif\.id === 'konten';\s*\}/",
             $komponen,
         );
-        $this->assertMatchesRegularExpression('/onFinish: \(\) => \{\s*setMemproses\(false\);\s*fokusKe\(ditolak \? idMulai : idKonfirmasi\);\s*\},/', $komponen);
+        $this->assertStringContainsString(
+            'const tujuanPenolakan = () => (document.getElementById(ID_PENOLAKAN_TRIP) ? ID_PENOLAKAN_TRIP : idMulai);',
+            $komponen,
+            'Alasan penolakan lebih dulu, tombol Mulai hanya bila wilayah alasan tidak ada (EF-7).',
+        );
+        $this->assertMatchesRegularExpression('/useLayoutEffect\(\(\) => \{\s*terpasang\.current = true;\s*return \(\) => \{\s*terpasang\.current = false;\s*\};\s*\}, \[\]\);/', $komponen);
+        $this->assertMatchesRegularExpression(
+            '/onSuccess: \(halaman\) => \{\s*if \(!\(halaman\.props as \{ penolakan\?: unknown \}\)\.penolakan\) \{\s*return;\s*\}\s*ditolak = true;\s*if \(terpasang\.current\) \{\s*setYakin\(false\);\s*return;\s*\}\s*if \(fokusBelumDipindah\(\)\) \{\s*document\.getElementById\(tujuanPenolakan\(\)\)\?\.focus\(\);\s*\}\s*\},/',
+            $komponen,
+            'Instans lepas: fokus ke tujuan penolakan, hanya bila fokus belum dipindah pengguna.',
+        );
+        $this->assertMatchesRegularExpression(
+            '/onFinish: \(\) => \{\s*setMemproses\(false\);\s*if \(!ditolak\) \{\s*fokusKe\(idKonfirmasi\);\s*return;\s*\}\s*if \(fokusBelumDipindah\(\)\) \{\s*fokusKe\(tujuanPenolakan\(\)\);\s*\}\s*\},/',
+            $komponen,
+            'Instans terpasang: fokus ke tujuan penolakan hanya bila fokus belum dipindah pengguna (EF-5).',
+        );
 
         $ruangKerja = File::get(resource_path('js/pages/Trips/Show.tsx'));
         $this->assertStringContainsString('id="penolakan-trip" tabIndex={-1}', $ruangKerja, 'Wilayah alasan penolakan wajib dapat difokus dengan id yang dipakai MulaiPendakian.');

@@ -52,7 +52,10 @@ use App\Http\Controllers\Trips\TripController;
 use App\Http\Controllers\Trips\TripLifecycleController;
 use App\Http\Controllers\Trips\TripReminderController;
 use App\Http\Controllers\Trips\TripSafetyController;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
  * Halaman depan: halaman React pertama (jalur C, 24 September 2026). Judul dan
@@ -298,10 +301,18 @@ require __DIR__.'/auth.php';
 /*
  * PWA (§106). Manifest dan service worker lewat route karena isinya mengikuti hash
  * build, bukan berkas statis yang harus ditulis ulang setiap deploy.
+ *
+ * Ketiganya diambil peramban dan service worker di latar, jadi berjalan tanpa sesi (ruling
+ * FF-4): dengan sesi, satu pemeriksaan pembaruan /sw.js di antara POST dan GET sesudah
+ * redirect sudah menghapus flash 'status'. Yang dilepas hanya middleware grup web yang
+ * membutuhkan sesi; SecurityHeaders dan HandleInertiaRequests tetap berjalan
+ * (PwaRoutesWithoutSessionTest).
  */
-Route::get('manifest.webmanifest', [ProgressiveWebAppController::class, 'manifest'])->name('pwa.manifest');
-Route::get('sw.js', [ProgressiveWebAppController::class, 'serviceWorker'])->name('pwa.sw');
-Route::view('offline', 'offline')->name('pwa.offline');
+$tanpaSesi = [StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class];
+
+Route::get('manifest.webmanifest', [ProgressiveWebAppController::class, 'manifest'])->withoutMiddleware($tanpaSesi)->name('pwa.manifest');
+Route::get('sw.js', [ProgressiveWebAppController::class, 'serviceWorker'])->withoutMiddleware($tanpaSesi)->name('pwa.sw');
+Route::view('offline', 'offline')->withoutMiddleware($tanpaSesi)->name('pwa.offline');
 
 /*
  * Pameran primitif desain (ruling W1-R5): hanya di APP_ENV=local, tidak pernah di staging

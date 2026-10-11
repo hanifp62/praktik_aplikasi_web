@@ -9,6 +9,7 @@ use App\Enums\PreparationCategory;
 use App\Enums\PreparationStatus;
 use App\Models\HikingHistory;
 use App\Models\HikingSession;
+use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\TripPlan;
@@ -149,6 +150,29 @@ class HikingHistoryPageTest extends TestCase
         ], array_column($props['entri']['data'], 'persiapan'));
         $this->assertDoesNotMatchRegularExpression('/\d\s*%/', json_encode(array_column($props['entri']['data'], 'persiapan')));
         $this->assertStringNotContainsString('Persiapan saat itu', File::get(resource_path('js/pages/Community/HikingHistory.tsx')));
+    }
+
+    /**
+     * Ruling FF-1 (uji E2E akhir F-1): tanggal entri adalah tanggal kalender di zona gunung jalurnya, sama dengan
+     * ringkasan pendakian (HasilPendakian), bukan tanggal UTC server. Pendakian yang selesai 18.30 UTC jatuh pada
+     * hari berikutnya di WIB. Pukul 16.30 UTC masih tanggal yang sama di WIB tetapi sudah hari berikutnya di WITA,
+     * jadi zona bawaan (WIB) untuk semua gunung juga tertangkap.
+     */
+    public function test_the_date_is_the_calendar_day_in_the_mountains_zone(): void
+    {
+        $user = User::factory()->create();
+        $gunungWib = Mountain::factory()->create(['timezone' => 'Asia/Jakarta']);
+        $gunungWita = Mountain::factory()->create(['timezone' => 'Asia/Makassar']);
+        $this->riwayat($user, Trail::factory()->for($gunungWita)->create(['name' => 'Jalur WITA']))
+            ->update(['completed_at' => Carbon::parse('2026-10-11 16:30:00', 'UTC')]);
+        $this->riwayat($user, Trail::factory()->for($gunungWib)->create(['name' => 'Jalur WIB']))
+            ->update(['completed_at' => Carbon::parse('2026-10-11 18:30:00', 'UTC')]);
+
+        $this->actingAs($user)->get(route('history'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('entri.data.0.jalur', 'Jalur WIB')
+            ->where('entri.data.0.tanggal', '12 Okt 2026')
+            ->where('entri.data.1.jalur', 'Jalur WITA')
+            ->where('entri.data.1.tanggal', '12 Okt 2026'));
     }
 
     public function test_the_page_does_not_grow_with_the_number_of_hikes(): void

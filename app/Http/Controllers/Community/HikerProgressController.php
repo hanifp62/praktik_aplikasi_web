@@ -26,6 +26,9 @@ use Inertia\Response;
  * Kedua angka dihitung dari SATU kueri agregat `groupBy('moderation_status')`, bukan satu COUNT
  * per status atau N+1 per laporan (anggaran dijaga PageQueryBudgetTest). `groupBy` dengan kolom
  * yang juga di-select aman untuk SQLite maupun PostgreSQL (R-024).
+ *
+ * `grafik.*.tanggal` (ruling FF-1): HikerProgressService::tanjakanPerPendakian() mengirim instan yang sudah berada di
+ * zona gunung jalur tiap pendakian, jadi tanggal kalender di sini sama dengan ringkasan pendakian dan Riwayat.
  */
 class HikerProgressController extends Controller
 {

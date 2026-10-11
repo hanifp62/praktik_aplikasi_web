@@ -142,6 +142,30 @@ class ProgressHierarchyTest extends TestCase
     }
 
     /**
+     * Ruling FF-1 (uji E2E akhir F-1): tanggal setiap titik grafik adalah tanggal kalender di zona gunung jalur
+     * pendakian itu, sama dengan ringkasan pendakian dan Riwayat, bukan tanggal UTC server. 18.30 UTC jatuh pada hari
+     * berikutnya di WIB; 16.30 UTC masih hari yang sama di WIB tetapi sudah hari berikutnya di WITA, jadi zona
+     * bawaan (WIB) untuk semua gunung juga tertangkap.
+     */
+    public function test_each_chart_date_is_the_calendar_day_in_its_mountains_zone(): void
+    {
+        $user = User::factory()->create();
+        $wib = Trail::factory()->easy()->for(Mountain::factory()->create(['timezone' => 'Asia/Jakarta']))->create(['name' => 'Jalur WIB']);
+        $wita = Trail::factory()->easy()->for(Mountain::factory()->create(['timezone' => 'Asia/Makassar']))->create(['name' => 'Jalur WITA']);
+        $this->riwayat($user, $wib);
+        $this->riwayat($user, $wita);
+        HikingHistory::query()->where('trail_id', $wib->id)->update(['completed_at' => '2026-10-11 18:30:00']);
+        HikingHistory::query()->where('trail_id', $wita->id)->update(['completed_at' => '2026-10-04 16:30:00']);
+
+        $this->actingAs($user)->get(route('progress'))->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('grafik', 2)
+            ->where('grafik.0.jalur', 'Jalur WITA')
+            ->where('grafik.0.tanggal', '05 Okt 2026')
+            ->where('grafik.1.jalur', 'Jalur WIB')
+            ->where('grafik.1.tanggal', '12 Okt 2026'));
+    }
+
+    /**
      * Satu pendakian belum dapat dibandingkan dengan apa pun. Keterangannya jujur dan
      * disertai jalan untuk mencatat pendakian berikutnya.
      */

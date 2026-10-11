@@ -30,8 +30,11 @@ interface Props extends PropsBersama {
     } | null;
     /**
      * `menunggu`: laporan pengguna ini yang masih menunggu moderasi, termasuk FLAGGED
-     * (ruling AF-3). `ditolak`: REJECTED dan REMOVED (ruling DF-10); alasannya hanya ada
-     * di Riwayat pendakian, tidak di halaman ini.
+     * (ruling AF-3). `ditolak`: REJECTED dan REMOVED (ruling DF-10). Alasan moderator tidak
+     * tampil di halaman ini. Alasan itu opsional, dan Riwayat pendakian hanya memuat laporan
+     * yang terhubung ke sebuah pendakian (dikirim dari ringkasan pendakian, dari Riwayat, atau
+     * dari Beranda), bukan laporan lepas, jadi kalimat cabangnya menyebut kedua syarat itu
+     * (ruling EF-1, dirapikan sesudah kekhawatiran K1 putaran E).
      */
     laporan: { terbit: number; menunggu: number; ditolak: number; terimaKasih: number };
     grafik: TitikTanjakan[];
@@ -114,11 +117,11 @@ export default function HikerProgress() {
                             ) : laporan.terbit === 0 && laporan.menunggu === 0 && laporan.ditolak > 0 ? (
                                 <>
                                     <p className="mt-2 text-sm text-secondary">
-                                        Belum ada laporan Anda yang terbit. {laporan.ditolak} laporan ditolak atau dihapus moderator; alasannya tercantum di{' '}
+                                        Belum ada laporan Anda yang terbit. {laporan.ditolak} laporan ditolak atau dihapus moderator. Alasan moderator, bila ada, tercantum di{' '}
                                         <Tautan href={history.url()} className="font-medium text-brand-ink underline">
                                             Riwayat pendakian
-                                        </Tautan>
-                                        .
+                                        </Tautan>{' '}
+                                        untuk laporan yang terhubung ke sebuah pendakian.
                                     </p>
                                     <Tautan href={reportsCreate.url()} className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-brand-ink underline">
                                         Tulis laporan kondisi

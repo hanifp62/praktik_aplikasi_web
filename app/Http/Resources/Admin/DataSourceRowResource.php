@@ -3,11 +3,15 @@
 namespace App\Http\Resources\Admin;
 
 use App\Models\DataSource;
+use App\Support\Timezone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Satu baris daftar sumber data di halaman admin.
+ *
+ * Tanggal dari instan UTC ditulis sebagai tanggal kalender WIB (Timezone::DEFAULT, ruling FF-1): halaman admin
+ * tidak berkonteks satu jalur, jadi tanggal UTC server tidak pernah tampil.
  *
  * @mixin DataSource
  */
@@ -24,7 +28,7 @@ class DataSourceRowResource extends JsonResource
             'url' => $this->source_url,
             'type' => $this->source_type->label(),
             'verification' => $this->verification_status->label(),
-            'verifiedAt' => $this->verified_at?->translatedFormat('d M Y') ?? '-',
+            'verifiedAt' => $this->verified_at?->copy()->setTimezone(Timezone::DEFAULT)->translatedFormat('d M Y') ?? '-',
             'isian' => [
                 'source_name' => $this->source_name,
                 'source_type' => $this->source_type->value,

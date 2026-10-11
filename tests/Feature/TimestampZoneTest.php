@@ -5,13 +5,19 @@ namespace Tests\Feature;
 use App\Enums\ExperienceLevel;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
+use App\Enums\UserRole;
+use App\Models\DataSource;
 use App\Models\Mountain;
+use App\Models\OfficialStatus;
+use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use App\Services\ReadinessService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -53,6 +59,77 @@ class TimestampZoneTest extends TestCase
             ->get('/trips/'.$trip->id.'/readiness')
             ->assertOk()
             ->assertSee('WITA');
+    }
+
+    /**
+     * Ruling FF-1 (uji E2E akhir F-1), sapuan app/: halaman admin tidak berkonteks satu jalur (daftarnya mencampur
+     * gunung, jalur, segmen, dan sumber data tanpa jalur), jadi instan UTC ditulis sebagai tanggal kalender WIB,
+     * Timezone::DEFAULT, sama dengan TautanBagikan. Instan 18.30 UTC sudah tanggal berikutnya di WIB; tanggal UTC-nya
+     * berarti satu hari lebih awal.
+     */
+    public function test_admin_pages_write_instants_as_calendar_days_in_wib(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-12 03:00:00', 'UTC'));
+        $this->actingAs(User::factory()->create(['role' => UserRole::ADMIN->value]));
+
+        OfficialStatus::factory()->create([
+            'statusable_id' => Trail::factory()->create(['name' => 'Jalur Kedaluwarsa'])->id,
+            'effective_at' => '2026-10-01 18:30:00',
+            'expires_at' => '2026-10-11 18:30:00',
+            'verified_at' => '2026-10-11 18:30:00',
+        ]);
+        OfficialStatus::factory()->create([
+            'statusable_id' => Trail::factory()->create(['name' => 'Jalur Basi'])->id,
+            'verified_at' => '2026-06-30 18:30:00',
+        ]);
+        DataSource::factory()->create(['verified_at' => '2026-10-11 18:30:00']);
+        PermitRequirement::factory()->create(['trail_id' => Trail::factory()->create()->id, 'verified_at' => '2026-10-11 18:30:00']);
+
+        $status = $this->get(route('admin.statuses'))->assertOk()->viewData('page')['props'];
+        $riwayat = collect($status['records']['data'])->keyBy('objek');
+
+        $this->assertSame('02 Okt 2026 – 12 Okt 2026', $riwayat['Jalur Kedaluwarsa']['berlaku']);
+        $this->assertSame('12 Okt 2026', $riwayat['Jalur Kedaluwarsa']['diverifikasi']);
+        $this->assertSame([['Jalur Kedaluwarsa', 'berlaku sampai 12 Okt 2026']], array_map(fn (array $b) => [$b['nama'], $b['keterangan']], $status['tinjau']['kedaluwarsa']));
+        $this->assertSame([['Jalur Basi', 'terakhir diverifikasi 01 Jul 2026']], array_map(fn (array $b) => [$b['nama'], $b['keterangan']], $status['tinjau']['basi']));
+
+        $this->get(route('admin.sources'))->assertInertia(fn (AssertableInertia $page) => $page->where('sources.data.0.verifiedAt', '12 Okt 2026'));
+        $this->get(route('admin.permits'))->assertInertia(fn (AssertableInertia $page) => $page->where('rules.data.0.diverifikasi', '12 Okt 2026'));
+    }
+
+    /**
+     * Sapuan ruling FF-1: kolom instan (`*_at`, disimpan UTC) yang langsung diformat dengan translatedFormat(),
+     * format(), atau isoFormat() menulis tanggal dan jam UTC server, sehari lebih awal untuk pendakian yang selesai
+     * antara 00.00 dan 07.00 WIB. Bentuk yang benar menyalin lalu memindah zonanya lebih dulu
+     * (`->copy()->setTimezone(...)`) atau memakai Timezone::display(). Sapuan jam di atas hanya mengenali format jam,
+     * jadi format tanggal saja ("d M Y") lolos dari situ.
+     *
+     * Pengecualian hanya kolom bercast 'date' (tanggal kalender, bukan instan), disebut per berkas: nama kolomnya
+     * sama dengan kolom instan model lain (expires_at milik OfficialStatus adalah datetime).
+     */
+    public function test_no_instant_column_is_formatted_without_its_zone(): void
+    {
+        $tanggalKalender = [
+            'Http/Controllers/Community/TrailContributionController.php' => ['expires_at'],
+            'Http/Resources/Admin/CredentialResource.php' => ['issued_at', 'expires_at'],
+        ];
+        $pelanggar = [];
+
+        foreach ([...File::allFiles(app_path()), ...File::allFiles(resource_path('views'))] as $berkas) {
+            $relatif = str_replace('\\', '/', $berkas->getRelativePathname());
+
+            foreach (file($berkas->getPathname()) as $nomor => $baris) {
+                preg_match_all('/->(\w+_at)\??->(?:translatedFormat|format|isoFormat)\(/', $baris, $cocok);
+
+                foreach ($cocok[1] as $kolom) {
+                    if (! in_array($kolom, $tanggalKalender[$relatif] ?? [], true)) {
+                        $pelanggar[] = $relatif.':'.($nomor + 1).' '.$kolom;
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], $pelanggar, 'Kolom instan diformat tanpa zona di: '.implode(', ', $pelanggar));
     }
 
     /**

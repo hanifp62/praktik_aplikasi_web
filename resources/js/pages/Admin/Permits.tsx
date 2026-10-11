@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Checkbox, FormField } from '@/components/ui/Field';
+import { fokusTerlihat } from '@/components/ui/gaya';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { AppLayout } from '@/layouts/AppLayout';
+import { kelas } from '@/lib/kelas';
 import { profile } from '@/routes';
 import { destroy, store, update } from '@/routes/admin/permits';
 import type { PropsBersama } from '@/types';
@@ -68,6 +70,16 @@ const kosong: Isian = {
 
 const teks = (v: Angka | string | null) => (v === null || v === undefined ? '' : String(v));
 
+/** Id stabil tombol Hapus satu aturan, tujuan fokus sesudah baris di dekatnya dihapus (ruling EF-6). */
+const idHapus = (id: number): string => `hapus-izin-${id}`;
+
+/**
+ * Judul daftar aturan, tujuan fokus terakhir sesudah hapus (ruling EF-6). Daftar kosong tidak
+ * punya kartu berjudul; di sana id yang sama dipasang pada pembungkus keadaan kosong, yang
+ * judulnya "Belum ada aturan perizinan tercatat". Hanya satu dari keduanya yang dirender.
+ */
+const ID_JUDUL_DAFTAR = 'judul-daftar-izin';
+
 /**
  * Pengelolaan aturan perizinan pendakian (§36, §60, §61). Yang dikelola adalah catatan
  * tentang aturan pihak lain: sistem tidak memesan izin dan tidak melacak kuota.
@@ -112,11 +124,40 @@ export default function Permits() {
         }
     };
 
+    /**
+     * Ruling EF-6 (tinjauan ulang TB-m6): baris yang dihapus lepas bersama tombol Hapus yang
+     * difokus, jadi fokus akan jatuh ke body. Tujuannya dihitung dari urutan halaman daftar sebelum
+     * hapus: tombol Hapus baris sesudahnya, yang kini menempati posisi yang sama, lalu tombol Hapus
+     * baris sebelumnya bila yang dihapus baris terakhir, lalu judul daftar. Tujuan dicari di DOM
+     * sesudah daftar baru dirender (swap Inertia memakai flushSync sebelum onSuccess), dan yang
+     * tidak ditemukan dilewati: server selalu kembali ke halaman pertama daftar, jadi hapus dari
+     * halaman lain berakhir di judul. Fokus dipindah hanya bila barisnya memang sudah hilang dan
+     * fokus masih di body, tidak ada, atau di #konten (pola CC-3).
+     */
     const hapus = (id: number) => {
         if (!window.confirm('Hapus aturan perizinan ini?')) {
             return;
         }
-        router.delete(destroy.url(id), { preserveScroll: true, onSuccess: () => (editingId === id ? batal() : undefined) });
+
+        const posisi = rules.data.findIndex((r) => r.id === id);
+        const tujuan = posisi < 0 ? [] : [rules.data[posisi + 1], rules.data[posisi - 1]].flatMap((r) => (r ? [idHapus(r.id)] : []));
+
+        router.delete(destroy.url(id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                if (editingId === id) {
+                    batal();
+                }
+
+                const aktif = document.activeElement;
+
+                if (document.getElementById(idHapus(id)) !== null || (aktif !== null && aktif !== document.body && aktif.id !== 'konten')) {
+                    return;
+                }
+
+                [...tujuan, ID_JUDUL_DAFTAR].map((t) => document.getElementById(t)).find((unsur) => unsur !== null)?.focus();
+            },
+        });
     };
 
     const angka = (nama: keyof Isian, label: string) => (
@@ -226,38 +267,47 @@ export default function Permits() {
                     </form>
                 </Card>
 
+                {/* Kedua cabang membawa ID_JUDUL_DAFTAR yang dapat difokus, tujuan terakhir sesudah
+                    hapus (ruling EF-6); judul kartu karena itu ditulis sendiri, bukan lewat prop title. */}
                 {rules.data.length === 0 ? (
-                    <EmptyState
-                        jenis="pertama"
-                        title="Belum ada aturan perizinan tercatat"
-                        description="Jalur tanpa aturan tercatat tidak akan memunculkan peringatan perizinan apa pun. Ketiadaan data tidak dianggap sebagai masalah."
-                    />
+                    <div id={ID_JUDUL_DAFTAR} tabIndex={-1} className={kelas('rounded-lg', fokusTerlihat)}>
+                        <EmptyState
+                            jenis="pertama"
+                            title="Belum ada aturan perizinan tercatat"
+                            description="Jalur tanpa aturan tercatat tidak akan memunculkan peringatan perizinan apa pun. Ketiadaan data tidak dianggap sebagai masalah."
+                        />
+                    </div>
                 ) : (
-                    <Card title="Aturan tercatat">
-                        <BingkaiTabel keterangan="Daftar aturan perizinan pendakian" kolom={['Berlaku untuk', 'Penyelenggara', 'Ketentuan', 'Diverifikasi', 'Tindakan']}>
-                            {rules.data.map((r) => (
-                                <tr key={r.id} className="border-t border-subtle align-top">
-                                    <td className="p-4">
-                                        {r.sasaran}
-                                        <span className="block text-xs text-muted">{r.sasaranKeterangan}</span>
-                                    </td>
-                                    <td className="p-4">{r.authority}</td>
-                                    <td className="p-4 text-secondary">{r.ringkasan}</td>
-                                    <td className="p-4 text-secondary">
-                                        {r.diverifikasi}
-                                        <span className="block text-xs text-muted">{r.sumber}</span>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex flex-wrap gap-2">
-                                            <Button variant="secondary" size="sm" onClick={() => ubah(r)} aria-label={`Ubah aturan ${r.sasaran}`}>Ubah</Button>
-                                            <Button variant="danger" size="sm" onClick={() => hapus(r.id)} aria-label={`Hapus aturan ${r.sasaran}`}>Hapus</Button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </BingkaiTabel>
-                        <div className="mt-4">
-                            <Pagination links={rules.links} />
+                    <Card>
+                        <h2 id={ID_JUDUL_DAFTAR} tabIndex={-1} className={kelas('rounded-kecil text-bagian text-primary', fokusTerlihat)}>
+                            Aturan tercatat
+                        </h2>
+                        <div className="mt-3">
+                            <BingkaiTabel keterangan="Daftar aturan perizinan pendakian" kolom={['Berlaku untuk', 'Penyelenggara', 'Ketentuan', 'Diverifikasi', 'Tindakan']}>
+                                {rules.data.map((r) => (
+                                    <tr key={r.id} className="border-t border-subtle align-top">
+                                        <td className="p-4">
+                                            {r.sasaran}
+                                            <span className="block text-xs text-muted">{r.sasaranKeterangan}</span>
+                                        </td>
+                                        <td className="p-4">{r.authority}</td>
+                                        <td className="p-4 text-secondary">{r.ringkasan}</td>
+                                        <td className="p-4 text-secondary">
+                                            {r.diverifikasi}
+                                            <span className="block text-xs text-muted">{r.sumber}</span>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button variant="secondary" size="sm" onClick={() => ubah(r)} aria-label={`Ubah aturan ${r.sasaran}`}>Ubah</Button>
+                                                <Button id={idHapus(r.id)} variant="danger" size="sm" onClick={() => hapus(r.id)} aria-label={`Hapus aturan ${r.sasaran}`}>Hapus</Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </BingkaiTabel>
+                            <div className="mt-4">
+                                <Pagination links={rules.links} />
+                            </div>
                         </div>
                     </Card>
                 )}

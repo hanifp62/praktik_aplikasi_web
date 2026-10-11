@@ -33,7 +33,7 @@
             {{-- Grafik adalah gambar, dan pembaca layar membacakan judul serta rangkuman
                  di bawah ini alih-alih mencoba menelusuri seratus titiknya. --}}
             <title id="profil-elevasi-judul">
-                Profil elevasi: dari {{ $mMin }} sampai {{ $mMax }} mdpl sepanjang
+                Profil elevasi: dari {{ number_format($mMin, 0, ',', '.') }} sampai {{ number_format($mMax, 0, ',', '.') }} mdpl sepanjang
                 {{ number_format($kmMax, 1, ',', '.') }} kilometer.
             </title>
             <polygon points="{{ $area }}" fill="rgb(var(--brand-100))" />

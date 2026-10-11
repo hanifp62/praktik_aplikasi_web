@@ -9,11 +9,16 @@ import { Card } from '@/components/ui/Card';
 import { InputError, Label, Select, TextInput } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
+import { fokusTerlihat } from '@/components/ui/gaya';
 import { AppLayout } from '@/layouts/AppLayout';
+import { kelas } from '@/lib/kelas';
 import { profile } from '@/routes';
 import { credentials } from '@/routes/admin';
 import { decide } from '@/routes/admin/credentials';
 import type { PropsBersama } from '@/types';
+
+/** Kabar hasil keputusan, tujuan fokus sesudah kartunya lepas dari daftar (sapuan EF-6). */
+const ID_KABAR = 'kabar-kredensial';
 
 interface Kredensial {
     id: number;
@@ -69,12 +74,22 @@ export default function Credentials() {
             { catatan: catatan[id] ?? '' },
             {
                 preserveScroll: true,
-                onSuccess: () =>
+                onSuccess: () => {
                     setCatatan((c) => {
                         const salin = { ...c };
                         delete salin[id];
                         return salin;
-                    }),
+                    });
+
+                    // Kartu yang diputus dapat lepas dari daftar bersaring bersama tombolnya. Fokus
+                    // pindah ke kabar hasilnya, bukan ke tombol keputusan kartu berikutnya: Enter
+                    // ganda di sana dapat memverifikasi kredensial yang belum dibaca (sapuan EF-6).
+                    const aktif = document.activeElement;
+
+                    if (aktif === null || aktif === document.body || aktif.id === 'konten') {
+                        document.getElementById(ID_KABAR)?.focus();
+                    }
+                },
                 onFinish: () => setSedang(null),
             },
         );
@@ -91,7 +106,11 @@ export default function Credentials() {
 
                 <AdminNav />
 
-                {flash.status ? <Alert variant="success" className="mb-4">{flash.status}</Alert> : null}
+                {flash.status ? (
+                    <div id={ID_KABAR} tabIndex={-1} className={kelas('mb-4 rounded-kartu', fokusTerlihat)}>
+                        <Alert variant="success">{flash.status}</Alert>
+                    </div>
+                ) : null}
 
                 <div className="mb-4 max-w-xs">
                     <Label htmlFor="filter">Filter status</Label>

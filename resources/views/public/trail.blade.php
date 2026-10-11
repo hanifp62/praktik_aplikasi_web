@@ -117,7 +117,7 @@
                     </div>
                     <div>
                         <dt class="text-muted">Ketinggian puncak</dt>
-                        <dd class="font-medium text-primary">{{ $trail->mountain->elevation_mdpl }} mdpl</dd>
+                        <dd class="font-medium text-primary">{{ $trail->mountain->elevation_mdpl !== null ? number_format($trail->mountain->elevation_mdpl, 0, ',', '.') : '-' }} mdpl</dd>
                     </div>
                 </dl>
             </section>

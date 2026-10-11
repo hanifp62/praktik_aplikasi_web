@@ -252,4 +252,37 @@ class PublicTrailPageTest extends TestCase
         $halaman->assertDontSee('9.70');
         $halaman->assertDontSee('7.5 jam');
     }
+
+    /**
+     * Ruling FF-3 (uji E2E akhir F-3): ketinggian puncak dan judul SVG profil elevasi, yang dibacakan pembaca layar,
+     * memakai titik ribuan seperti keterangan di bawah grafiknya ("1.340 mdpl terendah"), bukan "2958 mdpl" dan
+     * "dari 1340 sampai 2958 mdpl" di halaman yang sama.
+     */
+    public function test_the_summit_height_and_the_profile_title_use_thousands_separators(): void
+    {
+        $gunung = Mountain::factory()->create(['name' => 'Gede', 'province' => 'Jawa Barat', 'elevation_mdpl' => 2958]);
+        $trail = Trail::factory()->published()->easy()->for($gunung)->create([
+            'elevation_profile' => [['km' => 0, 'm' => 1340], ['km' => 4.5, 'm' => 2150], ['km' => 9.7, 'm' => 2958]],
+        ]);
+
+        $isi = $this->get(route('public.trail', $trail))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/Ketinggian puncak<\/dt>\s*<dd[^>]*>2\.958 mdpl<\/dd>/', $isi);
+        $this->assertMatchesRegularExpression('/<title id="profil-elevasi-judul">\s*Profil elevasi: dari 1\.340 sampai 2\.958 mdpl sepanjang\s+9,7 kilometer\./', $isi);
+        $this->assertDoesNotMatchRegularExpression('/\b(?:1340|2958)\b/', $isi);
+    }
+
+    /**
+     * Ketinggian puncak yang belum dicatat tetap tidak diketahui (R-007): ditulis "-" seperti jarak dan tanjakan di
+     * sebelahnya, bukan "0 mdpl" dari number_format(null).
+     */
+    public function test_an_unrecorded_summit_height_is_a_dash_not_zero(): void
+    {
+        $gunung = Mountain::factory()->create(['name' => 'Gede', 'province' => 'Jawa Barat', 'elevation_mdpl' => null]);
+        $trail = Trail::factory()->published()->easy()->for($gunung)->create();
+
+        $isi = $this->get(route('public.trail', $trail))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/Ketinggian puncak<\/dt>\s*<dd[^>]*>- mdpl<\/dd>/', $isi);
+    }
 }

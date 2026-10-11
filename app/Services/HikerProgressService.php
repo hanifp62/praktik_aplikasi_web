@@ -6,6 +6,7 @@ use App\Enums\CompletionState;
 use App\Models\HikingHistory;
 use App\Models\TrailConditionReport;
 use App\Models\User;
+use App\Support\Timezone;
 use Illuminate\Support\Carbon;
 
 /**
@@ -92,7 +93,11 @@ class HikerProgressService
      * terjadi. Jalur yang elevation gain-nya belum dicatat tetap ikut dengan nilai null,
      * bukan nol (§95), supaya urutan pendakiannya tidak terputus diam-diam.
      *
-     * Satu query, berapa pun jumlah riwayatnya; yang diambil hanya yang terakhir.
+     * `tanggal` sudah berada di zona gunung jalur pendakian itu (ruling FF-1, sama dengan ringkasan pendakian dan
+     * Riwayat), jadi tanggal kalender yang dibentuk darinya bukan tanggal UTC server. Gunungnya dimuat sekaligus
+     * bersama jalurnya, supaya Timezone::forTrail tidak bertanya ke basis data per titik.
+     *
+     * Jumlah kueri tetap, berapa pun jumlah riwayatnya; yang diambil hanya yang terakhir.
      *
      * @return array<int, array{tanggal: Carbon, jalur: ?string, elevasi_m: ?int}>
      */
@@ -101,14 +106,14 @@ class HikerProgressService
         return HikingHistory::query()
             ->where('user_id', $user->id)
             ->where('completion_state', CompletionState::COMPLETED->value)
-            ->with('trail:id,name,elevation_gain_m')
+            ->with('trail:id,mountain_id,name,elevation_gain_m', 'trail.mountain:id,timezone')
             ->orderByDesc('completed_at')
             ->orderByDesc('id')
             ->limit($batas)
             ->get()
             ->reverse()
             ->map(fn (HikingHistory $h) => [
-                'tanggal' => $h->completed_at,
+                'tanggal' => $h->completed_at->copy()->setTimezone(Timezone::forTrail($h->trail)),
                 'jalur' => $h->trail?->name,
                 'elevasi_m' => $h->trail?->elevation_gain_m,
             ])

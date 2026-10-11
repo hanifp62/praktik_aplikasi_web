@@ -94,6 +94,30 @@ class ButtonFeedbackTest extends TestCase
     }
 
     /**
+     * Sisa sapuan EF-6 (putaran E):
+     * - "Tampilkan juga" dan "Hapus semua saringan" di keadaan kosong Jelajah lepas bersama keadaan
+     *   kosongnya, jadi fokus pindah ke kalimat ringkasan yang baru;
+     * - keputusan kredensial dapat melepas kartunya dari daftar bersaring, jadi fokus pindah ke kabar
+     *   hasilnya, bukan ke tombol keputusan kartu berikutnya, supaya Enter ganda tidak memverifikasi
+     *   kredensial yang belum dibaca.
+     * Keduanya hanya bila fokus jatuh ke body atau #konten.
+     */
+    public function test_empty_state_and_credential_actions_move_focus_to_their_result(): void
+    {
+        $penjaga = "/const aktif = document\.activeElement;\s*if \(aktif === null \|\| aktif === document\.body \|\| aktif\.id === 'konten'\) \{\s*document\.getElementById\(%s\)\?\.focus\(\);\s*\}/";
+
+        $jelajah = File::get(resource_path('js/pages/Trails/Index.tsx'));
+        $this->assertMatchesRegularExpression(sprintf($penjaga, 'ID_RINGKASAN'), $jelajah);
+        $this->assertMatchesRegularExpression('/<p\s+id=\{ID_RINGKASAN\}\s+tabIndex=\{-1\}\s+aria-live="polite"/', $jelajah);
+        $this->assertStringContainsString('onClick={() => terapkan(draf, true, fokusRingkasan)}', $jelajah);
+        $this->assertStringContainsString('onClick={() => kunjungi({}, fokusRingkasan)}', $jelajah);
+
+        $kredensial = File::get(resource_path('js/pages/Admin/Credentials.tsx'));
+        $this->assertMatchesRegularExpression(sprintf($penjaga, 'ID_KABAR'), $kredensial);
+        $this->assertStringContainsString('<div id={ID_KABAR} tabIndex={-1}', $kredensial);
+    }
+
+    /**
      * Ruling CF-6 (audit E2E CU-1): sesudah Urungkan berhasil pada bentuk hapus, fokus pindah ke
      * tombol hapus kartu Simpanan yang dipulihkan, bukan tertinggal di #konten. Kartu itu instans
      * baru, jadi tujuannya id stabil per jalur pada tombol hapus. Pemindahan ada di onSuccess

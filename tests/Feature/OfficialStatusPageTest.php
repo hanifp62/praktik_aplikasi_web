@@ -10,6 +10,7 @@ use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -50,10 +51,17 @@ class OfficialStatusPageTest extends TestCase
         $this->assertDatabaseHas('official_statuses', ['statusable_id' => $trail->id, 'status' => 'CLOSED', 'recorded_by' => $admin->id]);
     }
 
+    /**
+     * Diubah ruling FF-1: tanggal verifikasi kini tanggal kalender WIB (Timezone::DEFAULT), bukan tanggal UTC. Dulu
+     * instannya `now()->setDate(2026, 9, 1)`, yang membawa jam dinding saat test berjalan: antara 17.00 dan 24.00 UTC
+     * itu sudah 2 September di WIB. Jamnya kini ditulis, 03.00 UTC (10.00 WIB), jadi harapan "01 Sep 2026" tetap
+     * dan tidak bergantung jam test dijalankan. Konversi zonanya sendiri dijaga
+     * TimestampZoneTest::test_admin_pages_write_instants_as_calendar_days_in_wib.
+     */
     public function test_the_history_shows_the_source_and_when_it_was_last_verified(): void
     {
         $sumber = DataSource::factory()->create(['source_name' => 'Balai TN uji']);
-        $this->statusResmi(['data_source_id' => $sumber->id, 'source' => null, 'verified_at' => now()->setDate(2026, 9, 1)]);
+        $this->statusResmi(['data_source_id' => $sumber->id, 'source' => null, 'verified_at' => Carbon::parse('2026-09-01 03:00:00', 'UTC')]);
 
         $this->actingAs($this->admin())
             ->get(route('admin.statuses'))

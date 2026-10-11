@@ -6,8 +6,10 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { FormField } from '@/components/ui/Field';
+import { fokusTerlihat } from '@/components/ui/gaya';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
+import { kelas } from '@/lib/kelas';
 import { contribute } from '@/routes';
 import { trails as daftarJalur } from '@/routes/admin';
 import { destroy, move, store, update } from '@/routes/trails/checkpoints';
@@ -42,6 +44,12 @@ interface Props extends PropsBersama {
 
 /** Id stabil tombol Naik (arah -1) dan Turun (arah 1) satu checkpoint, tujuan fokus sesudah pindah (ruling CC-3). */
 const idArah = (id: number, arah: -1 | 1): string => `${arah < 0 ? 'naik' : 'turun'}-checkpoint-${id}`;
+
+/** Id stabil tombol Hapus satu checkpoint, tujuan fokus sesudah baris di dekatnya dihapus (ruling EF-6). */
+const idHapus = (id: number): string => `hapus-checkpoint-${id}`;
+
+/** Judul daftar, tujuan fokus terakhir sesudah hapus, juga saat daftar kosong (ruling EF-6). */
+const ID_JUDUL_DAFTAR = 'judul-daftar-checkpoint';
 
 const kosong = (urutan: string): IsianCheckpoint => ({ name: '', sequence: urutan, checkpoint_type: 'POS', elevation_m: '', notes: '', latitude: '', longitude: '' });
 
@@ -127,8 +135,34 @@ export default function Checkpoints() {
         );
     };
 
-    const hapus = (id: number) =>
-        konfirmasiLalu('Hapus checkpoint ini?', () => router.delete(destroy.url({ trail: trail.id, checkpoint: id }), { preserveScroll: true }));
+    /**
+     * Ruling EF-6 (tinjauan ulang TB-m6): baris yang dihapus lepas bersama tombol Hapus yang
+     * difokus, jadi fokus akan jatuh ke body. Tujuannya dihitung dari urutan daftar sebelum hapus:
+     * tombol Hapus baris sesudahnya, yang kini menempati posisi yang sama, lalu tombol Hapus baris
+     * sebelumnya bila yang dihapus baris terakhir, lalu judul daftar. Tujuan dicari di DOM sesudah
+     * daftar baru dirender (swap Inertia memakai flushSync sebelum onSuccess), dan yang tidak
+     * ditemukan dilewati. Fokus dipindah hanya bila barisnya memang sudah hilang (penolakan gerbang
+     * publikasi membiarkannya) dan fokus masih di body, tidak ada, atau di #konten (pola CC-3).
+     */
+    const hapus = (id: number) => {
+        const posisi = checkpoints.findIndex((c) => c.id === id);
+        const tujuan = posisi < 0 ? [] : [checkpoints[posisi + 1], checkpoints[posisi - 1]].flatMap((c) => (c ? [idHapus(c.id)] : []));
+
+        konfirmasiLalu('Hapus checkpoint ini?', () =>
+            router.delete(destroy.url({ trail: trail.id, checkpoint: id }), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    const aktif = document.activeElement;
+
+                    if (document.getElementById(idHapus(id)) !== null || (aktif !== null && aktif !== document.body && aktif.id !== 'konten')) {
+                        return;
+                    }
+
+                    [...tujuan, ID_JUDUL_DAFTAR].map((t) => document.getElementById(t)).find((unsur) => unsur !== null)?.focus();
+                },
+            }),
+        );
+    };
 
     return (
         <div className="py-8">
@@ -170,28 +204,35 @@ export default function Checkpoints() {
                     <TeksPanjangAdmin name="notes" label="Catatan" rows={2} value={form.data.notes} onChange={(v) => form.setData('notes', v)} error={form.errors.notes} />
                 </FormulirAdmin>
 
-                <Card className="mb-6" title="Daftar checkpoint">
-                    {checkpoints.length === 0 ? (
-                        <p className="text-sm text-secondary">Belum ada checkpoint.</p>
-                    ) : (
-                        <ol className="space-y-2">
-                            {checkpoints.map((c, i) => (
-                                <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-subtle px-3 py-2 text-sm">
-                                    <span>
-                                        <span className="font-medium text-primary">{c.title}</span>
-                                        <span className="text-secondary"> · {c.type}</span>
-                                        {c.elevation ? <span className="text-secondary"> · {c.elevation}</span> : null}
-                                    </span>
-                                    <span className="flex flex-wrap gap-2">
-                                        <Button id={idArah(c.id, -1)} variant="secondary" size="sm" disabled={i === 0} onClick={() => pindah(c.id, -1)} aria-label={`Naikkan urutan ${c.name}`}>Naik</Button>
-                                        <Button id={idArah(c.id, 1)} variant="secondary" size="sm" disabled={i === checkpoints.length - 1} onClick={() => pindah(c.id, 1)} aria-label={`Turunkan urutan ${c.name}`}>Turun</Button>
-                                        <Button variant="secondary" size="sm" onClick={() => ubah(c)} aria-label={`Ubah ${c.name}`}>Ubah</Button>
-                                        <Button variant="danger" size="sm" onClick={() => hapus(c.id)} aria-label={`Hapus ${c.name}`}>Hapus</Button>
-                                    </span>
-                                </li>
-                            ))}
-                        </ol>
-                    )}
+                {/* Judul ditulis sendiri, bukan lewat prop title Card, supaya dapat difokus sebagai
+                    tujuan terakhir sesudah hapus (ruling EF-6). */}
+                <Card className="mb-6">
+                    <h2 id={ID_JUDUL_DAFTAR} tabIndex={-1} className={kelas('rounded-kecil text-bagian text-primary', fokusTerlihat)}>
+                        Daftar checkpoint
+                    </h2>
+                    <div className="mt-3">
+                        {checkpoints.length === 0 ? (
+                            <p className="text-sm text-secondary">Belum ada checkpoint.</p>
+                        ) : (
+                            <ol className="space-y-2">
+                                {checkpoints.map((c, i) => (
+                                    <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-subtle px-3 py-2 text-sm">
+                                        <span>
+                                            <span className="font-medium text-primary">{c.title}</span>
+                                            <span className="text-secondary"> · {c.type}</span>
+                                            {c.elevation ? <span className="text-secondary"> · {c.elevation}</span> : null}
+                                        </span>
+                                        <span className="flex flex-wrap gap-2">
+                                            <Button id={idArah(c.id, -1)} variant="secondary" size="sm" disabled={i === 0} onClick={() => pindah(c.id, -1)} aria-label={`Naikkan urutan ${c.name}`}>Naik</Button>
+                                            <Button id={idArah(c.id, 1)} variant="secondary" size="sm" disabled={i === checkpoints.length - 1} onClick={() => pindah(c.id, 1)} aria-label={`Turunkan urutan ${c.name}`}>Turun</Button>
+                                            <Button variant="secondary" size="sm" onClick={() => ubah(c)} aria-label={`Ubah ${c.name}`}>Ubah</Button>
+                                            <Button id={idHapus(c.id)} variant="danger" size="sm" onClick={() => hapus(c.id)} aria-label={`Hapus ${c.name}`}>Hapus</Button>
+                                        </span>
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
+                    </div>
                 </Card>
 
                 {admin ? (
