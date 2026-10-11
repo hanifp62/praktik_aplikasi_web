@@ -230,7 +230,9 @@ class ReporterImpactTest extends TestCase
      * laporan REJECTED lepas tanpa pendakian, jadi `kosong` true dan halaman merender kartu
      * "Belum ada pendakian yang tercatat", bukan cabang ini. Kini fixture berisi satu riwayat
      * pendakian selesai (`kosong` false), satu laporan REJECTED beralasan yang tertaut ke riwayat
-     * itu, dan satu laporan REMOVED, sehingga `ditolak` 2 hanya benar bila REMOVED ikut dihitung.
+     * itu, satu laporan REJECTED lepas, dan satu laporan REMOVED. `ditolak` 3 hanya benar bila setiap
+     * status dihitung tepat sekali: mutasi yang membuang REMOVED atau menghitung REJECTED dua kali
+     * memberi 2 atau 4 (TC-m2 tinjauan akhir).
      * Riwayat pendakian juga diperiksa memuat alasan laporan tertaut itu.
      *
      * Diubah ruling EF-1 (TB-m1): alasan moderator opsional, dan Riwayat hanya memuat laporan yang
@@ -259,13 +261,14 @@ class ReporterImpactTest extends TestCase
             'reason' => 'Foto tidak menunjukkan jalurnya.',
         ]);
         $riwayat->update(['trail_condition_report_id' => $ditolak->id]);
+        $this->laporan($pelapor, ModerationStatus::REJECTED);
         $this->laporan($pelapor, ModerationStatus::REMOVED);
 
         $this->actingAs($pelapor)->get(route('progress'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
             ->where('kosong', false)
             ->where('laporan.terbit', 0)
             ->where('laporan.menunggu', 0)
-            ->where('laporan.ditolak', 2));
+            ->where('laporan.ditolak', 3));
 
         $this->actingAs($pelapor)->get(route('history'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
             ->where('entri.data.0.laporan.status', 'Ditolak')

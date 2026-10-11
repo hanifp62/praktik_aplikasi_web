@@ -243,7 +243,7 @@ export default function Index() {
                         menyisakan juga kepala halaman di atas panel pada posisi gulir awal. */}
                     <aside aria-label="Saringan jalur" className={kelas('hidden lg:block', adaPeta && tampilan === 'peta' && 'lg:row-span-2 xl:row-span-1')}>
                         <div className="space-y-6 lg:sticky lg:top-[calc(var(--kepala-atas)+var(--pesan-jaringan,0px)+1.5rem)] lg:-m-1 lg:max-h-[calc(100dvh-var(--kepala-atas)-var(--pesan-jaringan,0px)-var(--nav-bawah,0px)-6rem)] lg:overflow-y-auto lg:p-1">
-                            <TafsiranKalimat awalanId="panel" tafsiran={tafsiran} tampilkanToast={tampilkanToast} onAbaikan={(abaikan) => kunjungi(kueriDari({ ...filter, abaikan }, drafDari(filter, filter.teknisRendah), false))} />
+                            <TafsiranKalimat awalanId="panel" tafsiran={tafsiran} tampilkanToast={tampilkanToast} onAbaikan={(abaikan, onSuccess) => kunjungi(kueriDari({ ...filter, abaikan }, drafDari(filter, filter.teknisRendah), false), onSuccess)} />
                             <SaringanJelajah opsi={saringan} draf={draf} onUbah={ubahPanel} />
                         </div>
                     </aside>
@@ -252,7 +252,7 @@ export default function Index() {
                         <KotakCari nilai={cari} onUbah={setCari} />
 
                         <div className="lg:hidden">
-                            <TafsiranKalimat awalanId="ponsel" tafsiran={tafsiran} tampilkanToast={tampilkanToast} onAbaikan={(abaikan) => kunjungi(kueriDari({ ...filter, abaikan }, drafDari(filter, filter.teknisRendah), false))} />
+                            <TafsiranKalimat awalanId="ponsel" tafsiran={tafsiran} tampilkanToast={tampilkanToast} onAbaikan={(abaikan, onSuccess) => kunjungi(kueriDari({ ...filter, abaikan }, drafDari(filter, filter.teknisRendah), false), onSuccess)} />
                         </div>
 
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">

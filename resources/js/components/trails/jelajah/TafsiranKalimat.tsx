@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/Button';
 import { ChipLepas } from '@/components/ui/Chip';
-import { useFokusSesudahRender } from '@/components/ui/ToastUrungkan';
 import type { LayananKerangka } from '@/layouts/Kerangka';
 
 export interface Tafsiran {
@@ -11,8 +10,11 @@ export interface Tafsiran {
 
 interface TafsiranKalimatProps {
     tafsiran: Tafsiran;
-    /** Mengirim daftar tafsiran yang dilepas ke server (kunjungan Inertia dengan preserveState). */
-    onAbaikan: (abaikan: string[]) => void;
+    /**
+     * Mengirim daftar tafsiran yang dilepas ke server (kunjungan Inertia dengan preserveState).
+     * `onSuccess` berjalan sesudah jawaban server dirender, saat chip yang dikembalikan sudah ada.
+     */
+    onAbaikan: (abaikan: string[], onSuccess?: () => void) => void;
     /** tampilkanToast milik halaman (ruling W2-5i): Urungkan bertahan selama halaman terpasang. */
     tampilkanToast: LayananKerangka['tampilkanToast'];
     /**
@@ -29,12 +31,22 @@ interface TafsiranKalimatProps {
  * yang sudah dilepas dapat dikembalikan sekaligus. Kalimat yang tidak dikenali seluruhnya
  * disebut dengan jujur: ia dicari sebagai kata kunci biasa.
  *
- * Melepas chip dari papan ketik memindah fokus ke Urungkan (W1-F4), dan Urungkan memfokus chip
- * yang dikembalikan, bukan body.
+ * Melepas chip dari papan ketik memindah fokus ke Urungkan (W1-F4). Urungkan memfokus chip yang
+ * dikembalikan, dan "Kembalikan tafsiran kalimat", yang lepas bersama aksinya, memfokus chip
+ * pertama yang dikembalikan. Chip itu baru ada sesudah jawaban server, jadi fokus dipindah di
+ * onSuccess kunjungan, bukan pada render berikutnya, dan hanya bila fokus jatuh ke body atau
+ * #konten (TC-m3 tinjauan akhir).
  */
 export function TafsiranKalimat({ tafsiran, onAbaikan, tampilkanToast, awalanId }: TafsiranKalimatProps) {
     const idChip = (kunci: string) => `${awalanId}-tafsiran-${kunci}`;
-    const fokusSesudahRender = useFokusSesudahRender();
+
+    const fokusChip = (kunci: string | undefined) => () => {
+        const aktif = document.activeElement;
+
+        if (kunci !== undefined && (aktif === null || aktif === document.body || aktif.id === 'konten')) {
+            document.getElementById(idChip(kunci))?.focus();
+        }
+    };
 
     if (tafsiran.chip.length === 0 && tafsiran.dilepas.length === 0) {
         return tafsiran.catatan ? <p className="text-kecil text-secondary">{tafsiran.catatan}</p> : null;
@@ -45,10 +57,7 @@ export function TafsiranKalimat({ tafsiran, onAbaikan, tampilkanToast, awalanId 
         onAbaikan([...sebelum, kunci]);
         tampilkanToast(
             `Tafsiran "${label}" dilepas.`,
-            () => {
-                onAbaikan(sebelum);
-                fokusSesudahRender(idChip(kunci));
-            },
+            () => onAbaikan(sebelum, fokusChip(kunci)),
             { fokus: dariPapanKetik },
         );
     };
@@ -63,7 +72,7 @@ export function TafsiranKalimat({ tafsiran, onAbaikan, tampilkanToast, awalanId 
                     </ChipLepas>
                 ))}
                 {tafsiran.dilepas.length > 0 ? (
-                    <Button variant="ghost" size="sm" onClick={() => onAbaikan([])}>
+                    <Button variant="ghost" size="sm" onClick={() => onAbaikan([], fokusChip(tafsiran.dilepas[0]))}>
                         Kembalikan tafsiran kalimat
                     </Button>
                 ) : null}

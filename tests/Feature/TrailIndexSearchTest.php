@@ -139,6 +139,26 @@ class TrailIndexSearchTest extends TestCase
         $this->assertStringContainsString('tundaNaik.current = setTimeout(() => terapkan(d), 400);', $halaman);
     }
 
+    /**
+     * TC-m3 tinjauan akhir: "Kembalikan tafsiran kalimat" lepas bersama aksinya, dan Urungkan
+     * mengembalikan chip yang baru ada sesudah jawaban server. Fokus pindah ke chip itu di onSuccess
+     * kunjungan, bukan pada render berikutnya (yang terjadi sebelum jawaban server, jadi chipnya
+     * belum ada), dan hanya bila fokus jatuh ke body atau #konten. Dari sumber, karena TSX tidak
+     * dijalankan di Node.
+     */
+    public function test_restoring_reading_chips_moves_focus_to_a_restored_chip_after_the_visit(): void
+    {
+        $halaman = File::get(resource_path('js/pages/Trails/Index.tsx'));
+        $tafsiran = File::get(resource_path('js/components/trails/jelajah/TafsiranKalimat.tsx'));
+
+        $this->assertSame(2, substr_count($halaman, 'onAbaikan={(abaikan, onSuccess) => kunjungi(kueriDari({ ...filter, abaikan }, drafDari(filter, filter.teknisRendah), false), onSuccess)}'));
+        $this->assertStringContainsString('const fokusChip = (kunci: string | undefined) => () => {', $tafsiran);
+        $this->assertStringContainsString("if (kunci !== undefined && (aktif === null || aktif === document.body || aktif.id === 'konten')) {", $tafsiran);
+        $this->assertStringContainsString('() => onAbaikan(sebelum, fokusChip(kunci)),', $tafsiran);
+        $this->assertStringContainsString('onClick={() => onAbaikan([], fokusChip(tafsiran.dilepas[0]))}', $tafsiran);
+        $this->assertStringNotContainsString('fokusSesudahRender(', $tafsiran, 'Fokus pada render berikutnya terjadi sebelum chip dikembalikan server.');
+    }
+
     public function test_search_combines_with_the_technical_filter(): void
     {
         $mountain = Mountain::factory()->create(['name' => 'Gunung Uji']);

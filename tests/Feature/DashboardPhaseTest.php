@@ -213,6 +213,31 @@ class DashboardPhaseTest extends TestCase
     }
 
     /**
+     * Ruling FF-1 (TC-m1 tinjauan akhir): tanggal selesai kartu B4 dibaca di zona gunung jalurnya,
+     * sama dengan ringkasan pendakian dan Riwayat. Pendakian yang selesai 18.30 UTC sudah tanggal
+     * berikutnya di WIB; tanggal UTC server tidak boleh tampil.
+     */
+    public function test_the_b4_finish_date_is_read_in_wib_for_a_wib_mountain(): void
+    {
+        $user = $this->pendaki();
+        $this->selesai($user, $this->trip($user, ['planned_date' => '2026-09-22']), Carbon::parse('2026-09-22 18:30:00', 'UTC'));
+
+        $this->assertSame('Rab, 23 Sep 2026', $this->fase($user)['kartu']['selesai']);
+    }
+
+    /**
+     * Gunung WITA: 16.30 UTC adalah 00.30 WITA tanggal 23, sedangkan di WIB masih tanggal 22. Jadi
+     * yang dipakai zona gunung itu, bukan zona bawaan (TC-m1).
+     */
+    public function test_the_b4_finish_date_is_read_in_the_mountains_own_timezone(): void
+    {
+        $user = $this->pendaki();
+        $this->selesai($user, $this->trip($user, ['planned_date' => '2026-09-22'], 'Asia/Makassar'), Carbon::parse('2026-09-22 16:30:00', 'UTC'));
+
+        $this->assertSame('Rab, 23 Sep 2026', $this->fase($user)['kartu']['selesai']);
+    }
+
+    /**
      * Ruling W5-FK (M10 tinjauan akhir W5): ringkasan B4 searah dengan hasil di kartu di bawahnya.
      * "Sudah selesai" hanya untuk pendakian yang selesai sampai target; yang selesai sebagian atau
      * dibatalkan di jalur "sudah berakhir".
