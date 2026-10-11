@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/Card';
 import { InputError, Label, Select, Textarea } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
-import { cancel, complete, hike, start } from '@/routes/trips';
+import { cancel, complete, hike, index as tripsIndex, start } from '@/routes/trips';
 import type { PropsBersama } from '@/types';
 
 interface Props extends PropsBersama {
@@ -72,7 +72,7 @@ export default function Show() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <PageHeader title={trip.name} description={`${trip.trail} - ${trip.mountain}`}>
+                <PageHeader induk={{ href: tripsIndex.url(), label: 'Trip' }} title={trip.name} description={`${trip.trail} - ${trip.mountain}`}>
                     <p className="mt-1 text-sm text-secondary">
                         {trip.tanggal}
                         {trip.sampai ? <> - {trip.sampai}</> : null}

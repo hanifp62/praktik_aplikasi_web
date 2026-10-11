@@ -23,9 +23,12 @@ use App\Models\DataSource;
 use App\Models\HikingHistory;
 use App\Models\Mountain;
 use App\Models\OfficialStatus;
+use App\Models\PermitRequirement;
 use App\Models\Trail;
+use App\Models\TrailConsideration;
 use App\Models\TripPlan;
 use App\Models\User;
+use App\Services\Trips\TripReminderScheduler;
 use App\Support\Timezone;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -36,10 +39,13 @@ use Illuminate\Support\Str;
  * Data contoh berlabel (DK-35, spec v3 bagian 11).
  *
  * Satu pendaki pemula, Budi Setiawan; delapan gunung; sebelas jalur (sepuluh terbit, satu
- * menunggu data); trip "Gede via Cibodas" lima belas hari lagi; tiga pendakian selesai; satu
- * trip batal. Isinya meniru contoh di prototype pemilik supaya tangkapan pratinjau dapat
- * dibandingkan dengan gambar acuannya: tanjakan tertinggi Budi 700 m dari Prau, sehingga
- * Cibodas (1.650 m) menjadi tanjakan terbesarnya.
+ * menunggu data); trip "Gede via Cibodas" lima belas hari lagi dengan pengingat surel H-3 dan
+ * H-1; tiga pendakian selesai; satu trip batal; lima jalur tersimpan; dan satu aturan izin
+ * tingkat gunung untuk Gunung Gede (jendela pesan H-30 sampai H-3). Simpanan, pengingat, dan
+ * aturan izin mengisi kerangka W2 (hitungan Simpanan dan lembar Pengingat) lewat tabel dan
+ * penjadwal yang sama dengan fitur aslinya. Isinya meniru contoh di prototype pemilik supaya
+ * tangkapan pratinjau dapat dibandingkan dengan gambar acuannya: tanjakan tertinggi Budi
+ * 700 m dari Prau, sehingga Cibodas (1.650 m) menjadi tanjakan terbesarnya.
  *
  * Setiap teks yang dapat terbaca sebagai fakta diawali "DATA CONTOH", dan layout memasang
  * lencana "Data contoh" lewat APP_DEMO. Geometri jalur tidak diisi: kolom geografi hanya
@@ -105,6 +111,8 @@ class DemoSeeder extends Seeder
         $budi = $this->pendaki();
         $jalur = $this->jalur($sumber);
         $this->trip($budi, $jalur);
+        $this->simpanan($budi, $jalur);
+        $this->izin($sumber, $jalur);
     }
 
     private function pendaki(): User
@@ -232,7 +240,7 @@ class DemoSeeder extends Seeder
     {
         $hariIni = Carbon::parse(Timezone::earliestDateInIndonesia());
 
-        TripPlan::create([
+        $gede = TripPlan::create([
             'user_id' => $budi->id,
             'trail_id' => $jalur['gede-via-cibodas']->id,
             'name' => 'Gede via Cibodas',
@@ -245,6 +253,10 @@ class DemoSeeder extends Seeder
             'reminders_enabled' => true,
             'status' => TripStatus::PLANNED->value,
         ]);
+
+        // Pengingat H-3 dan H-1 dijadwalkan lewat penjadwal yang sama dengan halaman trip,
+        // supaya lembar Pengingat di kerangka W2 berisi jadwal sungguhan, bukan tempelan.
+        app(TripReminderScheduler::class)->sinkronkan($gede);
 
         foreach ([['andong-via-sawit', 120, TripType::TEKTOK], ['batur-via-toya-bungkah', 75, TripType::TEKTOK], ['prau-via-wates', 40, TripType::CAMPING]] as [$slug, $hariLalu, $jenis]) {
             $tanggal = $hariIni->copy()->subDays($hariLalu);
@@ -278,6 +290,39 @@ class DemoSeeder extends Seeder
             'trip_type' => TripType::CAMPING->value,
             'notes' => self::PENANDA.'. Dibatalkan karena cuaca.',
             'status' => TripStatus::CANCELLED->value,
+        ]);
+    }
+
+    /**
+     * Lima jalur tersimpan, seperti "Simpanan 5" di prototype 02 dan 15, lewat tabel yang sama
+     * dengan tombol Simpan (W2).
+     *
+     * @param  array<string, Trail>  $jalur
+     */
+    private function simpanan(User $budi, array $jalur): void
+    {
+        foreach (['batu-via-jonggol', 'gede-via-cibodas', 'gede-via-gunung-putri', 'pangrango-via-cibodas', 'gede-via-selabintana'] as $slug) {
+            TrailConsideration::create(['user_id' => $budi->id, 'trail_id' => $jalur[$slug]->id]);
+        }
+    }
+
+    /**
+     * Aturan izin tingkat gunung untuk Gunung Gede, jendela pesan H-30 sampai H-3, supaya
+     * tenggat izin di lembar Pengingat punya isi (W2). Nama pengelolanya diberi penanda, tidak
+     * meniru pengelola sungguhan, dan tautan pemesanan sengaja kosong.
+     *
+     * @param  array<string, Trail>  $jalur
+     */
+    private function izin(DataSource $sumber, array $jalur): void
+    {
+        PermitRequirement::create([
+            'mountain_id' => $jalur['gede-via-cibodas']->mountain_id,
+            'authority' => self::PENANDA.', bukan pengelola resmi',
+            'booking_opens_days_before' => 30,
+            'booking_closes_days_before' => 3,
+            'notes' => self::PENANDA.'. Jendela pemesanan dibuat untuk peninjauan tampilan.',
+            'data_source_id' => $sumber->id,
+            'source' => self::PENANDA.', bukan sumber resmi',
         ]);
     }
 

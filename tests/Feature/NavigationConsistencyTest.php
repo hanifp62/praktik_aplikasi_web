@@ -2,14 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * Menu desktop dan menu ponsel harus menyajikan hal yang sama dalam urutan yang sama.
+ * Menu ponsel dan menu layar lebar harus menyajikan hal yang sama dalam urutan yang sama.
  *
  * Pada navigasi Blade lama keduanya ditulis terpisah di berkas yang sama, dan item
  * kedua dan ketiga sempat tertukar: pengguna yang berpindah dari ponsel ke laptop
@@ -17,6 +19,11 @@ use Tests\TestCase;
  * satu daftar, `permukaan` di NavLinks.tsx, yang digambar oleh tab atas dan navigasi
  * bawah ponsel. Isi daftarnya mengikuti arsitektur informasi v2 pemilik (DK-25,
  * 25 September 2026): Home, Explore, Trips, Track, Progress; Profil dan Community bukan tab.
+ *
+ * Diperbarui W2 (spec v3 bagian 5, ruling W2-R1): kedua menu kini bilah tab pil ponsel dan
+ * navigasi segmen header layar lebar, keduanya dari itemTab(). Menu hamburger ponsel
+ * dilepas: Profil dibuka dari avatar, dan pintu Moderasi, Admin, serta Keluar tinggal di
+ * menu avatar layar lebar dan di halaman Profil. Niat setiap test tetap sama.
  */
 class NavigationConsistencyTest extends TestCase
 {
@@ -25,13 +32,22 @@ class NavigationConsistencyTest extends TestCase
     public function test_both_menus_list_the_same_destinations_in_the_same_order(): void
     {
         $layout = File::get(resource_path('js/layouts/AppLayout.tsx'));
+        $kepala = File::get(resource_path('js/layouts/KepalaLebar.tsx'));
 
-        $this->assertMatchesRegularExpression('/permukaan\.map\(\(p\) => \(\s*<TautanTab\b/', $layout, 'Tab desktop tidak lagi digambar dari daftar permukaan.');
-        $this->assertMatchesRegularExpression('/permukaan\.map\(\(p\) => \(\s*<TabBawah\b/', $layout, 'Navigasi bawah ponsel tidak lagi digambar dari daftar permukaan.');
-        $this->assertSame(2, substr_count($layout, 'permukaan.map('), 'Ada menu permukaan ketiga yang dirakit sendiri.');
+        $this->assertSame(1, substr_count($layout, 'itemTab('), 'Daftar tab dihitung sekali per halaman.');
+        $this->assertStringContainsString('const tab = itemTab(jalur);', $layout);
+        $this->assertStringContainsString('<KepalaLebar item={tab} />', $layout, 'Navigasi segmen layar lebar tidak lagi digambar dari daftar yang sama.');
+        $this->assertStringContainsString('{bilahTab ? <BilahTab item={tab} /> : null}', $layout, 'Bilah tab ponsel tidak lagi digambar dari daftar yang sama.');
+        $this->assertStringContainsString('<NavigasiSegmen item={item} />', $kepala);
+        $this->assertStringContainsString('{item.map((t) => (', $kepala);
 
-        // Profil bukan tab; di ponsel ia tinggal di menu akun.
-        $this->assertStringContainsString('<TautanResponsif href={profile.url()}>Profil</TautanResponsif>', $layout, 'Profil harus terjangkau dari menu ponsel.');
+        foreach ([$layout, $kepala] as $isi) {
+            $this->assertStringNotContainsString('permukaan.map(', $isi, 'Ada menu permukaan yang dirakit sendiri di luar itemTab().');
+        }
+
+        // Profil bukan tab: avatar di kepala akar tab (ponsel) dan menu avatar (layar lebar).
+        $this->assertStringContainsString('<TautanMenu href={profile.url()}>Profil</TautanMenu>', File::get(resource_path('js/layouts/MenuAkun.tsx')));
+        $this->assertStringContainsString('{tempat.akar ? <TautanProfil className="lg:hidden" /> : null}', File::get(resource_path('js/components/ui/PageHeader.tsx')));
     }
 
     /**
@@ -104,9 +120,10 @@ class NavigationConsistencyTest extends TestCase
     /**
      * Pendaki tidak pernah melihat pintu Admin maupun Moderasi.
      *
-     * Menu profil React menampilkan keduanya hanya bila props bersama menyatakan
-     * perannya, jadi yang dijaga adalah props yang dikirim server untuk pendaki biasa
-     * dan syarat di layoutnya.
+     * Menu React menampilkan keduanya hanya bila props bersama menyatakan perannya, jadi
+     * yang dijaga adalah props yang dikirim server untuk pendaki biasa dan syarat di setiap
+     * tempat pintunya muncul. Diperbarui W2: tempatnya kini menu avatar layar lebar
+     * (MenuAkun.tsx) dan kartu Akun di Profil (PintuAkun.tsx), bukan dua menu di AppLayout.
      */
     public function test_a_hiker_never_sees_the_admin_entry(): void
     {
@@ -118,13 +135,39 @@ class NavigationConsistencyTest extends TestCase
                 ->where('auth.user.isAdmin', false)
                 ->where('auth.user.isModerator', false));
 
-        $layout = File::get(resource_path('js/layouts/AppLayout.tsx'));
+        $pintu = File::get(resource_path('js/layouts/MenuAkun.tsx')).File::get(resource_path('js/components/akun/PintuAkun.tsx'));
 
-        preg_match_all('/\{([^{}]*)\?\s*<Tautan(?:Menu|Responsif) href="\/admin\/trails">Admin</', $layout, $admin);
-        preg_match_all('/\{([^{}]*)\?\s*<Tautan(?:Menu|Responsif) href="\/moderation">Moderasi</', $layout, $moderasi);
+        preg_match_all('/\{([^{}]*)\?\s*<TautanMenu href="\/admin\/trails">Admin</', $pintu, $admin);
+        preg_match_all('/\{([^{}]*)\?\s*<TautanMenu href="\/moderation">Moderasi</', $pintu, $moderasi);
 
-        $this->assertSame(['pengguna.isAdmin ', 'pengguna.isAdmin '], $admin[1], 'Pintu Admin harus dijaga peran di kedua menu.');
-        $this->assertSame(['pengguna.isModerator ', 'pengguna.isModerator '], $moderasi[1], 'Pintu Moderasi harus dijaga peran di kedua menu.');
+        $this->assertSame(['pengguna.isAdmin ', 'pengguna.isAdmin '], $admin[1], 'Pintu Admin harus dijaga peran di menu avatar dan di Profil.');
+        $this->assertSame(['pengguna.isModerator ', 'pengguna.isModerator '], $moderasi[1], 'Pintu Moderasi harus dijaga peran di menu avatar dan di Profil.');
+    }
+
+    /**
+     * Menu avatar diuji per peran (rencana induk W2 butir 3): props peran yang menyalakan
+     * pintunya dikirim server sesuai peran sebenarnya, dan admin juga moderator.
+     *
+     * @return array<string, array{0: UserRole, 1: bool, 2: bool}>
+     */
+    public static function peran(): array
+    {
+        return [
+            'pendaki' => [UserRole::HIKER, false, false],
+            'moderator' => [UserRole::MODERATOR, true, false],
+            'admin' => [UserRole::ADMIN, true, true],
+        ];
+    }
+
+    #[DataProvider('peran')]
+    public function test_each_role_gets_exactly_its_console_doors(UserRole $peran, bool $moderasi, bool $admin): void
+    {
+        $this->actingAs(User::factory()->create(['role' => $peran->value]))
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('auth.user.isModerator', $moderasi)
+                ->where('auth.user.isAdmin', $admin));
     }
 
     /**
@@ -139,14 +182,56 @@ class NavigationConsistencyTest extends TestCase
         $this->assertStringNotContainsString('admin', $isi);
         $this->assertStringNotContainsString('moderation', $isi);
 
-        // Menu akun ponsel tidak mengulang tab; dimulai dari Profil.
-        $layout = File::get(resource_path('js/layouts/AppLayout.tsx'));
-        $mulai = strpos($layout, '{terbuka ? (');
-        $this->assertNotFalse($mulai, 'Menu akun ponsel tidak ditemukan.');
-        $menuAkun = substr($layout, $mulai, strpos($layout, '</nav>', $mulai) - $mulai);
+        // Menu akun tidak mengulang tab; dimulai dari Profil (diperbarui W2: menu avatar).
+        $menuAkun = File::get(resource_path('js/layouts/MenuAkun.tsx'));
 
-        $this->assertStringNotContainsString('permukaan.map', $menuAkun);
-        $this->assertMatchesRegularExpression('/^[^<]*(?:<(?!TautanResponsif)[^<]*)*<TautanResponsif href=\{profile\.url\(\)\}>Profil</s', $menuAkun, 'Entri pertama menu akun ponsel harus Profil.');
+        $this->assertStringNotContainsString('itemTab(', $menuAkun);
+        $this->assertStringNotContainsString('permukaan', $menuAkun);
+        $this->assertMatchesRegularExpression('/^[^<]*(?:<(?!TautanMenu)[^<]*)*<TautanMenu href=\{profile\.url\(\)\}>Profil</s', $menuAkun, 'Entri pertama menu akun harus Profil.');
+    }
+
+    /**
+     * Menu avatar adalah popover asli: Escape, klik di luar, dan kembalinya fokus ke avatar
+     * ditangani peramban, dan elemen popover tidak memakai kelas display yang akan
+     * mengalahkan aturan peramban yang menyembunyikannya.
+     */
+    public function test_the_wide_avatar_menu_is_a_native_popover(): void
+    {
+        $menu = File::get(resource_path('js/layouts/MenuAkun.tsx'));
+
+        $this->assertStringContainsString('popoverTarget="menu-akun"', $menu);
+        $this->assertMatchesRegularExpression('/<div ref=\{menu\} id="menu-akun" popover="auto" className="([^"]*)"/', $menu);
+
+        preg_match('/<div ref=\{menu\} id="menu-akun" popover="auto" className="([^"]*)"/', $menu, $kelas);
+
+        // Lookbehind tanpa ':' sengaja: varian seperti lg:flex tetap harus tertangkap
+        // (ruling W2-2d), sedangkan kata majemuk berhubung strip seperti overflow-hidden
+        // tidak ikut tertangkap karena '-' masih ada di kelas yang dikecualikan.
+        $this->assertDoesNotMatchRegularExpression('/(?<![\w-])(?:flex|grid|block|inline-flex|inline-block|hidden)(?![\w-])/', $kelas[1], 'Kelas display pada popover membuatnya tampil walau tertutup.');
+        $this->assertStringContainsString("router.on('start'", $menu, 'Menu harus tertutup ketika kunjungan Inertia dimulai.');
+        $this->assertStringContainsString('hidePopover()', $menu);
+        $this->assertStringContainsString('<span className="sr-only">Menu akun {pengguna.name}</span>', $menu);
+        $this->assertStringNotContainsString('role="menu"', $menu);
+    }
+
+    /**
+     * Halaman tugas dengan bar aksi tetap menyembunyikan bilah tab (spec v3 bagian 5.1):
+     * detail jalur dan rencanakan trip (penilaian kecocokan menyusul di W3). Halaman lain
+     * tetap membawa bilah tab.
+     */
+    public function test_only_task_pages_hide_the_tab_bar(): void
+    {
+        $tanpaBilah = [];
+
+        foreach (File::allFiles(resource_path('js/pages')) as $berkas) {
+            if (str_contains($berkas->getContents(), '<AppLayout bilahTab={false}>')) {
+                $tanpaBilah[] = str_replace('\\', '/', $berkas->getRelativePathname());
+            }
+        }
+
+        sort($tanpaBilah);
+
+        $this->assertSame(['Trails/Show.tsx', 'Trips/Create.tsx'], $tanpaBilah);
     }
 
     /**

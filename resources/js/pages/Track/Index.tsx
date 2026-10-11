@@ -35,6 +35,7 @@ export default function TrackIndex() {
         <div className="py-8">
             <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    akar
                     title="Mendaki"
                     description="Mode lapangan: peta jalur, pos berikutnya, dan rekam jejak di perangkat. Buka sebelum sinyal hilang dan biarkan tetap terbuka selama pendakian."
                 />

@@ -91,6 +91,10 @@ class IconSystemTest extends TestCase
      *
      * Diperbarui gelombang 1 v3: ikon tab kini ditulis dengan ukuran bernama 22 px dan
      * varian isi untuk tab aktif (spec v3 bagian 8.3), bukan kelas h-6 w-6.
+     *
+     * Diperbarui W2: tab tidak lagi digambar di NavLinks.tsx, melainkan oleh bilah tab ponsel
+     * (BilahTab, 22 px) dan navigasi segmen layar lebar (KepalaLebar, 20 px). Aturannya sama:
+     * ikon selalu berdampingan dengan labelnya dan memakai varian isi untuk tab aktif.
      */
     public function test_the_react_icon_follows_the_same_rules(): void
     {
@@ -101,8 +105,11 @@ class IconSystemTest extends TestCase
         $this->assertStringContainsString('{label ? <title>{label}</title> : null}', $ikon);
         $this->assertMatchesRegularExpression('/if \(!d\) \{\s*return null;\s*\}/', $ikon);
 
-        $tab = File::get(resource_path('js/layouts/NavLinks.tsx'));
-        $this->assertMatchesRegularExpression('/<Icon name=\{ikon\} size=\{22\} isi=\{aktif\} \/>\s*<span[^>]*>\{children\}<\/span>/', $tab, 'Ikon navigasi bawah harus berdampingan dengan labelnya.');
+        $bilah = File::get(resource_path('js/components/ui/BilahTab.tsx'));
+        $this->assertMatchesRegularExpression('/<Icon name=\{t\.ikon\} size=\{22\} isi=\{t\.aktif\} \/>\s*<span[^>]*>\{t\.label\}<\/span>/', $bilah, 'Ikon bilah tab ponsel harus berdampingan dengan labelnya.');
+
+        $segmen = File::get(resource_path('js/layouts/KepalaLebar.tsx'));
+        $this->assertMatchesRegularExpression('/<Icon name=\{t\.ikon\} size=\{20\} isi=\{t\.aktif\} \/>\s*<span[^>]*>\{t\.label\}<\/span>/', $segmen, 'Ikon navigasi segmen harus berdampingan dengan labelnya.');
     }
 
     /**

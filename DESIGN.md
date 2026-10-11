@@ -230,18 +230,25 @@ dan tab; chip berbentuk 36 px di dalam target 44 px (W1-K5); kontrol lapangan 48
 ### Material, elevasi, dan lapisan
 
 Kartu datar bergaris rambut (`border-subtle`), tanpa bayangan (`SurfaceSystemTest`). Satu elevasi, `shadow-overlay`
-berwarna token `bayangan`, hanya untuk lapisan yang melayang: bilah tab, bar aksi, lembar bawah, dialog, toast, dan
-kartu pratinjau peta. Kaca paling banyak dua elemen per layar lewat `.chrome`, bersyarat dan bukan bawaan, tidak pernah
-di atas peta, kartu, status resmi, laporan komunitas, atau dialog.
+berwarna token `bayangan`, hanya untuk lapisan yang melayang: bilah tab, strip pendakian aktif, bar aksi, lembar bawah,
+dialog, menu avatar, toast, pesan jaringan, dan kartu pratinjau peta. Kaca paling banyak dua elemen per layar lewat
+`.chrome`, bersyarat dan bukan bawaan, tidak pernah di atas peta, kartu, status resmi, laporan komunitas, atau dialog.
 
-Skala lapisan: bar aksi dan bilah tab `z-30`, toast `z-40`. Lembar bawah dan dialog adalah `<dialog>` asli yang dibuka
-`showModal()`, jadi tinggal di top layer peramban tanpa z-index, dengan tirai token `scrim`; halaman di belakangnya
-berhenti bergulir, Escape menutup, dan fokus kembali ke pemicunya, atau ke `#konten` bila pemicunya tidak ada (W1-K6).
+Skala lapisan: bar aksi, baki banding, bilah tab, strip pendakian aktif, dan header layar lebar `z-30`; toast dan
+pesan jaringan `z-40`. Lembar bawah dan dialog adalah `<dialog>` asli yang dibuka `showModal()`, dan menu avatar adalah
+popover asli, jadi ketiganya tinggal di top layer peramban tanpa z-index. Lembar dan dialog memakai tirai token `scrim`;
+halaman di belakangnya berhenti bergulir, Escape menutup, dan fokus kembali ke pemicunya, atau ke `#konten` bila
+pemicunya tidak ada (W1-K6).
 
-Urutan tumpuk di tepi bawah layar, dari bawah ke atas: bilah tab (tingginya `--nav-bawah`), bar aksi 0,75rem di atasnya,
-lalu toast 1rem di atas navigasi ditambah tinggi bar aksi. Selama terpasang, bar aksi menulis tingginya ke `--bar-aksi`
-di `<html>`; pengganjal di bawah isi halaman dan jarak bawah toast membacanya, jadi toast tidak pernah menutupi tombol
-bar, juga ketika bar membungkus ke dua baris di layar sempit (`DesignPrimitivesTest`).
+Urutan tumpuk di tepi bawah layar, dari bawah ke atas: bilah tab; strip pendakian aktif selama trip berlangsung; bar
+aksi 0,75rem di atasnya (halaman tugas) atau baki banding tepat di atasnya (Jelajah); lalu toast 1rem di atas navigasi
+ditambah tinggi bar aksi dan baki. `--nav-bawah` adalah jumlah tinggi bilah tab dan strip, diturunkan `app.css`
+dari elemen yang benar-benar ada di halaman (W2). Selama terpasang atau tampil, bar aksi, strip, dan baki banding
+mengukur tingginya sendiri dan menuliskannya ke `--bar-aksi`, `--strip-pendakian`, dan `--baki-banding` di `<html>`.
+Pengganjal bar aksi di bawah isi halaman membaca `--bar-aksi`, dan jarak bawah toast membaca `--nav-bawah`,
+`--bar-aksi`, dan `--baki-banding`, jadi toast tidak menutupi tombol bar aksi, maupun tombol baki selagi baki
+menempel di tepi bawah, juga ketika bar, strip, atau baki membungkus ke dua baris di layar sempit
+(`DesignPrimitivesTest`, `ActiveHikeStripTest`, `InertiaLayoutTest`).
 
 ### Gerak
 
@@ -301,8 +308,9 @@ memakai `label`, dan nama prop berbahasa Indonesia; primitif yang sudah ada tida
 
 **Fokus tidak pernah jatuh ke body.** Chip saringan yang dilepas menyerahkan fokus ke chip tetangga atau wadah grupnya;
 toast yang dipicu papan ketik mengambil fokus ke Urungkan, dan fokus kembali ke unsur sebelumnya atau ke `#konten`
-ketika toast hilang; sesudah Urungkan, pemanggil memfokus unsur yang dikembalikan lewat `useFokusSesudahRender`; tombol
-stepper di batas rentang memakai `aria-disabled` alih-alih `disabled`.
+ketika toast hilang; sesudah Urungkan, pemanggil memfokus unsur yang dikembalikan lewat `useFokusSesudahRender`; pesan
+jaringan yang ditutup, lewat "Tutup pesan" maupun "Muat ulang halaman", memindah fokus ke `#konten` sebelum hilang
+(`ShellFeedbackTest`); tombol stepper di batas rentang memakai `aria-disabled` alih-alih `disabled`.
 
 **Pameran** `/dev/primitif` (hanya `APP_ENV=local`, dijaga dua lapis: rutenya hanya didaftarkan di local dan closure-nya menolak 404 di luar local) menampilkan setiap primitif dengan contoh isi yang berfungsi.
 **Pratinjau** tanpa basis data memakai suite PHPUnit `Pratinjau` dan server statis; caranya di `CONTRIBUTING.md`, bagian
@@ -310,11 +318,42 @@ stepper di batas rentang memakai `aria-disabled` alih-alih `disabled`.
 
 ### Navigasi
 
-Lima tab Beranda, Jelajah, Trip, Mendaki, Progres (DK-25). Kerangka v3 (bilah tab pil mengambang di ponsel, header
-dengan navigasi segmen di layar lebar, halaman tugas yang menyembunyikan bilah tab, strip pendakian aktif) ditetapkan
-spec v3 bagian 5 dan dibangun W2 dengan `BilahTab`. Sampai W2, navigasi bawah lama (`NavLinks.tsx`) tetap dipakai
-dengan ikon tab 22 px dan varian isi untuk tab aktif. Jelajah berbasis peta tetap mengikuti keputusan F2 (peta
-menggambar bentuk jalur, bukan titik gunung) sampai W3 menulis ulang klasternya.
+Lima tab Beranda, Jelajah, Trip, Mendaki, Progres (DK-25), dari satu daftar (`itemTab()` di
+`resources/js/layouts/NavLinks.tsx`) untuk dua bentuk kerangka yang dibangun W2 (spec v3 bagian 5):
+
+- **Di bawah 1024 px** tidak ada bilah atas global. Setiap halaman membawa kepalanya lewat `PageHeader`: akar tab
+  memberi `akar` (h1, aksi kontekstual, avatar 44 px ke Profil; Beranda menambah `merek` untuk lockup), halaman turunan
+  memberi `induk` (tombol kembali 44 px ke induk logisnya, bukan riwayat peramban). Navigasi utama adalah bilah tab pil
+  mengambang (`BilahTab`: item 56 px, label 12 px, ikon 22 px, varian isi dan `aria-current` untuk tab aktif). Halaman
+  tugas dengan bar aksi tetap (detail jalur, rencanakan trip; penilaian kecocokan menyusul di W3) memasang
+  `<AppLayout bilahTab={false}>`. Lebar 640 sampai 1023 px sengaja tetap memakai kerangka ponsel.
+- **Mulai 1024 px** (DK-33) header 68 px menempel di atas: lockup, navigasi segmen lima tab di tengah (ikon 20 px, label
+  14 px), lalu lencana Data contoh, Simpanan dengan hitungannya, dan menu avatar (popover asli: Profil; Moderasi dan
+  Admin sesuai peran; Keluar). Di ponsel, Moderasi, Admin, dan Keluar tinggal di kartu Akun halaman Profil. Popover menu
+  akun sengaja tanpa cadangan untuk peramban lawas (ruling W2-2c): didukung Chrome 114+, Safari 17+, Firefox 125+, dan
+  peramban desktop 2023 ke bawah melihat menunya meluap statis di header.
+- **Strip pendakian aktif**: selama trip berlangsung, strip isian merek di atas bilah tab membawa pendaki kembali ke
+  mode lapangan dengan satu ketukan; mode lapangan sendiri tidak memasangnya.
+- **Lonceng Beranda** membuka lembar Pengingat (pengingat surel terjadwal dan tenggat izin milik sendiri), tanpa
+  notifikasi dorong (Q6).
+- Jarak lapisan tepi layar tidak disalin ke tiap halaman. `--bilah-tab` bawaannya tinggi bilah itu sendiri dan baru
+  dinolkan lewat `:not(:has(nav[data-bilah-tab]))` ketika bilahnya tidak ada, sengaja dibalik supaya peramban yang
+  belum mengerti `:has()` kelebihan ruang di bawah, bukan kehilangan ruang dan tertutup bilah yang tetap tergambar
+  (ruling W2-2b). Mulai 1024 px `--bilah-tab` juga dinolkan walau bilahnya ada di halaman, karena di sana bilah itu
+  tersembunyi. `--kepala-atas` mengikuti arah yang sama (perbaikan akhir W2): mulai 1024 px bawaannya tinggi header
+  68 px, dan baru dinolkan lewat `:not(:has([data-kepala-lebar]))` di halaman tanpa header (GuestLayout, Welcome, mode
+  lapangan). Strip pendakian, bar aksi, baki banding Jelajah, dan pesan jaringan mengukur tingginya sendiri lewat
+  `ResizeObserver` dan menuliskannya ke `--strip-pendakian`, `--bar-aksi`, `--baki-banding`, dan `--pesan-jaringan` di
+  `<html>` selama masing-masing terpasang atau tampil.
+- Fokus papan ketik dan sasaran jangkar tidak berhenti di balik lapisan tetap (WCAG 2.4.11): `scroll-padding-bottom`
+  menghitung bilah tab dan strip (`--nav-bawah`), bar aksi (ruling W2-2a), dan baki banding (perbaikan akhir W2);
+  `scroll-padding-top` menghitung header layar lebar (`--kepala-atas`) dan pesan jaringan (ruling W2-5a), dan `<main>`
+  memberi dirinya `padding-top` setinggi pesan jaringan. Toast tidak masuk hitungan itu: ia hilang sendiri sesudah
+  8 detik, hitungannya berhenti selama ia difokus atau diarahkan penunjuk, dan fokusnya pindah ke Urungkan bila aksinya
+  dari papan ketik. Selama tampil, toast dapat menutup unsur terfokus di dekat tepi bawah.
+
+Jelajah berbasis peta tetap mengikuti keputusan F2 (peta menggambar bentuk jalur, bukan titik gunung) sampai W3
+menulis ulang klasternya.
 
 ### Catatan tata kelola
 

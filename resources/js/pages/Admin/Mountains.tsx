@@ -10,6 +10,7 @@ import { FormField } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import { archive, store, update } from '@/routes/admin/mountains';
 import type { PropsBersama } from '@/types';
 
@@ -72,7 +73,7 @@ export default function Mountains() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Kelola Gunung" description="Tambah, ubah, atau arsipkan data gunung. Setiap perubahan tercatat di audit log." />
+                <PageHeader induk={{ href: profile.url(), label: 'Profil' }} title="Kelola Gunung" description="Tambah, ubah, atau arsipkan data gunung. Setiap perubahan tercatat di audit log." />
 
                 <AdminNav />
 

@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Tautan } from '@/components/ui/Tautan';
 import { AppLayout } from '@/layouts/AppLayout';
+import { TombolPengingat } from '@/layouts/Pengingat';
 import { history, onboarding } from '@/routes';
 import { create as goalsCreate } from '@/routes/goals';
 import { index as trailsIndex } from '@/routes/trails';
@@ -50,6 +51,9 @@ export default function Dashboard() {
         <div className="py-8">
             <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    akar
+                    merek
+                    aksi={<TombolPengingat />}
                     title={`Selamat datang, ${auth.user?.name ?? ''}`}
                     description="Alurnya: lengkapi profil, tentukan rencana, lihat kecocokan jalur, siapkan kebutuhan, lalu periksa kondisi sebelum berangkat."
                 />

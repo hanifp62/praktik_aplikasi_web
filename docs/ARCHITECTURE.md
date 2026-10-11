@@ -42,6 +42,8 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 | Sumber tile peta | `config/hiking.php` → `map`, atau variabel `MAP_*` di `.env` |
 | Batas laju submit | `config/hiking.php` → `rate_limits` |
 | Warna, radius, huruf, gaya tombol | Token di `resources/css/app.css`, pemetaan kelas di `tailwind.config.js`, primitif React di `resources/js/components/ui/`, komponen Blade halaman publik di `resources/views/components/ui/` |
+| Tab navigasi, kerangka ponsel dan layar lebar, strip pendakian, lembar Pengingat | `resources/js/layouts/` (daftar tab `NavLinks.tsx`, kerangka `AppLayout.tsx`); kepala setiap halaman lewat `PageHeader` dengan `akar` atau `induk` |
+| Props bersama kerangka (hitungan Simpanan, pendakian aktif, daftar pengingat) | `app/Http/Middleware/HandleInertiaRequests.php`: `jumlahSimpanan` dan `pendakianAktif` masing-masing satu kueri terindeks; `daftarPengingat` (`Inertia::optional`) lima kueri tetap, hanya dimuat lewat muat ulang parsial saat lembar Pengingat dibuka. Nama prop baru tidak boleh sama dengan nama prop halaman |
 | Menambah faktor kompatibilitas baru | `App\Enums\CompatibilityFactor` + method baru di `CompatibilityScorer::score()` |
 | Menambah kategori item persiapan | `App\Enums\PreparationCategory` + seeder `PreparationTemplateSeeder` |
 | Menambah tag kondisi jalur | `App\Enums\ConditionTag` |
@@ -79,7 +81,7 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 **`app/Http/Controllers` + `resources/js/pages`**: presentasi baru (React lewat Inertia). Kontraknya:
 
 - **Server memegang data dan otorisasi, React memegang interaksi.** Controller membaca query lewat service (`Services\Trails\TrailSearch`), memformat lewat resource (`Http\Resources\TrailRowResource`: angka sudah "8,0 km" saat sampai di klien), dan merender `Inertia::render('Nama/Halaman', $props)`. Aksi yang mengubah data adalah rute POST biasa dengan Policy/scope yang sama seperti dulu; klien tidak pernah dipercaya untuk keputusan akses.
-- **Props bersama** (`Http\Middleware\HandleInertiaRequests`): `auth.user` secukupnya untuk navigasi (peran hanya menentukan apa yang DITAMPILKAN), `merek`, `tema`, `peta`, `flash`. Bentuknya dikunci di `resources/js/types/index.d.ts`.
+- **Props bersama** (`Http\Middleware\HandleInertiaRequests`): `auth.user` secukupnya untuk navigasi (peran hanya menentukan apa yang DITAMPILKAN), `merek`, `demo` (lencana Data contoh), `jumlahSimpanan` dan `pendakianAktif` (kerangka; null untuk tamu dan di mode lapangan), `daftarPengingat` (opsional, hanya lewat muat ulang parsial lembar Pengingat), `tema`, `tampilan` (efek dan gerak), `peta`, `adminNav` (hanya admin), dan `flash`, ditambah `errors` dari middleware dasar Inertia. Biaya kueri props kerangka ada di baris "Props bersama kerangka" pada tabel di atas. Bentuknya dikunci di `resources/js/types/index.d.ts`.
 - **Judul dan meta dirender server**: setiap halaman mengirim prop `title` (dan `description` bila publik) yang dibaca `resources/views/inertia.blade.php`, supaya tab, riwayat, dan mesin pencari benar sebelum React berjalan. SSR belum diaktifkan (`config/inertia.php`), keputusan terpisah.
 - **Rute bertipe** dari Wayfinder (`resources/js/routes`, `resources/js/actions`); jalankan `php artisan wayfinder:generate` setiap rute berubah. Jangan menulis URL sebagai string di komponen.
 - **Skor internal tidak pernah sampai ke props** (BR-09), sama seperti ke HTML.

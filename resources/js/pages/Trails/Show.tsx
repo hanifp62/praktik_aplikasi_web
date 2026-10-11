@@ -28,7 +28,7 @@ import { kelas } from '@/lib/kelas';
 import { onboarding } from '@/routes';
 import { follow } from '@/routes/mountains';
 import { create as reportsCreate } from '@/routes/reports';
-import { compare, timbang } from '@/routes/trails';
+import { compare, index as trailsIndex, timbang } from '@/routes/trails';
 import { create as tripsCreate } from '@/routes/trips';
 import type { PropsBersama } from '@/types';
 
@@ -104,7 +104,7 @@ export default function Show() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-6xl space-y-10 px-4 sm:px-6 lg:px-8">
-                <PageHeader title={trail.name} description={trail.description ?? undefined}>
+                <PageHeader induk={{ href: trailsIndex.url(), label: 'Jelajah' }} title={trail.name} description={trail.description ?? undefined}>
                     <p className="mt-1 text-sm text-secondary">{[trail.mountain, trail.province, trail.mdpl].filter(Boolean).join(' · ')}</p>
 
                     {fit ? (
@@ -285,4 +285,4 @@ export default function Show() {
     );
 }
 
-Show.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>;
+Show.layout = (page: ReactNode) => <AppLayout bilahTab={false}>{page}</AppLayout>;

@@ -95,6 +95,124 @@ class InertiaLayoutTest extends TestCase
         $this->assertSame([], $pelanggar, 'Wadah gulir tanpa posisi: '.implode(' | ', $pelanggar));
     }
 
+    /**
+     * Kerangka W2 (spec v3 bagian 5, DK-33): di bawah 1024 px tidak ada bilah atas global,
+     * mulai 1024 px header 68 px menempel di atas dan bilah tab ponsel menghilang. Titik
+     * hentinya satu, lg, di kedua tempat; 640 sampai 1023 px (tablet) sengaja tetap memakai
+     * kerangka ponsel.
+     */
+    public function test_the_shell_switches_at_1024px_without_a_global_top_bar_on_phones(): void
+    {
+        $layout = File::get(resource_path('js/layouts/AppLayout.tsx'));
+        $kepala = File::get(resource_path('js/layouts/KepalaLebar.tsx'));
+        $bilah = File::get(resource_path('js/components/ui/BilahTab.tsx'));
+
+        $this->assertStringNotContainsString('<nav', $layout, 'AppLayout tidak lagi menggambar bilah atas atau navigasinya sendiri.');
+        $this->assertDoesNotMatchRegularExpression('/sm:/', $layout);
+        $this->assertStringContainsString('<header data-kepala-lebar="" className="sticky top-0 z-30 hidden h-[4.25rem] items-center gap-6 border-b border-subtle bg-surface px-6 lg:flex">', $kepala);
+        $this->assertStringContainsString("px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] lg:hidden')", $bilah);
+        $this->assertStringNotContainsString('sm:hidden', $bilah);
+        $this->assertStringContainsString("data-bilah-tab={mengambang ? '' : undefined}", $bilah);
+    }
+
+    /**
+     * Lapisan tetap tidak menutup isi maupun fokus papan ketik (WCAG 2.4.11): jaraknya
+     * diturunkan dari elemen yang benar-benar ada di halaman, main memberi ruang setinggi
+     * itu, dan scroll-padding menjaga elemen yang difokus tetap di luar bilah dan header.
+     *
+     * Diperbarui ruling W2-2a: scroll-padding-bottom juga memperhitungkan --bar-aksi, yang
+     * ditulis BarAksi.tsx ke <html> selagi bar itu terpasang; tanpa itu, elemen yang
+     * difokus di bawah bar aksi berhenti tertutup penuh olehnya (WCAG 2.4.11).
+     *
+     * Diperbarui ruling W2-2b: tinggi bilah tab kini bawaan --bilah-tab (bukan dipasang
+     * lewat :has()), dan dinolkan lewat :not(:has(nav[data-bilah-tab])) ketika bilahnya
+     * benar-benar tidak ada. Vite 8 tidak membawa browserslist, dan build itu tetap
+     * menyasar Firefox di bawah 121 yang belum mendukung :has(); di peramban itu seluruh
+     * aturan :has() diam-diam gagal diurai dan tidak berlaku. Dengan bawaan bertingkat,
+     * peramban itu jatuh ke ruang berlebih, bukan ruang nol yang menutup isi.
+     *
+     * Diperbarui ruling W2-5a: scroll-padding-top ikut memperhitungkan --pesan-jaringan,
+     * yang ditulis PesanJaringan.tsx ke <html> selagi pesan jaringan tampil dan dihapus
+     * begitu hilang atau dilepas; tanpa itu, lapisan pesan yang fixed itu menutupi isi
+     * dan fokus papan ketik di puncak halaman. main diberi padding-top senilai variabel
+     * yang sama, dengan bawaan 0 ketika pesannya tidak tampil.
+     *
+     * Diperbarui perbaikan akhir W2 (F-1, tinjauan akhir I-1a): scroll-padding-bottom juga
+     * memperhitungkan --baki-banding, yang ditulis ConsiderationTray.tsx ke <html> selagi baki
+     * banding Jelajah tampil; tanpa itu, di 360 px setiap hentian Tab di dekat tepi bawah
+     * berhenti tertutup penuh oleh baki.
+     *
+     * Diperbarui perbaikan akhir W2 (F-4, tinjauan akhir M-2): --kepala-atas mencerminkan
+     * W2-2b. Mulai 1024 px tinggi header menjadi bawaan :root dan baru dinolkan lewat
+     * :not(:has([data-kepala-lebar])) ketika header tidak ada. Semula nilainya hanya dipasang
+     * lewat :has(), sehingga di peramban tanpa :has() tetap 0 walau header 68 px menempel:
+     * fokus Shift+Tab dan loncatan jangkar berhenti di balik header, dan pesan jaringan
+     * menimpanya. Kini peramban itu berakhir dengan ruang atas berlebih di halaman tanpa
+     * header, bukan fokus yang tertutup di halaman berheader.
+     */
+    public function test_fixed_layers_leave_room_for_the_content_and_the_keyboard_focus(): void
+    {
+        $css = File::get(resource_path('css/app.css'));
+
+        $this->assertStringContainsString('--nav-bawah: calc(var(--bilah-tab) + var(--strip-pendakian));', $css);
+        $this->assertStringContainsString('scroll-padding-top: calc(var(--kepala-atas) + var(--pesan-jaringan, 0px) + 0.5rem);', $css, 'scroll-padding-top harus memperhitungkan tinggi pesan jaringan (ruling W2-5a).');
+        $this->assertStringContainsString('scroll-padding-bottom: calc(var(--nav-bawah) + var(--bar-aksi, 0px) + var(--baki-banding, 0px) + 1.25rem);', $css, 'scroll-padding-bottom harus memperhitungkan tinggi bar aksi dan baki banding.');
+        $this->assertMatchesRegularExpression('/:root \{\s*--bilah-tab: calc\(4\.375rem \+ max\(env\(safe-area-inset-bottom, 0px\), 0\.75rem\)\);/', $css, 'Tinggi bilah tab harus jadi bawaan supaya peramban tanpa :has() kelebihan ruang, bukan kehilangan ruang.');
+        $this->assertMatchesRegularExpression('/:root:not\(:has\(nav\[data-bilah-tab\]\)\) \{\s*--bilah-tab: env\(safe-area-inset-bottom, 0px\);\s*\}/', $css, 'Bilah tab dinolkan hanya ketika benar-benar tidak ada di halaman.');
+        $this->assertMatchesRegularExpression('/@media \(min-width: 1024px\) \{\s*:root \{\s*--kepala-atas: 4\.25rem;\s*\}\s*:root:not\(:has\(\[data-kepala-lebar\]\)\) \{\s*--kepala-atas: 0px;\s*\}\s*:root:has\(nav\[data-bilah-tab\]\) \{\s*--bilah-tab: env\(safe-area-inset-bottom, 0px\);\s*\}/', $css, 'Mulai 1024 px tinggi header harus jadi bawaan, dinolkan hanya ketika header tidak ada (cermin W2-2b).');
+        $this->assertStringNotContainsString(':root:has([data-kepala-lebar])', $css, 'Tinggi header tidak boleh hanya dipasang lewat :has(), yang gugur di peramban tanpa dukungannya.');
+        $this->assertStringContainsString('<main id="konten" tabIndex={-1} className="pt-[var(--pesan-jaringan,0px)] pb-[var(--nav-bawah)]">', File::get(resource_path('js/layouts/AppLayout.tsx')), 'main harus mencadangkan ruang atas setinggi pesan jaringan (ruling W2-5a).');
+    }
+
+    /**
+     * Perbaikan akhir W2 (F-1, tinjauan akhir I-1a): baki banding Jelajah menempel di tepi
+     * bawah seperti strip pendakian dan bar aksi, tetapi semula di luar sistem jarak lapisan,
+     * sehingga fokus papan ketik di 360 px berhenti tertutup penuh di baliknya (WCAG 2.4.11).
+     * Pola strip dipakai ulang (ActiveHikeStripTest): tinggi yang membungkus diukur lewat
+     * ResizeObserver, ditulis ke --baki-banding selagi baki tampil, dan dihapus saat baki
+     * hilang (simpanan habis, jadi efeknya berjalan ulang menurut tampil) atau dilepas.
+     *
+     * Kelas sm: yang menanggung safe area sendiri dibuang: titik henti kerangka kini lg
+     * (W2-K6), dan --nav-bawah selalu sudah memuat safe area, lewat tinggi bilah tab atau
+     * lewat --bilah-tab yang bernilai safe area ketika bilahnya tidak ada atau tersembunyi.
+     */
+    public function test_the_comparison_tray_measures_itself_like_the_other_bottom_layers(): void
+    {
+        $baki = File::get(resource_path('js/components/trails/ConsiderationTray.tsx'));
+
+        $this->assertStringContainsString('<div ref={wadah} className="sticky bottom-[var(--nav-bawah,0px)] z-30 ', $baki);
+        $this->assertStringContainsString("akar.style.setProperty('--baki-banding', `\${elemen.offsetHeight}px`)", $baki, 'Tinggi baki yang membungkus diukur, bukan ditebak.');
+        $this->assertStringContainsString('new ResizeObserver(ukur)', $baki);
+        $this->assertMatchesRegularExpression("/akar\.style\.removeProperty\('--baki-banding'\);\s*\};\s*\}, \[tampil\]\);/", $baki, 'Variabel dihapus saat baki hilang atau dilepas, bukan tertinggal sesudah simpanan habis.');
+
+        preg_match('/<div ref=\{wadah\} className="([^"]*)"/', $baki, $kelas);
+
+        $this->assertStringNotContainsString('sm:', $kelas[1] ?? '', 'Baki tidak lagi berasumsi navigasi bawah hilang mulai 640 px.');
+        $this->assertStringNotContainsString('safe-area-inset-bottom', $kelas[1] ?? '', 'Safe area sudah dimuat --nav-bawah; baki tidak menanggungnya dua kali.');
+    }
+
+    /**
+     * Urutan fokus mengikuti urutan baca (WCAG 2.4.3): header layar lebar, isi halaman,
+     * lalu bilah tab. Kepala setiap halaman ada di dalam main, jadi di ponsel fokus pertama
+     * sesudah tautan lewati adalah aksi kepala halaman, bukan bilah tab.
+     */
+    public function test_the_focus_order_follows_the_reading_order(): void
+    {
+        $layout = File::get(resource_path('js/layouts/AppLayout.tsx'));
+        $letak = [];
+
+        foreach (['<KepalaLebar ', '<main id="konten"', '</main>', '<BilahTab '] as $penanda) {
+            $posisi = strpos($layout, $penanda);
+            $this->assertNotFalse($posisi, "{$penanda} tidak ada di AppLayout.");
+            $letak[] = $posisi;
+        }
+
+        $urut = $letak;
+        sort($urut);
+
+        $this->assertSame($urut, $letak, 'Urutan kerangka: header layar lebar, main, lalu bilah tab.');
+    }
+
     public function test_the_root_template_carries_the_skip_link_before_react_runs(): void
     {
         $isi = File::get(resource_path('views/inertia.blade.php'));

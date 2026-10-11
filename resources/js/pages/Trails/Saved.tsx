@@ -49,6 +49,7 @@ export default function Saved() {
         <div className="py-8">
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: trailsIndex.url(), label: 'Jelajah' }}
                     title="Rute Tersimpan"
                     description="Jalur yang Anda simpan dari Jelajah. Tersimpan di akun Anda, jadi tetap ada setelah keluar dan masuk lagi, juga di perangkat lain."
                 />

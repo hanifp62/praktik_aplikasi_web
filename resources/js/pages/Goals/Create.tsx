@@ -7,6 +7,7 @@ import { FormField } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
 import { store } from '@/routes/goals';
+import { index as tripsIndex } from '@/routes/trips';
 import type { PropsBersama } from '@/types';
 
 interface Nilai {
@@ -44,6 +45,7 @@ export default function Create() {
         <div className="py-8">
             <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: tripsIndex.url(), label: 'Trip' }}
                     title="Rencana Pendakian"
                     description="Isi rencana perjalanan Anda. Sistem memakai rencana ini bersama profil Anda untuk menilai kecocokan jalur."
                 />

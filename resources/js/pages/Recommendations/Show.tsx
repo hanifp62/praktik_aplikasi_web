@@ -11,6 +11,7 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { create as goalsCreate } from '@/routes/goals';
 import { pilih, show } from '@/routes/recommendations';
 import { compare, index as trailsIndex } from '@/routes/trails';
+import { index as tripsIndex } from '@/routes/trips';
 import type { PropsBersama } from '@/types';
 
 interface Props extends PropsBersama {
@@ -89,6 +90,7 @@ export default function Show() {
         <div className="py-8">
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: tripsIndex.url(), label: 'Trip' }}
                     title="Rekomendasi Jalur"
                     description="Label kecocokan menjelaskan hubungan antara profil Anda, rencana perjalanan, dan karakteristik jalur. Label ini bukan penilaian keselamatan."
                 >

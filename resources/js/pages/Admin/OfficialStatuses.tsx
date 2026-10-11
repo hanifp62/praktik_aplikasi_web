@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { StatusBadge, type StatusResmi } from '@/components/ui/StatusBadge';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import { store } from '@/routes/admin/statuses';
 import type { PropsBersama } from '@/types';
 
@@ -100,6 +101,7 @@ export default function OfficialStatuses() {
         <div className="py-8">
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: profile.url(), label: 'Profil' }}
                     title="Kelola Status Resmi"
                     description="Status dapat melekat pada gunung, jalur, atau segmen. Status gunung yang terbuka tidak otomatis berarti semua jalurnya terbuka."
                 />

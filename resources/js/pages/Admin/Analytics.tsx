@@ -4,6 +4,7 @@ import { AdminNav } from '@/components/admin/AdminNav';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import type { PropsBersama } from '@/types';
 
 interface Props extends PropsBersama {
@@ -21,7 +22,7 @@ export default function Analytics() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Analitik" description="Funnel perencanaan pendakian, dari profil sampai laporan kondisi." />
+                <PageHeader induk={{ href: profile.url(), label: 'Profil' }} title="Analitik" description="Funnel perencanaan pendakian, dari profil sampai laporan kondisi." />
 
                 <AdminNav />
 

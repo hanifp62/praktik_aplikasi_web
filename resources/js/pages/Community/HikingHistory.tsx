@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { Tautan } from '@/components/ui/Tautan';
 import { AppLayout } from '@/layouts/AppLayout';
+import { progress } from '@/routes';
 import { summary } from '@/routes/history';
 import { create as reportsCreate } from '@/routes/reports';
 import { index as tripsIndex, show as tripShow } from '@/routes/trips';
@@ -43,7 +44,7 @@ export default function HikingHistory() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Riwayat Pendakian" description="Catatan perjalanan Anda, kelengkapan persiapan saat itu, dan laporan kondisi yang Anda kirim." />
+                <PageHeader induk={{ href: progress.url(), label: 'Progres' }} title="Riwayat Pendakian" description="Catatan perjalanan Anda, kelengkapan persiapan saat itu, dan laporan kondisi yang Anda kirim." />
 
                 {flash.status ? <Alert variant="success" className="mb-4">{flash.status}</Alert> : null}
                 {peringatanFoto ? <Alert variant="warning" className="mb-4">{peringatanFoto}</Alert> : null}

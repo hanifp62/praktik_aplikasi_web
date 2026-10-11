@@ -91,6 +91,34 @@ class LongInputLayoutTest extends TestCase
     }
 
     /**
+     * Kerangka W2 juga membungkus, tidak memotong (Review Focus W2): judul halaman, nama
+     * jalur dan pos di strip pendakian, Simpanan, menu akun, dan lembar Pengingat bertemu
+     * nama jalur dan kalimat Indonesia yang panjang di 360 px. Setiap berkas di
+     * resources/js/layouts ikut diperiksa, jadi bagian kerangka yang ditambahkan kemudian
+     * tidak lolos diam-diam.
+     */
+    public function test_the_shell_wraps_long_labels_instead_of_cutting_them(): void
+    {
+        $berkas = [resource_path('js/components/ui/PageHeader.tsx'), resource_path('js/components/akun/PintuAkun.tsx')];
+
+        foreach (File::files(resource_path('js/layouts')) as $tataLetak) {
+            $berkas[] = $tataLetak->getPathname();
+        }
+
+        $pemotong = [];
+
+        foreach ($berkas as $jalur) {
+            $isi = (string) preg_replace('#/\*.*?\*/#s', ' ', File::get($jalur));
+
+            if (preg_match('/\b(?:truncate|whitespace-nowrap|text-ellipsis|line-clamp-\d)\b/', $isi) === 1) {
+                $pemotong[] = basename($jalur);
+            }
+        }
+
+        $this->assertSame([], $pemotong, 'Kerangka memotong labelnya: '.implode(', ', $pemotong));
+    }
+
+    /**
      * Pameran primitif memuat satu blok selebar 360 px yang menaruh untaian Indonesia
      * panjang di setiap primitif berlabel, supaya pembungkusan dilihat di tangkapan 390 px
      * (Review Focus W1), bukan diasumsikan dari kelas.

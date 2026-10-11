@@ -28,12 +28,18 @@ class DemoBadgeTest extends TestCase
         $this->actingAs($budi)->get('/dashboard')->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('demo', true));
     }
 
+    /**
+     * Diperbarui W2: kepala halaman ikut memasang lencana, karena mulai kerangka W2 ponsel
+     * tidak punya bilah atas global dan kepala halaman adalah satu-satunya baris yang
+     * selalu ada di atas isi; mulai 1024 px header layar lebar yang membawanya. Niatnya
+     * tetap: lencana tampil di setiap halaman berkerangka, di setiap ukuran layar.
+     */
     public function test_every_app_layout_mounts_the_badge(): void
     {
-        foreach (['js/layouts/AppLayout.tsx', 'js/components/trips/TataLetakPendakian.tsx'] as $berkas) {
+        foreach (['js/layouts/KepalaLebar.tsx', 'js/components/trips/TataLetakPendakian.tsx', 'js/components/ui/PageHeader.tsx'] as $berkas) {
             $isi = File::get(resource_path($berkas));
 
-            $this->assertStringContainsString("import { LencanaDataContoh } from '@/components/ui/LencanaDataContoh';", $isi, $berkas);
+            $this->assertMatchesRegularExpression("/import \{ LencanaDataContoh \} from '(?:@\/components\/ui|\.)\/LencanaDataContoh';/", $isi, $berkas);
             $this->assertStringContainsString('<LencanaDataContoh />', $isi, $berkas);
         }
 

@@ -12,6 +12,7 @@ use App\Models\Checkpoint;
 use App\Models\DataSource;
 use App\Models\Mountain;
 use App\Models\Trail;
+use App\Models\TrailConsideration;
 use App\Models\TripPlan;
 use App\Models\TripPreparationItem;
 use App\Models\User;
@@ -142,6 +143,31 @@ class PageQueryBudgetTest extends TestCase
             $banyak,
             "Beban tumbuh: {$sedikit} query untuk 2 jalur, {$banyak} untuk 5 jalur."
         );
+    }
+
+    /**
+     * Kerangka W2 membawa hitungan Simpanan ke setiap halaman sebagai props bersama (satu
+     * kueri terindeks, rencana induk W2 butir 3). Yang dijaga bukan angka mutlaknya,
+     * melainkan bahwa halaman tidak tumbuh bersama jumlah simpanan pendakinya.
+     */
+    public function test_the_shell_does_not_grow_with_the_number_of_saved_trails(): void
+    {
+        $user = $this->pendakiBerprofil();
+        $trails = $this->seedTrails(22);
+
+        TrailConsideration::create(['user_id' => $user->id, 'trail_id' => $trails->first()->id]);
+
+        $this->actingAs($user);
+        $this->get('/progres')->assertOk();
+        $sedikit = $this->countQueries('/progres');
+
+        foreach ($trails->skip(1) as $trail) {
+            TrailConsideration::create(['user_id' => $user->id, 'trail_id' => $trail->id]);
+        }
+
+        $banyak = $this->countQueries('/progres');
+
+        $this->assertSame($sedikit, $banyak, "Beban tumbuh: {$sedikit} query untuk 1 simpanan, {$banyak} untuk 22.");
     }
 
     private function pendakiBerprofil(): User

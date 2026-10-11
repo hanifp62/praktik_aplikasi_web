@@ -7,6 +7,7 @@ import { FormField } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { kelas } from '@/lib/kelas';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import { store } from '@/routes/onboarding';
 import { create as goalsCreate } from '@/routes/goals';
 import type { PropsBersama } from '@/types';
@@ -121,6 +122,7 @@ export default function ProfileSetup() {
         <div className="py-8">
             <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: profile.url(), label: 'Profil' }}
                     title="Profil Pendaki"
                     description="Data ini dipakai untuk menilai kecocokan jalur dengan Anda. Pengalaman yang Anda isi adalah masukan untuk rekomendasi, bukan sertifikasi kemampuan."
                 />

@@ -16,17 +16,23 @@ use Symfony\Component\Finder\SplFileInfo;
 trait SumberReact
 {
     /**
-     * Berkas .tsx di bawah resources/js (rute bertipe Wayfinder berupa .ts, tidak ikut).
+     * Berkas .tsx di bawah resources/js (rute bertipe Wayfinder berupa .ts, tidak ikut
+     * secara bawaan).
+     *
+     * $sertakanTs menambahkan berkas .ts ke hasil, untuk pemeriksaan yang mencari pemanggil
+     * suatu fungsi/hook yang boleh muncul di berkas .ts maupun .tsx (ruling W2-5f); bawaannya
+     * false, sehingga pemanggil helper ini yang sudah ada tidak berubah perilakunya.
      *
      * @return array<int, SplFileInfo>
      */
-    protected function berkasTsx(string $folder = ''): array
+    protected function berkasTsx(string $folder = '', bool $sertakanTs = false): array
     {
         $akar = resource_path($folder === '' ? 'js' : 'js/'.$folder);
+        $ekstensi = $sertakanTs ? ['tsx', 'ts'] : ['tsx'];
 
         return array_values(array_filter(
             File::allFiles($akar),
-            fn (SplFileInfo $berkas) => $berkas->getExtension() === 'tsx'
+            fn (SplFileInfo $berkas) => in_array($berkas->getExtension(), $ekstensi, true)
         ));
     }
 

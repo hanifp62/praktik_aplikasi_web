@@ -1,12 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 
+/**
+ * Pemilik toast: komponen yang memunculkannya (ruling W2-5i). Satu objek untuk setiap
+ * komponen pemilik, jadi tutupMilik menutup toast menurut pemiliknya tanpa menyentuh toast
+ * milik komponen lain. Pemiliknya menurunkan terpasang menjadi false saat dilepas, sebelum
+ * memanggil tutupMilik; akibatnya pada fokus dijelaskan di WadahToast.
+ */
+export interface PemilikToast {
+    terpasang: boolean;
+}
+
 export interface DataToast {
     id: number;
     pesan: string;
     onUrungkan: () => void;
     /** Pindahkan fokus ke Urungkan saat toast tampil; lihat OpsiToast. */
     fokus?: boolean;
+    /** Kosong untuk toast dari tampilkan; lihat PemilikToast. */
+    pemilik?: PemilikToast;
 }
 
 export interface OpsiToast {
@@ -17,13 +29,21 @@ export interface OpsiToast {
     fokus?: boolean;
 }
 
-/** Keadaan satu toast urungkan; toast baru menggantikan yang lama. */
+/**
+ * Keadaan satu toast urungkan; toast baru menggantikan yang lama. tampilkanMilik mencatat
+ * pemilik toast, dan tutupMilik menutup toast yang sedang tampil hanya bila pemiliknya sama.
+ */
 export function useToastUrungkan() {
     const [toast, setToast] = useState<DataToast | null>(null);
     const tampilkan = useCallback((pesan: string, onUrungkan: () => void, opsi: OpsiToast = {}) => setToast({ id: Date.now(), pesan, onUrungkan, fokus: opsi.fokus }), []);
     const tutup = useCallback(() => setToast(null), []);
+    const tampilkanMilik = useCallback(
+        (pemilik: PemilikToast, pesan: string, onUrungkan: () => void, opsi: OpsiToast = {}) => setToast({ id: Date.now(), pesan, onUrungkan, fokus: opsi.fokus, pemilik }),
+        [],
+    );
+    const tutupMilik = useCallback((pemilik: PemilikToast) => setToast((kini) => (kini?.pemilik === pemilik ? null : kini)), []);
 
-    return { toast, tampilkan, tutup };
+    return { toast, tampilkan, tutup, tampilkanMilik, tutupMilik };
 }
 
 /**
@@ -63,12 +83,19 @@ interface WadahToastProps {
  * dalamnya, fokus kembali ke unsur yang difokus sebelum fokus masuk ke toast, atau ke
  * #konten bila unsur itu sudah tidak ada; tidak ke body. Pengembalian itu menunggu satu
  * bingkai dan dilewati bila pemanggil sudah memindahkan fokus, misalnya ke unsur yang
- * dikembalikan Urungkan. Melayang di atas navigasi bawah dan bar aksi (--bar-aksi), di
- * bawah dialog.
+ * dikembalikan Urungkan. Melayang di atas navigasi bawah, bar aksi (--bar-aksi), dan baki
+ * banding Jelajah (--baki-banding), di bawah dialog.
+ *
+ * Toast yang ditutup karena pemiliknya dilepas (ruling W2-5i) tidak mengembalikan fokus ke
+ * unsur sebelumnya, walau unsur itu masih terpasang. Pemilik yang dilepas biasanya halaman
+ * yang ditinggalkan, jadi unsur itu milik halaman lama atau kerangka di sekitarnya, misalnya
+ * tautan bilah tab tempat fokus masuk ke toast, dan fokus yang ditarik ke sana membawa
+ * pengguna keluar dari halaman yang baru dibuka. Fokus dibiarkan pada unsur yang dipilih
+ * halaman baru, atau ke #konten bila halaman itu tidak memindah fokus.
  */
 export function WadahToast({ toast, onTutup, durasiMs = 8000 }: WadahToastProps) {
     return (
-        <div aria-live="polite" aria-atomic="true" className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-bawah,env(safe-area-inset-bottom))+var(--bar-aksi,0px)+1rem)] z-40 flex justify-center px-4">
+        <div aria-live="polite" aria-atomic="true" className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-bawah,env(safe-area-inset-bottom))+var(--bar-aksi,0px)+var(--baki-banding,0px)+1rem)] z-40 flex justify-center px-4">
             {toast ? <Toast key={toast.id} toast={toast} onTutup={onTutup} durasiMs={durasiMs} /> : null}
         </div>
     );
@@ -108,7 +135,7 @@ function Toast({ toast, onTutup, durasiMs }: { toast: DataToast; onTutup: () => 
                 return;
             }
 
-            const tujuan = sebelum.current;
+            const tujuan = toast.pemilik?.terpasang === false ? null : sebelum.current;
 
             window.requestAnimationFrame(() => {
                 const aktif = document.activeElement;

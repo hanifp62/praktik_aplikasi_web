@@ -38,6 +38,7 @@ export default function Compare() {
         <div className="py-8">
             <div className="mx-auto max-w-6xl space-y-4 px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: saved.url(), label: 'Simpanan' }}
                     title="Bandingkan Jalur"
                     description="Perbandingan ini membantu Anda melihat perbedaan antar jalur. Sistem tidak menentukan jalur mana yang terbaik."
                 >

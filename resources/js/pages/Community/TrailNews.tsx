@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Tautan } from '@/components/ui/Tautan';
 import { AppLayout } from '@/layouts/AppLayout';
+import { dashboard } from '@/routes';
 import { photo } from '@/routes/reports';
 import { index as trailsIndex, show as trailShow } from '@/routes/trails';
 import type { PropsBersama } from '@/types';
@@ -36,7 +37,7 @@ export default function TrailNews() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-3xl space-y-8 px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Kabar Jalur" description="Yang berubah di gunung yang Anda ikuti. Berisi keadaan gunung, bukan aktivitas pendaki lain." />
+                <PageHeader induk={{ href: dashboard.url(), label: 'Beranda' }} title="Kabar Jalur" description="Yang berubah di gunung yang Anda ikuti. Berisi keadaan gunung, bukan aktivitas pendaki lain." />
 
                 {mengikuti === null ? (
                     // Bukan layar kosong, melainkan ajakan memilih beserta alasannya.

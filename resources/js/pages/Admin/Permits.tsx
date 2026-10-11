@@ -11,6 +11,7 @@ import { Checkbox, FormField } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import { destroy, store, update } from '@/routes/admin/permits';
 import type { PropsBersama } from '@/types';
 
@@ -133,6 +134,7 @@ export default function Permits() {
         <div className="py-8">
             <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: profile.url(), label: 'Profil' }}
                     title="Kelola Perizinan"
                     description="Catatan aturan pengelola. Sistem tidak memesan izin dan tidak melacak kuota; yang disimpan di sini hanya apa yang perlu diurus pendaki dan ke mana."
                 />

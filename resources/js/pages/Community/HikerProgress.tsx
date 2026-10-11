@@ -43,7 +43,7 @@ export default function HikerProgress() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl space-y-8 px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Progres Pendakian" description="Catatan perjalanan Anda sendiri. Tidak dibandingkan dengan siapa pun." />
+                <PageHeader akar title="Progres" description="Catatan perjalanan Anda sendiri. Tidak dibandingkan dengan siapa pun." />
 
                 {kosong ? (
                     // Keadaan awal setiap pendaki; nol artinya belum mulai, bukan tertinggal.

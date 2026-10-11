@@ -9,6 +9,7 @@ import { InputError, Label, Select, TextInput } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import { act, queue } from '@/routes/moderation';
 import type { PropsBersama } from '@/types';
 
@@ -82,7 +83,7 @@ export default function Queue() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Moderasi Laporan" description="Laporan komunitas hanya tampil untuk publik setelah disetujui. Laporan tidak pernah mengubah status resmi." />
+                <PageHeader induk={{ href: profile.url(), label: 'Profil' }} title="Moderasi Laporan" description="Laporan komunitas hanya tampil untuk publik setelah disetujui. Laporan tidak pernah mengubah status resmi." />
 
                 {flash.status ? <Alert variant="success" className="mb-4">{flash.status}</Alert> : null}
 

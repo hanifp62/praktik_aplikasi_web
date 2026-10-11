@@ -10,6 +10,7 @@ import { FormField } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import { store, update } from '@/routes/admin/authorities';
 import type { PropsBersama } from '@/types';
 
@@ -94,6 +95,7 @@ export default function Authorities() {
         <div className="py-8">
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: profile.url(), label: 'Profil' }}
                     title="Kelola Badan Resmi"
                     description="Menentukan siapa yang berwenang atas sebuah kawasan. Dari sinilah halaman jalur tahu nama siapa yang disebut ketika datanya belum ada."
                 />

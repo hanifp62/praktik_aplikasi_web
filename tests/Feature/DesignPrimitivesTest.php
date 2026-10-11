@@ -498,6 +498,10 @@ class DesignPrimitivesTest extends TestCase
      * di tepi yang sama membuat toast menutupi tombol bar 60 px di 390 px. Kini bar menulis
      * tingginya ke --bar-aksi di <html> selama terpasang dan menghapusnya saat dilepas;
      * pengganjal dan jarak bawah toast membaca variabel itu.
+     *
+     * Diperbarui perbaikan akhir W2 (F-1, tinjauan akhir I-1a): jarak bawah toast juga
+     * menghitung --baki-banding, tinggi baki banding Jelajah, supaya toast tidak menimpa
+     * baris tombol baki di 360 px.
      */
     public function test_the_action_bar_floats_on_the_single_elevation(): void
     {
@@ -515,9 +519,9 @@ class DesignPrimitivesTest extends TestCase
         $this->assertStringContainsString('const akar = document.documentElement;', $bar);
 
         $this->assertStringContainsString(
-            'bottom-[calc(var(--nav-bawah,env(safe-area-inset-bottom))+var(--bar-aksi,0px)+1rem)] z-40',
+            'bottom-[calc(var(--nav-bawah,env(safe-area-inset-bottom))+var(--bar-aksi,0px)+var(--baki-banding,0px)+1rem)] z-40',
             $this->sumber('components/ui/ToastUrungkan.tsx'),
-            'Toast melayang di atas bar aksi, bukan di tepi yang sama.'
+            'Toast melayang di atas bar aksi dan baki banding, bukan di tepi yang sama.'
         );
     }
 

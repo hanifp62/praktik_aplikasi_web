@@ -4,7 +4,7 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 27 September 2026 (bagian 0, W1 selesai). Bagian 1–10 berasal dari 21 September 2026
+Terakhir diperbarui: 28 September 2026 (bagian 0, W2 selesai). Bagian 1–10 berasal dari 21 September 2026
 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
@@ -25,6 +25,75 @@ yang belum di-commit sampai permintaan izin akhir.
 > induk `docs/superpowers/plans/2026-09-26-memount-v3-induk.md`. Periksa keadaan nyata dulu: `git status`,
 > `php artisan test --compact --testsuite=Unit,Feature`, `npx tsc --noEmit`. Jangan commit, push, mengakses
 > Supabase, menjalankan migrasi, atau menambah dependensi tanpa izin saya.
+
+### W2 Kerangka (selesai 28 September 2026, menunggu izin commit)
+
+Rencana `docs/superpowers/plans/2026-09-27-memount-v3-w2-kerangka.md`, 8 tugas. Rencana itu ditulis subagen dan
+disimulasikan di salinan W1 akhir. Setiap tugas ditinjau terpisah, sebagian dengan beberapa putaran perbaikan.
+Sesudahnya ada tinjauan akhir lintas tugas, satu gelombang perbaikan beserta dua putaran lanjutan, dan tinjauan ulang
+terlingkup. Ledger dan seluruh ruling (W2-C1 sampai W2-F7) ada di
+`.superpowers/sdd/2026-09-27-memount-v3-w2-kerangka/progress.md`. Nilai di bawah terukur pada pohon kerja akhir W2.
+
+| Butir | Nilai | Bukti |
+|---|---|---|
+| Suite Unit dan Feature | 1.622 test, 1.620 lulus, 2 dilewati, 0 gagal (W1 akhir: 1.559) | `php artisan test --compact --testsuite=Unit,Feature` |
+| Suite bawaan | 1.642 test, 1.620 lulus, 22 dilewati | `php artisan test --compact` |
+| TypeScript dan format | `npx tsc --noEmit` 0 galat; `vendor/bin/pint --test` lulus | gerbang akhir W2 |
+| Bundel | `app` JS 354.780 B (W1 akhir 355.096); `app` CSS sekitar 80,2 kB, angka mutlaknya ikut view terkompilasi lokal (OPEN ISSUE, W2-C10) | build 28 September |
+| Pratinjau | 9 halaman (Beranda, Jelajah, Jelajah kosong, Jelajah saat mendaki, Trip, Mendaki, Progres, detail jalur, pameran) | suite `Pratinjau` 9/9 |
+| Anggaran kueri | +2 kueri tetap per kunjungan penuh (hitungan Simpanan dan pendakian berlangsung), 0 pada muat ulang parsial yang tidak memintanya dan pada mode lapangan; lembar Pengingat 5 kueri tetap hanya saat dibuka | `PageQueryBudgetTest`, `SavedCountPropTest`, `ActiveHikeStripTest`, `ReminderSheetTest` |
+| Tangkapan | 20 tangkapan 390, 1024, dan 1440 px dengan perbandingan terhadap acuan 01, 02, 04, 11, 13, 15 | `docs/desain/tangkapan/w2/README.md` |
+| Papan ketik | Tiga jalur lulus: Beranda 390 px (lewati, lonceng, avatar, isi, tab; lembar Pengingat Escape kembali ke lonceng), detail jalur 390 px (tombol kembali, tanpa bilah tab), Jelajah 1440 px (lockup, segmen, Simpanan, avatar; menu popover) | README tangkapan W2 |
+| Delivery Gate | R-02, R-09, R-10, R-26, R-27, R-32, R-35 lulus; dua komentar "aman" sudah dirumuskan ulang | `.superpowers/.../delivery-gate-w2.md` |
+
+Yang dibangun W2:
+- kepala per halaman (`PageHeader` dengan tepat satu `akar` atau `induk`) di 38 halaman, dengan tombol kembali ke induk
+  logis dan avatar ke Profil;
+- kerangka ponsel dengan bilah tab pil mengambang, dan kerangka layar lebar mulai 1024 px dengan header 68 px, navigasi
+  segmen, Simpanan berhitungan, dan menu avatar popover;
+- strip pendakian aktif;
+- toast Urungkan dan pesan jaringan yang dipasang sekali di kerangka;
+- lembar Pengingat dari lonceng Beranda, dengan tautan sistem resmi untuk tenggat izin;
+- data contoh diperluas (lima simpanan, pengingat H-3 dan H-1, satu aturan izin tingkat gunung bertanda DATA CONTOH).
+
+Keputusan yang mengikat gelombang berikutnya:
+- **Konflik rencana (W2-C1 sampai C9).** Moderasi, Admin, dan Keluar di ponsel pindah ke kartu Akun di Profil (spec v3
+  bagian 5.1, disetujui pemilik). h1 akar tab sama dengan label tabnya. Lencana Data contoh di ponsel berada di bawah
+  judul.
+- **Toast (W2-5i, W2-5k, W2-5l).**
+  - Umur toast terikat ke komponen yang memanggil `useKerangka()`.
+  - Aksi dengan Urungkan di halaman yang sama memakai `preserveState: true`.
+  - Konfirmasi sesudah pindah halaman dimunculkan halaman tujuan dari flash, dengan Urungkan sisi server.
+- **Dialog pengirim formulir (W2-5e)** menangani `onNetworkError` di dalam dialog.
+- **Variabel lapisan.** `--bilah-tab`, `--strip-pendakian`, `--bar-aksi`, `--baki-banding`, `--pesan-jaringan`, dan
+  `--kepala-atas` ditulis komponennya sendiri atau punya cadangan tanpa `:has()`. `scroll-padding` menghitung semuanya
+  kecuali toast.
+- **Konflik versi aset (W2-F6, W2-F7).** Hanya muat ulang lembar Pengingat yang memuat penuh otomatis. Kunjungan async
+  lain menampilkan pemberitahuan versi baru, dan pengguna yang memilih memuat ulang, supaya isian tidak hilang.
+
+Sisa yang tercatat:
+- **Ke W3:**
+  - baki banding ringkas di layar sempit (W2-F1);
+  - pemilik tab halaman Banding (W2-F2);
+  - peta Jelajah lengket di layar lebar (W2-F3);
+  - anggaran tinggi bar aksi (W2-F5, B-6).
+- **Ke W5:** props Dasbor dibuat malas untuk muat ulang parsial (W2-6b).
+- **Ke W6:**
+  - pemilih pendakian aktif disatukan (W2-4b);
+  - race `start`/`networkError`, lompatan tata letak pesan jaringan, dan pengumuman `role=status` (W2-5j, B-5).
+- **Ke W8:** `PermitService` menyebut izin terbuka tanpa tanggal (W2-6c, R-007).
+- **Ke W9:**
+  - ukuran CSS yang ikut view terkompilasi (W2-C10);
+  - salinan bawaan "Ini area aman aplikasi" di konfirmasi sandi.
+- **Diterima:** popover menu akun tanpa cadangan untuk peramban 2023 (W2-2c).
+- **Izin akhir:**
+  - aturan satu pendakian berlangsung per pengguna dan indeks unik `hiking_sessions.trip_plan_id` (butir 8);
+  - rekomendasi privasi `encryptHistory` dan `Inertia::clearHistory()` saat keluar (butir 9, keputusan pemilik lewat
+    `docs/KEBIJAKAN-DATA-PRIBADI.md`).
+- **Sudah ditutup:** test yang gagal karena nama faker berapostrof (factory dan `RecommendationExclusionTest`,
+  27 September).
+
+Titik lanjut: W3 Klaster Jelajah. Rencananya sedang ditulis paralel di scratchpad (P-R3).
 
 ### W1 Fondasi desain (selesai 27 September 2026, menunggu izin commit)
 

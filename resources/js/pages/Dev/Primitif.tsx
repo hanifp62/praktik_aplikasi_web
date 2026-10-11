@@ -16,9 +16,11 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Sakelar } from '@/components/ui/Sakelar';
 import { Stepper } from '@/components/ui/Stepper';
 import { TombolIkon } from '@/components/ui/TombolIkon';
-import { WadahToast, useFokusSesudahRender, useToastUrungkan } from '@/components/ui/ToastUrungkan';
+import { useFokusSesudahRender } from '@/components/ui/ToastUrungkan';
 import { AppLayout } from '@/layouts/AppLayout';
+import { useKerangka } from '@/layouts/Kerangka';
 import { permukaan } from '@/layouts/NavLinks';
+import { dashboard } from '@/routes';
 import { index as trailsIndex } from '@/routes/trails';
 
 const teksPanjang = 'Pemberitahuan penutupan sementara jalur pendakian Selabintana karena perbaikan jembatan';
@@ -102,7 +104,7 @@ export default function Primitif() {
     const [tekanPanjang, setTekanPanjang] = useState(0);
     const [lembarTerbuka, setLembarTerbuka] = useState(false);
     const [dialogTerbuka, setDialogTerbuka] = useState(false);
-    const { toast, tampilkan, tutup } = useToastUrungkan();
+    const { tampilkanToast: tampilkan } = useKerangka();
     const fokusSesudahRender = useFokusSesudahRender();
     const pemicuLembar = useRef<HTMLElement | null>(null);
     const pemicuDialog = useRef<HTMLElement | null>(null);
@@ -157,6 +159,7 @@ export default function Primitif() {
             </Head>
             <div className="mx-auto max-w-5xl space-y-8 px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: dashboard.url(), label: 'Beranda' }}
                     title="Pameran primitif"
                     description="Setiap primitif desain v3 dalam satu halaman, berfungsi dan berisi contoh. Hanya ada di lingkungan lokal; lihat di 390 px dan 1440 px, tema terang dan gelap."
                 />
@@ -515,7 +518,6 @@ export default function Primitif() {
             >
                 <p className="text-isi text-secondary">Sesudah penghapusan muncul toast urungkan; menekan Urungkan mengembalikan jalurnya.</p>
             </Dialog>
-            <WadahToast toast={toast} onTutup={tutup} />
         </div>
     );
 }

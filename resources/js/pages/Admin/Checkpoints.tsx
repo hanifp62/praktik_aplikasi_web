@@ -89,7 +89,7 @@ export default function Checkpoints() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Kelola Checkpoint" description={trail.name} />
+                <PageHeader induk={admin ? { href: daftarJalur.url(), label: 'Kelola Jalur' } : { href: contribute.url(), label: 'Kontribusi Data Jalur' }} title="Kelola Checkpoint" description={trail.name} />
 
                 {admin ? <AdminNav /> : null}
 

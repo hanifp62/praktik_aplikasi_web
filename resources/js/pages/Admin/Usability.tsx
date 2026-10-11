@@ -10,6 +10,7 @@ import { FormField, InputError, Select, TextInput } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import { store } from '@/routes/admin/usability';
 import type { PropsBersama } from '@/types';
 
@@ -90,6 +91,7 @@ export default function Usability() {
         <div className="py-8">
             <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: profile.url(), label: 'Profil' }}
                     title="Studi Kegunaan"
                     description="Bukti dari manusia adalah satu-satunya yang tidak dapat dihasilkan sistem sendiri. Halaman ini mengumpulkannya dan menghitungnya."
                 />

@@ -68,7 +68,7 @@ export default function Readiness() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Kesiapan Pendakian" description={trip.keterangan} />
+                <PageHeader induk={{ href: preparation.url(trip.id), label: 'Persiapan' }} title="Kesiapan Pendakian" description={trip.keterangan} />
 
                 {/* Penolakan tidak memakai alert hijau: kotak berhasil yang berisi kabar
                     gagal adalah pesan yang membantah dirinya sendiri. */}

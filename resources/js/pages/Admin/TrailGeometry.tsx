@@ -80,7 +80,7 @@ export default function TrailGeometry() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Impor Geometri Jalur" description={trail.name} />
+                <PageHeader induk={admin ? { href: daftarJalur.url(), label: 'Kelola Jalur' } : { href: contribute.url(), label: 'Kontribusi Data Jalur' }} title="Impor Geometri Jalur" description={trail.name} />
 
                 {admin ? <AdminNav /> : null}
 

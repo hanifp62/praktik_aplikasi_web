@@ -2,11 +2,15 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\ConsiderationService;
 use App\Services\DataFreshnessService;
+use App\Services\Trips\DaftarPengingat;
+use App\Services\Trips\PendakianAktif;
 use App\Support\DisplayPreference;
 use App\Support\PenjagaDataContoh;
 use App\Support\ThemePreference;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 /**
@@ -63,6 +67,20 @@ class HandleInertiaRequests extends Middleware
             // sedangDisajikan() membaca dua sumber (tinjauan W1-9a #4): APP_DEMO eksplisit
             // dan koneksi basis data default yang sedang benar-benar demo.
             'demo' => PenjagaDataContoh::sedangDisajikan(),
+
+            // Hitungan Simpanan di header layar lebar dan kepala Jelajah (spec v3 bagian 5.2):
+            // satu kueri terindeks, malas, sehingga muat ulang parsial yang tidak memintanya
+            // tidak membayarnya. Null untuk tamu dan di mode lapangan, yang tidak menggambar
+            // kerangka (perbaikan akhir W2, N-1).
+            'jumlahSimpanan' => fn () => $user === null || $request->routeIs('trips.hike') ? null : app(ConsiderationService::class)->jumlahSimpanan($user),
+
+            // Strip pendakian aktif di atas bilah tab (spec v3 bagian 5.1): satu kueri, malas.
+            // Null untuk tamu dan di mode lapangan itu sendiri, tempat strip tidak digambar.
+            'pendakianAktif' => fn () => $user === null || $request->routeIs('trips.hike') ? null : app(PendakianAktif::class)->untuk($user),
+
+            // Isi lembar Pengingat (spec v3 bagian 5.1): opsional, jadi tidak pernah ikut
+            // kunjungan biasa. Lembar memintanya dengan muat ulang parsial saat dibuka.
+            'daftarPengingat' => Inertia::optional(fn () => $user === null ? null : app(DaftarPengingat::class)->untuk($user)),
 
             'tema' => ThemePreference::current($request),
             'tampilan' => [

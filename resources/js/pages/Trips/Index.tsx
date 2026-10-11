@@ -22,7 +22,7 @@ export default function Index() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Rencana Trip Saya" description="Semua rencana pendakian Anda beserta status kesiapannya." />
+                <PageHeader akar title="Trip" description="Semua rencana pendakian Anda beserta status kesiapannya." />
 
                 {trips.data.length === 0 ? (
                     <Card>

@@ -2046,7 +2046,7 @@ dengan:
         $bilah = File::get(resource_path('js/components/ui/BilahTab.tsx'));
 
         $this->assertStringNotContainsString('<nav', $layout, 'AppLayout tidak lagi menggambar bilah atas atau navigasinya sendiri.');
-        $this->assertDoesNotMatchRegularExpression('/sm:/', $layout);
+        $this->assertDoesNotMatchRegularExpression('/sm:/', $layout);
         $this->assertStringContainsString('<header data-kepala-lebar="" className="sticky top-0 z-30 hidden h-[4.25rem] items-center gap-6 border-b border-subtle bg-surface px-6 lg:flex">', $kepala);
         $this->assertStringContainsString("px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] lg:hidden')", $bilah);
         $this->assertStringNotContainsString('sm:hidden', $bilah);

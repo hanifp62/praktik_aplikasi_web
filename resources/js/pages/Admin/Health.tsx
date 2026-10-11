@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Tautan } from '@/components/ui/Tautan';
 import { AppLayout } from '@/layouts/AppLayout';
 import { kelas } from '@/lib/kelas';
+import { profile } from '@/routes';
 import { statuses, trails } from '@/routes/admin';
 import type { PropsBersama } from '@/types';
 
@@ -74,6 +75,7 @@ export default function Health() {
         <div className="py-8">
             <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: profile.url(), label: 'Profil' }}
                     title="Kesehatan Sistem"
                     description="Tugas terjadwal yang berhenti berjalan tidak menghasilkan galat. Data lamanya tetap di tempatnya dan setiap halaman tetap tampak normal, jadi satu-satunya tanda adalah sesuatu yang tidak terjadi."
                 />

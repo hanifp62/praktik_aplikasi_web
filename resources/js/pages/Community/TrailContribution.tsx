@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
-import { contribute } from '@/routes';
+import { contribute, profile } from '@/routes';
 import { checkpoints, geometry } from '@/routes/trails';
 import type { PropsBersama } from '@/types';
 
@@ -28,6 +28,7 @@ export default function TrailContribution() {
         <div className="py-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: profile.url(), label: 'Profil' }}
                     title="Kontribusi Data Jalur"
                     description="Anda mengisi data jalur di kawasan yang disahkan untuk sertifikat Anda. Admin yang memutuskan kapan data itu tayang untuk pendaki."
                 />

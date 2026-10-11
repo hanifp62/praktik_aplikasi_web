@@ -862,6 +862,78 @@ html:has(dialog[open]) {
 }
 
 /*
+| Kerangka (spec v3 bagian 5; W2): jarak lapisan yang menempel di tepi layar. Nilainya
+| diturunkan dari elemen yang benar-benar ada di halaman, bukan disalin ke setiap halaman.
+| Dua sumber mengisinya:
+|
+| - Aturan di bawah, dari keberadaan elemen: bilah tab ponsel (nav[data-bilah-tab],
+|   tersembunyi mulai 1024 px) untuk --bilah-tab, header layar lebar ([data-kepala-lebar],
+|   mulai 1024 px) untuk --kepala-atas, dan strip pendakian aktif ([data-strip-pendakian])
+|   untuk cadangan --strip-pendakian sebelum skrip berjalan.
+| - Komponennya sendiri, yang mengukur tingginya lewat ResizeObserver dan menulisnya ke
+|   <html> selagi terpasang atau tampil, lalu menghapusnya begitu hilang atau dilepas:
+|   --strip-pendakian (StripPendakian.tsx), --bar-aksi (BarAksi.tsx), --baki-banding
+|   (ConsiderationTray.tsx, baki banding Jelajah), dan --pesan-jaringan (PesanJaringan.tsx).
+|
+| --nav-bawah (bilah tab ditambah strip) dibaca bar aksi, toast, baki banding, dan
+| padding-bottom <main>. scroll-padding menjaga elemen yang difokus papan ketik dan sasaran
+| jangkar tidak tertutup lapisan tetap (WCAG 2.4.11): scroll-padding-bottom menghitung
+| --nav-bawah, --bar-aksi (ruling W2-2a), dan --baki-banding (perbaikan akhir W2, I-1a),
+| karena tanpa itu elemen yang difokus di dekat tepi bawah berhenti tertutup penuh oleh
+| bar atau baki; scroll-padding-top menghitung --kepala-atas dan --pesan-jaringan (ruling
+| W2-5a), dan <main> memberi dirinya padding-top senilai --pesan-jaringan, supaya isi di
+| puncak halaman tidak tertutup lapisan pesan yang fixed itu. Toast sengaja tidak masuk
+| scroll-padding: ia hilang sendiri sesudah 8 detik, hitungannya berhenti selama ia difokus
+| atau diarahkan penunjuk, dan fokusnya pindah ke Urungkan bila aksinya dari papan ketik.
+| Selama tampil, toast dapat menutup unsur terfokus di dekat tepi bawah.
+| Bilah tab setinggi 70 px (item 56 px, padding 6 px, garis 1 px) ditambah jarak bawahnya.
+|
+| Bawaan --bilah-tab (ruling W2-2b) adalah tinggi bilah itu sendiri, bukan nol, dan baru
+| dinolkan lewat :not(:has(nav[data-bilah-tab])) ketika bilahnya benar-benar tidak ada.
+| Vite 8 tidak membawa browserslist, dan build ini tetap menyasar Firefox di bawah 121
+| yang belum mengerti :has(); di sana seluruh aturan :has() gagal diurai dan diabaikan,
+| sehingga bawaan inilah yang berlaku di semua halaman dan lebar layar. Arahnya sengaja
+| dibalik dari sekadar "0 lalu ditambah": peramban itu berakhir dengan ruang berlebih di
+| bawah, bukan ruang nol yang membuat isi tertutup bilah yang nyatanya tetap tergambar.
+|
+| --kepala-atas mengikuti arah yang sama (perbaikan akhir W2, M-2): mulai 1024 px tinggi
+| header 68 px menjadi bawaan, dan baru dinolkan lewat :not(:has([data-kepala-lebar]))
+| ketika header tidak ada (halaman GuestLayout, Welcome, dan mode lapangan). Peramban tanpa
+| :has() mendapat ruang atas berlebih di halaman tanpa header, bukan fokus dan pesan
+| jaringan yang tertutup header di halaman berkerangka.
+*/
+:root {
+    --bilah-tab: calc(4.375rem + max(env(safe-area-inset-bottom, 0px), 0.75rem));
+    --strip-pendakian: 0px;
+    --kepala-atas: 0px;
+    --nav-bawah: calc(var(--bilah-tab) + var(--strip-pendakian));
+    scroll-padding-top: calc(var(--kepala-atas) + var(--pesan-jaringan, 0px) + 0.5rem);
+    scroll-padding-bottom: calc(var(--nav-bawah) + var(--bar-aksi, 0px) + var(--baki-banding, 0px) + 1.25rem);
+}
+
+:root:not(:has(nav[data-bilah-tab])) {
+    --bilah-tab: env(safe-area-inset-bottom, 0px);
+}
+
+:root:has([data-strip-pendakian]) {
+    --strip-pendakian: 3.5rem;
+}
+
+@media (min-width: 1024px) {
+    :root {
+        --kepala-atas: 4.25rem;
+    }
+
+    :root:not(:has([data-kepala-lebar])) {
+        --kepala-atas: 0px;
+    }
+
+    :root:has(nav[data-bilah-tab]) {
+        --bilah-tab: env(safe-area-inset-bottom, 0px);
+    }
+}
+
+/*
 | Kurangi gerak dari pengaturan aplikasi (Profil, Tampilan), bukan hanya dari sistem.
 | Sebagian pengguna tidak tahu letak setelan sistemnya, dan peramban lama tidak
 | meneruskannya. Nilainya dirender server sebagai data-gerak di <html>, sama dengan tema.

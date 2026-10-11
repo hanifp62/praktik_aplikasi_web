@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { kelas } from '@/lib/kelas';
 import { AppLayout } from '@/layouts/AppLayout';
-import { readiness } from '@/routes/trips';
+import { readiness, show } from '@/routes/trips';
 import { regenerate, update } from '@/routes/trips/preparation';
 import type { Opsi } from '@/components/trips/types';
 import type { PropsBersama } from '@/types';
@@ -64,7 +64,7 @@ export default function Preparation() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Persiapan Pendakian" description={trip.keterangan} />
+                <PageHeader induk={{ href: show.url(trip.id), label: 'Rincian trip' }} title="Persiapan Pendakian" description={trip.keterangan} />
 
                 {flash.status ? <Alert variant="success" className="mb-6">{flash.status}</Alert> : null}
 

@@ -51,8 +51,11 @@ Satu halaman = satu rute, satu controller, satu komponen React.
    Resource, lalu `Inertia::render('Area/Halaman', ['title' => 'Judul', ...])`.
    Prop `title` wajib (dijaga `PageTitleTest`). Skor internal tidak pernah masuk props.
 3. **Halaman** di `resources/js/pages/Area/Halaman.tsx`, memasang layout lewat
-   `Halaman.layout = (page) => <AppLayout>{page}</AppLayout>`, tepat satu `<h1>`, memakai
-   komponen dari `resources/js/components/ui`.
+   `Halaman.layout = (page) => <AppLayout>{page}</AppLayout>` (halaman tugas dengan bar aksi
+   tetap memakai `<AppLayout bilahTab={false}>`), dan tepat satu `<PageHeader>` yang memberi
+   `title` serta `induk={{ href, label }}` ke induk logisnya; hanya lima akar tab yang memberi
+   `akar`. TypeScript menolak `PageHeader` tanpa salah satunya, dan `PageHeaderContractTest`
+   menjaga siapa akarnya. Memakai komponen dari `resources/js/components/ui`.
 4. **Tautan** memakai `Tautan` atau `Button href`. Rute bertipe diimpor dari
    `@/routes/...` (dibangkitkan Wayfinder saat `npm run dev` atau `npm run build`).
    Rute GET yang **bukan** halaman Inertia (Blade, berkas) wajib didaftarkan polanya di
@@ -69,6 +72,8 @@ Melanggar salah satu ini membuat suite merah, bukan sekadar ditegur saat tinjaua
 | Nilai kebijakan produk (ambang, radius, batas) tinggal di `config/hiking.php` | `HikingConfigTest` |
 | Tanpa warna palet mentah, `bg-white`, atau `dark:` di React; pakai token | `InertiaLayoutTest` |
 | Setiap halaman mengirim judul tab | `PageTitleTest`, `InertiaLayoutTest` |
+| Setiap halaman memberi judul dan tempatnya (akar tab atau induk) | `PageHeaderContractTest` |
+| Props bersama kerangka tidak bernama sama dengan props halaman | `ReminderSheetTest` |
 | Wadah gulir mendatar berposisi `relative` (teks pembaca layar tidak melebarkan halaman) | `InertiaLayoutTest` |
 | Tautan React tahu rute mana yang bukan Inertia | `InertiaLinkRegistryTest` |
 | Setiap peta lewat `usePetaDasar` dan `WadahPeta`; MapLibre dimuat malas | `MapComponentTest`, `MapConfigTest` |
@@ -181,7 +186,9 @@ perintah; lanjutan pekerjaan lain di jendela yang sama bisa tanpa sengaja memaka
 sesudahnya dengan `Remove-Item Env:DB_CONNECTION, Env:DB_DATABASE, Env:DB_URL`, atau pakai jendela terpisah untuk
 pratinjau.
 
-Lalu buka `http://127.0.0.1:8100/_pratinjau/primitif.html`, `dasbor.html`, `jelajah.html`, atau `jelajah-kosong.html`.
+Lalu buka `http://127.0.0.1:8100/_pratinjau/primitif.html`, `dasbor.html` (Beranda), `jelajah.html`, `trip.html`,
+`mendaki.html`, `progres.html`, `detail-jalur.html` (halaman tugas tanpa bilah tab), `jelajah-mendaki.html` (strip
+pendakian aktif), atau `jelajah-kosong.html`.
 
 - Router `tests/Pratinjau/statis.php` membaca dan mengirim sendiri setiap berkas yang boleh disajikan di `public/`.
   Alamat lain dijawab 404 oleh router itu sendiri; `php -S` tidak pernah diberi kesempatan menafsirkan sendiri
@@ -194,6 +201,8 @@ Lalu buka `http://127.0.0.1:8100/_pratinjau/primitif.html`, `dasbor.html`, `jela
   berkas `public/hot` membuat halaman memuat aset dari server Vite.
 - Tema gelap: jalankan `document.cookie = 'tema=dark; path=/'` di konsol peramban, lalu buka lagi berkasnya. Kembali
   ke terang dengan `tema=light`, atau hapus cookie itu untuk mengikuti sistem.
+- Lembar Pengingat memuat isinya dari server saat dibuka, jadi di pratinjau statis ia menampilkan keadaan galatnya.
+  Isi daftarnya dijaga `ReminderSheetTest`.
 
 ## Yang tidak boleh masuk
 

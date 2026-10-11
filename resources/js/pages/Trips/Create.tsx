@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox, InputError, Label, Select } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
-import { store } from '@/routes/trips';
+import { index as tripsIndex, store } from '@/routes/trips';
 import type { PropsBersama } from '@/types';
 
 interface Isian extends IsianRencanaData {
@@ -63,6 +63,7 @@ export default function Create() {
         <div className="py-8">
             <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: tripsIndex.url(), label: 'Trip' }}
                     title="Buat Rencana Trip"
                     description="Rencana trip menghubungkan jalur yang Anda pilih dengan daftar persiapan dan pemeriksaan kondisi."
                 />
@@ -105,4 +106,4 @@ export default function Create() {
     );
 }
 
-Create.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>;
+Create.layout = (page: ReactNode) => <AppLayout bilahTab={false}>{page}</AppLayout>;

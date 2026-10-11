@@ -10,9 +10,12 @@ use App\Models\DataSource;
 use App\Models\HikingHistory;
 use App\Models\Mountain;
 use App\Models\OfficialStatus;
+use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\TripPlan;
+use App\Models\TripReminder;
 use App\Models\User;
+use App\Services\ConsiderationService;
 use App\Support\PenjagaDataContoh;
 use App\Support\Timezone;
 use Database\Seeders\DemoSeeder;
@@ -57,7 +60,27 @@ class DemoSeederTest extends TestCase
     }
 
     /**
+     * Diperluas W2: kerangka menampilkan "Simpanan N" dan lonceng Pengingat, jadi data contoh
+     * membawa lima simpanan (prototype 02 dan 15), pengingat H-3 dan H-1 trip Gede, dan satu
+     * aturan izin tingkat gunung, semuanya lewat tabel yang sama dengan fitur aslinya.
+     */
+    public function test_the_sample_fills_the_shell(): void
+    {
+        $this->seed(DemoSeeder::class);
+
+        $budi = User::where('email', DemoSeeder::EMAIL_PENDAKI)->firstOrFail();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+
+        $this->assertSame(5, app(ConsiderationService::class)->jumlahSimpanan($budi));
+        $this->assertSame(['H-1', 'H-3'], TripReminder::where('trip_plan_id', $trip->id)->menunggu()->orderBy('jenis')->pluck('jenis')->all());
+        $this->assertSame(1, PermitRequirement::where('mountain_id', $trip->trail->mountain_id)->count());
+    }
+
+    /**
      * Setiap teks yang dapat terbaca sebagai fakta membawa penanda DATA CONTOH.
+     *
+     * Diperbarui perbaikan akhir W2 (kandidat 1): sumber aturan izin ikut diperiksa, karena
+     * tampil di admin sejajar sumber status resmi dan terbaca sebagai rujukan sungguhan.
      */
     public function test_every_text_that_reads_as_fact_is_marked(): void
     {
@@ -72,6 +95,9 @@ class DemoSeederTest extends TestCase
             // "Penutupan musiman") dan karenanya wajib membawa penanda yang sama.
             ...OfficialStatus::whereNotNull('reason')->pluck('reason')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA.'.'))->all(),
             ...TripPlan::whereNotNull('notes')->pluck('notes')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA.'.'))->all(),
+            ...PermitRequirement::pluck('authority')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA))->all(),
+            ...PermitRequirement::whereNotNull('source')->pluck('source')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA))->all(),
+            ...PermitRequirement::whereNotNull('notes')->pluck('notes')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA.'.'))->all(),
         ];
 
         $this->assertSame([], $tanpaPenanda);

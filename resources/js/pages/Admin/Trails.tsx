@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { Tautan } from '@/components/ui/Tautan';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import { trails as daftarJalur } from '@/routes/admin';
 import { archive, publish, store, update } from '@/routes/admin/trails';
 import type { PropsBersama } from '@/types';
@@ -86,7 +87,7 @@ export default function Trails() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-                <PageHeader title="Kelola Jalur" description="Jalur hanya dapat dipublikasikan jika sumber data, karakteristik, checkpoint, dan status resmi sudah lengkap." />
+                <PageHeader induk={{ href: profile.url(), label: 'Profil' }} title="Kelola Jalur" description="Jalur hanya dapat dipublikasikan jika sumber data, karakteristik, checkpoint, dan status resmi sudah lengkap." />
 
                 <AdminNav />
 

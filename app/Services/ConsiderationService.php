@@ -6,6 +6,7 @@ use App\Enums\ConsiderationOutcome;
 use App\Models\Trail;
 use App\Models\TrailConsideration;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -64,11 +65,7 @@ class ConsiderationService
             // tabel penghubung: jalur arsip tidak pernah lagi terlihat di simpanan, jadi
             // menghitungnya di sini membuat batas dan tampilan tidak sepakat, dan simpanan
             // macet permanen tanpa jalan keluar yang terlihat.
-            $jumlahAktif = TrailConsideration::where('user_id', $user->id)
-                ->whereHas('trail', fn ($query) => $query->active())
-                ->count();
-
-            if ($jumlahAktif >= $this->batasSimpanan()) {
+            if ($this->jumlahSimpanan($user) >= $this->batasSimpanan()) {
                 return ConsiderationOutcome::DITOLAK;
             }
 
@@ -79,6 +76,35 @@ class ConsiderationService
 
             return ConsiderationOutcome::DITAMBAHKAN;
         });
+    }
+
+    /**
+     * Predikat "simpanan aktif": baris trail_considerations milik $user yang jalurnya
+     * belum diarsip. BUKAN "masih terbit" -- jalur yang ditarik dari terbit
+     * (is_published false) tapi belum diarsip tetap ikut, sama seperti yang tampil di
+     * halaman Simpanan (R-022 hanya mengecualikan jalur arsip dari simpanan, bukan jalur
+     * yang sekadar tidak terbit).
+     *
+     * Satu-satunya tempat predikat ini ditulis: jumlahSimpanan() dan simpanan() memakainya
+     * supaya batas, hitungan kerangka, dan daftar tidak pernah berbeda pendapat.
+     */
+    private function kueriSimpananAktif(User $user): Builder
+    {
+        return TrailConsideration::where('user_id', $user->id)
+            ->whereHas('trail', fn ($query) => $query->active());
+    }
+
+    /**
+     * Jumlah jalur tersimpan yang masih aktif, sama dengan yang tampil di halaman Simpanan.
+     *
+     * Satu kueri hitung yang disaring lewat indeks unik trail_considerations (user_id,
+     * trail_id) dan kunci utama trails, sehingga biayanya tetap berapa pun jumlah simpanan.
+     * Dipakai batas simpanan dan hitungan Simpanan di kerangka (props bersama), jadi batas,
+     * hitungan, dan daftar tidak pernah berbeda pendapat tentang jalur arsip.
+     */
+    public function jumlahSimpanan(User $user): int
+    {
+        return $this->kueriSimpananAktif($user)->count();
     }
 
     /**
@@ -155,9 +181,7 @@ class ConsiderationService
      */
     public function simpanan(User $user): Collection
     {
-        return TrailConsideration::query()
-            ->whereBelongsTo($user)
-            ->whereHas('trail', fn ($query) => $query->active())
+        return $this->kueriSimpananAktif($user)
             ->with('trail.mountain')
             ->orderByDesc('created_at')
             ->orderByDesc('id')

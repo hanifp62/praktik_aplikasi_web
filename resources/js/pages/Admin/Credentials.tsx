@@ -10,6 +10,7 @@ import { InputError, Label, Select, TextInput } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { AppLayout } from '@/layouts/AppLayout';
+import { profile } from '@/routes';
 import { credentials } from '@/routes/admin';
 import { decide } from '@/routes/admin/credentials';
 import type { PropsBersama } from '@/types';
@@ -83,6 +84,7 @@ export default function Credentials() {
         <div className="py-8">
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: profile.url(), label: 'Profil' }}
                     title="Verifikasi Kredensial Ahli"
                     description="Yang diverifikasi di sini bukan kompetensinya, melainkan keberadaan sertifikatnya. BNSP dan LSP yang menguji kompetensi."
                 />

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox, FormField, InputError, Label, Select, Textarea } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
+import { progress } from '@/routes';
 import { store } from '@/routes/reports';
 import type { PropsBersama } from '@/types';
 
@@ -69,6 +70,7 @@ export default function ConditionReport() {
         <div className="py-6 sm:py-8">
             <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
+                    induk={{ href: progress.url(), label: 'Progres' }}
                     title="Laporan Kondisi Jalur"
                     description="Laporan Anda menjadi informasi tambahan bagi pendaki berikutnya. Laporan komunitas tidak mengubah status resmi jalur."
                 />

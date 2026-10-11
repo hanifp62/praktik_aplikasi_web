@@ -27,7 +27,7 @@ export default function Awaiting() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <PageHeader title={trail.name}>
+                <PageHeader induk={{ href: trailsIndex.url(), label: 'Jelajah' }} title={trail.name}>
                     <p className="mt-1 text-sm text-secondary">{[trail.mountain, trail.province, trail.mdpl].filter(Boolean).join(' · ')}</p>
                 </PageHeader>
 

@@ -102,6 +102,22 @@ class PratinjauHarnessTest extends TestCase
     }
 
     /**
+     * Pratinjau W2 (ruling W2-R4): kelima akar tab dan satu halaman tugas yang
+     * menyembunyikan bilah tab ikut dipotret, ditambah Jelajah dengan strip pendakian aktif,
+     * supaya tangkapan 390 px dan 1440 px menunjukkan kerangka baru.
+     */
+    public function test_the_preview_covers_every_tab_root_and_a_task_page(): void
+    {
+        $halaman = File::get(base_path('tests/Pratinjau/HalamanPratinjauTest.php'));
+
+        foreach (['/dashboard', '/trails', '/trips', '/mendaki', '/progres', '/trails/gede-via-cibodas'] as $alamat) {
+            $this->assertStringContainsString("self::ASAL.'{$alamat}'", $halaman, "{$alamat} tidak dipotret.");
+        }
+
+        $this->assertStringContainsString("'jelajah-mendaki'", $halaman);
+    }
+
+    /**
      * Router menyajikan sendiri berkas yang lolos dan tidak pernah menyerahkan keputusan ke
      * php -S (W1-10a): itulah yang membuat penafsiran ulang URI di atas mustahil, bukan
      * cuma kebetulan PenyajiStatis menolaknya. Sebelum perbaikan ini router justru

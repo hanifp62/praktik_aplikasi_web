@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { AppLayout } from '@/layouts/AppLayout';
+import { TautanSimpanan } from '@/layouts/TautanSimpanan';
 import { kelas } from '@/lib/kelas';
 import { onboarding } from '@/routes';
 import { index as trailsIndex } from '@/routes/trails';
@@ -74,7 +75,7 @@ export default function Index() {
     return (
         <div className="py-6 sm:py-8">
             <div className={kelas('mx-auto px-4 sm:px-6 lg:px-8', adaPeta ? 'max-w-7xl' : 'max-w-5xl')}>
-                <PageHeader title="Jelajahi Jalur" description="Telusuri jalur secara manual. Gunakan ini jika Anda ingin membandingkan sendiri tanpa melalui rekomendasi." />
+                <PageHeader akar title="Jelajah" aksi={<TautanSimpanan className="lg:hidden" />} description="Telusuri jalur secara manual. Gunakan ini jika Anda ingin membandingkan sendiri tanpa melalui rekomendasi." />
 
                 {auth.user && !auth.user.hasCompletedProfile ? (
                     <Card className="mb-6" title="Lengkapi profil untuk melihat kecocokan" subtitle="Tanpa data pengalaman Anda, daftar ini hanya katalog jalur. Dengan profil, tiap jalur menyebut cocok atau tidaknya untuk Anda beserta alasannya.">
@@ -131,13 +132,13 @@ export default function Index() {
                     </section>
 
                     {adaPeta ? (
-                        <section aria-label="Peta jalur" className={kelas(tampilan === 'daftar' ? 'hidden lg:block' : 'block', 'lg:sticky lg:top-6 lg:self-start')}>
+                        <section aria-label="Peta jalur" className={kelas(tampilan === 'daftar' ? 'hidden lg:block' : 'block', 'lg:sticky lg:top-[calc(var(--kepala-atas)+1.5rem)] lg:self-start')}>
                             <PetaJelajah
                                 fitur={petaSebaran}
                                 baris={trails.data}
                                 sorot={sorot}
                                 onLihatDiDaftar={lihatDiDaftar}
-                                className="h-[calc(100dvh-var(--nav-bawah,0px)-14rem)] min-h-[22rem] lg:h-[calc(100dvh-3rem)]"
+                                className="h-[calc(100dvh-var(--nav-bawah,0px)-14rem)] min-h-[22rem] lg:h-[calc(100dvh-var(--kepala-atas)-3rem)]"
                             />
                         </section>
                     ) : null}

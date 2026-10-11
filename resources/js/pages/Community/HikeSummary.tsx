@@ -10,7 +10,7 @@ import { CheckpointJourney, type PosPerjalanan } from '@/components/ui/Checkpoin
 import { ElevationProfile, type TitikElevasi } from '@/components/ui/ElevationProfile';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
-import { history } from '@/routes';
+import { history, progress } from '@/routes';
 import { destroy } from '@/routes/hike/track';
 import { show as trailShow } from '@/routes/trails';
 import type { PropsBersama } from '@/types';
@@ -57,7 +57,7 @@ export default function HikeSummary() {
     return (
         <div className="py-8">
             <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <PageHeader title={jalur.nama} description={jalur.wilayah || undefined}>
+                <PageHeader induk={{ href: progress.url(), label: 'Progres' }} title={jalur.nama} description={jalur.wilayah || undefined}>
                     <p className="mt-1 text-sm text-secondary">{tanggal}</p>
                     <span className="mt-2 inline-block rounded-control bg-surface-sunken px-2.5 py-1 text-sm font-medium text-secondary">{hasil}</span>
                 </PageHeader>
