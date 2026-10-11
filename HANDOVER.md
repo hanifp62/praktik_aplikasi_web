@@ -4,8 +4,8 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 11 Oktober 2026 (bagian 0, W6 selesai; W1 sampai W6 di-commit per gelombang di branch hardening,
-belum di-push; W7 sampai W9 ditunda pemilik untuk evaluasi). Bagian 1–10 berasal dari 21 September 2026
+Terakhir diperbarui: 12 Oktober 2026 (bagian 0, W6 selesai dan diaudit sebelum inspeksi pemilik; W1 sampai W6 dan
+perbaikan audit di-commit di branch hardening, belum di-push; W7 sampai W9 ditunda pemilik untuk evaluasi). Bagian 1–10 berasal dari 21 September 2026
 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
@@ -89,6 +89,50 @@ apa adanya.
   ruang kerja trip, dan mode lapangan tampil tanpa galat console.
 - Isi `.env` sebelumnya disimpan di `.env.sebelum-inspeksi` (diabaikan git). Untuk kembali ke Supabase, salin berkas
   itu menjadi `.env` sesudah proyeknya dipulihkan.
+
+**Audit sebelum inspeksi pemilik (11 sampai 12 Oktober 2026).** Atas permintaan pemilik: "ricek sekali lagi ...
+setelah semua itu aman dan teruji baru anda boleh melapor sistem layak di uji atau inspek manual oleh saya secara real
+world testing". Pemeriksaannya terdiri dari:
+- empat putaran uji E2E di server inspeksi (port 8000, data contoh);
+- tiga cek peramban terlingkup;
+- enam tinjauan kode independen.
+
+Setiap temuan diperbaiki, diuji, dimutasi, lalu di-commit lokal di branch `hardening`. Tidak ada yang di-push.
+
+| Commit | Isi |
+|---|---|
+| `86ad5e5` | Audit E2E pertama: I-1 sampai I-6, M-1 sampai M-8, C-6 |
+| `a63d8c9` | Patch keamanan dalam rentang terkunci, hanya lockfile: commonmark 2.10.3, concurrently, shell-quote, source-map-js |
+| `c9cfbde` | Uji ulang E2E dan tinjauan kode pertama: rekomendasi wilayah, ringkasan Jelajah, konfirmasi mulai di setiap pintu, fokus |
+| `90641c0` | Uji E2E akhir dan tinjauan ulang: tanggal zona gunung, rute PWA tanpa sesi (flash tidak hilang), sisa fokus |
+| `8cb4c0c`, `3c45443`, `488336d`, `b50d517` | Tinjauan akhir dan cek peramban terlingkup: fokus chip tafsiran, pengembalian fokus toast, celah test |
+
+- Putusan akhir:
+  - uji E2E penutup "Layak diuji pemilik: YA", dengan 0 temuan baru;
+  - cek peramban terakhir (regresi toast) tanpa temuan;
+  - tinjauan kode terakhir: kepatuhan YA, mutu DISETUJUI.
+- Angka akhir: Unit dan Feature 2.624 test, 2.622 lulus, 2 dilewati, 0 gagal, 18.149 asersi. Hasilnya sama di 12 shard,
+  serial, dan salinan bersih dari commit `b50d517`. Pratinjau 29/29, penjaga dokumen 31/31, SecretsNotInRepo 20/20,
+  tsc 0, Pint lulus.
+- Git: rantai commit-graph basi ditulis ulang, dan `git fsck` bersih. `phpunit.xml` memaksa sakelar W6 dan `APP_DEMO`
+  mati, supaya `.env` inspeksi tidak mengubah hasil test.
+- Batas yang diketahui:
+  - data contoh SQLite tanpa geometri jalur, sehingga peta menulis "menunggu garis rute";
+  - suite Spatial dan RLS baru berjalan di CI PostgreSQL sesudah push;
+  - data contoh tanpa akun moderator dan admin, jadi kalimat laporan ditolak dan halaman admin hanya terbukti lewat
+    test;
+  - pembaca layar belum diuji;
+  - run paralel pertama di salinan baru dapat gagal palsu karena kompilasi view Blade serentak di Windows (log:
+    `rename` di `storage/framework/views`), dan run berikutnya bersih.
+- Keputusan pemilik yang masih terbuka:
+  - push;
+  - `DEVICE_KEY_SECRET`;
+  - pemulihan Supabase beserta migrasinya;
+  - npm audit mayor: maplibre-gl 6 dan tailwindcss 4. Job npm audit di `security.yml` tetap merah sampai diputuskan;
+    fungsi rentan maplibre (`DOM.sanitize`) tidak ada di 4.7.1;
+  - makna isian wilayah yang memuat banyak provinsi;
+  - jeda toast Urungkan pada modalitas campuran (CF-7).
+- Ledger dan semua laporan audit ada di `.superpowers/sdd/2026-10-07-memount-v3-w6-mendaki/` (diabaikan git).
 
 Nilai di bawah terukur 11 Oktober 2026 pada pohon kerja akhir W6 (snapshot tree `2ad3f1a`). Selisihnya terhadap akhir
 W5 (`d4a78fe`), sebelum tangkapan dan residu: 90 berkas ditambah, 102 diubah, dan 1 dihapus
