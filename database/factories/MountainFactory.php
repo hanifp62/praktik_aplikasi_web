@@ -9,7 +9,8 @@ class MountainFactory extends Factory
 {
     public function definition(): array
     {
-        $name = 'Gunung '.fake()->unique()->firstName();
+        // Tanpa apostrof, alasan yang sama dengan TrailFactory.
+        $name = 'Gunung '.str_replace("'", '', fake()->unique()->firstName());
 
         return [
             'name' => $name,

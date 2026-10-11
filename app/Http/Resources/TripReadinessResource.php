@@ -41,7 +41,7 @@ class TripReadinessResource extends JsonResource
             'keadaan' => $this->computed_state?->value,
             'label' => $this->computed_state?->label() ?? 'Belum dinilai',
             'dihitung' => Timezone::display($this->computed_at, $this->zona),
-            'kecocokan' => RouteFitLabel::tryFrom($this->route_fit_snapshot['label'] ?? '')?->label() ?? 'Tidak dinilai',
+            'kecocokan' => RouteFitLabel::textFor(RouteFitLabel::tryFrom($this->route_fit_snapshot['label'] ?? '')),
             'persiapan' => $berlaku > 0
                 ? sprintf('%d dari %d item dikonfirmasi', (int) ($persiapan['confirmed'] ?? 0), $berlaku)
                 : 'Belum ada item persiapan.',

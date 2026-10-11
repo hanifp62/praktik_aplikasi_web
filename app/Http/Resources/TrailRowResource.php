@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\RouteFitLabel;
 use App\Enums\WaterAvailability;
 use App\Models\Trail;
 use App\Services\RouteFit\TrailFitSummary;
@@ -58,7 +59,7 @@ class TrailRowResource extends JsonResource
             'ditimbang' => $this->ditimbang,
             'fit' => $this->fit === null ? null : [
                 'label' => $this->fit->label?->value,
-                'labelText' => $this->fit->label?->label() ?? 'Tidak dinilai',
+                'labelText' => RouteFitLabel::textFor($this->fit->label),
                 'alasan' => $this->fit->alasan,
                 'denganRencana' => $this->fit->denganRencana,
             ],

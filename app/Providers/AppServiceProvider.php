@@ -27,6 +27,7 @@ use App\Policies\TrailConditionReportPolicy;
 use App\Policies\TrailPolicy;
 use App\Policies\TripPlanPolicy;
 use App\Policies\UsabilitySessionPolicy;
+use App\Support\PenjagaDataContoh;
 use Illuminate\Console\Events\ScheduledTaskFailed;
 use Illuminate\Console\Events\ScheduledTaskFinished;
 use Illuminate\Support\Facades\Event;
@@ -42,6 +43,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Paling awal, sebelum apa pun memakai cache, antrean, surel, atau disk: aplikasi yang
+        // menyajikan data contoh (DB_CONNECTION=demo) memutus saluran itu dari .env sendiri,
+        // tanpa bergantung pada baris penyaji yang disalin operator (tinjauan akhir W1, I-3).
+        $this->app->make(PenjagaDataContoh::class)->isolasiBilaMenyajikanDemo();
+
         // Laravel 13 ships no AuthServiceProvider, so policies are registered here.
         Gate::policy(TripPlan::class, TripPlanPolicy::class);
         Gate::policy(TrailConditionReport::class, TrailConditionReportPolicy::class);

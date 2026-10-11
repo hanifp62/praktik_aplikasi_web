@@ -102,6 +102,23 @@ class BrandIdentityTest extends TestCase
         $this->assertSame(config('brand.theme_color.dark'), sprintf('#%02x%02x%02x', $gelap[1], $gelap[2], $gelap[3]));
     }
 
+    /**
+     * Favikon mengikuti token merek v3 (rencana W1 tugas 1). Garisnya ditulis sebagai
+     * heksa di SVG karena favikon dimuat di luar CSS aplikasi; test ini menjaga kedua
+     * warnanya sama dengan isian merek terang dan merek latar depan gelap.
+     */
+    public function test_the_favicon_follows_the_brand_tokens(): void
+    {
+        $svg = File::get(public_path('favicon.svg'));
+        $css = File::get(resource_path('css/app.css'));
+
+        preg_match("/:root\[data-theme='dark'\]\s*\{.*?--brand-ink:\s*(\d+)\s+(\d+)\s+(\d+);/s", $css, $gelap);
+
+        $this->assertCount(4, $gelap, 'Token brand-ink gelap tidak ditemukan.');
+        $this->assertStringContainsString('stroke="'.config('brand.theme_color.light').'"', $svg);
+        $this->assertStringContainsString(sprintf('stroke: #%02x%02x%02x;', $gelap[1], $gelap[2], $gelap[3]), $svg);
+    }
+
     public function test_the_icons_and_favicons_referenced_by_the_head_exist(): void
     {
         foreach (['icons/app-192.png', 'icons/app-512.png', 'icons/app-512-maskable.png', 'icons/app-180.png', 'favicon.svg', 'favicon.ico'] as $berkas) {

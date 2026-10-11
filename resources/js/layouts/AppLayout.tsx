@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { Lockup } from '@/components/brand/Lockup';
 import { JudulHalaman } from '@/components/ui/JudulHalaman';
+import { LencanaDataContoh } from '@/components/ui/LencanaDataContoh';
 import { kelas } from '@/lib/kelas';
 import { dashboard, profile } from '@/routes';
 import type { PropsBersama } from '@/types';
@@ -30,8 +31,9 @@ export function AppLayout({ header, children }: { header?: ReactNode; children: 
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
-                            <div className="flex shrink-0 items-center">
+                            <div className="flex shrink-0 items-center gap-3">
                                 <Lockup href={dashboard.url()} />
+                                <LencanaDataContoh />
                             </div>
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 {permukaan.map((p) => (

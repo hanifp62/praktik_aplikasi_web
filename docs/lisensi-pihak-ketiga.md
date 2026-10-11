@@ -11,7 +11,7 @@ dependensi runtime tercatat di sini.
 
 | Karya | Dipakai di | Lisensi | Teks lisensi |
 |---|---|---|---|
-| Phosphor Icons (path bobot regular dan fill, repositori phosphor-icons/core) | `resources/js/components/ui/Icon.tsx`, `resources/views/components/ui/icon.blade.php` | MIT, Copyright (c) 2023 Phosphor Icons | `resources/js/components/ui/LICENSE-phosphor.txt` |
+| Phosphor Icons (path bobot regular, bold, dan fill; repositori phosphor-icons/core 2.1.1) | `resources/js/components/ui/ikon/phosphor.ts` (registri), `resources/js/components/ui/Icon.tsx`, `resources/views/components/ui/icon.blade.php`; pemberitahuannya ikut ke bundel produksi lewat `build.rolldownOptions.output.comments` di `vite.config.js` | MIT, Copyright (c) 2023 Phosphor Icons | `resources/js/components/ui/LICENSE-phosphor.txt` |
 
 ## Prototype pemilik
 
@@ -27,8 +27,10 @@ dependensi runtime tercatat di sini.
 
 | Karya | Dipakai di | Lisensi | Catatan |
 |---|---|---|---|
-| Plus Jakarta Sans | Dimuat dari Bunny Fonts di `resources/views/components/brand/head.blade.php`; dihosting sendiri mulai W1 (DK-38) | SIL Open Font License 1.1 | Teks OFL wajib ikut bersama berkas huruf saat dihosting sendiri |
-| Newsreader | Dimuat dari Bunny Fonts; dilepas di W1 (DK-38) | SIL Open Font License 1.1 | |
+| Plus Jakarta Sans, variabel (bobot 200 sampai 800), subset Latin dan Latin Extended | Dihosting sendiri di `public/fonts/plus-jakarta-sans/`, dimuat `@font-face` di `resources/css/app.css`, subset Latin dipramuat `resources/views/components/brand/head.blade.php` | SIL Open Font License 1.1, Copyright 2020 The Plus Jakarta Sans Project Authors | Teks lisensi `public/fonts/plus-jakarta-sans/OFL.txt`. Asal: paket npm `@fontsource-variable/plus-jakarta-sans` 5.3.0 lewat cdn.jsdelivr.net, dibangun Fontsource dari google/fonts (desain Tokotype), diunduh 26 September 2026; ukuran dan SHA-256 kedua berkas dipaku `TypographySystemTest`. Bukan rilis GitHub tokotype/PlusJakartaSans 2.7.1 karena rilis itu hanya berisi TTF (variabel tegak 182.180 bita) tanpa woff2, dan rencana W1 melarang perkakas huruf. |
+
+Newsreader dan Bunny Fonts tidak dipakai lagi sejak gelombang 1 v3 (DK-38): judul memakai Plus Jakarta Sans bobot 800, dan
+tidak ada huruf yang dimuat dari layanan luar.
 
 ## Data dan layanan
 

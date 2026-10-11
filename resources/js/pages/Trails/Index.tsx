@@ -93,10 +93,21 @@ export default function Index() {
 
                 <div className={kelas(adaPeta && 'lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-8')}>
                     <section aria-label="Daftar jalur" className={kelas(adaPeta && tampilan === 'peta' && 'hidden lg:block')}>
-                        {trails.data.length === 0 ? (
-                            <EmptyState title="Tidak ada jalur yang cocok" description="Saringan yang sedang aktif tidak menemukan jalur. Melonggarkan tingkat teknis atau mengosongkan wilayah biasanya menolong lebih cepat daripada mengubah kata pencarian.">
-                                {adaSaringan ? <Button variant="secondary" size="sm" onClick={() => setIsian(kosong)}>Hapus semua saringan</Button> : null}
+                        {trails.data.length === 0 && adaSaringan ? (
+                            <EmptyState
+                                jenis="tersaring"
+                                title="Tidak ada jalur dengan saringan ini"
+                                description="Saringan yang sedang aktif tidak menemukan jalur. Melonggarkan tingkat teknis atau mengosongkan wilayah biasanya menolong lebih cepat daripada mengubah kata pencarian."
+                            >
+                                <Button variant="secondary" size="sm" onClick={() => setIsian(kosong)}>Hapus semua saringan</Button>
                             </EmptyState>
+                        ) : trails.data.length === 0 ? (
+                            <EmptyState
+                                jenis="menunggu"
+                                title="Belum ada jalur yang terbit"
+                                menunggu="Menunggu kurator Memount menerbitkan jalur yang datanya lengkap"
+                                description="Jalur tampil di sini setelah datanya lengkap: sumber, jarak, tanjakan, durasi, pos, status resmi, dan garis rute di peta."
+                            />
                         ) : (
                             <div className="border-t border-subtle">
                                 {trails.data.map((t) => (
@@ -156,7 +167,7 @@ function PilihTampilan({ tampilan, onPilih }: { tampilan: 'daftar' | 'peta'; onP
                     onClick={() => onPilih(t)}
                     className={kelas(
                         'min-h-11 rounded-control px-4 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600',
-                        tampilan === t ? 'bg-brand-700 text-white' : 'text-secondary hover:text-primary',
+                        tampilan === t ? 'bg-brand-700 text-on-brand' : 'text-secondary hover:text-primary',
                     )}
                 >
                     {t === 'daftar' ? 'Daftar' : 'Peta'}

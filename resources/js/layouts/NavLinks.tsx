@@ -1,4 +1,4 @@
-import { Icon } from '@/components/ui/Icon';
+import { Icon, type NamaIkon } from '@/components/ui/Icon';
 import { Tautan } from '@/components/ui/Tautan';
 import type { ReactNode } from 'react';
 import { kelas } from '@/lib/kelas';
@@ -19,24 +19,24 @@ const modePendakian = (p: string) => /^\/trips\/[^/]+\/hike/.test(p);
  * dari path, satu tab per halaman.
  */
 export const permukaan = [
-    { label: 'Beranda', ikon: 'house', href: dashboard.url(), aktif: (p: string) => p === '/dashboard' || p.startsWith('/kabar') },
+    { label: 'Beranda', ikon: 'house' as const, href: dashboard.url(), aktif: (p: string) => p === '/dashboard' || p.startsWith('/kabar') },
     {
         label: 'Jelajah',
-        ikon: 'map-trifold',
+        ikon: 'map-trifold' as const,
         href: trailsIndex.url(),
         aktif: (p: string) => (p === '/trails' || p.startsWith('/trails/')) && !p.startsWith('/trails/compare'),
     },
     {
         label: 'Trip',
-        ikon: 'backpack',
+        ikon: 'backpack' as const,
         href: tripsIndex.url(),
         aktif: (p: string) =>
             (p.startsWith('/trips') && !modePendakian(p)) || p.startsWith('/goals') || p.startsWith('/recommendations') || p.startsWith('/trails/compare'),
     },
-    { label: 'Mendaki', ikon: 'person-simple-hike', href: track.url(), aktif: (p: string) => p.startsWith('/mendaki') || modePendakian(p) },
+    { label: 'Mendaki', ikon: 'person-simple-hike' as const, href: track.url(), aktif: (p: string) => p.startsWith('/mendaki') || modePendakian(p) },
     {
         label: 'Progres',
-        ikon: 'chart-line-up',
+        ikon: 'chart-line-up' as const,
         href: progress.url(),
         aktif: (p: string) => p.startsWith('/progres') || p.startsWith('/history') || p.startsWith('/reports'),
     },
@@ -85,21 +85,21 @@ export const tombolMenu = kelas('flex min-h-11 w-full items-center px-4 py-2 tex
 
 /**
  * Tab navigasi bawah ponsel: ikon di atas label pendek, seluruh kolom menjadi target
- * sentuh (tinggi 64 px). Tab aktif ditandai tiga cara sekaligus, bukan warna saja:
- * garis di atas, tebal huruf, dan aria-current (WCAG 1.4.1).
+ * sentuh (tinggi 64 px). Tab aktif ditandai empat cara sekaligus, bukan warna saja:
+ * ikon varian isi, garis di atas, tebal huruf, dan aria-current (WCAG 1.4.1).
  */
-export function TabBawah({ href, ikon, aktif, children }: { href: string; ikon: string; aktif: boolean; children: ReactNode }) {
+export function TabBawah({ href, ikon, aktif, children }: { href: string; ikon: NamaIkon; aktif: boolean; children: ReactNode }) {
     return (
         <Tautan
             href={href}
             aria-current={aktif ? 'page' : undefined}
             className={kelas(
-                'flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 border-t-2 px-0.5 text-[0.65rem] leading-tight tracking-tight transition focus-visible:ring-inset',
+                'flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 border-t-2 px-0.5 text-xs leading-tight transition focus-visible:ring-inset',
                 fokus,
                 aktif ? 'border-brand-600 font-semibold text-primary' : 'border-transparent font-medium text-muted hover:text-secondary',
             )}
         >
-            <Icon name={ikon} className="h-6 w-6" />
+            <Icon name={ikon} size={22} isi={aktif} />
             <span className="max-w-full truncate">{children}</span>
         </Tautan>
     );

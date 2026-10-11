@@ -74,7 +74,7 @@ export function TabelBanding({ jalur, baris, beda, sembunyikanSama }: TabelBandi
                                 </Tautan>
                                 <span className="block text-xs font-normal text-secondary">{j.mountain}</span>
                                 {j.tersimpan ? null : <span className="block text-xs font-normal text-muted">Bukan simpanan Anda</span>}
-                                <Button variant="ghost" size="sm" className="-ml-3 font-normal" href={j.hapus}>
+                                <Button variant="ghost" size="sm" className="-ml-4 font-normal" href={j.hapus}>
                                     Hapus dari perbandingan<span className="sr-only">: {j.name}</span>
                                 </Button>
                             </th>

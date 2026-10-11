@@ -25,4 +25,16 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
         },
     },
+    build: {
+        rolldownOptions: {
+            output: {
+                // Komentar lisensi /*! ... */ ikut ke bundel produksi (HANDOVER bagian 0
+                // butir 17): path ikon Phosphor (MIT) ditanam di kode dan MapLibre
+                // (BSD-3-Clause) membawa pemberitahuannya sendiri; keduanya wajib ikut di
+                // setiap salinan. Tanpa opsi ini minifier Vite 8 membuangnya. Komentar
+                // anotasi dan JSDoc tetap dibuang.
+                comments: { legal: true, annotation: false, jsdoc: false },
+            },
+        },
+    },
 });

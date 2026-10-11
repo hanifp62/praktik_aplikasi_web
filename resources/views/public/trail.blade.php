@@ -55,6 +55,20 @@
         <main class="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
             <header>
                 <p class="text-sm font-medium text-muted">{{ $trail->mountain->name }} &middot; {{ $trail->mountain->province }}</p>
+
+                {{--
+                    Data contoh (DK-35, tinjauan W1-9a #4): halaman publik tidak boleh
+                    membuat data contoh terbaca sebagai data sungguhan, sama seperti
+                    lencana React di LencanaDataContoh.tsx. Kelas dan token yang dipakai
+                    persis recipe nada="netral" garis="putus" di Lencana.tsx.
+                --}}
+                @if (\App\Support\PenjagaDataContoh::sedangDisajikan())
+                    <span class="mt-2 inline-flex items-center gap-1 rounded-lencana border border-dashed border-control bg-surface-sunken px-2 py-0.5 text-meta font-bold text-secondary">
+                        Data contoh
+                        <span class="sr-only">: isi halaman ini bukan data sungguhan</span>
+                    </span>
+                @endif
+
                 <h1 class="mt-1 text-3xl font-semibold text-primary">{{ $trail->name }}</h1>
 
                 @if ($trail->description)
@@ -135,7 +149,7 @@
                     langsung kepada pengelola kawasan dan basecamp.
                 </p>
                 <a href="{{ route('login') }}"
-                    class="mt-3 inline-flex min-h-11 items-center rounded-control bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
+                    class="mt-3 inline-flex min-h-11 items-center rounded-control bg-brand-700 px-4 py-2 text-sm font-medium text-on-brand hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
                     Lihat status terkini di aplikasi
                 </a>
             </section>

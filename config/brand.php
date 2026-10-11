@@ -24,18 +24,19 @@ return [
         .'perlu disiapkan, dan apa yang masih kurang sebelum berangkat.',
 
     /*
-     * Warna bilah peramban dan jendela PWA per tema. Terang memakai hijau merek yang
-     * sudah berlaku; gelap memakai kanvas gelap (stone-900) supaya bilah menyatu dengan
-     * halaman. Nilai heksa di sini harus sama dengan token --brand-700 dan --canvas
-     * gelap di resources/css/app.css; BrandIdentityTest yang menjaganya.
+     * Warna bilah peramban dan jendela PWA per tema. Terang memakai isian merek v3
+     * (brand-700, #234F32); gelap memakai kanvas gelap v3 (#0F1311) supaya bilah
+     * menyatu dengan halaman. Nilai heksa di sini harus sama dengan token --brand-700
+     * terang dan --canvas gelap di resources/css/app.css; BrandIdentityTest yang
+     * menjaganya.
      */
     'theme_color' => [
-        'light' => '#047857',
-        'dark' => '#1c1917',
+        'light' => '#234f32',
+        'dark' => '#0f1311',
     ],
 
     'background_color' => [
-        'light' => '#fafaf8',
-        'dark' => '#1c1917',
+        'light' => '#f6f3ec',
+        'dark' => '#0f1311',
     ],
 ];

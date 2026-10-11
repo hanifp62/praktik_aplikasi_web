@@ -4,12 +4,20 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 26 September 2026 (bagian 0). Bagian 1–10 berasal dari 21 September 2026
+Terakhir diperbarui: 27 September 2026 (bagian 0, W1 selesai). Bagian 1–10 berasal dari 21 September 2026
 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
 
 ## 0. Titik lanjut terkini (tonggak M1, 26 September 2026)
+
+**Arahan pemilik 26 September 2026 malam (verbatim), berlaku sampai W9 selesai:** "ya, selesaikan semuanya baru minta
+izin commit dan integrasi nya jika belum selesai semua jangan minta ke saya, jika anda meminta perizinan artinya semua
+tugas anda telah selesai. lanjutkan!" Artinya: W1 sampai W9 dikerjakan berurutan tanpa meminta izin di tengah; tindakan
+yang butuh izin (commit, push, Supabase, migrasi, dependensi baru, menjalankan `memount:demo`) dikumpulkan untuk satu
+permintaan di akhir. Ledger tiap gelombang ada di `.superpowers/sdd/2026-09-26-memount-v3-w<N>-*/progress.md`
+(diabaikan git). Sesudah tiga commit M1 (`40c78d8`, `60400ce`, `ddc27e8`), pohon kerja kembali memuat perubahan
+yang belum di-commit sampai permintaan izin akhir.
 
 **Tempelkan ini di terminal baru:**
 
@@ -17,6 +25,59 @@ dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 > induk `docs/superpowers/plans/2026-09-26-memount-v3-induk.md`. Periksa keadaan nyata dulu: `git status`,
 > `php artisan test --compact --testsuite=Unit,Feature`, `npx tsc --noEmit`. Jangan commit, push, mengakses
 > Supabase, menjalankan migrasi, atau menambah dependensi tanpa izin saya.
+
+### W1 Fondasi desain (selesai 27 September 2026, menunggu izin commit)
+
+Rencana `docs/superpowers/plans/2026-09-26-memount-v3-w1-fondasi-desain.md`, 12 tugas, masing-masing ditinjau terpisah.
+Sesudahnya ada tinjauan akhir lintas tugas, satu gelombang perbaikan, dan tinjauan ulang terlingkup. Ledger dan
+seluruh ruling (W1-4a sampai W1-F6) ada di `.superpowers/sdd/2026-09-26-memount-v3-w1-fondasi-desain/progress.md`.
+Nilai di bawah terukur pada pohon kerja akhir W1.
+
+| Butir | Nilai | Bukti |
+|---|---|---|
+| Suite Unit dan Feature | 1.559 test, 1.557 lulus, 2 dilewati, 0 gagal (sebelum W1: 1.338) | `php artisan test --compact --testsuite=Unit,Feature` |
+| Suite bawaan (Unit, Feature, Spatial) | 1.579 test, 1.557 lulus, 22 dilewati; 20 test Spatial melewati dirinya tanpa `SPATIAL_TEST_DSN` | `php artisan test --compact` |
+| TypeScript dan format | `npx tsc --noEmit` 0 galat; `vendor/bin/pint --test` lulus | gerbang akhir W1 |
+| Bundel | `app` CSS 79.056 B (sebelum W1 62.652), `app` JS 355.096 B (sebelum W1 353.916), potongan pameran `Primitif` 28.893 B yang hanya dimuat `/dev/primitif`; lisensi Phosphor dan MapLibre ikut bundel | build 27 September 12.45, `ThirdPartyLicenseTest` |
+| Huruf | Plus Jakarta Sans dihosting sendiri; halaman berteks Indonesia memuat 27.348 B (subset Latin), di disk 49.076 B, anggaran 102.400 B | tugas 12 langkah 6 |
+| Tangkapan | 14 halaman (pameran, Dasbor, Jelajah, Jelajah kosong; 390 dan 1440 px; terang dan gelap) ditambah bukti fokus, dibandingkan dengan gambar acuan | `docs/desain/tangkapan/w1/README.md` |
+| Delivery Gate antislop | R-02 kini lulus (9 em dash lama di `docs/ARCHITECTURE.md` diganti). Dua butir sengaja dijadwalkan: aksen kuning pos belum tampil di layar mana pun (ruling W1-12b, ditempatkan W3 sampai W5) dan susunan Dasbor/Jelajah masih generik (ruling W1-12a, W2 sampai W5) | `.superpowers/.../delivery-gate-w1.md` |
+| Jam pilot glyph | 0 jam 3 menit (Tugas 4); putaran perbaikan bentuk pos W1-4a tidak tercatat waktunya | laporan Tugas 4 |
+
+Yang dibangun W1:
+- token v3 terang, gelap, dan dua tema lapangan (mandiri, empat kombinasinya diuji kontras);
+- huruf dan ikon Phosphor dengan tiga glyph domain pilot;
+- primitif di `resources/js/components/ui/`, dengan fokus, target 44 px dua sumbu, dan toast Urungkan yang bisa dicapai
+  papan ketik;
+- pameran `/dev/primitif`, dijaga dua lapis dan hanya di local;
+- data contoh `DemoSeeder` beserta perintah `memount:demo`. Perintahnya belum pernah dijalankan (Q1). Penjaganya
+  menolak apa pun selain SQLite di `database/` dan memutus cache, antrean, surel, disk, broadcasting, disk foto
+  laporan, dan sesi dari `.env`;
+- lencana "Data contoh" di layout aplikasi dan halaman publik jalur;
+- harness pratinjau (suite `Pratinjau` dan router statis yang tidak pernah menjalankan `index.php`);
+- `DESIGN.md` bagian Turunan v3.
+
+Pagar keamanan baru yang wajib diikuti gelombang berikutnya:
+- awalan `DB_CONNECTION=sqlite DB_DATABASE=:memory: DB_URL=` untuk perintah Artisan di luar PHPUnit, `npm run build`,
+  dan `php -S`. Di PowerShell pakai `$env:DB_URL="(empty)"`;
+- `phpunit.xml` menetralkan `DB_*` lewat `<env force>` dan `<server>`.
+
+Sisa yang tercatat:
+- **Aset dan merek:** ikon PNG di `public/icons/` belum berganti warna (aset logo menunggu gerbang DK-16); set lengkap
+  glyph menunggu Q15.
+- **Ke W2:** bilah tab pil dan kerangka.
+- **Ke W3:** pemindahan enam komponen domain; Jelajah memeriksa cabang "menunggu" sebelum menyalahkan saringan
+  (W1-F1); permukaan Blade halaman publik jalur (W1-F2).
+- **Ke W6:** warna teks warisan, `caret-color`, `accent-color`, dan centang di dalam tema lapangan yang berbeda dari
+  tema aplikasi.
+- **Ke W8:** kolom `technical_demand` dan `navigation_complexity` tanpa UNKNOWN, jadi jalur tanpa data tercatat
+  MODERATE. Utang R-006 ini butuh migrasi.
+- **Ke W9:** pemeriksaan `forced-colors`; tombol dan judul Blade halaman galat dan offline (W1-F2).
+- **Konvensi:** nama prop primitif yang sudah ada tidak diganti; primitif baru memakai `nilai`, `onUbah`, dan `label`
+  (W1-F3).
+- **Menunggu CI atau izin:** bukti test symlink penjaga data contoh menunggu CI Linux (dilewati di Windows); perilaku
+  fokus baru dibuktikan dengan klik-lewat, runner end-to-end menunggu izin Playwright.
+- **Sudah tertutup:** butir 17 lama (pemberitahuan lisensi di bundel) oleh Tugas 3.
 
 **Arahan pemilik terakhir** (26 September 2026, verbatim): "lanjut, commit pastikan semua terintegrasi jadi saya bisa
 cek di local host". Arahan sebelumnya (verbatim di spec v3 bagian 17.1): restrukturisasi repo untuk

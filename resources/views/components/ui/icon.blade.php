@@ -1,38 +1,50 @@
-@props(['name', 'label' => null, 'class' => 'h-4 w-4'])
+@props(['name', 'label' => null, 'size' => 16, 'class' => ''])
 
 @php
     /*
-     * Ikon Phosphor berat regular, ditanam sebagai path.
+     * Ikon Phosphor (phosphor-icons/core 2.1.1), ditanam sebagai path.
      * Lisensi: MIT, Copyright (c) 2023 Phosphor Icons; teks lengkap di resources/js/components/ui/LICENSE-phosphor.txt.
      *
-     * Ditanam, bukan diimpor dari pustaka: yang dipakai aplikasi ini segelintir, dan
-     * menambah dependensi demi lima bentuk menagih bita kepada setiap pengguna untuk
-     * ikon yang tidak pernah ia lihat.
+     * Ditanam, bukan diimpor dari pustaka: halaman Blade publik hanya memakai panah naik
+     * dan turun, dan menambah dependensi demi dua bentuk menagih bita kepada setiap
+     * pengguna untuk ikon yang tidak pernah ia lihat. Registri lengkap untuk halaman React
+     * ada di resources/js/components/ui/ikon/phosphor.ts.
      *
-     * Bukan Lucide maupun Heroicons. Keduanya pilihan bawaan hampir semua antarmuka
-     * hasil AI, dan memakainya berarti mengulang tanda tangan yang sedang dihapus.
+     * Bobot mengikuti ukuran render seperti komponen React (spec v3 bagian 8.3, DK-39): Bold
+     * di bawah 20 px, Regular mulai 20 px. Ukuran di bawah 16 px ditolak, karena ikon
+     * informatif yang lebih kecil dari itu tidak terbaca.
      *
      * Nama yang tidak dikenal menghasilkan kekosongan, bukan kotak rusak: ikon tidak
      * pernah menjadi satu-satunya pembawa arti di sini, jadi hilangnya satu bentuk tidak
      * boleh merusak barisnya.
      */
+    $ukuran = (int) $size;
+
+    if (! in_array($ukuran, [16, 20, 24], true)) {
+        throw new \InvalidArgumentException("Ukuran ikon {$ukuran} px tidak didukung: ikon informatif paling kecil 16 px, dan ukuran yang tersedia 16, 20, atau 24 (DK-39).");
+    }
+
     $bentuk = [
-        'arrow-up' => '<path d="M205.66,117.66a8,8,0,0,1-11.32,0L136,59.31V216a8,8,0,0,1-16,0V59.31L61.66,117.66a8,8,0,0,1-11.32-11.32l72-72a8,8,0,0,1,11.32,0l72,72A8,8,0,0,1,205.66,117.66Z"/>',
-        'arrow-down' => '<path d="M205.66,149.66l-72,72a8,8,0,0,1-11.32,0l-72-72a8,8,0,0,1,11.32-11.32L120,196.69V40a8,8,0,0,1,16,0V196.69l58.34-58.35a8,8,0,0,1,11.32,11.32Z"/>',
-        'path' => '<path d="M216,40H160a8,8,0,0,0,0,16h36.69L152,100.69,131.31,80a16,16,0,0,0-22.62,0l-64,64a8,8,0,0,0,11.31,11.31L120,91.31,140.69,112a16,16,0,0,0,22.62,0L208,67.31V104a8,8,0,0,0,16,0V48A8,8,0,0,0,216,40Z"/>',
-        'mountains' => '<path d="M248,208H231.4L172.32,49.51a16,16,0,0,0-30.07,0l-20.9,56.05-27.4-47.46a16,16,0,0,0-27.71,0L12.72,188a16,16,0,0,0,13.86,24H248a8,8,0,0,0,0-16Z"/>',
-        'shield-check' => '<path d="M208,40H48A16,16,0,0,0,32,56v58.77c0,89.62,75.82,119.34,91,124.39a15.53,15.53,0,0,0,10,0c15.2-5.05,91-34.77,91-124.39V56A16,16,0,0,0,208,40Zm-32.4,64.16-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L114,148.12l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/>',
+        'arrow-up' => [
+            'regular' => 'M205.66,117.66a8,8,0,0,1-11.32,0L136,59.31V216a8,8,0,0,1-16,0V59.31L61.66,117.66a8,8,0,0,1-11.32-11.32l72-72a8,8,0,0,1,11.32,0l72,72A8,8,0,0,1,205.66,117.66Z',
+            'bold' => 'M208.49,120.49a12,12,0,0,1-17,0L140,69V216a12,12,0,0,1-24,0V69L64.49,120.49a12,12,0,0,1-17-17l72-72a12,12,0,0,1,17,0l72,72A12,12,0,0,1,208.49,120.49Z',
+        ],
+        'arrow-down' => [
+            'regular' => 'M205.66,149.66l-72,72a8,8,0,0,1-11.32,0l-72-72a8,8,0,0,1,11.32-11.32L120,196.69V40a8,8,0,0,1,16,0V196.69l58.34-58.35a8,8,0,0,1,11.32,11.32Z',
+            'bold' => 'M208.49,152.49l-72,72a12,12,0,0,1-17,0l-72-72a12,12,0,0,1,17-17L116,187V40a12,12,0,0,1,24,0V187l51.51-51.52a12,12,0,0,1,17,17Z',
+        ],
     ];
 
-    $isi = $bentuk[$name] ?? null;
+    $isi = $bentuk[$name][$ukuran < 20 ? 'bold' : 'regular'] ?? null;
+    $kelasUkuran = [16 => 'size-4', 20 => 'size-5', 24 => 'size-6'][$ukuran];
 @endphp
 
 @if ($isi)
-    <svg viewBox="0 0 256 256" fill="currentColor" class="{{ $class }} inline-block shrink-0"
+    <svg viewBox="0 0 256 256" fill="currentColor" class="{{ trim($kelasUkuran.' inline-block shrink-0 '.$class) }}"
         @if ($label) role="img" @else aria-hidden="true" @endif>
         @if ($label)
             <title>{{ $label }}</title>
         @endif
-        {!! $isi !!}
+        <path d="{{ $isi }}"/>
     </svg>
 @endif

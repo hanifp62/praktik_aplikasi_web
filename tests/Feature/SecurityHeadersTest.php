@@ -71,16 +71,20 @@ class SecurityHeadersTest extends TestCase
     }
 
     /**
-     * Kedua layout memuat Figtree dari Bunny Fonts. CSP yang hanya mengizinkan 'self'
-     * memblokirnya tanpa pesan apa pun, dan aplikasi diam-diam jatuh ke font sistem.
+     * Huruf dimuat dari asal aplikasi sendiri (DK-38).
+     *
+     * Menggantikan test_the_font_host_the_layouts_actually_use_is_allowed, yang menuntut
+     * CSP mengizinkan Bunny Fonts. Sejak gelombang 1 v3 huruf dihosting sendiri, jadi
+     * niatnya dibalik: CSP tidak mengizinkan asal huruf luar mana pun, sehingga huruf yang
+     * ditambahkan dari layanan lain diblokir alih-alih diam-diam menjadi ketergantungan.
      */
-    public function test_the_font_host_the_layouts_actually_use_is_allowed(): void
+    public function test_fonts_load_only_from_our_own_origin(): void
     {
         $csp = $this->get('/login')->assertOk()->headers->get('Content-Security-Policy');
 
-        $this->assertStringContainsString('style-src', $csp);
-        $this->assertMatchesRegularExpression('/style-src[^;]*fonts\.bunny\.net/', $csp);
-        $this->assertMatchesRegularExpression('/font-src[^;]*fonts\.bunny\.net/', $csp);
+        $this->assertMatchesRegularExpression("/font-src 'self' data:(;|$)/", $csp);
+        $this->assertMatchesRegularExpression("/style-src 'self' 'unsafe-inline'(;|$)/", $csp);
+        $this->assertStringNotContainsString('fonts.bunny.net', $csp);
     }
 
     public function test_an_authenticated_page_carries_the_headers_too(): void

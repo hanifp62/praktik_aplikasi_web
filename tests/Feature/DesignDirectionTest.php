@@ -46,10 +46,12 @@ class DesignDirectionTest extends TestCase
     /**
      * Radius memakai satu nama per peran.
      *
-     * rounded-md bernilai persis sama dengan rounded-control (0.375rem), dan dua nama
-     * untuk satu nilai adalah persis ketidakkonsistenan yang membuat berkas berikutnya
-     * memilih sendiri. rounded-control dibaca dari token, jadi bentuk kontrol di seluruh
-     * aplikasi berubah dari satu baris; rounded-md tidak berubah oleh apa pun.
+     * rounded-md bawaan Tailwind (0.375rem) bernilai persis sama dengan rounded-lencana, dan
+     * sebelum gelombang 1 v3 sama dengan rounded-control; kini rounded-control 0.75rem. Dua
+     * nama untuk satu nilai adalah persis ketidakkonsistenan yang membuat berkas berikutnya
+     * memilih sendiri. Nama radius peran dibaca dari token, jadi bentuk di seluruh aplikasi
+     * berubah dari satu baris; rounded-md tidak berubah oleh apa pun. Yang disapu hanya view
+     * Blade; TSX dirapikan saat halamannya dirombak (tinjauan akhir W1, M-4).
      */
     public function test_one_radius_name_per_role(): void
     {
@@ -64,6 +66,27 @@ class DesignDirectionTest extends TestCase
         }
 
         $this->assertSame([], $pelanggar, 'Radius di luar peran yang ditetapkan: '.implode(', ', $pelanggar));
+    }
+
+    /**
+     * Tabel radius di DESIGN.md menyebut peta pada rounded-utama dan panel pada
+     * rounded-kartu, dan kodenya mengikuti tabel itu (tinjauan akhir W1, M-4). Sebelumnya
+     * WadahPeta memakai rounded-lg dan Alert memakai rounded-control, peran yang di tabel
+     * yang sama disebut segmen dan tombol ikon kotak.
+     */
+    public function test_the_map_frame_and_the_alert_panel_use_the_radius_named_in_the_table(): void
+    {
+        $this->assertMatchesRegularExpression('/^\| `rounded-utama` \| 22 px \| [^|]*\bpeta\b/m', $this->arah());
+        $this->assertMatchesRegularExpression('/^\| `rounded-lg`, `rounded-kartu` \| 18 px \| [^|]*\bpanel\b/m', $this->arah());
+
+        $this->assertMatchesRegularExpression(
+            "/role=\"region\" aria-label=\\{label\\} className=\\{kelas\\('[^']*\\brounded-utama\\b/",
+            File::get(resource_path('js/components/peta/WadahPeta.tsx'))
+        );
+        $this->assertMatchesRegularExpression(
+            "/role=\\{role\\} className=\\{kelas\\('[^']*\\brounded-kartu\\b/",
+            File::get(resource_path('js/components/ui/Alert.tsx'))
+        );
     }
 
     /**
@@ -110,5 +133,43 @@ class DesignDirectionTest extends TestCase
             $pelanggar,
             'Em dash di: '.implode(', ', $pelanggar).'. Pakai koma, titik dua, atau tanda kurung.'
         );
+    }
+
+    /**
+     * Bagian Arah (kata pemilik produk) dan aturan canonical R-015 sampai R-017 tidak
+     * disunting agen. Gelombang 1 v3 menulis ulang bagian Turunan saja; kedua bagian lain
+     * dipaku hash isinya, dengan akhir baris dinormalkan ke LF seperti yang disimpan git.
+     */
+    public function test_the_owner_direction_and_canonical_rules_are_untouched(): void
+    {
+        $isi = str_replace("\r\n", "\n", $this->arah());
+        $arah = strpos($isi, '## Arah (dari pemilik produk)');
+        $turunan = strpos($isi, '## Turunan (ditarik agen, silakan dibetulkan)');
+        $kanon = strpos($isi, '# Aturan canonical (R-015');
+
+        $this->assertNotFalse($arah);
+        $this->assertNotFalse($turunan);
+        $this->assertNotFalse($kanon);
+        $this->assertSame('37d00315fb2842eb56b3931cd05d8c5ad294ccc127497cf039e8c7bd8a8d8981', hash('sha256', substr($isi, $arah, $turunan - $arah)), 'Bagian Arah dari pemilik berubah.');
+        $this->assertSame('501349773091c87e61658a779f64319add43dcddd899e2066e423b968a0fa079', hash('sha256', substr($isi, $kanon)), 'Aturan canonical berubah.');
+    }
+
+    /**
+     * Bagian Turunan mengikuti bahasa desain v3 dari prototype pemilik (spec v3 bagian 8):
+     * dial 2/2/2, satu keluarga huruf, token on-brand, koreksi kontras, lantai huruf, tema
+     * lapangan, dan pameran primitif. Keputusan v2 yang sudah diganti tidak tertinggal.
+     */
+    public function test_the_derived_section_follows_the_v3_prototype(): void
+    {
+        $isi = $this->arah();
+        $mulai = strpos($isi, '## Turunan');
+        $turunan = substr($isi, $mulai, strpos($isi, '## Yang tidak dikerjakan') - $mulai);
+
+        foreach (['| **ENERGY** | **2** |', '| **RHYTHM** | **2** |', '| **MOTION** | **2** |', 'Plus Jakarta Sans', 'text-on-brand', '#F6F3EC', '#808682', 'Lantai 12 px', 'Data contoh', 'data-tema-lapangan', '/dev/primitif', 'glyphDomain.ts'] as $wajib) {
+            $this->assertStringContainsString($wajib, $turunan, "Bagian Turunan belum menyebut {$wajib}.");
+        }
+
+        $this->assertStringNotContainsString('wire:navigate', $turunan, 'Livewire sudah dipensiunkan; tema disamakan dasar.js.');
+        $this->assertDoesNotMatchRegularExpression('/\| Judul halaman \| Newsreader/', $turunan, 'Serif judul sudah dilepas (DK-38).');
     }
 }

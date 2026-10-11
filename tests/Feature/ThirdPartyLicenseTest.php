@@ -58,7 +58,7 @@ class ThirdPartyLicenseTest extends TestCase
             }
         }
 
-        foreach (['components/ui/Icon.tsx', 'components/ui/icon.blade.php'] as $wajib) {
+        foreach (['components/ui/Icon.tsx', 'components/ui/icon.blade.php', 'components/ui/ikon/phosphor.ts'] as $wajib) {
             $this->assertContains($wajib, $terdeteksi, "Pemindai tidak mengenali {$wajib} sebagai berkas yang memuat ikon Phosphor.");
         }
 
@@ -83,5 +83,40 @@ class ThirdPartyLicenseTest extends TestCase
         foreach (['Phosphor Icons', 'Plus Jakarta Sans', 'OpenStreetMap', 'BMKG', self::LISENSI_PHOSPHOR] as $karya) {
             $this->assertStringContainsString($karya, $daftar);
         }
+    }
+
+    /**
+     * Huruf yang dihosting sendiri membawa teks OFL-nya: SIL OFL 1.1 syarat 2 mewajibkan
+     * pemberitahuan hak cipta dan lisensinya ikut di setiap salinan huruf.
+     */
+    public function test_the_self_hosted_font_carries_its_ofl_text(): void
+    {
+        $ofl = File::get(public_path('fonts/plus-jakarta-sans/OFL.txt'));
+        $daftar = File::get(base_path('docs/lisensi-pihak-ketiga.md'));
+
+        $this->assertStringContainsString('Copyright 2020 The Plus Jakarta Sans Project Authors', $ofl);
+        $this->assertStringContainsString('SIL OPEN FONT LICENSE Version 1.1', $ofl);
+        $this->assertStringContainsString('public/fonts/plus-jakarta-sans/OFL.txt', $daftar);
+        $this->assertStringNotContainsString('Dimuat dari Bunny Fonts', $daftar, 'Daftar lisensi masih menyebut Bunny Fonts sebagai sumber huruf.');
+    }
+
+    /**
+     * Pemberitahuan lisensi ikut ke bundel produksi (HANDOVER bagian 0 butir 17). Minifier
+     * Vite 8 membuang komentar lisensi berawalan /*! dan @license kecuali diminta
+     * mempertahankannya; sebelum gelombang 1 v3 bundel tidak memuat pemberitahuan Phosphor
+     * (MIT) maupun MapLibre (BSD-3-Clause) sama sekali.
+     */
+    public function test_the_production_build_keeps_the_licence_notices(): void
+    {
+        $this->assertMatchesRegularExpression('/comments:\s*\{\s*legal:\s*true,/', File::get(base_path('vite.config.js')));
+
+        $bundel = glob(public_path('build/assets/*.js')) ?: [];
+
+        $this->assertNotEmpty($bundel, 'Bundel belum dibangun: jalankan build sebelum suite ini.');
+
+        $isi = implode("\n", array_map(fn (string $jalur): string => (string) file_get_contents($jalur), $bundel));
+
+        $this->assertStringContainsString('Copyright (c) 2023 Phosphor Icons', $isi, 'Pemberitahuan MIT Phosphor hilang dari bundel produksi.');
+        $this->assertStringContainsString('@license 3-Clause BSD', $isi, 'Pemberitahuan lisensi MapLibre hilang dari bundel produksi.');
     }
 }

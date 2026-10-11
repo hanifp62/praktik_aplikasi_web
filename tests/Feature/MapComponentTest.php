@@ -42,6 +42,35 @@ class MapComponentTest extends TestCase
     }
 
     /**
+     * Garis rute terbaca di kedua tema (I-1). Di tema gelap basemap topografi tetap terang,
+     * hanya diredupkan, sedangkan garis merek menjadi hijau muda: tanpa tepi, garisnya
+     * sekitar 1,1:1 terhadap kertas peta. Setiap peta memasang lapisan tepi dari --surface
+     * lebih dulu dan lebih lebar daripada garisnya, sehingga garis selalu berdiri di atas
+     * warna yang kontrasnya dihitung ColourContrastTest, apa pun warna tile di bawahnya.
+     */
+    public function test_every_route_line_sits_on_a_wider_surface_casing(): void
+    {
+        foreach (self::PETA as $berkas) {
+            $sumber = File::get(resource_path('js/'.$berkas));
+
+            $this->assertSame(1, preg_match("/const tepi = warnaToken\('--surface', '[^']+'\);/", $sumber), "{$berkas}: warna tepi bukan token --surface.");
+
+            preg_match_all("/addLayer\(\{ id: '([a-z-]+)', type: 'line',[^\n]*?'line-color': ([^,]+),[^\n]*?'line-width': (?:tebal\()?(\d+)/", $sumber, $lapisan, PREG_SET_ORDER);
+
+            $this->assertGreaterThanOrEqual(2, count($lapisan), "{$berkas}: butuh lapisan tepi dan lapisan garis.");
+
+            [, $idTepi, $warnaTepi, $lebarTepi] = $lapisan[0];
+
+            $this->assertSame('tepi', $warnaTepi, "{$berkas}: lapisan garis pertama ({$idTepi}) harus tepi --surface, didaftarkan sebelum garisnya.");
+
+            foreach (array_slice($lapisan, 1) as [, $idGaris, $warnaGaris, $lebarGaris]) {
+                $this->assertNotSame('tepi', $warnaGaris, "{$berkas}: {$idGaris} memakai warna tepi.");
+                $this->assertGreaterThan((int) $lebarGaris, (int) $lebarTepi, "{$berkas}: tepi {$idTepi} tidak lebih lebar dari garis {$idGaris}.");
+            }
+        }
+    }
+
+    /**
      * Peta adalah wilayah interaktif yang bernama, bukan gambar. role="img" menuntut teks
      * alternatif yang mustahil untuk peta yang dapat digeser.
      */

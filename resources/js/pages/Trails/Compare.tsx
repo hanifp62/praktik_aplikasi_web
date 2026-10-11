@@ -43,7 +43,7 @@ export default function Compare() {
                 >
                     {jumlahTersimpan > 0 ? (
                         <div className="mt-3">
-                            <Button variant="ghost" size="sm" className="-ml-3" href={saved.url()}>
+                            <Button variant="ghost" size="sm" className="-ml-4" href={saved.url()}>
                                 Lihat daftar rute tersimpan ({jumlahTersimpan})
                             </Button>
                         </div>

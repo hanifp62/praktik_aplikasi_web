@@ -248,3 +248,11 @@ require __DIR__.'/auth.php';
 Route::get('manifest.webmanifest', [ProgressiveWebAppController::class, 'manifest'])->name('pwa.manifest');
 Route::get('sw.js', [ProgressiveWebAppController::class, 'serviceWorker'])->name('pwa.sw');
 Route::view('offline', 'offline')->name('pwa.offline');
+
+/*
+ * Pameran primitif desain (ruling W1-R5): hanya di APP_ENV=local, tidak pernah di staging
+ * atau produksi, dan tidak masuk sitemap. Isinya di routes/dev.php.
+ */
+if (app()->environment('local')) {
+    require __DIR__.'/dev.php';
+}

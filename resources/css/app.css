@@ -1,83 +1,162 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /*
-| Design token
+| Huruf antarmuka dihosting sendiri (DK-38, spec v3 bagian 8.2).
 |
-| Satu-satunya tempat palet aplikasi didefinisikan. Mengubah warna merek,
-| warna peringatan, atau radius kontrol cukup dilakukan di blok ini: seluruh
-| komponen dan halaman ikut berubah.
+| Plus Jakarta Sans variabel (bobot 200 sampai 800) dalam dua subset: Latin (27.348 bita)
+| dan Latin Extended (21.728 bita). Peramban hanya mengunduh subset yang glyph-nya muncul
+| di halaman, jadi teks Indonesia cukup mengunduh subset Latin. Asal berkas, hash, dan
+| lisensinya tercatat di docs/lisensi-pihak-ketiga.md; teks OFL ikut di folder berkasnya.
 |
-| Nilai ditulis sebagai komponen RGB tanpa fungsi rgb() agar Tailwind dapat
-| menerapkan opacity lewat sintaks <alpha-value> (mis. bg-brand-600/50).
+| Dua wajah cadangan menyamakan metrik Roboto (Android) dan Arial (Windows, macOS, iOS)
+| dengan Plus Jakarta Sans, supaya tata letak tidak melompat ketika huruf tiba atau
+| ketika ia gagal dimuat sama sekali. Nilainya dihitung dari lebar rata-rata glyph dan
+| metrik vertikal ketiga huruf, bukan ditaksir.
+*/
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-wght-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'PJS Cadangan Roboto';
+    src: local('Roboto');
+    size-adjust: 104.6%;
+    ascent-override: 99.2%;
+    descent-override: 21.2%;
+    line-gap-override: 0%;
+}
+
+@font-face {
+    font-family: 'PJS Cadangan Arial';
+    src: local('Arial');
+    size-adjust: 104.3%;
+    ascent-override: 99.5%;
+    descent-override: 21.3%;
+    line-gap-override: 0%;
+}
+
+/*
+| Design token v3
 |
-| Rasio kontras di bawah ini dihitung, bukan dikira-kira, dan dijaga
-| tests/Feature/ColourContrastTest.php. Teks normal butuh 4.5:1.
+| Satu-satunya tempat palet dan bentuk aplikasi didefinisikan (spec v3 bagian 8.1 dan
+| 8.4; DK-30, DK-31, DK-49). Token menyebut peran; komponen hanya memakai kelas Tailwind
+| yang membaca token ini, jadi mengubah rasa seluruh aplikasi cukup menyentuh nilai di
+| sini.
 |
-|   putih di atas brand-700          5.48:1   dasar tombol primer
-|   putih di atas brand-800          7.68:1   hover tombol primer
-|   putih di atas danger-600         4.70:1   tombol hapus
-|   brand-900 di atas brand-100      8.57:1   badge dan alert
-|   warn-900  di atas warn-100       8.15:1
-|   danger-900 di atas danger-100    7.97:1
+| Nilai ditulis sebagai komponen RGB tanpa fungsi rgb() agar Tailwind dapat menerapkan
+| opacity lewat sintaks <alpha-value> (mis. bg-brand-600/50).
 |
-| brand-600 hanya 3.77:1 terhadap putih, jadi ia dipakai untuk garis dan
-| focus ring (yang ambangnya 3:1), bukan sebagai latar teks.
+| Palet berasal dari prototype pemilik (docs/desain/prototype/), dengan koreksi terukur
+| DK-31: batas kontrol #8C8579, garis komunitas #5F82B8, teks redup #626965. Satu koreksi
+| lagi ditemukan di gelombang 1: status belum diketahui #8A8F8B hanya 2,97:1 di kanvas,
+| jadi menjadi #808682 (3,35:1).
+|
+| Rasio dihitung dengan rumus WCAG 2.x, bukan ditaksir, dan dijaga
+| tests/Feature/ColourContrastTest.php untuk tema terang, gelap, dan kedua tema lapangan.
+|
+|   on-brand di atas brand-700           9,39:1   teks tombol primer
+|   text-primary di atas canvas         14,43:1
+|   text-secondary di atas canvas        6,91:1
+|   text-muted di atas surface-sunken    4,69:1
+|   control-border di atas surface       3,65:1   batas kontrol (WCAG 1.4.11)
+|   community-500 di atas community-50   3,60:1   garis putus-putus komunitas
 */
 @layer base {
     :root {
-        /* Merek, dipakai untuk aksi utama dan penanda status positif. */
-        --brand-50: 236 253 245;
-        --brand-100: 209 250 229;
-        --brand-200: 167 243 208;
-        --brand-300: 110 231 183;
-        --brand-500: 16 185 129;
-        --brand-600: 5 150 105;
-        --brand-700: 4 120 87;
-        --brand-800: 6 95 70;
-        --brand-900: 6 78 59;
+        /* Merek. 700 isian tombol, 800 saat ditekan, 600 cincin fokus dan garis aktif,
+           100 dan 50 latar lembut (tab aktif, chip terpilih, baris terpilih), 900 teks
+           di atas latar lembut. */
+        --brand-50: 238 244 239;
+        --brand-100: 228 238 230;
+        --brand-200: 200 220 205;
+        --brand-300: 157 191 166;
+        --brand-500: 63 122 82;
+        --brand-600: 47 107 67;
+        --brand-700: 35 79 50;
+        --brand-800: 22 54 31;
+        --brand-900: 30 94 53;
+
+        /* Teks di atas isian merek. Putih di tema terang; di tema gelap isiannya hijau
+           muda, jadi teksnya gelap (spec v3 bagian 8.1). */
+        --on-brand: 255 255 255;
 
         /* Peringatan: kondisi yang perlu diperhatikan, bukan kegagalan. */
-        --warn-50: 255 251 235;
-        --warn-100: 254 243 199;
-        --warn-300: 252 211 77;
-        --warn-600: 217 119 6;
-        --warn-900: 120 53 15;
+        --warn-50: 251 241 222;
+        --warn-100: 251 235 207;
+        --warn-300: 226 192 138;
+        --warn-600: 183 121 31;
+        --warn-900: 122 78 11;
 
-        /* Komunitas - membedakan masukan pendaki lain dari keterangan resmi (§92). */
-        --community-50: 240 249 255;
-        --community-500: 14 165 233;
-        --community-900: 12 74 110;
+        /* Komunitas: membedakan masukan pendaki lain dari keterangan resmi (PRD §92). */
+        --community-50: 242 246 252;
+        --community-500: 95 130 184;
+        --community-900: 36 80 140;
 
-        /* Bahaya: penutupan resmi, tindakan merusak. */
-        --danger-50: 255 241 242;
-        --danger-100: 255 228 230;
-        --danger-300: 253 164 175;
-        --danger-600: 225 29 72;
-        --danger-700: 190 18 60;
-        --danger-900: 136 19 55;
+        /* Bahaya: penutupan resmi dan tindakan merusak, tidak pernah hiasan. */
+        --danger-50: 251 237 234;
+        --danger-100: 247 223 218;
+        --danger-300: 224 168 158;
+        --danger-600: 163 59 43;
+        --danger-700: 142 47 34;
+        --danger-900: 127 40 28;
+
+        /* Label kecocokan publik (R-004) dan keadaan Belum dinilai (R-006). */
+        --fit-cocok: 221 238 226;
+        --fit-cocok-teks: 30 94 53;
+        --fit-perlu: 251 235 207;
+        --fit-perlu-teks: 122 78 11;
+        --fit-kurang: 247 223 218;
+        --fit-kurang-teks: 142 47 34;
+        --fit-belum: 236 233 227;
+        --fit-belum-teks: 78 85 81;
+
+        /* Status akses (DK-32): penanda non-teks, selalu bersama bentuk dan kata. */
+        --status-buka: 47 122 72;
+        --status-dibatasi: 183 121 31;
+        --status-tutup: 142 47 34;
+        --status-belum: 128 134 130;
+
+        /* Satu aksen: kuning pos. 1,76:1 di kanvas, jadi tidak pernah membawa arti
+           sendirian (spec v3 bagian 8.1). */
+        --accent-pos: 232 176 75;
 
         /*
-         * Batas kontrol interaktif. WCAG 1.4.11 menuntut 3:1 terhadap latarnya, dan
-         * gray-300 bawaan Breeze hanya 1.47:1: kotak isiannya praktis tidak berbatas
-         * bagi penglihatan rendah. Nilai ini 3.52:1, dihitung bukan ditaksir.
-         *
-         * Hanya untuk kontrol. Garis dekoratif pada kartu dan pemisah tetap gray-200
-         * atau gray-300, karena 1.4.11 memang tidak mengaturnya.
+         * Batas kontrol interaktif. WCAG 1.4.11 menuntut 3:1 terhadap latarnya: 3,65:1 di
+         * atas kartu dan 3,30:1 di atas kanvas. Juga isian sakelar mati dan batas kotak
+         * centang (DK-31). Garis dekoratif kartu dan pemisah tetap border-subtle, karena
+         * 1.4.11 memang tidak mengaturnya.
          */
-        --control-border: 133 137 143;
+        --control-border: 140 133 121;
 
         /*
-         * Bentuk: radius konsentris (arah desain v2, riset 2026-09-25-uiux/01 §5.1).
-         * Kontrol, kartu, dan lapisan luar (lembar bawah, panel) punya radius sendiri;
-         * yang bersarang di dalam lapisan lain memakai radius luar dikurangi padding
-         * supaya sudutnya sejajar. Chip dan kontrol segmen memakai rounded-full.
+         * Bentuk (spec v3 bagian 8.4): kontrol kecil 10 px, kontrol 12 px, tombol dan
+         * isian 16 px, kartu 18 px, kartu utama dan peta 22 px, lembar bawah 26 px, lencana
+         * 6 px. Yang bersarang di dalam lapisan lain memakai radius luar dikurangi padding
+         * supaya sudutnya sejajar. Chip, bilah tab, dan tombol ikon memakai rounded-full.
          */
+        --radius-kecil: 0.625rem;
         --radius-control: 0.75rem;
-        --radius-kartu: 1rem;
-        --radius-luar: 1.5rem;
+        --radius-tombol: 1rem;
+        --radius-kartu: 1.125rem;
+        --radius-utama: 1.375rem;
+        --radius-lembar: 1.625rem;
+        --radius-lencana: 0.375rem;
 
         /*
          * Gerak (DK-26). Hanya transform dan opacity yang dianimasikan. Kurva pegas
@@ -97,55 +176,51 @@
         /*
          * Lapisan semantik.
          *
-         * Tingkat di atas ini menyebut warna; tingkat ini menyebut peran. Sebelum
-         * lapisan ini ada, view memakai empat abu Tailwind bergantian untuk peran yang
-         * sama, dan tidak ada aturan mana berarti apa.
+         * Tingkat di atas ini menyebut warna; tingkat ini menyebut peran. Netral hangat,
+         * bukan abu Tailwind yang bersemu biru: kertas peta dan buku catatan lapangan
+         * (spec v3 bagian 8.1). Tinta hampir hitam bersemu hijau, selaras dengan merek.
          *
-         * Netral hangat, bukan abu Tailwind yang bersemu biru. Kanvas editorial bernuansa
-         * hangat, dan permukaan hangat dengan teks dingin adalah ciri tema yang ditempel
-         * di atas default.
-         *
-         * Rasio di bawah dihitung terhadap tiga permukaan, bukan terhadap putih saja.
-         * Nilai muted yang dirancang spec berhenti di 4.40:1 ketika label duduk di atas
-         * sumur (gagal AA di permukaan yang tidak ikut dihitung), jadi ia digelapkan
-         * satu tingkat. ColourContrastTest yang menguncinya.
-         *
-         *   text-primary   di atas canvas   16.73:1   sumur 16.02:1
-         *   text-secondary di atas canvas    9.83:1   sumur  9.41:1
-         *   text-muted     di atas canvas    5.11:1   sumur  4.89:1
+         *   text-primary   di atas canvas   14,43:1   sumur 13,32:1
+         *   text-secondary di atas canvas    6,91:1   sumur  6,38:1
+         *   text-muted     di atas canvas    5,08:1   sumur  4,69:1
          */
-        --text-primary: 28 25 23;
-        --text-secondary: 68 64 60;
-        --text-muted: 112 106 100;
+        --text-primary: 29 35 32;
+        --text-secondary: 78 85 81;
+        --text-muted: 98 105 101;
+        --text-inverse: 255 255 255;
 
-        --canvas: 250 250 248;
+        --canvas: 246 243 236;
         --surface: 255 255 255;
-        --surface-sunken: 245 245 243;
+        --surface-sunken: 238 234 225;
+        --surface-inverse: 29 35 32;
 
-        --border-subtle: 233 232 228;
+        --border-subtle: 226 221 210;
 
         /*
          * Hijau merek sebagai LATAR DEPAN: tautan, teks penekanan, garis grafik.
          *
          * Dipisahkan dari brand-700 yang menjadi ISIAN tombol karena keduanya berpisah
-         * jalan di tema gelap: isian tetap brand-700 (putih di atasnya tetap 5.48:1),
-         * sedangkan latar depan harus menerang (brand-700 hanya 2.77:1 di atas
-         * permukaan gelap). Satu token untuk dua peran berarti salah satunya gagal.
+         * jalan di tema gelap. Di tema terang nilainya sama.
          */
-        --brand-ink: 4 120 87;
+        --brand-ink: 35 79 50;
 
         /* Tanda dan wordmark logo, mengikuti aturan yang sama dengan brand-ink. */
-        --logo-mark: 4 120 87;
-        --logo-type: 28 25 23;
+        --logo-mark: 35 79 50;
+        --logo-type: 29 35 32;
 
-        --scrollbar-thumb: 156 163 175;
-        --scrollbar-thumb-hover: 107 114 128;
+        /* Tirai di belakang lembar bawah dan dialog, dan warna bayangan satu elevasi. */
+        --scrim: 15 19 17;
+        --bayangan: 29 35 32;
+
+        --scrollbar-thumb: 181 175 163;
+        --scrollbar-thumb-hover: 140 133 121;
 
         color-scheme: light;
     }
 
     /*
-     * Tema gelap (DK-17, keputusan pemilik D5).
+     * Tema gelap (DK-17, keputusan pemilik D5; nilai v3 dari palet lapangan prototype,
+     * spec v3 bagian 8.1).
      *
      * Dua blok yang isinya identik, dan itu disengaja: blok pertama berlaku ketika
      * sistem gelap dan pengguna tidak memaksa terang; blok kedua ketika pengguna
@@ -154,115 +229,293 @@
      * ColourContrastTest menjaga keduanya tetap sama dan menghitung ulang setiap
      * pasangan di tema ini.
      *
-     * Kanvas stone-900, bukan hitam: bayangan dan elevasi tetap terbaca, dan netral
-     * hangat yang sama dengan tema terang hanya dibalik. Karena beda surface dan canvas
-     * hanya 1.15:1, kartu dan lapisan melayang mengandalkan garis border-subtle, bukan
-     * bayangan.
+     * Kanvas #0F1311, bukan hitam: bayangan dan elevasi tetap terbaca. Beda permukaan dan
+     * kanvas kecil, jadi kartu dan lapisan melayang mengandalkan garis border-subtle.
      *
      * Skala warna dipetakan ulang menurut PERAN, bukan nilainya: bg-brand-100 tetap
-     * "latar lembut" dan text-brand-900 tetap "teks pekat di atasnya", sehingga pasangan
-     * yang sudah dihitung di view terus berfungsi tanpa satu pun kelas dark: di view.
-     * Isian tombol (brand-700/800, danger-600/700) tidak berubah: teks putih di atasnya
-     * sudah lolos di kedua tema.
+     * "latar lembut" dan text-brand-900 tetap "teks pekat di atasnya". Isian tombol
+     * merek menjadi hijau muda #8FD3A0 dengan teks on-brand gelap (9,33:1); isian bahaya
+     * tetap merah bata dengan teks putih (4,92:1).
      */
     @media (prefers-color-scheme: dark) {
         :root:not([data-theme='light']) {
-            --brand-50: 15 46 38;
-            --brand-100: 2 44 34;
-            --brand-200: 6 78 59;
-            --brand-300: 4 120 87;
-            --brand-500: 16 185 129;
-            --brand-600: 52 211 153;
-            --brand-700: 4 120 87;
-            --brand-800: 6 95 70;
-            --brand-900: 167 243 208;
+            --brand-50: 22 38 28;
+            --brand-100: 29 51 38;
+            --brand-200: 40 69 47;
+            --brand-300: 59 101 71;
+            --brand-500: 111 191 132;
+            --brand-600: 143 211 160;
+            --brand-700: 143 211 160;
+            --brand-800: 166 221 179;
+            --brand-900: 181 228 193;
 
-            --warn-50: 45 24 8;
-            --warn-100: 69 26 3;
-            --warn-300: 180 83 9;
-            --warn-600: 217 119 6;
-            --warn-900: 253 230 138;
+            --on-brand: 15 36 24;
 
-            --community-50: 8 47 73;
-            --community-500: 14 165 233;
-            --community-900: 186 230 253;
+            --warn-50: 42 33 18;
+            --warn-100: 58 44 18;
+            --warn-300: 122 90 34;
+            --warn-600: 240 194 122;
+            --warn-900: 240 194 122;
 
-            --danger-50: 50 8 20;
-            --danger-100: 76 5 25;
-            --danger-300: 190 18 60;
-            --danger-600: 225 29 72;
-            --danger-700: 190 18 60;
-            --danger-900: 254 205 211;
+            --community-50: 24 34 47;
+            --community-500: 111 147 201;
+            --community-900: 157 187 230;
 
-            --control-border: 168 162 158;
+            --danger-50: 43 21 18;
+            --danger-100: 61 27 22;
+            --danger-300: 122 51 38;
+            --danger-600: 192 74 51;
+            --danger-700: 168 58 42;
+            --danger-900: 242 165 151;
 
-            --text-primary: 245 245 244;
-            --text-secondary: 214 211 209;
-            --text-muted: 168 162 158;
+            --fit-cocok: 29 51 38;
+            --fit-cocok-teks: 181 228 193;
+            --fit-perlu: 58 44 18;
+            --fit-perlu-teks: 240 194 122;
+            --fit-kurang: 61 27 22;
+            --fit-kurang-teks: 242 165 151;
+            --fit-belum: 37 45 40;
+            --fit-belum-teks: 183 191 185;
 
-            --canvas: 28 25 23;
-            --surface: 41 37 36;
-            --surface-sunken: 22 20 18;
+            --status-buka: 111 191 132;
+            --status-dibatasi: 240 194 122;
+            --status-tutup: 224 128 108;
+            --status-belum: 138 149 142;
 
-            --border-subtle: 68 64 60;
+            --accent-pos: 232 176 75;
 
-            --brand-ink: 52 211 153;
-            --logo-mark: 16 185 129;
-            --logo-type: 250 250 248;
+            --control-border: 127 139 132;
 
-            --scrollbar-thumb: 87 83 78;
-            --scrollbar-thumb-hover: 120 113 108;
+            --text-primary: 242 239 232;
+            --text-secondary: 183 191 185;
+            --text-muted: 154 163 157;
+            --text-inverse: 15 19 17;
+
+            --canvas: 15 19 17;
+            --surface: 27 34 30;
+            --surface-sunken: 21 26 23;
+            --surface-inverse: 242 239 232;
+
+            --border-subtle: 45 55 49;
+
+            --brand-ink: 143 211 160;
+            --logo-mark: 143 211 160;
+            --logo-type: 242 239 232;
+
+            --scrim: 5 7 6;
+            --bayangan: 5 7 6;
+
+            --scrollbar-thumb: 58 69 63;
+            --scrollbar-thumb-hover: 86 99 91;
 
             color-scheme: dark;
         }
     }
 
     :root[data-theme='dark'] {
-        --brand-50: 15 46 38;
-        --brand-100: 2 44 34;
-        --brand-200: 6 78 59;
-        --brand-300: 4 120 87;
-        --brand-500: 16 185 129;
-        --brand-600: 52 211 153;
-        --brand-700: 4 120 87;
-        --brand-800: 6 95 70;
-        --brand-900: 167 243 208;
+        --brand-50: 22 38 28;
+        --brand-100: 29 51 38;
+        --brand-200: 40 69 47;
+        --brand-300: 59 101 71;
+        --brand-500: 111 191 132;
+        --brand-600: 143 211 160;
+        --brand-700: 143 211 160;
+        --brand-800: 166 221 179;
+        --brand-900: 181 228 193;
 
-        --warn-50: 45 24 8;
-        --warn-100: 69 26 3;
-        --warn-300: 180 83 9;
-        --warn-600: 217 119 6;
-        --warn-900: 253 230 138;
+        --on-brand: 15 36 24;
 
-        --community-50: 8 47 73;
-        --community-500: 14 165 233;
-        --community-900: 186 230 253;
+        --warn-50: 42 33 18;
+        --warn-100: 58 44 18;
+        --warn-300: 122 90 34;
+        --warn-600: 240 194 122;
+        --warn-900: 240 194 122;
 
-        --danger-50: 50 8 20;
-        --danger-100: 76 5 25;
-        --danger-300: 190 18 60;
-        --danger-600: 225 29 72;
-        --danger-700: 190 18 60;
-        --danger-900: 254 205 211;
+        --community-50: 24 34 47;
+        --community-500: 111 147 201;
+        --community-900: 157 187 230;
 
-        --control-border: 168 162 158;
+        --danger-50: 43 21 18;
+        --danger-100: 61 27 22;
+        --danger-300: 122 51 38;
+        --danger-600: 192 74 51;
+        --danger-700: 168 58 42;
+        --danger-900: 242 165 151;
 
-        --text-primary: 245 245 244;
-        --text-secondary: 214 211 209;
-        --text-muted: 168 162 158;
+        --fit-cocok: 29 51 38;
+        --fit-cocok-teks: 181 228 193;
+        --fit-perlu: 58 44 18;
+        --fit-perlu-teks: 240 194 122;
+        --fit-kurang: 61 27 22;
+        --fit-kurang-teks: 242 165 151;
+        --fit-belum: 37 45 40;
+        --fit-belum-teks: 183 191 185;
 
-        --canvas: 28 25 23;
-        --surface: 41 37 36;
-        --surface-sunken: 22 20 18;
+        --status-buka: 111 191 132;
+        --status-dibatasi: 240 194 122;
+        --status-tutup: 224 128 108;
+        --status-belum: 138 149 142;
 
-        --border-subtle: 68 64 60;
+        --accent-pos: 232 176 75;
 
-        --brand-ink: 52 211 153;
-        --logo-mark: 16 185 129;
-        --logo-type: 250 250 248;
+        --control-border: 127 139 132;
 
-        --scrollbar-thumb: 87 83 78;
-        --scrollbar-thumb-hover: 120 113 108;
+        --text-primary: 242 239 232;
+        --text-secondary: 183 191 185;
+        --text-muted: 154 163 157;
+        --text-inverse: 15 19 17;
+
+        --canvas: 15 19 17;
+        --surface: 27 34 30;
+        --surface-sunken: 21 26 23;
+        --surface-inverse: 242 239 232;
+
+        --border-subtle: 45 55 49;
+
+        --brand-ink: 143 211 160;
+        --logo-mark: 143 211 160;
+        --logo-type: 242 239 232;
+
+        --scrim: 5 7 6;
+        --bayangan: 5 7 6;
+
+        --scrollbar-thumb: 58 69 63;
+        --scrollbar-thumb-hover: 86 99 91;
+
+        color-scheme: dark;
+    }
+
+    /*
+     * Tema lapangan (DK-49): mode Mendaki mengikuti tema pengguna, dan akar mode
+     * lapangan (W6) memasang data-tema-lapangan="terang" atau "gelap". Informasi kritis
+     * (nama pos, angka jarak, tombol Jeda dan Selesai) paling sedikit 7:1; di lapangan
+     * gelap cincin fokus memakai kuning pos (9,58:1), satu-satunya tempat kuning pos
+     * membawa arti karena berdiri di atas gelap.
+     *
+     * Setiap blok menulis semua token warna, bukan hanya token jalur (M-2). Tema aplikasi
+     * di <html> dapat berbeda dari tema lapangan, misalnya ponsel yang beralih gelap saat
+     * senja, dan token yang tidak ditulis di sini diwarisi dari tema itu: status Tutup dan
+     * Dibatasi turun ke sekitar 2:1. Token jalur bernilai sendiri; sisanya sama dengan tema
+     * aplikasi sejenis. ColourContrastTest menghitung keempat kombinasinya.
+     */
+    [data-tema-lapangan='terang'] {
+        --canvas: 255 255 255;
+        --surface: 255 255 255;
+        --surface-sunken: 238 234 225;
+        --border-subtle: 201 194 180;
+        --control-border: 94 87 76;
+        --text-primary: 15 19 17;
+        --text-secondary: 47 56 51;
+        --text-muted: 67 76 71;
+        --brand-600: 27 77 44;
+        --brand-700: 27 77 44;
+        --brand-800: 16 51 29;
+        --brand-ink: 27 77 44;
+        --on-brand: 255 255 255;
+        --accent-pos: 232 176 75;
+
+        /* Sama dengan tema aplikasi terang. */
+        --brand-50: 238 244 239;
+        --brand-100: 228 238 230;
+        --brand-200: 200 220 205;
+        --brand-300: 157 191 166;
+        --brand-500: 63 122 82;
+        --brand-900: 30 94 53;
+        --warn-50: 251 241 222;
+        --warn-100: 251 235 207;
+        --warn-300: 226 192 138;
+        --warn-600: 183 121 31;
+        --warn-900: 122 78 11;
+        --community-50: 242 246 252;
+        --community-500: 95 130 184;
+        --community-900: 36 80 140;
+        --danger-50: 251 237 234;
+        --danger-100: 247 223 218;
+        --danger-300: 224 168 158;
+        --danger-600: 163 59 43;
+        --danger-700: 142 47 34;
+        --danger-900: 127 40 28;
+        --fit-cocok: 221 238 226;
+        --fit-cocok-teks: 30 94 53;
+        --fit-perlu: 251 235 207;
+        --fit-perlu-teks: 122 78 11;
+        --fit-kurang: 247 223 218;
+        --fit-kurang-teks: 142 47 34;
+        --fit-belum: 236 233 227;
+        --fit-belum-teks: 78 85 81;
+        --status-buka: 47 122 72;
+        --status-dibatasi: 183 121 31;
+        --status-tutup: 142 47 34;
+        --status-belum: 128 134 130;
+        --text-inverse: 255 255 255;
+        --surface-inverse: 29 35 32;
+        --logo-mark: 35 79 50;
+        --logo-type: 29 35 32;
+        --scrim: 15 19 17;
+        --bayangan: 29 35 32;
+        --scrollbar-thumb: 181 175 163;
+        --scrollbar-thumb-hover: 140 133 121;
+
+        color-scheme: light;
+    }
+
+    [data-tema-lapangan='gelap'] {
+        --canvas: 15 19 17;
+        --surface: 27 34 30;
+        --surface-sunken: 21 26 23;
+        --border-subtle: 45 55 49;
+        --control-border: 142 154 147;
+        --text-primary: 242 239 232;
+        --text-secondary: 201 207 202;
+        --text-muted: 174 183 177;
+        --brand-600: 232 176 75;
+        --brand-700: 143 211 160;
+        --brand-800: 166 221 179;
+        --brand-ink: 143 211 160;
+        --on-brand: 15 36 24;
+        --accent-pos: 232 176 75;
+
+        /* Sama dengan tema aplikasi gelap. */
+        --brand-50: 22 38 28;
+        --brand-100: 29 51 38;
+        --brand-200: 40 69 47;
+        --brand-300: 59 101 71;
+        --brand-500: 111 191 132;
+        --brand-900: 181 228 193;
+        --warn-50: 42 33 18;
+        --warn-100: 58 44 18;
+        --warn-300: 122 90 34;
+        --warn-600: 240 194 122;
+        --warn-900: 240 194 122;
+        --community-50: 24 34 47;
+        --community-500: 111 147 201;
+        --community-900: 157 187 230;
+        --danger-50: 43 21 18;
+        --danger-100: 61 27 22;
+        --danger-300: 122 51 38;
+        --danger-600: 192 74 51;
+        --danger-700: 168 58 42;
+        --danger-900: 242 165 151;
+        --fit-cocok: 29 51 38;
+        --fit-cocok-teks: 181 228 193;
+        --fit-perlu: 58 44 18;
+        --fit-perlu-teks: 240 194 122;
+        --fit-kurang: 61 27 22;
+        --fit-kurang-teks: 242 165 151;
+        --fit-belum: 37 45 40;
+        --fit-belum-teks: 183 191 185;
+        --status-buka: 111 191 132;
+        --status-dibatasi: 240 194 122;
+        --status-tutup: 224 128 108;
+        --status-belum: 138 149 142;
+        --text-inverse: 15 19 17;
+        --surface-inverse: 242 239 232;
+        --logo-mark: 143 211 160;
+        --logo-type: 242 239 232;
+        --scrim: 5 7 6;
+        --bayangan: 5 7 6;
+        --scrollbar-thumb: 58 69 63;
+        --scrollbar-thumb-hover: 86 99 91;
 
         color-scheme: dark;
     }
@@ -321,6 +574,32 @@
         border-color: rgb(var(--control-border));
     }
 
+    /*
+     * Tanda centang dan titik radio @tailwindcss/forms digambar putih. Di tema gelap isian
+     * merek berwarna hijau muda, dan putih di atasnya hanya 1,75:1; tandanya diganti warna
+     * on-brand gelap #0F2418 (9,33:1). Data SVG tidak dapat membaca var(), jadi warnanya
+     * ditulis di sini, satu-satunya berkas tempat nilai warna boleh ditulis.
+     */
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) [type='checkbox']:checked {
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%230f2418' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+        }
+
+        :root:not([data-theme='light']) [type='radio']:checked {
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%230f2418' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e");
+        }
+    }
+
+    :root[data-theme='dark'] [type='checkbox']:checked,
+    [data-tema-lapangan='gelap'] [type='checkbox']:checked {
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%230f2418' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+    }
+
+    :root[data-theme='dark'] [type='radio']:checked,
+    [data-tema-lapangan='gelap'] [type='radio']:checked {
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%230f2418' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e");
+    }
+
     ::placeholder {
         color: rgb(var(--text-muted));
     }
@@ -340,19 +619,17 @@
         overflow-wrap: break-word;
 
         /*
-         * Ukuran baca dasar ditetapkan, bukan diwarisi.
+         * Ukuran baca dasar ditetapkan, bukan diwarisi: 16 px dengan tinggi baris 1,5,
+         * sama dengan text-isi (spec v3 bagian 8.2). Teks yang tidak menyebut ukurannya
+         * mendapat ukuran isi, bukan ukuran bawaan peramban.
          *
-         * Aplikasi ini memakai text-sm untuk hampir segalanya: 363 dari 426 pemakaian
-         * ukuran teks adalah text-sm atau text-xs. Ukuran itu pantas untuk tabel admin
-         * dan tidak pantas untuk keterangan yang dibaca pendaki di bawah matahari
-         * sambil berdiri di jalur.
-         *
-         * Menaikkan akarnya menggeser seluruh skala Tailwind sekaligus, sehingga
-         * text-sm menjadi ukuran yang masih terbaca dan text-base menjadi nyaman,
-         * tanpa menyentuh satu pun kelas di ratusan berkas view.
+         * Sebelumnya 16,5 px dengan klaim bahwa nilai itu menggeser seluruh skala
+         * Tailwind. Klaim itu keliru: rem dihitung dari html, bukan dari body, jadi yang
+         * berubah hanya teks tanpa kelas ukuran. Skala kini bernama, dari tampilan sampai
+         * label, dan lantainya 12 px.
          */
-        font-size: 16.5px;
-        line-height: 1.6;
+        font-size: 1rem;
+        line-height: 1.5;
 
         /* Huruf modern membawa fitur yang mati secara bawaan. Keduanya merapikan
            pasangan huruf tanpa mengubah satu pun ukuran. */
@@ -361,16 +638,16 @@
     }
 
     /*
-     * Judul halaman memakai serif.
+     * Judul halaman memakai huruf antarmuka yang sama pada bobot 800 (spec v3 bagian
+     * 8.2, DK-38).
      *
-     * Serif memberi bobot editorial yang tidak dapat dicapai ketebalan huruf sans, dan
-     * membedakan judul dari antarmuka tanpa membesarkannya sampai berteriak. Dipasang
-     * pada h1 di lapisan base supaya setiap halaman mendapatnya, termasuk yang ditulis
-     * besok.
+     * Serif judul dilepas di gelombang 1 v3: prototype pemilik membawa hierarki lewat
+     * bobot dan ukuran satu keluarga, dan satu keluarga berarti satu unduhan huruf.
+     * Dipasang pada h1 di lapisan base supaya setiap halaman mendapatnya, termasuk yang
+     * ditulis besok.
      */
     h1 {
-        font-family: theme('fontFamily.serif');
-        font-weight: 500;
+        font-weight: 800;
         letter-spacing: -0.02em;
         line-height: 1.15;
 
@@ -447,15 +724,17 @@
     }
 
     /*
-     * Pengukuran memakai huruf berlebar tetap dan keluarga mono.
+     * Pengukuran memakai angka berlebar tetap.
      *
-     * Jarak, elevation gain, durasi, dan koordinat adalah data, bukan prosa. Huruf
-     * proporsional membuat kolom angka bergoyang saat nilainya berganti, dan mata
-     * membaca deret angka jauh lebih cepat ketika lebarnya tetap.
+     * Jarak, elevation gain, durasi, dan koordinat adalah data, bukan prosa. Angka
+     * proporsional membuat kolom bergoyang saat nilainya berganti, dan mata membaca
+     * deret angka jauh lebih cepat ketika lebarnya tetap. output ikut karena nilai
+     * stepper berganti di tempat.
      */
     table,
     dd,
     time,
+    output,
     [data-angka] {
         font-variant-numeric: tabular-nums;
         font-feature-settings: 'tnum' 1;
@@ -528,6 +807,58 @@
             border-color: rgb(var(--text-primary));
         }
     }
+}
+
+/*
+| Lapisan melayang (spec v3 bagian 8.5 dan 8.6). Lembar bawah dan dialog adalah <dialog>
+| yang dibuka showModal(), jadi keduanya tinggal di top layer peramban dan tidak butuh
+| z-index. Skala z sisanya: bar aksi dan bilah tab z-30, toast z-40. Hanya gerak buka yang
+| dianimasikan (W1-K6): lembar naik 280 ms dengan kurva gerak, dialog tengah memudar
+| 200 ms, toast naik 200 ms; tutup seketika. Setelan kurangi gerak di atas memangkas
+| semuanya menjadi 1 ms. Tirai memakai cadangan nilai karena ::backdrop di peramban lama
+| tidak mewarisi variabel dari :root.
+*/
+@layer components {
+    .lembar[open] {
+        animation: lembar-naik var(--dur-sedang) var(--ease-gerak);
+    }
+
+    .dialog-tengah[open] {
+        animation: pudar-masuk var(--dur-cepat) var(--ease-pudar);
+    }
+
+    .lembar::backdrop,
+    .dialog-tengah::backdrop {
+        background-color: rgb(var(--scrim, 15 19 17) / 0.5);
+    }
+
+    .toast-masuk {
+        animation: toast-naik var(--dur-cepat) var(--ease-gerak);
+    }
+}
+
+@keyframes lembar-naik {
+    from {
+        transform: translateY(100%);
+    }
+}
+
+@keyframes pudar-masuk {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes toast-naik {
+    from {
+        opacity: 0;
+        transform: translateY(0.75rem);
+    }
+}
+
+/* Halaman di belakang dialog modal tidak ikut bergulir. */
+html:has(dialog[open]) {
+    overflow: hidden;
 }
 
 /*

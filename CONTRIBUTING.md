@@ -73,10 +73,18 @@ Melanggar salah satu ini membuat suite merah, bukan sekadar ditegur saat tinjaua
 | Tautan React tahu rute mana yang bukan Inertia | `InertiaLinkRegistryTest` |
 | Setiap peta lewat `usePetaDasar` dan `WadahPeta`; MapLibre dimuat malas | `MapComponentTest`, `MapConfigTest` |
 | Kontras warna dihitung di kedua tema | `ColourContrastTest` |
+| Kontras dua tema lapangan paling sedikit 7:1 untuk informasi kritis | `ColourContrastTest` |
+| Teks tidak di bawah 12 px; nilai skala tipe bernama mengikuti spec | `TypeFloorTest`, `TypographySystemTest` |
+| Ikon berbobot per ukuran, tidak di bawah 16 px, dan tidak ada panah hiasan di label tombol | `IconSystemTest` |
+| Primitif: fokus terlihat, target 44 px, nama aksesibel, label membungkus, tiga jenis keadaan kosong | `DesignPrimitivesTest`, `LongInputLayoutTest` |
 | Skor kecocokan tidak pernah sampai ke halaman | `FactorBarsDoNotLeakScoreTest`, `LockedBusinessRulesTest` |
 | Pemilik lain tidak dapat membuka data orang lain | `TripOwnershipTest` dan test otorisasi per fitur |
 | Jejak audit mencatat nilai lama dan nilai baru | `AuditLogChangeTest` |
 | Tidak ada pola kredensial yang dikenal (daftarnya di `SECURITY.md`) di berkas terlacak dan berkas baru yang tidak diabaikan git | `SecretsNotInRepoTest` |
+
+Arah yang belum ditegakkan test: ukuran teks memakai skala tipe bernama (`text-judul`, `text-isi`, `text-kecil`, dan
+seterusnya) di halaman yang dirombak W2 sampai W9. Halaman lama masih memakai `text-sm`, `text-xs`, dan sejenisnya
+sampai dirombak, jadi pemakaian itu tidak membuat suite merah.
 
 ## Basis data dan migrasi
 
@@ -136,6 +144,56 @@ dan sama dengan layanan PostGIS di `.github/workflows/test.yml`.
   dihormati.
 - Keadaan kosong menyebut tahapnya dan langkah berikutnya; data yang belum ada tidak
   dikarang.
+- Primitif desain tinggal di `resources/js/components/ui/` dan dipakai lebih dulu sebelum
+  menulis markup sendiri. Pameran primitif di `/dev/primitif` (hanya `APP_ENV=local`,
+  sesudah masuk) menampilkan semuanya dengan contoh isi; periksa perubahan token atau
+  komponen di sana pada 390 px dan 1440 px, tema terang dan gelap.
+
+### Pratinjau visual tanpa basis data
+
+Tangkapan 390 px dan 1440 px tidak butuh basis data lokal dan tidak menyentuh Supabase. Suite PHPUnit `Pratinjau`
+merender halaman sungguhan di SQLite dalam memori berisi data contoh `DemoSeeder`, lalu menulis HTML-nya ke
+`public/_pratinjau/` (diabaikan git). Suite ini tidak ikut `php artisan test` tanpa `--testsuite` dan tidak dijalankan
+CI. Dari Git Bash:
+
+```sh
+DB_CONNECTION=sqlite DB_DATABASE=:memory: DB_URL= npm run build
+php artisan test --testsuite=Pratinjau
+DB_CONNECTION=sqlite DB_DATABASE=:memory: DB_URL= php -S 127.0.0.1:8100 -t public tests/Pratinjau/statis.php
+```
+
+Dari PowerShell:
+
+```powershell
+$env:DB_CONNECTION="sqlite"; $env:DB_DATABASE=":memory:"; $env:DB_URL="(empty)"; npm run build
+php artisan test --testsuite=Pratinjau
+$env:DB_CONNECTION="sqlite"; $env:DB_DATABASE=":memory:"; $env:DB_URL="(empty)"; php -S 127.0.0.1:8100 -t public tests/Pratinjau/statis.php
+```
+
+Awalan yang sama berlaku untuk setiap perintah Artisan yang mem-boot aplikasi di luar PHPUnit. `DB_URL` ikut dikosongkan
+karena URL mengalahkan pengemudi koneksi: tanpanya `DB_CONNECTION=sqlite` tetap membuka basis data yang ditunjuk
+`DB_URL` di `.env`. Di PowerShell, `$env:DB_URL=""` justru menghapus variabelnya sehingga `.env` mengisinya lagi; Laravel
+membaca nilai `(empty)` sebagai string kosong. `php artisan test` tidak butuh awalan: `phpunit.xml` memaksa koneksi uji
+sendiri.
+
+`$env:DB_CONNECTION`, `$env:DB_DATABASE`, dan `$env:DB_URL` bertahan sepanjang jendela PowerShell itu, bukan cuma satu
+perintah; lanjutan pekerjaan lain di jendela yang sama bisa tanpa sengaja memakai SQLite dalam memori. Bersihkan
+sesudahnya dengan `Remove-Item Env:DB_CONNECTION, Env:DB_DATABASE, Env:DB_URL`, atau pakai jendela terpisah untuk
+pratinjau.
+
+Lalu buka `http://127.0.0.1:8100/_pratinjau/primitif.html`, `dasbor.html`, `jelajah.html`, atau `jelajah-kosong.html`.
+
+- Router `tests/Pratinjau/statis.php` membaca dan mengirim sendiri setiap berkas yang boleh disajikan di `public/`.
+  Alamat lain dijawab 404 oleh router itu sendiri; `php -S` tidak pernah diberi kesempatan menafsirkan sendiri
+  alamat mentahnya, sehingga `public/index.php` tidak pernah tereksekusi dan `.env` tidak pernah dibaca (ruling
+  W1-10a: sebelum perbaikan ini, menyerahkan penyajian ke `php -S` sendiri bisa membocorkan alamat seperti
+  `//x/favicon.svg` ke `index.php`).
+- Halaman pratinjau mengganti alamat di bilah peramban ke rute aslinya (misalnya `/dashboard`) supaya tab navigasi
+  yang aktif benar. Karena itu memuat ulang halaman dan menekan tautan berujung 404: buka lagi berkas `.html`-nya.
+- Jalankan ulang suite sesudah setiap build, karena nama berkas aset berganti. Hentikan `npm run dev` lebih dulu:
+  berkas `public/hot` membuat halaman memuat aset dari server Vite.
+- Tema gelap: jalankan `document.cookie = 'tema=dark; path=/'` di konsol peramban, lalu buka lagi berkasnya. Kembali
+  ke terang dengan `tema=light`, atau hapus cookie itu untuk mengikuti sistem.
 
 ## Yang tidak boleh masuk
 

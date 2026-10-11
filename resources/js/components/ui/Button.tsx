@@ -1,6 +1,7 @@
 import { Tautan } from './Tautan';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { kelas } from '@/lib/kelas';
+import { umpanTekan } from './gaya';
 
 type Varian = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -15,9 +16,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /**
  * Satu-satunya definisi tombol aplikasi: min-h-11 di kelas dasar untuk target sentuh
- * (PRD §87), focus-visible:ring untuk fokus terlihat, dan varian
- * yang rasionya sudah dihitung ColourContrastTest. brand-700 sebagai isian, bukan
- * brand-600 yang gagal AA di bawah teks putih.
+ * (PRD §87), focus-visible:ring untuk fokus terlihat, dan varian yang rasionya sudah
+ * dihitung ColourContrastTest. brand-700 sebagai isian dengan teks on-brand, bukan
+ * brand-600 yang gagal AA.
+ *
+ * Bentuk v3 (spec v3 bagian 8.4 dan 8.6): radius tombol 16 px, label tebal 700 yang
+ * membungkus di tengah bila panjang alih-alih terpotong, dan tekan yang menyusut ke 0,98
+ * selama 120 ms. Label tanpa panah hiasan (spec v3 bagian 8.8).
  */
 export function Button({
     variant = 'primary',
@@ -31,18 +36,19 @@ export function Button({
     disabled,
     ...rest
 }: ButtonProps) {
-    const ukuran = size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm';
+    const ukuran = size === 'sm' ? 'px-4 py-2 text-kecil' : 'px-5 py-3 text-isi';
 
     const gaya: Record<Varian, string> = {
-        primary: 'bg-brand-700 text-white hover:bg-brand-800 focus-visible:ring-brand-600',
-        secondary: 'border border-control bg-surface text-primary hover:bg-surface-sunken focus-visible:ring-muted',
+        primary: 'bg-brand-700 text-on-brand hover:bg-brand-800 focus-visible:ring-brand-600',
+        secondary: 'border border-control bg-surface text-primary hover:bg-surface-sunken focus-visible:ring-brand-600',
         danger: 'bg-danger-600 text-white hover:bg-danger-700 focus-visible:ring-danger-600',
         ghost: 'text-brand-ink underline underline-offset-2 hover:text-brand-900 focus-visible:ring-brand-600',
     };
 
     const semua = kelas(
-        'inline-flex items-center justify-center gap-2 rounded-control min-h-11 font-medium transition',
+        'inline-flex items-center justify-center gap-2 rounded-tombol min-h-11 text-center font-bold',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        umpanTekan,
         ukuran,
         gaya[variant],
         className,

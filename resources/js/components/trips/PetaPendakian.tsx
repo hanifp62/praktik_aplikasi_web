@@ -65,7 +65,12 @@ export function PetaPendakian({ id, label, geometri, penanda, posisi }: PetaPend
 
             if (garis && garis.coordinates.length > 1) {
                 map.addSource('jalur', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: garis.coordinates } } });
-                map.addLayer({ id: 'garis-jalur', type: 'line', source: 'jalur', paint: { 'line-color': warnaToken('--brand-700', 'rgb(4, 120, 87)'), 'line-width': 4 } });
+
+                // Tepi --surface di bawah garis, seperti Jelajah: basemap tetap terang di tema
+                // gelap, dan garis hijau muda tanpa tepi hampir tak terlihat di atasnya.
+                const tepi = warnaToken('--surface', '#ffffff');
+                map.addLayer({ id: 'garis-jalur-tepi', type: 'line', source: 'jalur', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': tepi, 'line-width': 7 } });
+                map.addLayer({ id: 'garis-jalur', type: 'line', source: 'jalur', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': warnaToken('--brand-700', 'rgb(35, 79, 50)'), 'line-width': 4 } });
 
                 // Dibingkai ke jalurnya, bukan dibiarkan pada titik tengah Indonesia.
                 map.fitBounds(kotakDari(maplibregl, garis.coordinates), { padding: 40, duration: 0 });

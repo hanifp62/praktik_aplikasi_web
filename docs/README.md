@@ -54,6 +54,7 @@ benar pada hari itu dan tidak ditulis ulang.
 |---|---|
 | [fitur/](fitur/) | Delapan spesifikasi fitur beserta kriteria penerimaan |
 | [desain/prototype/](desain/prototype/) | Prototype pemilik 25 September 2026 dan 16 gambar acuan |
+| [desain/tangkapan/](desain/tangkapan/) | Tangkapan pratinjau per gelombang dan perbandingannya dengan gambar acuan prototype |
 | [riset/](riset/) | Riset asal keputusan, bertanggal |
 | [superpowers/specs/](superpowers/specs/) | Spec desain per gelombang |
 | [superpowers/plans/](superpowers/plans/) | Rencana implementasi per gelombang |

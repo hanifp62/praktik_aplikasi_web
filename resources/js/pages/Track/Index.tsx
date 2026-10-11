@@ -41,6 +41,7 @@ export default function TrackIndex() {
 
                 {trips.length === 0 ? (
                     <EmptyState
+                        jenis="pertama"
                         title="Belum ada trip yang dapat dimulai."
                         description="Mode pendakian dibuka dari trip yang sudah direncanakan. Rencanakan trip dulu, lalu kembali ke sini pada hari keberangkatan."
                     >

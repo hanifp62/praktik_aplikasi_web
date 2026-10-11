@@ -1,46 +1,97 @@
-/*! Ikon Phosphor (phosphor-icons/core), MIT License, Copyright (c) 2023 Phosphor Icons. Teks lisensi: resources/js/components/ui/LICENSE-phosphor.txt */
-/**
- * Ikon Phosphor berat regular, ditanam sebagai path (bukan Lucide/Heroicons, bukan
- * dependensi npm). Hanya di tempat yang membawa arti; nama tak dikenal menghasilkan
- * kekosongan, bukan kotak rusak.
- *
- * Ikon tab (house, map-trifold, backpack, person-simple-hike, chart-line-up) milik
- * navigasi utama, satu per tab. Di sana ikon membawa arti penanda arah (pengenalan
- * lebih cepat daripada membaca lima kata pada lebar 390 px), dan selalu berdampingan
- * dengan labelnya, tidak pernah sendirian. Tab aktif memakai varian `-fill`, sehingga
- * yang berubah adalah bentuk, bukan warna saja (WCAG 1.4.1). Sumber path:
- * phosphor-icons/core, bobot regular dan fill.
- */
-const bentuk: Record<string, string> = {
-    'arrow-up': 'M205.66,117.66a8,8,0,0,1-11.32,0L136,59.31V216a8,8,0,0,1-16,0V59.31L61.66,117.66a8,8,0,0,1-11.32-11.32l72-72a8,8,0,0,1,11.32,0l72,72A8,8,0,0,1,205.66,117.66Z',
-    'arrow-down': 'M205.66,149.66l-72,72a8,8,0,0,1-11.32,0l-72-72a8,8,0,0,1,11.32-11.32L120,196.69V40a8,8,0,0,1,16,0V196.69l58.34-58.35a8,8,0,0,1,11.32,11.32Z',
-    path: 'M216,40H160a8,8,0,0,0,0,16h36.69L152,100.69,131.31,80a16,16,0,0,0-22.62,0l-64,64a8,8,0,0,0,11.31,11.31L120,91.31,140.69,112a16,16,0,0,0,22.62,0L208,67.31V104a8,8,0,0,0,16,0V48A8,8,0,0,0,216,40Z',
-    mountains: 'M248,208H231.4L172.32,49.51a16,16,0,0,0-30.07,0l-20.9,56.05-27.4-47.46a16,16,0,0,0-27.71,0L12.72,188a16,16,0,0,0,13.86,24H248a8,8,0,0,0,0-16Z',
-    'shield-check': 'M208,40H48A16,16,0,0,0,32,56v58.77c0,89.62,75.82,119.34,91,124.39a15.53,15.53,0,0,0,10,0c15.2-5.05,91-34.77,91-124.39V56A16,16,0,0,0,208,40Zm-32.4,64.16-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L114,148.12l50.34-50.35a8,8,0,0,1,11.32,11.32Z',
-    house: 'M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z',
-    'person-simple-hike': 'M152,80a32,32,0,1,0-32-32A32,32,0,0,0,152,80Zm0-48a16,16,0,1,1-16,16A16,16,0,0,1,152,32Zm48,112v88a8,8,0,0,1-16,0V151.66c-25.75-2.25-34.35-15.52-42-27.36-2.85-4.39-5.56-8.57-9.13-12.19l-13.4,30.81,37.2,26.57A8,8,0,0,1,160,176v56a8,8,0,0,1-16,0V180.12l-31.07-22.2L79.34,235.19A8,8,0,0,1,72,240a7.84,7.84,0,0,1-3.19-.67,8,8,0,0,1-4.14-10.52L122.19,96.5a8,8,0,0,1,11-3.92,40.92,40.92,0,0,1,8,5.47c6.37,5.52,10.51,11.91,14.16,17.55,7.68,11.84,13.22,20.4,36.6,20.4A8,8,0,0,1,200,144ZM72,152a8,8,0,0,0,7.35-4.85l24-56a8,8,0,0,0-4.2-10.5l-28-12a8,8,0,0,0-10.5,4.2l-24,56a8,8,0,0,0,4.2,10.5l28,12A8,8,0,0,0,72,152ZM54.51,127.8,72.2,86.5l13.3,5.7L67.8,133.49Z',
-    'user-circle': 'M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z',
-    'house-fill': 'M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z',
-    'map-trifold-fill': 'M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-5.52-.6l-64,16A8,8,0,0,0,24,56V200a8,8,0,0,0,9.94,7.76l61.13-15.28,61.35,30.68A8.15,8.15,0,0,0,160,224a8,8,0,0,0,1.94-.24l64-16A8,8,0,0,0,232,200V56A8,8,0,0,0,228.92,49.69ZM96,176a8,8,0,0,0-1.94.24L40,189.75V62.25L95.07,48.48l.93.46Zm120,17.75-55.07,13.77-.93-.46V80a8,8,0,0,0,1.94-.23L216,66.25Z',
-    'backpack-fill': 'M168,40.58V32A24,24,0,0,0,144,8H112A24,24,0,0,0,88,32v8.58A56.09,56.09,0,0,0,40,96V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V96A56.09,56.09,0,0,0,168,40.58ZM104,32a8,8,0,0,1,8-8h32a8,8,0,0,1,8,8v8H104Zm8,40h32a8,8,0,0,1,0,16H112a8,8,0,0,1,0-16Zm64,144H80V176h56v8a8,8,0,0,0,16,0v-8h24Zm0-56H80v-8a16,16,0,0,1,16-16h64a16,16,0,0,1,16,16Z',
-    'person-simple-hike-fill': 'M120,48a32,32,0,1,1,32,32A32,32,0,0,1,120,48Zm72,88c-23.37,0-28.92-8.56-36.6-20.4-3.65-5.64-7.79-12-14.16-17.55a40.92,40.92,0,0,0-8-5.47,8,8,0,0,0-11,3.92L64.66,228.81a8,8,0,0,0,4.15,10.52A7.84,7.84,0,0,0,72,240a8,8,0,0,0,7.34-4.81l33.59-77.27L144,180.12V232a8,8,0,0,0,16,0V176a8,8,0,0,0-3.35-6.51l-37.2-26.57,13.4-30.81c3.57,3.62,6.28,7.8,9.13,12.19,7.67,11.84,16.27,25.11,42,27.36V232a8,8,0,0,0,16,0V144A8,8,0,0,0,192,136ZM72,152a8,8,0,0,0,7.36-4.85l24-56a8,8,0,0,0-4.2-10.5l-28-12a8,8,0,0,0-10.5,4.2l-24,56a8,8,0,0,0,4.2,10.5l28,12A8,8,0,0,0,72,152Z',
-    'chart-line-up-fill': 'M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM200,192H56a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v76.69l34.34-34.35a8,8,0,0,1,11.32,0L128,132.69,172.69,88H144a8,8,0,0,1,0-16h48a8,8,0,0,1,8,8v48a8,8,0,0,1-16,0V99.31l-50.34,50.35a8,8,0,0,1-11.32,0L104,131.31l-40,40V176H200a8,8,0,0,1,0,16Z',
-    'map-trifold': 'M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-5.52-.6l-64,16A8,8,0,0,0,24,56V200a8,8,0,0,0,9.94,7.76l61.13-15.28,61.35,30.68A8.15,8.15,0,0,0,160,224a8,8,0,0,0,1.94-.24l64-16A8,8,0,0,0,232,200V56A8,8,0,0,0,228.92,49.69ZM104,52.94l48,24V203.06l-48-24ZM40,62.25l48-12v127.5l-48,12Zm176,131.5-48,12V78.25l48-12Z',
-    'scales': 'M239.43,133l-32-80h0a8,8,0,0,0-9.16-4.84L136,62V40a8,8,0,0,0-16,0V65.58L54.26,80.19A8,8,0,0,0,48.57,85h0v.06L16.57,165a7.92,7.92,0,0,0-.57,3c0,23.31,24.54,32,40,32s40-8.69,40-32a7.92,7.92,0,0,0-.57-3L66.92,93.77,120,82V208H104a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16H136V78.42L187,67.1,160.57,133a7.92,7.92,0,0,0-.57,3c0,23.31,24.54,32,40,32s40-8.69,40-32A7.92,7.92,0,0,0,239.43,133ZM56,184c-7.53,0-22.76-3.61-23.93-14.64L56,109.54l23.93,59.82C78.76,180.39,63.53,184,56,184Zm144-32c-7.53,0-22.76-3.61-23.93-14.64L200,77.54l23.93,59.82C222.76,148.39,207.53,152,200,152Z',
-    'backpack': 'M168,40.58V32A24,24,0,0,0,144,8H112A24,24,0,0,0,88,32v8.58A56.09,56.09,0,0,0,40,96V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V96A56.09,56.09,0,0,0,168,40.58ZM112,24h32a8,8,0,0,1,8,8v8H104V32A8,8,0,0,1,112,24Zm56,136H88v-8a8,8,0,0,1,8-8h64a8,8,0,0,1,8,8ZM88,176h48v8a8,8,0,0,0,16,0v-8h16v40H88Zm112,40H184V152a24,24,0,0,0-24-24H96a24,24,0,0,0-24,24v64H56V96A40,40,0,0,1,96,56h64a40,40,0,0,1,40,40V216ZM152,88a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,88Z',
-    'chart-line-up': 'M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V48a8,8,0,0,1,16,0V156.69l50.34-50.35a8,8,0,0,1,11.32,0L128,132.69,180.69,80H160a8,8,0,0,1,0-16h40a8,8,0,0,1,8,8v40a8,8,0,0,1-16,0V91.31l-58.34,58.35a8,8,0,0,1-11.32,0L96,123.31l-56,56V200H224A8,8,0,0,1,232,208Z',
-    'newspaper': 'M88,112a8,8,0,0,1,8-8h80a8,8,0,0,1,0,16H96A8,8,0,0,1,88,112Zm8,40h80a8,8,0,0,0,0-16H96a8,8,0,0,0,0,16ZM232,64V184a24,24,0,0,1-24,24H32A24,24,0,0,1,8,184.11V88a8,8,0,0,1,16,0v96a8,8,0,0,0,16,0V64A16,16,0,0,1,56,48H216A16,16,0,0,1,232,64Zm-16,0H56V184a23.84,23.84,0,0,1-1.37,8H208a8,8,0,0,0,8-8Z',
+/*! Ikon Phosphor (phosphor-icons/core 2.1.1), MIT License, Copyright (c) 2023 Phosphor Icons. Teks lisensi: resources/js/components/ui/LICENSE-phosphor.txt */
+import { kelas } from '@/lib/kelas';
+import { glyphDomain, type NamaGlyph } from './ikon/glyphDomain';
+import { phosphor, type NamaPhosphor, type VarianPhosphor } from './ikon/phosphor';
+
+export type NamaIkon = NamaPhosphor | NamaGlyph;
+
+/** Ukuran render dalam px. Tidak ada ikon informatif di bawah 16 px (DK-39). */
+export type UkuranIkon = 16 | 20 | 22 | 24 | 28 | 32;
+
+const kelasUkuran: Record<UkuranIkon, string> = {
+    16: 'size-4',
+    20: 'size-5',
+    22: 'size-[22px]',
+    24: 'size-6',
+    28: 'size-7',
+    32: 'size-8',
 };
 
-export function Icon({ name, label, className = 'h-4 w-4' }: { name: string; label?: string; className?: string }) {
-    const d = bentuk[name];
+/**
+ * Bobot garis menurut ukuran render (spec v3 bagian 8.3): Bold di bawah 20 px supaya garis
+ * tidak menipis menjadi rambut di layar ponsel, Regular mulai 20 px.
+ */
+export function bobotUntuk(ukuran: UkuranIkon): 'bold' | 'regular' {
+    return ukuran < 20 ? 'bold' : 'regular';
+}
+
+function adalahGlyph(nama: NamaIkon): nama is NamaGlyph {
+    return nama in glyphDomain;
+}
+
+interface IconProps {
+    name: NamaIkon;
+    size?: UkuranIkon;
+    /**
+     * Varian isi, hanya untuk tab aktif: yang berubah adalah bentuk, bukan warna saja (WCAG 1.4.1).
+     * Tidak berlaku untuk glyph domain, yang tidak punya varian isi.
+     */
+    isi?: boolean;
+    /** Nama untuk ikon yang berdiri sendiri; tanpa label ikon disembunyikan dari pembaca layar. */
+    label?: string;
+    className?: string;
+}
+
+/**
+ * Ikon Phosphor dan glyph domain, hanya di tempat yang membawa arti: arah naik dan turun,
+ * penanda tab, jenis pos, dan aksi yang namanya sudah dibawa label. Glyph domain digambar
+ * sebagai goresan dengan tebal Phosphor pada bobot yang sama (24 unit Bold, 16 unit
+ * Regular). Nama yang tidak dikenal menghasilkan kekosongan, bukan kotak rusak.
+ */
+export function Icon({ name, size = 16, isi = false, label, className }: IconProps) {
+    const kelasSvg = kelas(kelasUkuran[size], 'inline-block shrink-0', className);
+
+    if (adalahGlyph(name)) {
+        const glyph = glyphDomain[name];
+
+        return (
+            <svg
+                viewBox="0 0 256 256"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={bobotUntuk(size) === 'bold' ? 24 : 16}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={kelasSvg}
+                role={label ? 'img' : undefined}
+                aria-hidden={label ? undefined : true}
+            >
+                {label ? <title>{label}</title> : null}
+                {glyph.garis.map((d) => (
+                    <path key={d} d={d} />
+                ))}
+                {glyph.cincin.map((c) => (
+                    <circle key={`${c.cx}-${c.cy}`} cx={c.cx} cy={c.cy} r={c.r} />
+                ))}
+            </svg>
+        );
+    }
+
+    const varian: VarianPhosphor | undefined = phosphor[name];
+    const d = varian ? (isi && varian.fill ? varian.fill : varian[bobotUntuk(size)]) : undefined;
 
     if (!d) {
         return null;
     }
 
     return (
-        <svg viewBox="0 0 256 256" fill="currentColor" className={`${className} inline-block shrink-0`} role={label ? 'img' : undefined} aria-hidden={label ? undefined : true}>
+        <svg
+            viewBox="0 0 256 256"
+            fill="currentColor"
+            className={kelasSvg}
+            role={label ? 'img' : undefined}
+            aria-hidden={label ? undefined : true}
+        >
             {label ? <title>{label}</title> : null}
             <path d={d} />
         </svg>

@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Services\DataFreshnessService;
 use App\Support\DisplayPreference;
+use App\Support\PenjagaDataContoh;
 use App\Support\ThemePreference;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -57,6 +58,11 @@ class HandleInertiaRequests extends Middleware
                 'nama' => config('app.name'),
                 'tagline' => config('brand.tagline'),
             ],
+
+            // Data contoh (DK-35): layout memasang lencana "Data contoh" bila benar.
+            // sedangDisajikan() membaca dua sumber (tinjauan W1-9a #4): APP_DEMO eksplisit
+            // dan koneksi basis data default yang sedang benar-benar demo.
+            'demo' => PenjagaDataContoh::sedangDisajikan(),
 
             'tema' => ThemePreference::current($request),
             'tampilan' => [

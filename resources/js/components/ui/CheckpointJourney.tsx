@@ -28,8 +28,8 @@ export function CheckpointJourney({ checkpoints, className }: { checkpoints: Pos
                             </div>
                             <div className="py-1 text-xs">
                                 <p className="flex items-center gap-1 text-secondary">
-                                    {pos.antara.includes('naik') ? <Icon name="arrow-up" className="h-3 w-3" /> : null}
-                                    {pos.antara.includes('turun') ? <Icon name="arrow-down" className="h-3 w-3" /> : null}
+                                    {pos.antara.includes('naik') ? <Icon name="arrow-up" size={16} /> : null}
+                                    {pos.antara.includes('turun') ? <Icon name="arrow-down" size={16} /> : null}
                                     {pos.antara}
                                 </p>
                                 {pos.tempo ? <p className="mt-0.5 text-secondary">{pos.tempo}</p> : null}

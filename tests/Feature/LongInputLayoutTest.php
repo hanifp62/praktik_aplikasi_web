@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -53,5 +54,58 @@ class LongInputLayoutTest extends TestCase
             'Test di atas dibenarkan oleh panjang masukan yang benar-benar diterima; '
                 .'kalau batasnya sudah jauh mengecil, alasan aturan CSS itu perlu ditinjau ulang.'
         );
+    }
+
+    /**
+     * Label primitif membungkus, tidak dipotong (spec v3, Review Focus W1: teks Indonesia
+     * panjang di 360 px dan WCAG 1.4.12). Nama jalur, tafsiran kalimat, dan status resmi
+     * sering lebih panjang dari ruangnya; kalimat yang terpotong elipsis kehilangan
+     * keterangan tepat di bagian yang membedakan satu pilihan dari yang lain.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function primitifBerlabel(): array
+    {
+        return [
+            'tombol' => ['components/ui/Button.tsx'],
+            'chip' => ['components/ui/Chip.tsx'],
+            'lencana' => ['components/ui/Lencana.tsx'],
+            'keadaan kosong' => ['components/ui/EmptyState.tsx'],
+            'kontrol segmen' => ['components/ui/KontrolSegmen.tsx'],
+            'sakelar' => ['components/ui/Sakelar.tsx'],
+            'kotak centang' => ['components/ui/KotakCentang.tsx'],
+            'stepper' => ['components/ui/Stepper.tsx'],
+            'lembar dan dialog' => ['components/ui/Lembar.tsx'],
+            'toast urungkan' => ['components/ui/ToastUrungkan.tsx'],
+            'bar aksi' => ['components/ui/BarAksi.tsx'],
+            'bilah tab' => ['components/ui/BilahTab.tsx'],
+        ];
+    }
+
+    #[DataProvider('primitifBerlabel')]
+    public function test_a_primitive_label_wraps_instead_of_being_cut(string $berkas): void
+    {
+        $isi = (string) preg_replace('#/\*.*?\*/#s', ' ', File::get(resource_path('js/'.$berkas)));
+
+        $this->assertDoesNotMatchRegularExpression('/\b(?:truncate|whitespace-nowrap|text-ellipsis|line-clamp-\d)\b/', $isi, "{$berkas} memotong labelnya.");
+    }
+
+    /**
+     * Pameran primitif memuat satu blok selebar 360 px yang menaruh untaian Indonesia
+     * panjang di setiap primitif berlabel, supaya pembungkusan dilihat di tangkapan 390 px
+     * (Review Focus W1), bukan diasumsikan dari kelas.
+     */
+    public function test_the_showcase_exercises_long_indonesian_labels_at_360px(): void
+    {
+        $pameran = File::get(resource_path('js/pages/Dev/Primitif.tsx'));
+
+        $this->assertStringContainsString("const teksPanjang = 'Pemberitahuan penutupan sementara jalur pendakian Selabintana karena perbaikan jembatan';", $pameran);
+        $this->assertSame(1, preg_match('/<section aria-labelledby="bagian-teks-panjang" data-uji="teks-panjang" className="max-w-\[360px\][^"]*">(.*?)<\/section>/s', $pameran, $blok), 'Blok teks panjang 360 px tidak ditemukan.');
+
+        foreach (['<Button', '<ChipPilihan', '<Lencana', '<KontrolSegmen', '<Sakelar', '<KotakCentang', '<EmptyState'] as $primitif) {
+            $this->assertStringContainsString($primitif, $blok[1], "Blok teks panjang tidak memuat {$primitif}.");
+        }
+
+        $this->assertGreaterThanOrEqual(6, substr_count($blok[1], 'teksPanjang'), 'Setiap primitif berlabel memakai untaian panjang.');
     }
 }

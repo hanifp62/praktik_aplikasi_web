@@ -76,4 +76,19 @@ class MotionTest extends TestCase
 
         $this->assertSame([], $pelanggar, 'Mulai dari tak terlihat: '.implode(', ', $pelanggar));
     }
+
+    /**
+     * Gerak lapisan melayang hanya dari daftar tertutup spec v3 bagian 8.6 dan hanya lewat
+     * token: lembar naik 280 ms dengan kurva gerak, dialog tengah dan toast 200 ms. Durasi
+     * yang ditulis sebagai angka lolos dari satu sumber waktu gerak aplikasi.
+     */
+    public function test_the_sheet_and_toast_motion_use_the_duration_tokens(): void
+    {
+        $css = $this->css();
+
+        $this->assertStringContainsString('animation: lembar-naik var(--dur-sedang) var(--ease-gerak);', $css);
+        $this->assertStringContainsString('animation: pudar-masuk var(--dur-cepat) var(--ease-pudar);', $css);
+        $this->assertStringContainsString('animation: toast-naik var(--dur-cepat) var(--ease-gerak);', $css);
+        $this->assertDoesNotMatchRegularExpression('/\banimation:[^;]*\d+m?s\b/', $css, 'Durasi animasi ditulis sebagai angka, bukan token.');
+    }
 }

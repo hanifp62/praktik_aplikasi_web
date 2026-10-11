@@ -13,18 +13,60 @@ use Tests\TestCase;
  * text-sm atau text-xs, hanya satu berkas memakai serif atau mono, dan fontnya Figtree,
  * bawaan scaffolding Breeze.
  *
- * Satu font generik pada satu ukuran kecil tanpa hierarki membuat setiap layar terbaca
- * seperti sel tabel, berapa pun kecerdasan yang ada di belakangnya. Tiga fase
- * sebelumnya memperbaiki struktur, warna, jarak, permukaan peramban, dan gerak;
- * tipografi tidak pernah disentuh sama sekali.
+ * Diperbarui gelombang 1 v3 (spec v3 bagian 8.2, DK-38). Keputusan lama "tiga suara"
+ * (sans antarmuka, serif judul, mono sistem) yang dimuat dari Bunny Fonts diganti satu
+ * keluarga yang dihosting sendiri: prototype pemilik membawa hierarki lewat bobot dan
+ * ukuran satu keluarga, dan huruf dari asal sendiri tidak bergantung pada layanan luar
+ * di jaringan yang lemah. Tiga test lama berubah niat, alasannya di docblock penggantinya:
+ * test_there_is_a_display_face_and_a_measurement_face menjadi
+ * test_one_family_carries_headings_and_measurements,
+ * test_the_fonts_come_from_a_host_the_policy_already_allows menjadi
+ * test_the_fonts_come_only_from_our_own_origin, dan
+ * test_no_webfont_is_loaded_for_a_handful_of_lines masuk ke
+ * test_the_self_hosted_files_are_the_recorded_subsets_within_budget.
  */
 class TypographySystemTest extends TestCase
 {
+    use SumberReact;
+
+    /**
+     * Berkas huruf yang dihosting beserta ukuran dan SHA-256-nya saat diunduh 26 September
+     * 2026 dari @fontsource-variable/plus-jakarta-sans 5.3.0 (docs/lisensi-pihak-ketiga.md,
+     * bagian Huruf).
+     *
+     * @var array<string, array{0: int, 1: string}>
+     */
+    private const BERKAS_HURUF = [
+        'plus-jakarta-sans-latin-wght-normal.woff2' => [27348, '153fc85b70298beeb1d61a5f723331649e7f23bb77302a66e61cb3e2fbdb5e79'],
+        'plus-jakarta-sans-latin-ext-wght-normal.woff2' => [21728, '38e3b8fd8045048eb311d90170a4429ed2c8f405852dc3d91b5af8452758703f'],
+    ];
+
+    /** Anggaran huruf untuk teks Latin: 100 KB (rencana induk W1, butir 2). */
+    private const ANGGARAN_BITA = 102400;
+
     private function tailwind(): string
     {
         static $isi = null;
 
         return $isi ??= File::get(base_path('tailwind.config.js'));
+    }
+
+    private function css(): string
+    {
+        static $isi = null;
+
+        return $isi ??= File::get(resource_path('css/app.css'));
+    }
+
+    /**
+     * Isi blok fontFamily di tailwind.config.js, tanpa komentar di atasnya: komentar yang
+     * menjelaskan mengapa sebuah huruf ditinggalkan justru layak disimpan.
+     */
+    private function blokFontFamily(): string
+    {
+        $this->assertSame(1, preg_match('/fontFamily:\s*\{(.*?)\n\s*\},/s', $this->tailwind(), $blok), 'Blok fontFamily tidak ditemukan.');
+
+        return $blok[1];
     }
 
     /**
@@ -51,138 +93,236 @@ class TypographySystemTest extends TestCase
      * orang yang pertama kali datang melihat huruf yang berbeda dari seluruh aplikasi.
      * Ditemukan test ini, bukan oleh membaca ulang.
      *
-     * Huruf kini dimuat di satu tempat, kepala dokumen bersama, dan templat akar React
-     * memanggilnya dengan huruf. Yang disapu adalah seluruh view: berkas mana pun yang
-     * memuat huruf sendiri harus memuat huruf yang sama.
+     * Diperbarui gelombang 1 v3: huruf tidak lagi dimuat dari Bunny Fonts. Yang dijaga
+     * kini tiga hal: tidak satu view pun memuat huruf dari layanan luar, kepala dokumen
+     * bersama memuat lebih awal subset Latin dari asal sendiri, dan templat akar React
+     * memanggil kepala dokumen itu.
      */
     public function test_every_layout_loads_the_same_faces(): void
     {
-        $berbeda = [];
+        $luar = [];
 
         foreach (File::allFiles(resource_path('views')) as $berkas) {
-            $isi = $berkas->getContents();
-
-            if (str_contains($isi, 'fonts.bunny.net/css') && ! str_contains($isi, 'plus-jakarta-sans')) {
-                $berbeda[] = $berkas->getRelativePathname();
+            if (preg_match('/fonts\.(?:bunny\.net|googleapis\.com|gstatic\.com)/', $berkas->getContents())) {
+                $luar[] = $berkas->getRelativePathname();
             }
         }
 
-        $this->assertSame([], $berbeda, 'Memuat huruf yang berbeda: '.implode(', ', $berbeda));
+        $this->assertSame([], $luar, 'Memuat huruf dari layanan luar: '.implode(', ', $luar));
 
-        $this->assertStringContainsString('plus-jakarta-sans', File::get(resource_path('views/components/brand/head.blade.php')));
+        $this->assertStringContainsString(
+            '<link rel="preload" href="/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>',
+            File::get(resource_path('views/components/brand/head.blade.php'))
+        );
         $this->assertStringContainsString('<x-brand.head />', File::get(resource_path('views/inertia.blade.php')), 'Templat akar React harus memuat huruf lewat kepala dokumen bersama.');
     }
 
     /**
-     * Kontras tipografi butuh lebih dari satu suara. Satu keluarga huruf pada satu
-     * ukuran tidak dapat membedakan judul dari keterangan selain lewat ketebalan, dan
-     * ketebalan saja habis setelah dua tingkat.
+     * Satu keluarga membawa judul, antarmuka, dan angka.
      *
-     * Yang dituntut keluarganya ada, bukan berupa unduhan. Versi pertama memeriksa
-     * "mono: [" dan menolak konfigurasi ketika mono beralih ke tumpukan sistem, padahal
-     * peralihan itu justru perbaikannya: huruf mono yang diunduh seluruh pengguna hanya
-     * dipakai dua baris di satu halaman admin.
+     * Menggantikan test_there_is_a_display_face_and_a_measurement_face, yang menuntut
+     * keluarga serif untuk judul. Keputusan itu diganti DK-38 dan spec v3 bagian 8.2:
+     * judul memakai Plus Jakarta Sans bobot 800, angka memakai tabular-nums pada keluarga
+     * yang sama, dan huruf mono tetap tumpukan sistem tanpa unduhan. Newsreader dan Geist
+     * hanya hidup di bundel prototype, bukan di aplikasi.
      */
-    public function test_there_is_a_display_face_and_a_measurement_face(): void
+    public function test_one_family_carries_headings_and_measurements(): void
     {
-        $this->assertMatchesRegularExpression('/serif:\s*\[/', $this->tailwind());
-        $this->assertMatchesRegularExpression('/mono:\s*(?:\[|defaultTheme)/', $this->tailwind());
+        $keluarga = $this->blokFontFamily();
+
+        $this->assertDoesNotMatchRegularExpression('/\bserif:\s*\[/', $keluarga, 'Keluarga serif judul sudah dilepas (DK-38).');
+        $this->assertDoesNotMatchRegularExpression('/Newsreader|Geist/', $keluarga);
+        $this->assertMatchesRegularExpression('/mono:\s*defaultTheme\.fontFamily\.mono/', $keluarga, 'Huruf mono tetap tumpukan sistem.');
+
+        $pemakaiSerif = [];
+
+        foreach ($this->berkasTsx() as $berkas) {
+            if (str_contains($this->tanpaKomentarJs($berkas->getContents()), 'font-serif')) {
+                $pemakaiSerif[] = $berkas->getRelativePathname();
+            }
+        }
+
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            if (str_contains($berkas->getContents(), 'font-serif')) {
+                $pemakaiSerif[] = $berkas->getRelativePathname();
+            }
+        }
+
+        $this->assertSame([], $pemakaiSerif, 'Masih memakai font-serif: '.implode(', ', $pemakaiSerif));
     }
 
     /**
-     * Huruf dimuat dari host yang sudah diizinkan CSP. Menambah host baru tanpa
-     * menyesuaikan CSP menghasilkan halaman yang diam-diam jatuh ke huruf sistem, dan
-     * kegagalan itu tidak terlihat di mana pun kecuali di layar pengguna.
+     * Huruf hanya datang dari asal aplikasi sendiri.
+     *
+     * Menggantikan test_the_fonts_come_from_a_host_the_policy_already_allows. Niat lamanya,
+     * huruf tidak diam-diam diblokir CSP, tetap dengan cara yang lebih ketat: tidak ada host
+     * huruf luar sama sekali, CSP font-src dan style-src hanya mengizinkan asal sendiri, dan
+     * setiap @font-face memuat berkas dari /fonts/.
      */
-    public function test_the_fonts_come_from_a_host_the_policy_already_allows(): void
+    public function test_the_fonts_come_only_from_our_own_origin(): void
     {
         $csp = File::get(app_path('Http/Middleware/SecurityHeaders.php'));
 
-        // Huruf kini dimuat kepala dokumen bersama; templat akar React memanggilnya.
-        foreach (['components/brand/head', 'inertia'] as $layout) {
-            $isi = File::get(resource_path("views/{$layout}.blade.php"));
+        $this->assertStringNotContainsString('fonts.bunny.net', $csp);
+        $this->assertStringContainsString("\"font-src 'self' data:\"", $csp);
+        $this->assertStringContainsString("\"style-src 'self' 'unsafe-inline'\"", $csp);
 
-            preg_match_all('/href="https:\/\/([^\/"]+)/', $isi, $host);
+        preg_match_all('/src:\s*url\(([^)]+)\)/', $this->css(), $sumber);
 
-            foreach (array_unique($host[1]) as $h) {
-                $this->assertStringContainsString(
-                    $h,
-                    $csp,
-                    "Layout {$layout} memuat dari {$h} yang tidak diizinkan CSP."
-                );
-            }
+        $this->assertNotEmpty($sumber[1], 'Tidak ada @font-face yang memuat berkas.');
+
+        foreach ($sumber[1] as $url) {
+            $this->assertStringStartsWith("'/fonts/", $url, "Huruf dimuat dari luar asal sendiri: {$url}");
         }
     }
 
     /**
-     * Angka pengukuran memakai huruf berlebar tetap.
+     * Angka pengukuran memakai angka berlebar tetap.
      *
-     * Jarak, elevation gain, dan durasi adalah pengukuran, bukan prosa. Huruf
+     * Jarak, elevation gain, dan durasi adalah pengukuran, bukan prosa. Angka
      * proporsional membuat kolom angka bergoyang, dan mata membaca deret angka jauh
-     * lebih cepat ketika lebarnya tetap.
+     * lebih cepat ketika lebarnya tetap. Diperluas gelombang 1 v3: output, tempat nilai
+     * stepper berganti, ikut dalam aturan yang sama.
      */
     public function test_measurements_are_set_in_the_measurement_face(): void
     {
-        $css = File::get(resource_path('css/app.css'));
-
-        $this->assertStringContainsString('tabular-nums', $css);
+        $this->assertStringContainsString('tabular-nums', $this->css());
+        $this->assertMatchesRegularExpression('/time,\s*output,\s*\[data-angka\]\s*\{\s*font-variant-numeric:\s*tabular-nums;/', $this->css());
     }
 
     /**
      * Ukuran teks bawaan bukan yang terkecil.
      *
-     * Aplikasi ini memakai text-sm untuk hampir segalanya, termasuk teks yang dibaca
-     * pendaki di bawah matahari sambil berdiri di jalur. Ukuran dasarnya dinaikkan di
-     * lapisan base sehingga yang tidak menyebut ukurannya mendapat ukuran yang dapat
-     * dibaca, bukan yang paling padat.
+     * Diperbarui gelombang 1 v3: nilainya kini dipaku, 16 px dengan tinggi baris 1,5, sama
+     * dengan text-isi (spec v3 bagian 8.2). Versi lama hanya menuntut font-size ada di
+     * body, dan 16,5 px yang dipasang di sana tidak pernah menggeser skala Tailwind seperti
+     * yang diklaim komentarnya, karena rem dihitung dari html.
      */
     public function test_the_default_reading_size_is_set_deliberately(): void
     {
-        $css = File::get(resource_path('css/app.css'));
-
         $this->assertMatchesRegularExpression(
-            '/body\s*\{[^}]*font-size/s',
-            $css,
-            'Ukuran baca dasar harus ditetapkan, bukan diwarisi dari peramban.'
+            '/body\s*\{[^}]*font-size:\s*1rem;[^}]*line-height:\s*1\.5;/s',
+            $this->css(),
+            'Ukuran baca dasar harus 16 px dengan tinggi baris 1,5.'
         );
     }
 
     /**
-     * Huruf yang dimuat setiap halaman benar-benar dipakai setiap halaman.
+     * Berkas huruf yang dihosting adalah subset yang tercatat, dalam anggaran.
      *
-     * Diukur dan ternyata tidak: JetBrains Mono dimuat di layout untuk seluruh pengguna,
-     * dua bobot sekaligus, dan dipakai di dua baris pada satu halaman admin. Alasan yang
-     * tertulis di tailwind.config.js menyebutnya "khusus pengukuran: jarak, elevation
-     * gain, durasi, dan koordinat", dan tidak satu pun pengukuran memakainya: semuanya
-     * memakai tabular-nums pada huruf sans.
+     * Ukuran dan hash dipaku supaya penggantian berkas tanpa memperbarui catatan asal-usul
+     * di docs/lisensi-pihak-ketiga.md ketahuan. Anggaran 100 KB untuk teks Latin; subset
+     * Latin dan Latin Extended bersama 49.076 bita.
      *
-     * Alasan yang menggambarkan pemakaian yang tidak ada lebih buruk daripada tidak ada
-     * alasan sama sekali, karena ia menghentikan pertanyaan berikutnya.
+     * Menggantikan test_no_webfont_is_loaded_for_a_handful_of_lines. Niatnya, tidak ada
+     * huruf yang diunduh untuk segelintir baris, kini dijaga dengan menolak berkas huruf
+     * lain di public/fonts, termasuk huruf mono.
      */
-    public function test_no_webfont_is_loaded_for_a_handful_of_lines(): void
+    public function test_the_self_hosted_files_are_the_recorded_subsets_within_budget(): void
     {
-        // Huruf dimuat satu kali di komponen head bersama, bukan di tiap layout.
-        $layout = File::get(resource_path('views/components/brand/head.blade.php'));
+        $total = 0;
 
-        preg_match('/css\?family=([^"&]+)/', $layout, $m);
+        foreach (self::BERKAS_HURUF as $nama => [$ukuran, $sha]) {
+            $jalur = public_path('fonts/plus-jakarta-sans/'.$nama);
 
-        $dimuat = collect(explode('|', $m[1] ?? ''))
-            ->map(fn (string $satu) => explode(':', $satu)[0])
-            ->filter()
-            ->values();
+            $this->assertFileExists($jalur);
+            $this->assertSame('wOF2', (string) file_get_contents($jalur, false, null, 0, 4), "{$nama} bukan WOFF2.");
+            $this->assertSame($ukuran, filesize($jalur), "{$nama} berubah ukuran.");
+            $this->assertSame($sha, hash_file('sha256', $jalur), "{$nama} berbeda dari berkas yang tercatat asal-usulnya.");
 
-        $this->assertNotEmpty($dimuat, 'Layout tidak memuat huruf apa pun.');
-
-        $pemakaian = 0;
-
-        foreach (File::allFiles(resource_path('views')) as $berkas) {
-            $pemakaian += substr_count($berkas->getContents(), 'font-mono');
+            $total += $ukuran;
         }
 
-        $this->assertStringNotContainsString(
-            'jetbrains-mono',
-            $m[1] ?? '',
-            "JetBrains Mono dimuat setiap halaman dan dipakai {$pemakaian} kali, seluruhnya di halaman admin. Huruf mono sistem tidak menagih unduhan kepada siapa pun."
+        $this->assertLessThanOrEqual(self::ANGGARAN_BITA, $total, "Huruf Latin {$total} bita melampaui anggaran 100 KB.");
+
+        $semua = array_map(
+            fn ($berkas): string => str_replace('\\', '/', $berkas->getRelativePathname()),
+            File::allFiles(public_path('fonts'))
         );
+        sort($semua);
+
+        $this->assertSame(
+            [
+                'plus-jakarta-sans/OFL.txt',
+                'plus-jakarta-sans/plus-jakarta-sans-latin-ext-wght-normal.woff2',
+                'plus-jakarta-sans/plus-jakarta-sans-latin-wght-normal.woff2',
+            ],
+            $semua,
+            'Hanya huruf yang tercatat yang boleh dihosting.'
+        );
+    }
+
+    /**
+     * Setiap @font-face Plus Jakarta Sans menunjuk berkas yang ada, menawarkan bobot 800
+     * untuk judul, dan memakai font-display: swap supaya teks terbaca sebelum huruf tiba.
+     * Berkas yang hilang tidak memunculkan galat di mana pun; halaman hanya diam-diam
+     * jatuh ke huruf cadangan.
+     */
+    public function test_every_font_face_points_to_a_file_that_exists_and_offers_weight_800(): void
+    {
+        preg_match_all("/@font-face\s*\{[^}]*font-family:\s*'Plus Jakarta Sans';[^}]*\}/s", $this->css(), $wajah);
+
+        $this->assertCount(2, $wajah[0], 'Dua subset: Latin dan Latin Extended.');
+
+        foreach ($wajah[0] as $blok) {
+            $this->assertMatchesRegularExpression('/font-weight:\s*200 800;/', $blok);
+            $this->assertStringContainsString('font-display: swap;', $blok);
+            $this->assertMatchesRegularExpression('/unicode-range:\s*U\+/', $blok);
+            $this->assertSame(1, preg_match("/url\('([^']+)'\) format\('woff2'\)/", $blok, $url));
+            $this->assertFileExists(public_path(ltrim($url[1], '/')), "Berkas {$url[1]} tidak ada.");
+        }
+    }
+
+    /**
+     * Huruf cadangan bermetrik sama.
+     *
+     * Tanpa penyesuaian metrik, teks berpindah baris ketika Plus Jakarta Sans tiba, dan di
+     * sinyal lemah itu terjadi berdetik-detik sesudah pengguna mulai membaca. Bila hurufnya
+     * gagal dimuat sama sekali, cadangan inilah yang dibaca sepanjang sesi.
+     */
+    public function test_the_fallback_metrics_keep_the_layout_from_jumping(): void
+    {
+        foreach (['PJS Cadangan Roboto' => 'Roboto', 'PJS Cadangan Arial' => 'Arial'] as $cadangan => $lokal) {
+            $this->assertSame(1, preg_match("/@font-face\s*\{[^}]*font-family:\s*'{$cadangan}';[^}]*\}/s", $this->css(), $blok), "Wajah {$cadangan} belum ada.");
+
+            foreach (["src: local('{$lokal}');", 'size-adjust:', 'ascent-override:', 'descent-override:', 'line-gap-override: 0%;'] as $sifat) {
+                $this->assertStringContainsString($sifat, $blok[0], "{$cadangan} tanpa {$sifat}");
+            }
+        }
+
+        $this->assertStringContainsString(
+            "sans: ['Plus Jakarta Sans', 'PJS Cadangan Roboto', 'PJS Cadangan Arial', ...defaultTheme.fontFamily.sans]",
+            $this->tailwind()
+        );
+    }
+
+    /**
+     * Judul memakai keluarga antarmuka pada bobot 800, bukan serif (DK-38).
+     */
+    public function test_headings_use_the_interface_family_at_weight_800(): void
+    {
+        $this->assertSame(1, preg_match('/\n    h1\s*\{([^}]*)\}/', $this->css(), $h1), 'Aturan h1 tidak ditemukan.');
+        $this->assertStringContainsString('font-weight: 800;', $h1[1]);
+        $this->assertStringNotContainsString('font-family', $h1[1], 'Judul mewarisi keluarga antarmuka.');
+    }
+
+    /**
+     * Skala tipe spec v3 bagian 8.2: nama menyebut peran, nilainya dari prototype.
+     */
+    public function test_the_type_scale_follows_the_spec(): void
+    {
+        foreach ([
+            "tampilan: ['1.875rem', { lineHeight: '1.15', letterSpacing: '-0.025em', fontWeight: '800' }]",
+            "judul: ['1.75rem', { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '800' }]",
+            "'judul-kartu': ['1.4375rem', { lineHeight: '1.25', letterSpacing: '-0.015em', fontWeight: '800' }]",
+            "bagian: ['1.125rem', { lineHeight: '1.35', fontWeight: '700' }]",
+            "subjudul: ['1.0625rem', { lineHeight: '1.4', fontWeight: '700' }]",
+            "isi: ['1rem', { lineHeight: '1.5' }]",
+            "kecil: ['0.875rem', { lineHeight: '1.45' }]",
+            "meta: ['0.8125rem', { lineHeight: '1.4' }]",
+            "label: ['0.75rem', { lineHeight: '1.35' }]",
+        ] as $baris) {
+            $this->assertStringContainsString($baris, $this->tailwind());
+        }
     }
 }

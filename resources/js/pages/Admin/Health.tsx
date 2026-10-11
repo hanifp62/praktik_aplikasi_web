@@ -167,7 +167,9 @@ export default function Health() {
                 <div className="space-y-4">
                     {tugas.length === 0 ? (
                         <EmptyState
+                            jenis="menunggu"
                             title="Tidak ada tugas terjadwal yang terdaftar"
+                            menunggu="Menunggu pengembang mendaftarkan tugas terjadwal di kode aplikasi"
                             description="Daftar yang kosong di halaman ini bukan kabar baik. Selama tidak ada tugas terdaftar, prakiraan cuaca tidak pernah diperbarui, status resmi yang kedaluwarsa tidak pernah diperiksa, pengingat perjalanan tidak pernah terkirim, dan tidak ada yang akan memberi tahu."
                         />
                     ) : (

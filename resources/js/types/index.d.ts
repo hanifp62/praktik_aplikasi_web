@@ -15,6 +15,7 @@ export interface PenggunaBersama {
 export interface PropsBersama {
     auth: { user: PenggunaBersama | null };
     merek: { nama: string; tagline: string };
+    demo: boolean;
     tema: 'system' | 'light' | 'dark';
     tampilan: { efek: 'otomatis' | 'solid'; gerak: 'sistem' | 'kurangi' };
     peta: { styleUrl: string | null; rasterTiles: string[]; attribution: string; maxZoom: number };

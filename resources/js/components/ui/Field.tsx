@@ -1,23 +1,28 @@
 import type { InputHTMLAttributes, LabelHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import { kelas } from '@/lib/kelas';
 
+/** Label di atas isian, tebal dan berwarna teks utama: bukan placeholder yang hilang saat mengetik. */
 export function Label({ className, ...rest }: LabelHTMLAttributes<HTMLLabelElement>) {
-    return <label className={kelas('block text-sm font-medium text-secondary', className)} {...rest} />;
+    return <label className={kelas('block text-kecil font-bold text-primary', className)} {...rest} />;
 }
 
-const kontrol = 'mt-1 block w-full rounded-control border-control focus:border-brand-600 focus:ring-brand-600';
+const kontrol = 'mt-1 block min-h-12 w-full rounded-tombol border-control pl-4 text-isi text-primary focus:border-brand-600 focus:ring-brand-600';
 
-/** Isian teks: batas control (3,52:1, WCAG 1.4.11), fokus hijau merek. */
+/**
+ * Isian teks v3 (spec v3 bagian 8.4): tinggi 48 px, radius tombol 16 px, huruf isi 16 px
+ * (di bawah 16 px Safari iOS memperbesar halaman saat isian difokus), batas control
+ * (3,65:1 di atas kartu, WCAG 1.4.11), fokus hijau merek.
+ */
 export function TextInput({ className, type = 'text', ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-    return <input type={type} className={kelas(kontrol, className)} {...rest} />;
+    return <input type={type} className={kelas(kontrol, 'pr-4', className)} {...rest} />;
 }
 
 export function Select({ className, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
-    return <select className={kelas(kontrol, className)} {...rest} />;
+    return <select className={kelas(kontrol, 'pr-10', className)} {...rest} />;
 }
 
 export function Textarea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-    return <textarea className={kelas(kontrol, className)} {...rest} />;
+    return <textarea className={kelas(kontrol, 'py-3 pr-4', className)} {...rest} />;
 }
 
 /** Galat isian: daftar kalimat, warna danger dengan teks (bukan warna saja). */
@@ -29,7 +34,7 @@ export function InputError({ messages, id, className }: { messages?: string | st
     }
 
     return (
-        <ul id={id} className={kelas('space-y-1 text-sm text-danger-900', className)}>
+        <ul id={id} className={kelas('space-y-1 text-kecil text-danger-900', className)}>
             {daftar.map((m) => (
                 <li key={m}>{m}</li>
             ))}
@@ -55,12 +60,16 @@ export function FormField({ name, label, hint, error, className, ...rest }: Form
         <div className={className}>
             <Label htmlFor={name}>{label}</Label>
             <TextInput id={name} name={name} aria-describedby={penjelas} aria-invalid={error ? true : undefined} {...rest} />
-            {hint ? <p id={`${name}-hint`} className="mt-1 text-xs text-muted">{hint}</p> : null}
+            {hint ? <p id={`${name}-hint`} className="mt-1 text-kecil text-muted">{hint}</p> : null}
             <InputError id={`${name}-error`} messages={error} className="mt-2" />
         </div>
     );
 }
 
+/**
+ * Kotak centang v3: 28 px, sudut kontrol kecil 10 px, garis 2 px berkontras 3:1, dan isian
+ * brand-700 ketika tercentang. Tanda centangnya digelapkan di tema gelap (app.css).
+ */
 export function Checkbox({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-    return <input type="checkbox" className={kelas('rounded border-control text-brand-ink focus:ring-brand-600', className)} {...rest} />;
+    return <input type="checkbox" className={kelas('size-7 shrink-0 rounded-kecil border-2 border-control text-brand-700 focus:ring-brand-600', className)} {...rest} />;
 }

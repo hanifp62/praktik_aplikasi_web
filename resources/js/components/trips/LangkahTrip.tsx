@@ -3,7 +3,7 @@ import { kelas } from '@/lib/kelas';
 import type { KeadaanLangkah, Langkah } from './types';
 
 const tanda: Record<KeadaanLangkah, { simbol: string; teks: string; bulatan: string }> = {
-    selesai: { simbol: '✓', teks: 'Selesai', bulatan: 'border-brand-700 bg-brand-700 text-white' },
+    selesai: { simbol: '✓', teks: 'Selesai', bulatan: 'border-brand-700 bg-brand-700 text-on-brand' },
     berikutnya: { simbol: '→', teks: 'Langkah berikutnya', bulatan: 'border-brand-700 bg-surface text-brand-ink' },
     belum: { simbol: '', teks: 'Belum', bulatan: 'border-control bg-surface text-muted' },
 };

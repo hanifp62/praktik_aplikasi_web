@@ -50,6 +50,7 @@ export default function HikingHistory() {
 
                 {entri.data.length === 0 ? (
                     <EmptyState
+                        jenis="pertama"
                         title="Belum ada pendakian yang tercatat selesai."
                         description="Trip tercatat di sini setelah Anda menandainya selesai di halaman trip. Trip yang masih direncanakan atau sedang berjalan ada di daftar trip."
                     >

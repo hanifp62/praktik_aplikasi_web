@@ -49,11 +49,11 @@ class SecurityHeaders
             // adanya lebih berguna daripada menulis CSP ketat yang memutus antarmuka.
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
 
-            // Kedua layout memuat Figtree dari Bunny Fonts. Tanpa asal ini di style-src
-            // dan font-src, CSP memblokirnya diam-diam dan seluruh aplikasi jatuh ke
-            // font sistem tanpa satu pun pesan kesalahan yang terlihat.
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net",
-            "font-src 'self' data: https://fonts.bunny.net",
+            // Huruf dihosting sendiri sejak gelombang 1 v3 (DK-38): style-src dan
+            // font-src tidak lagi mengizinkan asal luar, jadi huruf yang ditambahkan
+            // dari layanan lain diblokir CSP alih-alih diam-diam menjadi ketergantungan.
+            "style-src 'self' 'unsafe-inline'",
+            "font-src 'self' data:",
 
             // MapLibre menjalankan pengurai tile di web worker yang dibuat dari blob.
             "worker-src 'self' blob:",

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Trips;
 
 use App\Enums\CompletionState;
 use App\Enums\PreparationStatus;
+use App\Enums\RouteFitLabel;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
 use App\Http\Controllers\Controller;
@@ -230,7 +231,7 @@ class TripController extends Controller
             'langkah' => $steps->for($trip),
             'fit' => $fit === null ? null : [
                 'label' => $fit->label?->value,
-                'labelText' => $fit->label?->label() ?? 'Tidak dinilai',
+                'labelText' => RouteFitLabel::textFor($fit->label),
                 'alasan' => $fit->alasan,
                 'denganRencana' => $fit->denganRencana,
             ],

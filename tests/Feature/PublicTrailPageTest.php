@@ -191,6 +191,22 @@ class PublicTrailPageTest extends TestCase
     }
 
     /**
+     * Tinjauan W1-9a #4: lencana "Data contoh" harus tampil di halaman publik juga, tidak
+     * hanya di layout React, supaya data contoh tidak pernah terbaca sebagai data
+     * sungguhan bahkan oleh pengunjung yang belum masuk.
+     */
+    public function test_it_shows_the_sample_data_badge_only_when_demo_mode_is_on(): void
+    {
+        $trail = $this->jalur();
+
+        config(['app.demo' => false]);
+        $this->get(route('public.trail', $trail))->assertDontSee('Data contoh');
+
+        config(['app.demo' => true]);
+        $this->get(route('public.trail', $trail))->assertSee('Data contoh');
+    }
+
+    /**
      * Item G tinjauan akhir: distance_km di-cast 'decimal:2', jadi nilai mentahnya
      * string ("0.00"), dan (bool) "0.00" bernilai true di PHP -- hanya "" dan "0" yang
      * falsy. Ringkasan halaman publik sebelumnya menjaga dengan truthiness mentah,

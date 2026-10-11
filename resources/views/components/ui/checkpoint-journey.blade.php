@@ -87,9 +87,9 @@
                          seluruh barisnya memang sudah disembunyikan dari pembaca layar. --}}
                     <p class="flex items-center gap-1 text-secondary">
                         @if (str_contains($antara[$i], 'naik'))
-                            <x-ui.icon name="arrow-up" class="h-3 w-3" />
+                            <x-ui.icon name="arrow-up" />
                         @elseif (str_contains($antara[$i], 'turun'))
-                            <x-ui.icon name="arrow-down" class="h-3 w-3" />
+                            <x-ui.icon name="arrow-down" />
                         @endif
                         {{ $antara[$i] }}
                     </p>

@@ -226,6 +226,7 @@ export default function Permits() {
 
                 {rules.data.length === 0 ? (
                     <EmptyState
+                        jenis="pertama"
                         title="Belum ada aturan perizinan tercatat"
                         description="Jalur tanpa aturan tercatat tidak akan memunculkan peringatan perizinan apa pun. Ketiadaan data tidak dianggap sebagai masalah."
                     />

@@ -4,6 +4,7 @@ namespace App\Services\Trails;
 
 use App\Enums\FreshnessState;
 use App\Enums\OfficialStatusValue;
+use App\Enums\RouteFitLabel;
 use App\Enums\StatusScope;
 use App\Models\PermitRequirement;
 use App\Models\ReportThank;
@@ -83,7 +84,7 @@ class TrailDetailPage
         return [
             'fit' => $fit === null ? null : [
                 'label' => $fit->label?->value,
-                'labelText' => $fit->label?->label() ?? 'Tidak dinilai',
+                'labelText' => RouteFitLabel::textFor($fit->label),
                 'deskripsi' => $fit->label?->description(),
                 'denganRencana' => $goal !== null,
                 'faktor' => FaktorKategori::dari($fit->factorsToArray()),

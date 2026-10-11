@@ -58,5 +58,19 @@ Migrasi baru yang membuat tabel wajib menyalakan RLS pada PostgreSQL mengikuti p
 
 - Tidak ada dump basis data di repo: berkas `.sql`, `.sql.gz`, `.dump`, dan SQLite diabaikan git, karena dump dapat memuat data pengguna sungguhan.
 - Data lokal berasal dari seeder dan pabrik. `DatabaseSeeder` membuat tiga akun lokal (admin, moderator, pendaki; lihat `README.md`) lalu memanggil `RecommendationRuleSeeder`, `PreparationTemplateSeeder`, `MvpDatasetSeeder`, `MountainSeeder`, `OfficialStatusSeeder`, `PermitRequirementSeeder`, `AuthoritySeeder`, dan `AwaitingTrailSeeder`. Isian yang tidak diketahui sumbernya dibiarkan kosong, tidak ditebak.
-- `db:seed` hanya ke basis data lokal. Data contoh berlabel DATA CONTOH untuk peninjauan lokal menyusul di W1 (DK-35, izin Q1).
+- `db:seed` hanya ke basis data lokal. Data contoh berlabel DATA CONTOH (DK-35) ada di `DemoSeeder` dan diisi `php artisan memount:demo` ke berkas `database/demo.sqlite`, oleh pemilik atas keputusan Q1, bukan oleh agen. Perintah itu menolak berjalan di luar `APP_ENV=local`, menolak koneksi yang bukan SQLite, dan menolak berkas di luar folder `database/`, lalu mencetak cara menyajikannya tanpa menyentuh basis data, sesi, cache, antrean, berkas (termasuk foto laporan), surel, atau broadcasting yang ditunjuk `.env`. `DatabaseSeeder` tidak memanggil `DemoSeeder`.
+- Baris penyaji dari Git Bash:
+
+  ```sh
+  DB_CONNECTION=demo APP_DEMO=true SESSION_DRIVER=file CACHE_STORE=file QUEUE_CONNECTION=sync FILESYSTEM_DISK=local REPORT_PHOTOS_DISK=local MAIL_MAILER=log BROADCAST_CONNECTION=null php artisan serve
+  ```
+
+  Dari PowerShell. Variabel `$env:` bertahan sepanjang jendela itu, bukan cuma satu perintah, jadi bersihkan sesudahnya atau pakai jendela terpisah:
+
+  ```powershell
+  $env:DB_CONNECTION="demo"; $env:APP_DEMO="true"; $env:SESSION_DRIVER="file"; $env:CACHE_STORE="file"; $env:QUEUE_CONNECTION="sync"; $env:FILESYSTEM_DISK="local"; $env:REPORT_PHOTOS_DISK="local"; $env:MAIL_MAILER="log"; $env:BROADCAST_CONNECTION="null"; php artisan serve
+  Remove-Item Env:DB_CONNECTION, Env:APP_DEMO, Env:SESSION_DRIVER, Env:CACHE_STORE, Env:QUEUE_CONNECTION, Env:FILESYSTEM_DISK, Env:REPORT_PHOTOS_DISK, Env:MAIL_MAILER, Env:BROADCAST_CONNECTION
+  ```
+
+  Baris itu lapis pertama. Lapis kedua ada di aplikasi sendiri: selama koneksi bawaan `demo`, `AppServiceProvider` memanggil `PenjagaDataContoh::isolasiBilaMenyajikanDemo()`, yang memutus cache, antrean, surel, kedua disk, dan broadcasting dari `.env` dan memakai sesi berkas, walau baris penyaji tidak disalin lengkap. Surel lalu memakai mailer `array` (dibuang, tidak dicatat) dan cache memakai `array`. Kanal log tetap mengikuti `LOG_*` di `.env`.
 - Snapshot skema Supabase sebelum hardening (tanpa data) disimpan sebagai catatan sejarah di `docs/db/schema-snapshot-sebelum-hardening.md`.

@@ -3,6 +3,7 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         defaultTestSuite="Unit,Feature,Spatial"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -20,6 +21,16 @@
         -->
         <testsuite name="Spatial">
             <directory>tests/Spatial</directory>
+        </testsuite>
+        <!--
+            Harness pratinjau visual (ruling W1-R4): menulis HTML halaman berisi data
+            contoh ke public/_pratinjau/ untuk dipotret. Tidak termasuk suite bawaan
+            (defaultTestSuite di atas) dan tidak dijalankan CI; jalankan dengan
+            testsuite Pratinjau sesudah build aset. Caranya di CONTRIBUTING.md, bagian
+            "Pratinjau visual tanpa basis data".
+        -->
+        <testsuite name="Pratinjau">
+            <directory>tests/Pratinjau</directory>
         </testsuite>
     </testsuites>
     <source>
@@ -40,9 +51,29 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
-        <env name="DB_URL" value=""/>
+        <!--
+            Pagar basis data (tinjauan akhir W1, M-9). .env menunjuk basis data produksi, dan
+            variabel DB_* yang tertinggal di shell mengalahkan <env> biasa, sehingga
+            RefreshDatabase bisa menjalankan migrate:fresh di koneksi itu. force="true" menimpa
+            putenv dan $_ENV, tetapi Laravel membaca $_SERVER lebih dulu, jadi setiap variabel
+            juga ditulis lewat <server>. Host, pengguna, dan sandi pgsql dibuat tidak dapat
+            dijangkau. SpatialTestCase memasang koneksi pgsql-nya sendiri dari
+            SPATIAL_TEST_DSN, dan CI tidak menyetel DB_*. Dijaga PratinjauHarnessTest.
+        -->
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="DB_HOST" value="tidak-ada.invalid" force="true"/>
+        <env name="DB_PORT" value="5432" force="true"/>
+        <env name="DB_USERNAME" value="tidak_ada" force="true"/>
+        <env name="DB_PASSWORD" value="" force="true"/>
+        <server name="DB_CONNECTION" value="sqlite"/>
+        <server name="DB_DATABASE" value=":memory:"/>
+        <server name="DB_URL" value=""/>
+        <server name="DB_HOST" value="tidak-ada.invalid"/>
+        <server name="DB_PORT" value="5432"/>
+        <server name="DB_USERNAME" value="tidak_ada"/>
+        <server name="DB_PASSWORD" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

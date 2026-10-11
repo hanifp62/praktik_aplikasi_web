@@ -151,7 +151,7 @@ export default function Preparation() {
                                                                         // yang muncul dari ketiadaan.
                                                                         'transition-colors duration-150 ease-out motion-reduce:transition-none',
                                                                         'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1',
-                                                                        dipilih ? 'border-brand-700 bg-brand-700 text-white' : 'border-control text-secondary hover:bg-surface-sunken',
+                                                                        dipilih ? 'border-brand-700 bg-brand-700 text-on-brand' : 'border-control text-secondary hover:bg-surface-sunken',
                                                                     )}
                                                                 >
                                                                     {/* Bulatan penuh atau kosong: pilihan terbaca tanpa warna. */}

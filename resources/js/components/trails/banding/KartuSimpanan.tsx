@@ -178,12 +178,12 @@ export function KartuSimpanan({ jalur, batasCatatan, pilihan, onPilih }: KartuSi
 
                 <div className="mt-2 flex flex-wrap gap-x-2">
                     {menyunting ? null : (
-                        <Button id={idPemicu} variant="ghost" size="sm" className="-ml-3" onClick={mulaiSunting}>
+                        <Button id={idPemicu} variant="ghost" size="sm" className="-ml-4" onClick={mulaiSunting}>
                             {jalur.catatan ? 'Ubah catatan' : 'Tulis catatan'}
                             <span className="sr-only"> untuk {jalur.name}</span>
                         </Button>
                     )}
-                    <Button variant="ghost" size="sm" className={menyunting ? '-ml-3' : undefined} processing={menghapus} onClick={hapus}>
+                    <Button variant="ghost" size="sm" className={menyunting ? '-ml-4' : undefined} processing={menghapus} onClick={hapus}>
                         Hapus dari simpanan<span className="sr-only">: {jalur.name}</span>
                     </Button>
                 </div>

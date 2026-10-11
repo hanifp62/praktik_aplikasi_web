@@ -1,6 +1,6 @@
 /**
- * Warna token tema dalam bentuk yang dipahami MapLibre: "4 120 87" menjadi
- * "rgb(4, 120, 87)".
+ * Warna token tema dalam bentuk yang dipahami MapLibre: "35 79 50" menjadi
+ * "rgb(35, 79, 50)".
  *
  * MapLibre tidak membaca kelas Tailwind maupun var(), jadi garis dan penanda mengambil
  * warnanya dari token yang sama dengan antarmuka, bukan dari warna mentah. Nilainya

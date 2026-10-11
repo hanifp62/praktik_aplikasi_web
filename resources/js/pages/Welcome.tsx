@@ -67,7 +67,7 @@ export default function Welcome() {
                         <ol className="mt-6 grid gap-6 sm:grid-cols-3">
                             {langkah.map(([judul, penjelasan], i) => (
                                 <li key={judul}>
-                                    <span className="inline-flex size-8 items-center justify-center rounded-full bg-brand-700 text-sm font-semibold text-white">{i + 1}</span>
+                                    <span className="inline-flex size-8 items-center justify-center rounded-full bg-brand-700 text-sm font-semibold text-on-brand">{i + 1}</span>
                                     <h3 className="mt-3 font-medium text-primary">{judul}</h3>
                                     <p className="mt-1 text-sm text-secondary">{penjelasan}</p>
                                 </li>

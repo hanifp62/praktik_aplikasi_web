@@ -98,8 +98,9 @@ class RecommendationExclusionTest extends TestCase
      *
      * Baris jalur merender fit-line kapan pun ringkasannya ada, tanpa memeriksa
      * `eligible`. Yang menjaga kontraknya adalah label yang bernilai null untuk jalur
-     * tak lengkap, sehingga lencananya jatuh ke "Tidak dinilai". Itu perilaku yang
-     * benar, tetapi selama ini tidak ada test yang menguncinya: satu perubahan pada
+     * tak lengkap, sehingga lencananya jatuh ke "Belum dinilai" (kata tunggal untuk
+     * UNKNOWN sejak perbaikan akhir W1, M-5; sebelumnya "Tidak dinilai"). Itu perilaku
+     * yang benar, tetapi selama ini tidak ada test yang menguncinya: satu perubahan pada
      * fit-badge dapat memulihkan label publik tanpa ada yang menyadarinya.
      */
     public function test_jelajah_shows_no_public_fit_label_for_an_incomplete_trail(): void
@@ -114,7 +115,7 @@ class RecommendationExclusionTest extends TestCase
             ->assertDontSee('Cocok')
             ->assertDontSee('Perlu persiapan')
             ->assertDontSee('Kurang cocok')
-            ->assertSee('Tidak dinilai');
+            ->assertSee('Belum dinilai');
     }
 
     /**
@@ -129,7 +130,7 @@ class RecommendationExclusionTest extends TestCase
 
         $halaman->assertOk()
             ->assertSee($lengkap->name)
-            ->assertDontSee('Tidak dinilai');
+            ->assertDontSee('Belum dinilai');
     }
 
     /**
@@ -139,7 +140,10 @@ class RecommendationExclusionTest extends TestCase
      */
     private function legacyIncompletePublishedTrail(): Trail
     {
+        // Nama tetap tanpa apostrof: nama acak faker seperti "O'Hara" di-escape berbeda di
+        // atribut data-page Inertia sehingga assertSee() sesekali gagal tanpa perubahan kode.
         $trail = Trail::factory()->for(Mountain::factory())->create([
+            'name' => 'Jalur Uji Tak Lengkap',
             'data_source_id' => null,
             'distance_km' => 8,
             'elevation_gain_m' => 700,
@@ -154,6 +158,7 @@ class RecommendationExclusionTest extends TestCase
     private function completeTrail(): Trail
     {
         $trail = Trail::factory()->easy()->for(Mountain::factory())->create([
+            'name' => 'Jalur Uji Lengkap',
             'data_source_id' => DataSource::factory()->create()->id,
         ]);
 

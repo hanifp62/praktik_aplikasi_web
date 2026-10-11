@@ -22,7 +22,7 @@ export function Alert({ variant = 'info', title, className, children }: AlertPro
     const role = variant === 'warning' || variant === 'danger' ? 'alert' : 'status';
 
     return (
-        <div role={role} className={kelas('flex gap-3 rounded-control border p-4 text-sm', warna, className)}>
+        <div role={role} className={kelas('flex gap-3 rounded-kartu border p-4 text-sm', warna, className)}>
             <span aria-hidden="true" className="font-semibold">{simbol}</span>
             <div className="space-y-1">
                 <span className="sr-only">{awalan}</span>

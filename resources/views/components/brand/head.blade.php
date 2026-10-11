@@ -33,9 +33,10 @@
 <link rel="apple-touch-icon" href="/icons/app-180.png">
 
 @if ($fonts)
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    {{-- Tiga suara: antarmuka, judul, dan pengukuran. Alasan pemilihannya tertulis
-         di tailwind.config.js. display=swap supaya teks terbaca sejak sebelum
-         hurufnya tiba, karena jaringan lambat adalah keadaan normal di sini. --}}
-    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700|newsreader:400,500,600&display=swap" rel="stylesheet" />
+    {{-- Satu keluarga huruf dari asal aplikasi sendiri (DK-38). Subset Latin
+         dipramuat karena hampir setiap halaman memakainya; subset Latin Extended
+         hanya diunduh peramban bila halaman memuat glyph-nya. @font-face dan
+         font-display: swap ada di resources/css/app.css, alasan pemilihannya di
+         tailwind.config.js. --}}
+    <link rel="preload" href="/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 @endif

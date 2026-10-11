@@ -16,11 +16,11 @@ interface PetaJelajahProps {
 }
 
 function warnaFit(label: FitRingkas['label'] | undefined): string {
-    if (label === 'COCOK') return warnaToken('--brand-700', '#047857');
-    if (label === 'PERLU_PERSIAPAN') return warnaToken('--warn-600', '#d97706');
-    if (label === 'KURANG_COCOK') return warnaToken('--danger-600', '#e11d48');
+    if (label === 'COCOK') return warnaToken('--brand-700', '#234f32');
+    if (label === 'PERLU_PERSIAPAN') return warnaToken('--warn-600', '#b7791f');
+    if (label === 'KURANG_COCOK') return warnaToken('--danger-600', '#a33b2b');
 
-    return warnaToken('--text-secondary', '#44403c');
+    return warnaToken('--text-secondary', '#4e5551');
 }
 
 const batasDari = (maplibregl: Pustaka, fitur: FiturPeta[]) => kotakDari(maplibregl, fitur.flatMap((f) => f.geometri.coordinates));

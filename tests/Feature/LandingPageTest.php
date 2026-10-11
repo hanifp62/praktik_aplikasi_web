@@ -41,7 +41,10 @@ class LandingPageTest extends TestCase
     }
 
     /**
-     * CSP menolak gambar dari luar asal sendiri.
+     * CSP menolak aset dari luar asal sendiri.
+     *
+     * Diperbarui gelombang 1 v3: pengecualian Bunny Fonts dicabut karena huruf kini
+     * dihosting sendiri (DK-38), jadi halaman depan tidak memuat apa pun dari luar.
      */
     public function test_nothing_is_loaded_from_an_outside_host(): void
     {
@@ -53,7 +56,6 @@ class LandingPageTest extends TestCase
             $cocok[1],
             fn (string $url) => ! str_contains($url, 'localhost')
                 && ! str_contains($url, '127.0.0.1')
-                && ! str_contains($url, 'fonts.bunny.net')
         );
 
         $this->assertSame([], array_values($luar), 'Aset dari luar akan diblokir CSP.');

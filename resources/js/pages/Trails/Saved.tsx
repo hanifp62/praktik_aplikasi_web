@@ -55,6 +55,7 @@ export default function Saved() {
 
                 {trails.length === 0 ? (
                     <EmptyState
+                        jenis="pertama"
                         title="Belum ada rute tersimpan"
                         description="Tekan “Simpan rute” pada jalur di halaman Jelajah. Jalur yang Anda simpan terkumpul di sini dan bisa dibandingkan berdampingan."
                     >

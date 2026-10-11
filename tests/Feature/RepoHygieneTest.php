@@ -60,6 +60,7 @@ class RepoHygieneTest extends TestCase
         'cadangan-supabase.sql.gz',
         'database/cadangan.dump',
         'database/demo.sqlite',
+        'public/_pratinjau/dasbor.html',
     ];
 
     /**
@@ -77,6 +78,9 @@ class RepoHygieneTest extends TestCase
         'skills-lock.json',
         '.env.example',
         '.claude/skills/antislop-ui/berkas-baru.md',
+        'public/fonts/plus-jakarta-sans/OFL.txt',
+        'public/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-wght-normal.woff2',
+        'tests/Pratinjau/statis.php',
     ];
 
     private const GAMBAR_ACUAN = [

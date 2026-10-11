@@ -69,8 +69,10 @@ class AmbientFitTest extends TestCase
      *
      * Dijaga di tiga lapis, karena label keempat dapat menyelinap di salah satunya:
      * enum di server, teks yang dikirim ke halaman, dan tipe label di React yang
-     * menentukan warna dan simbolnya. Ketiadaan penilaian ditulis "Tidak dinilai",
-     * bukan label keempat.
+     * menentukan warna dan simbolnya. Ketiadaan penilaian ditulis "Belum dinilai" (R-006,
+     * DK-41, spec v3 bagian 7), bukan label keempat. Sampai perbaikan akhir W1 server
+     * menulis "Tidak dinilai" di tujuh tempat sementara sistem desain menulis "Belum
+     * dinilai" (M-5); kini keduanya satu kata dari RouteFitLabel::textFor().
      */
     public function test_only_the_three_public_fit_labels_reach_the_page(): void
     {
@@ -88,12 +90,34 @@ class AmbientFitTest extends TestCase
 
         foreach ($baris as $satu) {
             $this->assertContains($satu['fit']['label'], ['COCOK', 'PERLU_PERSIAPAN', 'KURANG_COCOK', null]);
-            $this->assertContains($satu['fit']['labelText'], [...$terbaca, 'Tidak dinilai']);
+            $this->assertContains($satu['fit']['labelText'], [...$terbaca, 'Belum dinilai']);
         }
 
         $tipe = "'COCOK' | 'PERLU_PERSIAPAN' | 'KURANG_COCOK' | null";
         $this->assertStringContainsString("export type LabelFit = {$tipe};", File::get(resource_path('js/components/ui/FitBadge.tsx')));
         $this->assertStringContainsString("label: {$tipe};", File::get(resource_path('js/components/trails/types.ts')));
+    }
+
+    /**
+     * Keadaan UNKNOWN punya satu kata (M-5, DK-41): pendaki yang melihat "Tidak dinilai" di
+     * Jelajah dan "Belum dinilai" di tabel banding membaca dua keadaan, padahal R-006 hanya
+     * mengenal satu. Kata itu tinggal di RouteFitLabel, dan kata lamanya tidak tersisa di
+     * server maupun di halaman React.
+     */
+    public function test_an_unrated_fit_has_one_word_from_one_source(): void
+    {
+        $this->assertSame('Belum dinilai', RouteFitLabel::textFor(null));
+        $this->assertSame('Perlu persiapan', RouteFitLabel::textFor(RouteFitLabel::PERLU_PERSIAPAN));
+
+        $kataLama = [];
+
+        foreach ([...File::allFiles(app_path()), ...File::allFiles(resource_path('js'))] as $berkas) {
+            if (str_contains($berkas->getContents(), 'Tidak dinilai')) {
+                $kataLama[] = $berkas->getRelativePathname();
+            }
+        }
+
+        $this->assertSame([], $kataLama, 'Kata lama "Tidak dinilai" masih ada di: '.implode(', ', $kataLama));
     }
 
     /**

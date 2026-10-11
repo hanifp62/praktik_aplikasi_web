@@ -48,11 +48,16 @@ export function PetaJalur({ id, data, label, cadangan = 'Keterangan jalur dan da
         pusat: pertama ? [pertama.lng, pertama.lat] : null,
         kunci,
         saatSiap: (peta, maplibregl) => {
-            const warna = warnaToken('--brand-ink', 'rgb(4, 120, 87)');
+            const warna = warnaToken('--brand-ink', 'rgb(35, 79, 50)');
 
             if (data.geometry) {
                 peta.addSource('jalur', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: data.geometry } });
-                peta.addLayer({ id: 'garis-jalur', type: 'line', source: 'jalur', paint: { 'line-color': warna, 'line-width': 3 } });
+
+                // Tepi --surface di bawah garis, seperti Jelajah: basemap tetap terang di tema
+                // gelap, dan garis hijau muda tanpa tepi hampir tak terlihat di atasnya.
+                const tepi = warnaToken('--surface', '#ffffff');
+                peta.addLayer({ id: 'garis-jalur-tepi', type: 'line', source: 'jalur', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': tepi, 'line-width': 7 } });
+                peta.addLayer({ id: 'garis-jalur', type: 'line', source: 'jalur', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': warna, 'line-width': 4 } });
             }
 
             // Dibingkai ke jalurnya, bukan dibiarkan pada titik tengah Indonesia.

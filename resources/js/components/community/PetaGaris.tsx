@@ -30,7 +30,12 @@ export function PetaGaris({ id, label, markers, geometry = null, height = 'h-80'
         saatSiap: (peta, maplibregl) => {
             if (geometry) {
                 peta.addSource('garis', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry } });
-                peta.addLayer({ id: 'garis', type: 'line', source: 'garis', paint: { 'line-color': warnaToken('--brand-700', 'rgb(4, 120, 87)'), 'line-width': 3 } });
+
+                // Tepi --surface di bawah garis, seperti Jelajah: basemap tetap terang di tema
+                // gelap, dan garis hijau muda tanpa tepi hampir tak terlihat di atasnya.
+                const tepi = warnaToken('--surface', '#ffffff');
+                peta.addLayer({ id: 'garis-tepi', type: 'line', source: 'garis', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': tepi, 'line-width': 7 } });
+                peta.addLayer({ id: 'garis', type: 'line', source: 'garis', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': warnaToken('--brand-700', 'rgb(35, 79, 50)'), 'line-width': 4 } });
             }
 
             for (const p of markers) {

@@ -64,14 +64,20 @@ class SurfaceSystemTest extends TestCase
         $this->assertSame([], $pelanggar, 'Bayangan sebagai pemisah di: '.implode(', ', $pelanggar));
     }
 
+    /**
+     * Diperbarui gelombang 1 v3: judul halaman kini memakai skala bernama text-judul
+     * (28 px, bobot 800, spec v3 bagian 8.2), bukan text-3xl dan text-4xl. Niatnya tetap:
+     * judul membawa bobot yang nyata, dan text-2xl tidak kembali.
+     */
     public function test_the_page_title_carries_real_weight(): void
     {
         // Komentar dilewati: penjelasan mengapa text-2xl ditinggalkan justru layak
         // disimpan, dan versi pertama test ini menolak berkasnya karena alasan itu.
         $isi = $this->tanpaKomentarJs(File::get(resource_path('js/components/ui/PageHeader.tsx')));
 
-        $this->assertMatchesRegularExpression('/<h1 className="[^"]*\btext-(?:3xl|4xl)\b/', $isi);
+        $this->assertMatchesRegularExpression('/<h1 className="[^"]*\btext-(?:judul|tampilan)\b/', $isi);
         $this->assertStringNotContainsString('text-2xl', $isi);
+        $this->assertMatchesRegularExpression("/judul: \['1\.75rem', \{[^}]*fontWeight: '800'/", File::get(base_path('tailwind.config.js')));
     }
 
     /**

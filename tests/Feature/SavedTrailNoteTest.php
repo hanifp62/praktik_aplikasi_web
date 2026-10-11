@@ -188,6 +188,10 @@ class SavedTrailNoteTest extends TestCase
      * Batal, simpan sukses, dan hapus catatan sukses sama-sama menutup editor lewat
      * setMenyunting(false); ketiganya harus mengembalikan fokus ke tombol pemicu yang
      * sama, bukan membiarkannya jatuh ke <body>.
+     *
+     * Offset tombol menjadi -ml-4 di perbaikan akhir W1 (M-6): tombol sm kini px-4, dan
+     * offset lama -ml-3 menggeser labelnya dari tepi kolom. Yang dijaga test ini tetap id
+     * pemicunya.
      */
     public function test_closing_the_note_editor_returns_focus_to_the_trigger_button(): void
     {
@@ -195,7 +199,7 @@ class SavedTrailNoteTest extends TestCase
 
         $this->assertMatchesRegularExpression('/idPemicu = `pemicu-catatan-\$\{jalur\.id\}`/', $kartu);
         $this->assertStringContainsString(
-            '<Button id={idPemicu} variant="ghost" size="sm" className="-ml-3" onClick={mulaiSunting}>',
+            '<Button id={idPemicu} variant="ghost" size="sm" className="-ml-4" onClick={mulaiSunting}>',
             $kartu
         );
     }

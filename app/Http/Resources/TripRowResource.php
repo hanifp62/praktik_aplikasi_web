@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\OfficialStatusValue;
+use App\Enums\RouteFitLabel;
 use App\Models\TripPlan;
 use App\Services\RouteFit\TrailFitSummary;
 use App\Services\Trips\TripSteps;
@@ -54,7 +55,7 @@ class TripRowResource extends JsonResource
             'kesiapan' => $this->kesiapan(),
             'fit' => $this->fit === null ? null : [
                 'label' => $this->fit->label?->value,
-                'labelText' => $this->fit->label?->label() ?? 'Tidak dinilai',
+                'labelText' => RouteFitLabel::textFor($this->fit->label),
                 'alasan' => $this->fit->alasan,
                 'denganRencana' => $this->fit->denganRencana,
             ],

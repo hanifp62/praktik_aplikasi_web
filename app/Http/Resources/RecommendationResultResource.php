@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\RouteFitLabel;
 use App\Enums\TechnicalDemand;
 use App\Models\RecommendationResult;
 use App\Support\Durasi;
@@ -42,7 +43,7 @@ class RecommendationResultResource extends JsonResource
             'ditarik' => $ditarik,
             'eligible' => (bool) $this->eligible,
             'label' => $this->label?->value,
-            'labelText' => $this->label?->label() ?? 'Tidak dinilai',
+            'labelText' => RouteFitLabel::textFor($this->label),
             'angka' => [
                 'jarak' => isset($angka['distance_km']) ? number_format((float) $angka['distance_km'], 1, ',', '.').' km' : '-',
                 'tanjakan' => isset($angka['elevation_gain_m']) ? number_format((int) $angka['elevation_gain_m'], 0, ',', '.').' m' : '-',

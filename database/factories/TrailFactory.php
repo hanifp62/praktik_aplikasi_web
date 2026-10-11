@@ -19,7 +19,9 @@ class TrailFactory extends Factory
 {
     public function definition(): array
     {
-        $name = 'Jalur '.fake()->unique()->lastName();
+        // Tanpa apostrof: nama seperti "O'Hara" di-escape berbeda di HTML dan JSON Inertia, dan
+        // assertSee() atas nama itu gagal acak.
+        $name = 'Jalur '.str_replace("'", '', fake()->unique()->lastName());
 
         return [
             'mountain_id' => Mountain::factory(),

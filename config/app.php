@@ -36,6 +36,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Mode Data Contoh
+    |--------------------------------------------------------------------------
+    |
+    | Benar hanya ketika aplikasi lokal menyajikan data contoh database/demo.sqlite
+    | (DK-35). Setiap layout memasang lencana "Data contoh" dari nilai ini supaya data
+    | contoh tidak pernah terbaca sebagai data sungguhan. Bawaannya false.
+    |
+    */
+
+    'demo' => (bool) env('APP_DEMO', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
     |

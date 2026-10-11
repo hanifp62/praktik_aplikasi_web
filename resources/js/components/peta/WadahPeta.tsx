@@ -32,7 +32,7 @@ export function WadahPeta({ wadahRef, id, label, gagal, cadangan, ukuran, ketera
 
     return (
         <>
-            <div id={id} role="region" aria-label={label} className={kelas('relative overflow-hidden rounded-lg border border-subtle bg-surface-sunken', ukuran)}>
+            <div id={id} role="region" aria-label={label} className={kelas('relative overflow-hidden rounded-utama border border-subtle bg-surface-sunken', ukuran)}>
                 <div ref={wadahRef} hidden={gagal} className="h-full w-full" />
                 {gagal ? <p className="p-4 text-sm text-secondary">Peta gagal dimuat. {cadangan}</p> : null}
                 {children}

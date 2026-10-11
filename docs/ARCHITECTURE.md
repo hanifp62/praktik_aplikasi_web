@@ -41,7 +41,7 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 | Ambang kesegaran cuaca / laporan komunitas | `config/hiking.php` → `conditions` |
 | Sumber tile peta | `config/hiking.php` → `map`, atau variabel `MAP_*` di `.env` |
 | Batas laju submit | `config/hiking.php` → `rate_limits` |
-| Warna, radius, gaya tombol | `resources/css/app.css` (token) dan `resources/views/components/ui/` |
+| Warna, radius, huruf, gaya tombol | Token di `resources/css/app.css`, pemetaan kelas di `tailwind.config.js`, primitif React di `resources/js/components/ui/`, komponen Blade halaman publik di `resources/views/components/ui/` |
 | Menambah faktor kompatibilitas baru | `App\Enums\CompatibilityFactor` + method baru di `CompatibilityScorer::score()` |
 | Menambah kategori item persiapan | `App\Enums\PreparationCategory` + seeder `PreparationTemplateSeeder` |
 | Menambah tag kondisi jalur | `App\Enums\ConditionTag` |
@@ -51,11 +51,11 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 
 ## Lapisan kode
 
-**`app/Enums`** — kosakata domain. Setiap enum membawa `label()` berbahasa Indonesia dan, bila relevan, method perbandingan seperti `rank()`. Tidak ada string mentah yang berkeliaran di service.
+**`app/Enums`**: kosakata domain. Setiap enum membawa `label()` berbahasa Indonesia dan, bila relevan, method perbandingan seperti `rank()`. Tidak ada string mentah yang berkeliaran di service.
 
-**`app/Models`** — Eloquent. Mass assignment dijaga atribut `#[Fillable]` Laravel 13; jangan mengganti dengan `$guarded`. Trait `HasSpatialColumns` menangani kolom PostGIS dan **selalu no-op pada koneksi non-Postgres**, karena test berjalan di SQLite.
+**`app/Models`**: Eloquent. Mass assignment dijaga atribut `#[Fillable]` Laravel 13; jangan mengganti dengan `$guarded`. Trait `HasSpatialColumns` menangani kolom PostGIS dan **selalu no-op pada koneksi non-Postgres**, karena test berjalan di SQLite.
 
-**`app/Services`** — logika domain. Tiap kelas memikul satu tanggung jawab:
+**`app/Services`**: logika domain. Tiap kelas memikul satu tanggung jawab:
 
 | Service | Tanggung jawab |
 |---|---|
@@ -70,13 +70,13 @@ Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middle
 | `ReadinessService` | `compute()` menghitung tanpa efek samping, `record()` menyimpan |
 | `AuditLogService`, `AnalyticsRecorder` | Jejak audit dan funnel |
 
-**`app/Support`** — utilitas yang tidak memuat kebijakan produk: `Timezone` (konversi WIB/WITA/WIT), `ImageSanitizer` (pembersih EXIF), `PostGis` (kolom geografi).
+**`app/Support`**: utilitas yang tidak memuat kebijakan produk: `Timezone` (konversi WIB/WITA/WIT), `ImageSanitizer` (pembersih EXIF), `PostGis` (kolom geografi).
 
-**`app/Policies`** — otorisasi tingkat objek. Setiap komponen Livewire yang menerima model dari route **wajib** memanggil `$this->authorize()` di `mount()`.
+**`app/Policies`**: otorisasi tingkat objek. Setiap komponen Livewire yang menerima model dari route **wajib** memanggil `$this->authorize()` di `mount()`.
 
-**`app/Livewire`** — presentasi lama, sedang dimigrasi. Komponen boleh memanggil service; komponen tidak boleh memuat aturan domain. Kalau Anda menulis `if` yang berisi kebijakan produk di komponen, tempatnya salah.
+**`app/Livewire`**: presentasi lama, sedang dimigrasi. Komponen boleh memanggil service; komponen tidak boleh memuat aturan domain. Kalau Anda menulis `if` yang berisi kebijakan produk di komponen, tempatnya salah.
 
-**`app/Http/Controllers` + `resources/js/pages`** — presentasi baru (React lewat Inertia). Kontraknya:
+**`app/Http/Controllers` + `resources/js/pages`**: presentasi baru (React lewat Inertia). Kontraknya:
 
 - **Server memegang data dan otorisasi, React memegang interaksi.** Controller membaca query lewat service (`Services\Trails\TrailSearch`), memformat lewat resource (`Http\Resources\TrailRowResource`: angka sudah "8,0 km" saat sampai di klien), dan merender `Inertia::render('Nama/Halaman', $props)`. Aksi yang mengubah data adalah rute POST biasa dengan Policy/scope yang sama seperti dulu; klien tidak pernah dipercaya untuk keputusan akses.
 - **Props bersama** (`Http\Middleware\HandleInertiaRequests`): `auth.user` secukupnya untuk navigasi (peran hanya menentukan apa yang DITAMPILKAN), `merek`, `tema`, `peta`, `flash`. Bentuknya dikunci di `resources/js/types/index.d.ts`.
@@ -112,9 +112,9 @@ Artisan, Laravel Boost, konvensi Inertia, dan seluruh suite test.
 | Unsur panduan | Padanan di Memount |
 |---|---|
 | `apps/backend/src` (config, controllers, middlewares, models, routes, services) | `config/`, `app/Http/Controllers`, `app/Http/Middleware`, `app/Models`, `routes/`, `app/Services`, `app/Policies` |
-| `apps/frontend/src` (components, core, features, views) | Komponen fitur di `resources/js/components`, inti di `resources/js/lib`, halaman di `resources/js/pages`; primitif desain menyusul di W1 |
+| `apps/frontend/src` (components, core, features, views) | Komponen fitur di `resources/js/components`, inti di `resources/js/lib`, halaman di `resources/js/pages`; primitif desain di `resources/js/components/ui/` (komponen domain yang masih di sana dipindah W3) |
 | `packages/api-client` | Rute dan aksi bertipe Wayfinder, router Inertia |
-| `packages/ui-design-system` | Token `resources/css/app.css` dan primitif desain (W1) |
+| `packages/ui-design-system` | Token `resources/css/app.css`, pemetaan `tailwind.config.js`, primitif `resources/js/components/ui/` (W1), dan pameran primitif `/dev/primitif` yang hanya terdaftar di `APP_ENV=local` (`routes/dev.php`) |
 | `packages/config` (ESLint, Prettier, TypeScript) | `tsconfig.json` dan Pint; ESLint dan Prettier menunggu izin (Q17) |
 | `database/` dengan migrasi, seeder, dan README | `database/migrations`, `database/seeders`, `database/factories`, `database/README.md`; dump SQL diabaikan git |
 | `tests/e2e` | Belum ada; Playwright menunggu izin (Q17) |
@@ -181,9 +181,9 @@ PostgreSQL + PostGIS lewat Supabase. Kolom geografi (`geography(TYPE,4326)`) dit
 
 ## Sumber data eksternal
 
-**BMKG** — `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4={kode}`. Prakiraan 3 hari, interval 3 jam, diperbarui dua kali sehari, batas 60 permintaan per menit per IP. **Atribusi BMKG wajib tampil** di aplikasi. Browser tidak pernah memanggil BMKG langsung; pengambilan dilakukan scheduler (`weather:refresh`).
+**BMKG**: `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4={kode}`. Prakiraan 3 hari, interval 3 jam, diperbarui dua kali sehari, batas 60 permintaan per menit per IP. **Atribusi BMKG wajib tampil** di aplikasi. Browser tidak pernah memanggil BMKG langsung; pengambilan dilakukan scheduler (`weather:refresh`).
 
-Prakiraan berbasis wilayah administrasi tingkat IV, sehingga **tidak boleh disebut cuaca puncak** — selalu "prakiraan area sekitar jalur". (§44)
+Prakiraan berbasis wilayah administrasi tingkat IV, sehingga **tidak boleh disebut cuaca puncak**: selalu "prakiraan area sekitar jalur". (§44)
 
 ## Kredensial
 

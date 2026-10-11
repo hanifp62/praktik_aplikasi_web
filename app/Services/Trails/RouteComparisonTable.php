@@ -3,6 +3,7 @@
 namespace App\Services\Trails;
 
 use App\Enums\OfficialStatusValue;
+use App\Enums\RouteFitLabel;
 use App\Models\Trail;
 use App\Models\User;
 use App\Services\OfficialStatusService;
@@ -50,7 +51,7 @@ class RouteComparisonTable
                 'url' => route('trails.show', $t),
                 'fit' => $fit === null ? null : [
                     'label' => $fit->label?->value,
-                    'labelText' => $fit->label?->label() ?? 'Tidak dinilai',
+                    'labelText' => RouteFitLabel::textFor($fit->label),
                     'alasan' => $fit->alasan,
                     'denganRencana' => $fit->denganRencana,
                 ],
@@ -65,7 +66,7 @@ class RouteComparisonTable
             'jalur' => $jalur,
             'baris' => $this->baris($trails),
             'beda' => [
-                'fit' => self::berbeda(array_map(fn ($j) => $j['fit']['labelText'] ?? 'Belum dinilai', $jalur)),
+                'fit' => self::berbeda(array_map(fn ($j) => $j['fit']['labelText'] ?? RouteFitLabel::UNRATED_TEXT, $jalur)),
                 'status' => self::berbeda(array_map(fn ($j) => (string) $j['status']['label'], $jalur)),
             ],
         ];
