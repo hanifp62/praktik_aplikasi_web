@@ -118,19 +118,25 @@ final class ProfilElevasiJalur
     }
 
     /**
+     * Angka dan satuannya diikat spasi tak terputus U+00A0, termasuk "km" yang mendahului angka
+     * posisi (ruling W6-6h, m-2 tinjauan task-6-fix1-review): di 320 px "546" sempat terpisah
+     * dari "m dalam 2,4 km". Kalimat ini tampil di halaman jalur (TrailDetailPage) dan ringkasan
+     * pendakian (HasilPendakian).
+     *
      * @param  array<int, array{0: float, 1: float}>  $titik
      * @param  array{dariKm: float, sampaiKm: float, naik: int}|null  $tercuram
      */
     private static function keterangan(array $titik, ?array $tercuram): string
     {
+        $nbsp = "\u{00A0}";
         $angka = fn (float $n, int $desimal = 0) => number_format($n, $desimal, ',', '.');
         $panjang = end($titik)[0] - $titik[0][0];
         $tertinggi = max(array_column($titik, 1));
-        $kalimat = 'Dari '.$angka($titik[0][1]).' m sampai titik tertinggi '.$angka($tertinggi).' m dalam '.$angka($panjang, 1).' km.';
+        $kalimat = 'Dari '.$angka($titik[0][1]).$nbsp.'m sampai titik tertinggi '.$angka($tertinggi).$nbsp.'m dalam '.$angka($panjang, 1).$nbsp.'km.';
 
         if ($tercuram !== null) {
-            $kalimat .= ' Bagian tercuram, km '.$angka($tercuram['dariKm'], 1).' sampai '.$angka($tercuram['sampaiKm'], 1)
-                .', naik '.$angka($tercuram['naik']).' m dalam '.$angka($tercuram['sampaiKm'] - $tercuram['dariKm'], 1).' km (diarsir).';
+            $kalimat .= ' Bagian tercuram, km'.$nbsp.$angka($tercuram['dariKm'], 1).' sampai '.$angka($tercuram['sampaiKm'], 1)
+                .', naik '.$angka($tercuram['naik']).$nbsp.'m dalam '.$angka($tercuram['sampaiKm'] - $tercuram['dariKm'], 1).$nbsp.'km (diarsir).';
         }
 
         return $kalimat;

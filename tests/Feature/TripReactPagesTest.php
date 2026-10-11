@@ -35,7 +35,7 @@ class TripReactPagesTest extends TestCase
             route('trips.show', $trip) => ['Trips/Show', 'Pendakian Merbabu'],
             route('trips.preparation', $trip) => ['Trips/Preparation', 'Persiapan Pendakian'],
             route('trips.readiness', $trip) => ['Trips/Readiness', 'Kesiapan Pendakian'],
-            route('trips.hike', $trip) => ['Trips/Hike', 'Hike Mode'],
+            route('trips.hike', $trip) => ['Trips/Hike', 'Mode lapangan'],
         ];
 
         foreach ($harapan as $url => [$komponen, $judul]) {

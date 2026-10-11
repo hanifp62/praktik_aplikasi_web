@@ -1,122 +1,121 @@
 import { usePage } from '@inertiajs/react';
-import { PetaPendakian } from '@/components/trips/PetaPendakian';
+import { lazy, Suspense, useMemo, useState, type ComponentType, type ReactNode } from 'react';
+import { teksLama } from '@/components/mendaki/hitung';
+import { ModeLapangan } from '@/components/mendaki/ModeLapangan';
+import { SelesaiLapangan } from '@/components/mendaki/SelesaiLapangan';
+import { useModeLapangan } from '@/components/mendaki/useModeLapangan';
 import { TataLetakPendakian } from '@/components/trips/TataLetakPendakian';
-import type { GeometriJalur, Penanda } from '@/components/trips/types';
-import { useJejakPendakian, usePosisiPendakian } from '@/components/trips/usePendakian';
-import { Button } from '@/components/ui/Button';
-import { ThemePicker } from '@/components/ui/ThemePicker';
+import { useJejakPendakian } from '@/components/trips/usePendakian';
+import { Sakelar } from '@/components/ui/Sakelar';
+import { useDataPaket, useSimpanSesiPaket } from '@/luring/useLapanganPaket';
 import { kelas } from '@/lib/kelas';
-import { track } from '@/routes/hike';
-import { show } from '@/routes/trips';
-import { position } from '@/routes/trips/hike';
+import { dataPakaiPaketSaja, teksKeadaanLapangan } from '@/luring/kalimatSumber';
+import type { DataPaket } from '@/luring/rakit';
 import type { PropsBersama } from '@/types';
 
-interface Props extends PropsBersama {
-    trip: { id: number; jalur: string; gunung: string };
-    checkpoints: Array<{ id: number; name: string; sequence: number }>;
-    penanda: Penanda[];
-    posBerkoordinat: number;
-    geometri: GeometriJalur | null;
-    posisi: { lat: number; lng: number; koordinat: string } | null;
-    berikutnya: { id: number; name: string; sequence: number; jarak: string | null; antara: string | null; tempo: string | null } | null;
-    merekamJejak: boolean;
-    sesiId: number | null;
-}
+type Props = PropsBersama & DataPaket;
 
 /**
- * FR-15 mode pendakian: hanya yang dibutuhkan sambil bergerak (PRD §54). Pos berikutnya
- * di atas, satu tombol besar untuk memperbarui posisi, lalu peta yang lebar. Lokasi
- * diminta di halaman ini dan tidak di tempat lain (PRD §120).
+ * Kabar shell luring dimuat malas (tinjauan Tugas 10 m-1): hanya dibutuhkan bila paket trip ini ada
+ * di perangkat, jadi pramuat mode lapangan dan shell paket tidak membawa pemeriksaan shell dan
+ * modulnya. Muatan yang gagal (sinyal hilang tepat saat itu) tidak menampilkan apa pun, bukan
+ * menjatuhkan halaman.
+ */
+const KabarShellPaket = lazy(
+    (): Promise<{ default: ComponentType }> =>
+        import('@/components/mendaki/KabarShellPaket').then(
+            (m) => ({ default: m.KabarShellPaket }),
+            () => ({ default: () => null }),
+        ),
+);
+
+/**
+ * Mode lapangan (FR-15; spec v3 bagian 6.12, prototype 11). Satu pohon komponen untuk dua
+ * sumber data: props server saat daring dan isi paket lapangan saat luring (`sumber`). Lokasi
+ * diminta di halaman ini dan tidak di tempat lain (PRD §120); hitungannya di perangkat.
+ *
+ * Bila paket trip ini ada di perangkat (sakelar paket menyala), mode lapangan daring menyimpan
+ * keadaan sesinya ke paket, juga selama "Pakai paket saja" menyala, dan sakelar itu membaca data
+ * jalur hanya dari paket (spec v3 bagian 10.2). Mengganti sumber TIDAK memasang ulang halaman
+ * (PT10-3, PT10-5): useModeLapangan memegang pos yang dicapai dan jeda sejak dipasang, dan
+ * dataPakaiPaketSaja menjaga keadaan pendakian halaman ini, jadi yang berganti hanya data jalur.
+ * Sakelar yang baru ditekan tetap terpasang dan memegang fokus; tema lapangan dan perekam jejak
+ * tidak dimulai ulang. Peta dasar tetap dari konfigurasi halaman, jadi sakelar tidak menguji
+ * kanvas polos di jalur (batas spec 10.2, tinjauan Tugas 10 m-3; keterangannya menyebutnya).
+ * Paket yang terlihat juga memeriksa shell luring-nya saat dipasang dan setiap service worker
+ * berganti (KabarShellPaket, ruling W6-9n dan W6-10e). Shell luring merakit props tanpa perangkat
+ * (propsHalamanLuring), jadi `halamanLuring` membedakan halaman tanpa server dari "Pakai paket
+ * saja" di halaman daring (PT10-14); kalimat setiap cabang dari teksKeadaanLapangan (W6-9e).
  */
 export default function Hike() {
-    const { trip, checkpoints, penanda, posBerkoordinat, geometri, posisi, berikutnya, merekamJejak, sesiId } = usePage<Props>().props;
-    const { pesan, memproses, minta } = usePosisiPendakian(position.url(trip.id));
-
-    useJejakPendakian(merekamJejak, sesiId, sesiId !== null ? track.url(sesiId) : null);
-
-    const adaPeta = geometri !== null || penanda.length > 0 || posisi !== null;
+    const props = usePage<Props>().props;
+    const kunci = props.perangkat?.kunci ?? null;
+    const paketAktif = props.sumber === 'daring' && props.perangkat?.paket === true;
+    const halamanLuring = props.perangkat == null;
+    const dataPaket = useDataPaket(kunci, paketAktif, props.trip.id);
+    const [hanyaPaket, setHanyaPaket] = useState(false);
+    const data: DataPaket = useMemo(() => (hanyaPaket && dataPaket ? dataPakaiPaketSaja(props, dataPaket) : props), [hanyaPaket, dataPaket, props]);
 
     return (
-        <TataLetakPendakian kembali={show.url(trip.id)}>
-            <div className="mx-auto max-w-3xl space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-                <div>
-                    <h1 className="text-2xl text-primary">{trip.jalur}</h1>
-                    <p className="text-sm text-secondary">{trip.gunung}</p>
-                </div>
+        <Lapangan
+            data={data}
+            kunci={kunci}
+            halamanLuring={halamanLuring}
+            simpanSesi={paketAktif}
+            pengaturan={
+                dataPaket ? (
+                    <div className="space-y-2">
+                        <Sakelar
+                            judul="Pakai paket saja"
+                            keterangan="Jalur, pos, dan laporan dibaca hanya dari paket di perangkat ini, ada sinyal atau tidak; cara menguji paket sebelum berangkat. Peta dasar tidak ikut paket; selama ada sinyal, peta dasar tetap dimuat dari jaringan."
+                            nyala={hanyaPaket}
+                            onUbah={setHanyaPaket}
+                        />
+                        <Suspense fallback={null}>
+                            <KabarShellPaket />
+                        </Suspense>
+                    </div>
+                ) : null
+            }
+        />
+    );
+}
 
-                <section aria-labelledby="judul-berikutnya" className="rounded-lg border border-subtle bg-surface p-4">
-                    <h2 id="judul-berikutnya" className="text-sm font-medium text-muted">Checkpoint berikutnya</h2>
-                    <p className="mt-1 text-2xl font-semibold text-primary">{berikutnya?.name ?? 'Belum ditentukan'}</p>
-                    <p className="mt-1 text-base text-secondary">
-                        {berikutnya?.jarak ? `Sekitar ${berikutnya.jarak} dari posisi Anda` : 'Jarak belum dapat dihitung'}
-                    </p>
-                    {berikutnya?.antara ? <p className="mt-1 text-sm text-secondary">Dari pos sebelumnya: {berikutnya.antara}</p> : null}
-                    {berikutnya ? (
-                        <p className="mt-1 text-sm text-secondary">{berikutnya.tempo ?? 'Perkiraan waktu tempuh bagian ini belum tersedia.'}</p>
-                    ) : null}
-                    {checkpoints.length > 0 && posBerkoordinat === 0 ? (
-                        <p className="mt-2 text-xs text-muted">Koordinat pos jalur ini belum tercatat, jadi jarak ke pos belum dapat dihitung dari posisi Anda.</p>
-                    ) : null}
-                </section>
+/** Jam rekaman sesi di perangkat ini, dengan penanda zonanya (butir 6). */
+const waktuCatatan = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
 
-                <section aria-labelledby="judul-posisi" className="rounded-lg border border-subtle bg-surface p-4">
-                    <h2 id="judul-posisi" className="text-sm font-medium text-muted">Posisi Anda</h2>
-                    <Button onClick={minta} processing={memproses} className="mt-2 min-h-14 w-full text-base">
-                        Perbarui posisi
-                    </Button>
-                    <p role="status" className="mt-2 text-sm text-secondary">{pesan}</p>
-                    {posisi ? <p className="mt-1 text-xs text-muted">{posisi.koordinat}</p> : null}
-                    <p className="mt-2 text-xs text-muted">Lokasi Anda hanya dipakai di halaman ini dan tidak dibagikan ke pengguna lain.</p>
-                </section>
+function teksWaktu(iso: string | undefined): string | null {
+    const ms = iso === undefined ? Number.NaN : Date.parse(iso);
 
-                {/* Daftar checkpoint di bawah adalah padanan non-visual peta ini. */}
-                {adaPeta ? (
-                    <PetaPendakian
-                        id="hike-map"
-                        label={`Peta jalur ${trip.jalur} dan posisi checkpoint`}
-                        geometri={geometri}
-                        penanda={penanda}
-                        posisi={posisi}
-                    />
-                ) : (
-                    <p className="rounded-lg border border-dashed border-subtle bg-surface p-4 text-sm text-secondary">
-                        Peta jalur belum dapat digambar karena garis jalur dan koordinat pos belum tercatat. Tekan Perbarui posisi untuk melihat posisi Anda di peta dasar.
-                    </p>
-                )}
+    return Number.isFinite(ms) ? waktuCatatan.format(ms) : null;
+}
 
-                <section aria-labelledby="judul-daftar" className="rounded-lg border border-subtle bg-surface p-4">
-                    <h2 id="judul-daftar" className="text-sm font-medium text-muted">Daftar checkpoint</h2>
-                    <ol className="mt-2 space-y-1 text-sm">
-                        {checkpoints.length === 0 ? (
-                            <li>
-                                <p className="font-medium text-primary">Jalur ini belum punya checkpoint tercatat</p>
-                                <p className="mt-1 max-w-prose text-secondary">
-                                    Mode pendakian tetap berjalan tanpa checkpoint, hanya tanpa penanda posisi antarpos. Data pos berasal dari pengelola jalur, bukan dari perangkat Anda.
-                                </p>
-                            </li>
-                        ) : (
-                            checkpoints.map((c) => {
-                                const dituju = berikutnya?.id === c.id;
+function Lapangan({ data, kunci, halamanLuring, simpanSesi, pengaturan }: { data: DataPaket; kunci: string | null; halamanLuring: boolean; simpanSesi: boolean; pengaturan: ReactNode }) {
+    const mode = useModeLapangan(data);
+    const daring = data.sumber === 'daring';
 
-                                return (
-                                    <li
-                                        key={c.id}
-                                        aria-current={dituju ? 'step' : undefined}
-                                        className={kelas('rounded px-2 py-1', dituju ? 'bg-brand-50 font-medium text-brand-900' : 'text-secondary')}
-                                    >
-                                        {c.sequence}. {c.name}
-                                        {dituju ? <span className="ml-2 text-xs">(berikutnya)</span> : null}
-                                    </li>
-                                );
-                            })
-                        )}
-                    </ol>
-                </section>
+    useSimpanSesiPaket(kunci, simpanSesi, data, mode);
+    // Rekam jejak berhenti saat jeda (M-3/ruling W6-3g): tanpa !mode.dijeda, watchPosition
+    // milik jejak.js tetap menyala walau layar sudah berkata lokasi berhenti diperbarui. Basis data
+    // jejak terikat kunci perangkat pengguna (ruling W6-R10); tanpa kunci tidak ada yang direkam.
+    // Halaman ini hanya merekam; titiknya dikirim sesudah pendakian berakhir (ruling W6-P2a).
+    useJejakPendakian(data.rekamJejak && data.trip.berlangsung && !mode.dijeda, data.sesiId, kunci);
 
-                {/* Akses cepat tema di lapangan (DK-17): layar terang di bawah matahari,
-                    gelap di tenda; keduanya sering berganti dalam satu pendakian. */}
-                <ThemePicker compact className="rounded-lg border border-subtle bg-surface p-4" />
-            </div>
+    const { keterangan, kalimat } = teksKeadaanLapangan({
+        halamanLuring,
+        sumber: data.sumber,
+        berlangsung: data.trip.berlangsung,
+        dijeda: mode.dijeda,
+        lama: teksLama(mode.detik),
+        catatan: teksWaktu(data.catatanSesi?.diperbarui),
+    });
+
+    return (
+        <TataLetakPendakian kembali={daring ? data.urls.ruangKerja : null} judul={<h1 className="break-words text-bagian text-primary">{data.trip.jalur}</h1>} keterangan={keterangan}>
+            {kalimat ? (
+                <p className={kelas('mt-4 rounded-kartu bg-surface p-4 text-isi text-primary', daring ? 'border border-subtle' : 'border-[1.5px] border-dashed border-control')}>{kalimat}</p>
+            ) : null}
+            <ModeLapangan data={data} mode={mode} selesai={daring ? <SelesaiLapangan data={data} /> : null} pengaturan={pengaturan} />
         </TataLetakPendakian>
     );
 }

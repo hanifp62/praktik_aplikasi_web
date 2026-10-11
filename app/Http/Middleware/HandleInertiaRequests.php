@@ -7,6 +7,7 @@ use App\Services\DataFreshnessService;
 use App\Services\Trips\DaftarPengingat;
 use App\Services\Trips\PendakianAktif;
 use App\Support\DisplayPreference;
+use App\Support\KunciPerangkat;
 use App\Support\PenjagaDataContoh;
 use App\Support\ThemePreference;
 use Illuminate\Http\Request;
@@ -67,6 +68,13 @@ class HandleInertiaRequests extends Middleware
             // sedangDisajikan() membaca dua sumber (tinjauan W1-9a #4): APP_DEMO eksplisit
             // dan koneksi basis data default yang sedang benar-benar demo.
             'demo' => PenjagaDataContoh::sedangDisajikan(),
+
+            // Penyimpanan perangkat per pengguna (W6, ruling W6-R10): kunci basis data paket
+            // lapangan dan perekam jejak, serta sakelar paket (Q10, Q14). Null untuk tamu.
+            'perangkat' => $user === null ? null : [
+                'kunci' => KunciPerangkat::untuk($user),
+                'paket' => (bool) config('hiking.field_pack.enabled'),
+            ],
 
             // Hitungan Simpanan di header layar lebar dan kepala Jelajah (spec v3 bagian 5.2):
             // satu kueri terindeks, malas, sehingga muat ulang parsial yang tidak memintanya

@@ -4,7 +4,7 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 7 Oktober 2026 (bagian 0, W4 selesai). Bagian 1–10 berasal dari 21 September 2026
+Terakhir diperbarui: 11 Oktober 2026 (bagian 0, W6 selesai; W7 sampai W9 ditunda pemilik untuk evaluasi). Bagian 1–10 berasal dari 21 September 2026
 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
@@ -19,12 +19,336 @@ permintaan di akhir. Ledger tiap gelombang ada di `.superpowers/sdd/2026-09-26-m
 (diabaikan git). Sesudah tiga commit M1 (`40c78d8`, `60400ce`, `ddc27e8`), pohon kerja kembali memuat perubahan
 yang belum di-commit sampai permintaan izin akhir.
 
+**Arahan pemilik 11 Oktober 2026 (verbatim), menggantikan urutan sampai W9:** "segera selesaikan w6, jika sudah selesai saya minta berhenti terlebih dahulu saya akan mengadakan evaluasi besar"an. tunda pengerjaan w7-w9. lakukan integrasi ke server local utama karena saya butuh inspection untuk. disertai penjelasan hasil kinerja anda apa saja yang sudah anda kerjakan pastikan saya dapat melihat hasil kinerja anda. baru setelah itu saya tentukan langkah selanjutnya." Artinya: sesudah W6 tidak ada gelombang baru sampai pemilik memutuskan; permintaan izin akhir diajukan bersama laporan W1 sampai W6.
+
 **Tempelkan ini di terminal baru:**
 
 > Baca `CLAUDE.md`, lalu `HANDOVER.md` bagian 0 ini, lalu `docs/AGENTS.md` (kesepakatan kerja tim) dan rencana
 > induk `docs/superpowers/plans/2026-09-26-memount-v3-induk.md`. Periksa keadaan nyata dulu: `git status`,
 > `php artisan test --compact --testsuite=Unit,Feature`, `npx tsc --noEmit`. Jangan commit, push, mengakses
 > Supabase, menjalankan migrasi, atau menambah dependensi tanpa izin saya.
+
+### W6 Mendaki dan paket luring (selesai 11 Oktober 2026, menunggu izin commit)
+
+Rencana `docs/superpowers/plans/2026-10-07-memount-v3-w6-mendaki.md`, 13 tugas, ditambah dua sisipan. Kedua sisipan
+diputus koordinator:
+- **T9b:** shell paket disimpan saat paket pertama diunduh (W6-9g).
+- **W6-P2:** jejak dikirim sesudah turun.
+
+Ledger dan seluruh ruling ada di `.superpowers/sdd/2026-10-07-memount-v3-w6-mendaki/progress.md`, yaitu:
+- W6-K1 sampai W6-K13;
+- W6-1a sampai W6-11h;
+- W6-P2a sampai W6-P2s;
+- W6-Fpre, W6-FA sampai W6-FK, W6-FR1 sampai W6-FR3, dan W6-FT.
+
+Setiap tugas ditinjau terpisah. Putaran perbaikannya:
+
+| Tugas | Putaran perbaikan |
+|---|---|
+| Tugas 1 | 2 |
+| Tugas 2 | 1 |
+| Tugas 3 | 6 |
+| Tugas 4 | 3 |
+| Tugas 5 | 3 |
+| Tugas 6 | 3 |
+| Tugas 7 | 1, ditambah satu patch mikro |
+| Tugas 8, 9, dan 11 | masing-masing 1 |
+| T9b | satu patch mikro |
+| Tugas 10 | 2 |
+| W6-P2 | 1 |
+
+Tugas 12 (dokumen) diperiksa koordinator. Pemeriksaan itu mengoreksi tiga klaim dokumen yang tidak sesuai kode.
+
+Sesudah itu:
+- satu tinjauan akhir lintas tugas: 0 Critical, 2 Important, 5 Minor;
+- satu gelombang perbaikan W6-FA sampai W6-FI, ditambah putaran mikro W6-FJ dan W6-FK;
+- satu pemeriksaan terlingkup (16 dari 16 ruling tertutup) dan satu putaran residu W6-FR1 sampai W6-FR3;
+- Tugas 13 (verifikasi dan Delivery Gate);
+- sesudah arahan pemilik "lanjutkan sampai W6 selesai": W6-FT (batal menutup sesi) dan uji luring manual dengan server
+  Laravel sungguhan di atas data contoh `database/demo.sqlite` (butir izin 3).
+
+Pemilik menunda W7 sampai W9 pada 11 Oktober 2026 untuk evaluasi besar. Rencana dan pra-tinjau W7 sampai W9 disimpan
+apa adanya.
+
+**Inspeksi lokal (11 Oktober 2026).**
+- `composer inspeksi:data` dijalankan sekali. Perintah ini mengisi `database/demo.sqlite` lewat `memount:demo` dan
+  mencetak sandi akun contoh `budi@contoh.test`.
+- `composer inspeksi` lalu menyalakan `http://127.0.0.1:8000` dengan data contoh dan kedua sakelar W6 menyala. Sesi,
+  cache, antrean, surel, dan berkas diputus dari `.env` lewat `@putenv`, sehingga perintah ini berjalan sama di
+  PowerShell, CMD, dan Git Bash.
+- `php artisan serve` biasa dengan `.env` saat ini galat di setiap permintaan, karena host proyek Supabase dijawab
+  NXDOMAIN, juga lewat DNS publik. Menurut dokumentasi Supabase, itu berarti proyek dijeda, dihapus, atau ref-nya salah.
+  Pulihkan proyek dari dashboard sebelum memakai Supabase lagi. Sesudah itu migrasi W3 dan W6 (izin akhir 2, 43, dan 52)
+  tetap dibutuhkan.
+
+Nilai di bawah terukur 11 Oktober 2026 pada pohon kerja akhir W6 (snapshot tree `2ad3f1a`). Selisihnya terhadap akhir
+W5 (`d4a78fe`), sebelum tangkapan dan residu: 90 berkas ditambah, 102 diubah, dan 1 dihapus
+(`UpdateHikePositionRequest.php`).
+
+| Butir | Nilai | Bukti |
+|---|---|---|
+| Suite Unit dan Feature | 2.560 test, 2.558 lulus, 2 dilewati, 0 gagal, 17.585 asersi (W5 akhir: 2.093) | `php artisan test --compact --testsuite=Unit,Feature`, serial dan 12 shard identik |
+| Suite bawaan | 2.600 test, 2.549 lulus, 51 dilewati (Spatial melewati dirinya tanpa `SPATIAL_TEST_DSN`), 0 gagal | Tugas 13 Step 2, diukur di tree `406716f`, sebelum dua test residu |
+| Spatial (PostgreSQL) | **PERLU KLARIFIKASI.** Belum pernah berjalan: mesin ini tanpa PostgreSQL dan Docker. Ada 14 berkas baru sejak W1, termasuk `TripConditionalWritesTest`, dan `SpatialTestCase` diubah. CI kini gagal bila test Spatial dilewati (`--fail-on-skipped`, W6-FI) | Tugas 13 Step 2, `final-fix-check.md` |
+| TypeScript dan format | `npx tsc --noEmit` 0 galat; `vendor/bin/pint --dirty` lulus tanpa berkas diformat ulang | Tugas 13 Step 2, putaran residu |
+| Build dan bundel | `shell` 11,38/4,27 kB; `app` 11,41/3,31 kB; `AppLayout` 26,43/8,82 kB; `jejak` 4,05/1,62 kB; CSS 90,60/16,95 kB (mentah/gzip). Potongan bersama tata letak 2.732 B gzip sesudah W6-FJ (5.588 sebelumnya) | Tugas 13 Step 3, `final-fix-report.md` putaran mikro 1 |
+| Pemasangan service worker | 4 berkas, 30.149 B gzip, baik sakelar paket mati maupun menyala. Shell paket 25 berkas lagi (sekitar 423 kB gzip) diambil saat paket pertama diunduh (T9b; sebelum T9b pemasangan 428.998 B) | Tugas 13 Step 3, `task-9b-report.md` |
+| Pratinjau | 29 halaman (W5: 22) | suite `Pratinjau` 29/29 |
+| Tangkapan | 28 tangkapan W6. Ada 24 dari pratinjau: mode lapangan, kartu darurat, ringkasan, ringkasan batal, Mendaki, paket, cetak, ruang kerja keselamatan, luring, dan Jelajah dengan strip, pada 390 dan 1440 px, terang dan gelap, tema lapangan gelap, ditambah satu tangkapan fokus. Ada 4 dari uji luring dengan server sungguhan (`luring-1-siap`, `luring-3-lapangan-offline`, `luring-4-sw-baru`, `luring-5-keluar`). Semuanya dibandingkan dengan acuan 11 dan 12 | `docs/desain/tangkapan/w6/README.md` |
+| Reflow dan target | `scrollWidth` sama dengan `clientWidth` di 320 dan 390 px untuk 10 halaman (20/20). "Mulai pendakian" 66 px, telepon darurat 70 px, Jeda dan Selesai 60 px, kontrol peta 48 px, kendali lain 44 sampai 49 px | Tugas 13 Step 7 |
+| Papan ketik | Urutan Tab mode lapangan 12 posisi dengan cincin terlihat. Enter dan Escape pada lembar Selesai benar. Lembar "Ubah angka" memfokuskan Tutup lebih dulu, pola `<dialog>` yang sama di semua lembar | Tugas 13 Step 8 |
+| Uji luring manual | **PASS dengan server Laravel sungguhan** di atas data contoh `database/demo.sqlite` (jalur inspeksi A, butir izin 3, sesudah arahan pemilik). Yang terbukti: unduh paket dan verifikasinya; jaringan mati lalu mode lapangan terbuka dari paket; "Luring. 1 catatan menunggu sinyal untuk dikirim."; Selesai tertahan selagi antrean belum kosong; antrean terkirim saat daring; service worker versi baru membuang shell lama tanpa menyentuh `pack-*` dan paket IndexedDB; keluar dengan `Clear-Site-Data: "storage"` dan penyimpanan kosong. Keterbatasan alat: dua tangkapan berukuran 908x1304, dan emulasi Offline tidak mengubah `navigator.onLine` | Tugas 13 Step 9, README tangkapan W6 |
+| Delivery Gate | Salinan, Desain, Interaksi, dan Kebenaran semuanya PASS. Em dash 0. 35 kecocokan kata klaim diperiksa satu per satu tanpa pelanggaran | Tugas 13 Step 10 |
+
+Yang dibangun W6:
+- **Satu pendakian berlangsung per pengguna** (Tugas 1, izin akhir 8):
+  - penjaga di `TripLifecycle::start()` dengan kunci baris pengguna;
+  - indeks unik `hiking_sessions.trip_plan_id`;
+  - mulai dan hapus menulis menurut status baris (W6-FA).
+- **Mode lapangan di perangkat** (Tugas 2 dan 3):
+  - pos berikutnya, sisa jarak, naik lagi, dan tiba di pos dihitung di perangkat (`hitung.ts`). Rute
+    `trips.hike.position` dihapus, dan server hanya menerima urutan pos dan waktu jeda;
+  - antrean aksi luring dengan idempotensi;
+  - jeda dan lanjut tahan putar ulang (`last_resumed_at`, W6-10f);
+  - selesai menunggu antrean dan membaca sesi terkunci (W6-FB, W6-FC).
+- **Tab Mendaki** (Tugas 4): pintu yang memilih trip yang dapat dimulai.
+- **Selesai dan batal** (Tugas 5, DK-50): alasan pembatalan dari daftar tetap, dengan kalimat "belum pasti" untuk galat
+  jaringan dan HTTP (W6-FE).
+- **Ringkasan dan laporan** (Tugas 6):
+  - varian selesai dan dibatalkan;
+  - angka yang dapat diubah;
+  - banding diri sendiri (R-015);
+  - laporan dengan foto tanpa GPS;
+  - integritas moderasi dengan sidik isi.
+- **Kartu darurat, versi cetak, dan pesan rencana** (Tugas 7):
+  - nomor 112 dan 115;
+  - kontak pengelola hanya bila resmi diketahui;
+  - jam kembali dengan eskalasi;
+  - di balik `hiking.field_safety.enabled`, yang mati bawaan.
+- **Paket lapangan luring** (Tugas 8 sampai 10, T9b):
+  - manifest pemilik saja, hanya jalur terbit, tanpa skor, AI, atau data orang lain;
+  - data dinamis berlabel "terakhir diketahui", dan status Buka turun sesudah 24 jam;
+  - service worker yang tidak pernah menghapus `pack-*`;
+  - unduh terverifikasi SHA-256;
+  - shell luring dan "Pakai paket saja";
+  - di balik `hiking.field_pack.enabled`, yang mati bawaan.
+- **Keluar dan ganti akun** (Tugas 11):
+  - basis data perangkat berkunci HMAC id pengguna;
+  - data belum terkirim ditanyakan sebelum dihapus;
+  - `Clear-Site-Data` sebagai lapis kedua;
+  - penjaga tidak berjalan atas halaman dari riwayat.
+- **Pengirim jejak** (W6-P2):
+  - nol kiriman selama pendakian;
+  - satu pengirim di tata letak aplikasi sesudah pendakian berakhir, setelah server menjawab bahwa sesi menerima
+    jejak;
+  - hapus di ringkasan selalu sampai ke Memount (W6-P2o);
+  - titik yang terekam lebih dari 10 menit sesudah pendakian diselesaikan atau dibatalkan tidak disimpan (W6-FH,
+    W6-FT).
+- **Dokumen** (Tugas 12): GR-07 di `docs/PRD.md` §146 (penunjuk berikutnya GR-08), amandemen DK-36 di §53,
+  ARCHITECTURE, DESIGN, dan `docs/fitur/06`.
+
+Ruling koordinator atas konflik rencana W6-K1 sampai W6-K13:
+- **K1:** GR-07 diterima sebagai keputusan pemilik, dengan pola W3 P8 dan batas "paket lapangan, bukan navigasi
+  offline penuh".
+- **K2:** ambang 24 jam.
+- **K3:** kedua sakelar mati.
+- **K4:** uji luring manual menunggu izin Q1.
+- **K5:** `encryptHistory` diputus W9.
+- **K6:** migrasi masuk daftar izin, dengan pemeriksaan duplikat.
+- **K7:** posisi lama tidak lagi ditulis.
+- **K8:** ikon jam dicocokkan dengan paket Phosphor.
+- **K9:** kecilkan ke strip.
+- **K10:** angka ringkasan dan tangga.
+- **K11:** strip dan kartu B3 ke mode lapangan.
+- **K12:** test perilaku lewat Node.
+- **K13:** kabar flash status.
+
+Perubahan penting dari tinjauan (selain isi rencana):
+- **W6-1a, W6-1d:** percobaan mulai yang bertabrakan dengan indeks unik dijawab kalimat, bukan 500.
+- **W6-3o, W6-3r, W6-5b, W6-6e:** fokus papan ketik dipindah dengan sengaja sesudah setiap aksi yang melepas
+  elemennya. Daftar periksa mutu butir 7 lahir dari pola ini.
+- **W6-6c:** integritas moderasi. Ubah laporan memakai UPDATE bersyarat PENDING, dan tindakan moderasi memeriksa ulang
+  sidik isi di dalam transaksi berkunci.
+- **W6-7a:** kontak darurat hanya pengelola resmi yang diketahui. BASECAMP dikecualikan sampai ada tautan badan ke
+  jalur.
+- **W6-8k:** instan tepat 00.00 UTC ditulis tanggal saja, supaya tidak menampilkan jam yang tidak pernah dimasukkan
+  (R-005).
+- **W6-9g dan T9b:** pemasangan service worker hanya menyimpan shell kecil. Shell paket disimpan saat paket pertama
+  diunduh, sehingga pemasangan turun dari 428.998 menjadi 28.316 bita gzip.
+- **W6-9j:** halaman luring menulis "Halaman ini belum dapat dimuat", bukan menyalahkan jaringan pengguna.
+- **W6-10f:** `last_resumed_at` menutup jeda yang diputar ulang dua tab (W6-3aa).
+- **W6-11g:** penjaga ganti akun tidak berjalan atas halaman dari riwayat, sehingga data akun B tidak terhapus saat B
+  menekan Kembali ke halaman akun A.
+- **W6-P2o:** hapus jejak di ringkasan selalu sampai ke Memount walau jawaban unggahan hilang.
+- **W6-FA:** mulai dan hapus trip menulis menurut status baris, sehingga trip yang dibatalkan di tab lain tidak hidup
+  lagi.
+- **W6-FB:** selesai membaca sesi dengan kunci baris.
+- **W6-FC:** Selesai menunggu aksi lapangan yang masih antre, sehingga waktu bergerak dan pos yang dicapai tidak salah.
+- **W6-FH dan W6-FT:** titik jejak yang terekam lebih dari 10 menit sesudah pendakian diselesaikan atau dibatalkan
+  tidak disimpan. Batal kini menutup sesi seperti selesai (`TripLifecycle::tutupSesi()`), tanpa mengubah status sesi.
+- **W6-FI:** CI tidak lagi dapat hijau tanpa test Spatial yang berjalan. `SpatialTestCase` galat bila DSN diisi tetapi
+  PostGIS tidak ada, dan langkah Spatial memakai `--fail-on-skipped`.
+- **W6-FJ:** fungsi waktu bergerak dipindah ke modul kecil, supaya strip pendakian tidak menarik modul mode lapangan ke
+  setiap halaman.
+
+OPEN ISSUE dan butir yang ditunda dengan putusan tertulis (tabel titipan W6, disalin apa adanya menurut P-R14):
+
+| Butir | Asal | Putusan | Penerima |
+|---|---|---|---|
+| Selesai dari perangkat lain, atau dari tab lain tanpa paket, selagi aksi lapangan menunggu di perangkat atau tab pertama, tidak dicegah. Lintas perangkat memang tidak dapat dicegah, karena catatannya hanya ada di perangkat pertama. Lintas tab hanya terjadi di jendela sempit: tab pertama luring, atau dalam 30 detik sesudah sinyal kembali | W6-FC, N-4 | OPEN ISSUE | Lampiran B, keputusan pemilik |
+| Jejak sesudah batal | W6-FH | Tertutup (W6-FT) | `cancel()` menutup sesi lewat `TripLifecycle::tutupSesi()`; status sesi tidak diubah |
+| Fokus sesudah aksi ditolak lintas halaman | W6-5n | Defer | W9 Tugas 15. Menurut C4 alamat ini salah, karena Tugas 15 hanya halaman Galat; wajib diperiksa di pra-cek W9 |
+| Uji konkurensi dua koneksi PostgreSQL (`lockForUpdate`, UPDATE bersyarat jeda, reports.update) | W6-1b, W6-3h, K-2, K-3 | Defer | W9 R2 |
+| Urutan bacaan pembaca layar di mode lapangan, dan `#kabar-ringkasan` sebagai wilayah status sekaligus sasaran fokus | Tugas 3, Tugas 6 | Defer | W9, uji pembaca layar |
+| BASECAMP sebagai kontak darurat jalurnya sendiri | W6-7a | Defer | W8, izin akhir 44 |
+| Semantik "sampai tanggal" inklusif | W6-8k | Defer | W8, PW8-7.7 |
+| Level dan radius bahaya PVMBG di paket lapangan | T-W8-1 | Defer | W8 Tugas 10 |
+| Pembaca pembatasan segmen paket disatukan dengan pembaca daring | T-W8-2 | Defer | W8 |
+| Dialog galat bawaan Inertia untuk galat HTTP tanpa header Inertia secara umum (lokal sudah ditutup W6-FE) | Tugas 6 | Defer | W9 Tugas 1 |
+| Label bilah tab terpatah di 320 px; spasi biasa angka-satuan di `CheckpointJourney` dan `teksLama` | Tugas 6, W6-FJ K-2 | Defer | W9 Tugas 2 dan 4 |
+| Pengukuran performa WP-7 dan WP-8 | Program | Defer | Bersama W7 sampai W9, arahan pemilik |
+| 13 berkas test Spatial W1 sampai W6 belum pernah berjalan; pemecah seri `orderBy('id')` di PostgreSQL | Seluruh gelombang, W6-4a2 | PERLU KLARIFIKASI | CI PostGIS sesudah push yang diizinkan (izin akhir 4) |
+| W6-P2n dibuktikan di Chrome saja; Firefox dan Safari belum | W6-P2 | PERLU KLARIFIKASI | W9 |
+| Penyimpanan iPhone Layar Utama terpisah dari tab Safari (spec bagian 10.1) | Tinjauan akhir | PERLU KLARIFIKASI | W9 atau pemilik |
+
+Daftar izin akhir dari W6 (rincian di pelacak program):
+- **Butir 3 (`memount:demo`) sudah dijalankan** atas arahan pemilik "lanjutkan sampai W6 selesai", untuk uji luring
+  dan inspeksi. Yang ditulis hanya `database/demo.sqlite`, dan Supabase tidak tersentuh.
+- **Migrasi aditif, dijalankan sebelum kode terbit (K-2):**
+  - `2026_10_07_000100` sampai `000600`;
+  - pemeriksaan duplikat di docblock migrasi `000100` dijalankan sebelum indeks unik;
+  - izin akhir 2, 8, 43, dan 52.
+- **Sakelar:**
+  - `FIELD_SAFETY_ENABLED` bersama atau sebelum `FIELD_PACK_ENABLED` (izin akhir 42, Q10, Q14);
+  - ambang Q9 24 jam.
+- **`DEVICE_KEY_SECRET` produksi (izin akhir 40)** WAJIB diisi sebelum kode W6 pertama kali terbit. Mengisinya sesudah
+  itu sama dengan memutar kunci.
+- **Kebijakan data perangkat:**
+  - retensi paket (izin akhir 39);
+  - kalimat kebijakan (izin akhir 41);
+  - opsi penutup sisa jejak W6-P2k (izin akhir 50);
+  - teks persetujuan W6-P2l (izin akhir 51).
+- **Lainnya:**
+  - pembersihan `hiking_sessions.last_known_location` dan `location_updated_at` lama;
+  - amandemen GR-07 (Q7);
+  - `encryptHistory` dan `clearHistory` (izin akhir 9);
+  - tautan badan pengelola ke jalur (izin akhir 44);
+  - `Cache-Control: immutable` untuk `/build/assets/*` (izin akhir 49).
+
+Titik lanjut: menunggu evaluasi pemilik. Bila W7 dilanjutkan, pra-cek W7 memakai rencana
+`docs/superpowers/plans/2026-10-08-memount-v3-w7-progres-profil.md` dan pra-tinjau Tugas 1 sampai 11 (74 temuan). Progres
+membaca `recorded_*` untuk total tanjakan dan jarak.
+
+### W5 Beranda (selesai 8 Oktober 2026, menunggu izin commit)
+
+Rencana `docs/superpowers/plans/2026-10-07-memount-v3-w5-beranda.md`, 9 tugas. Ledger dan seluruh ruling ada di
+`.superpowers/sdd/2026-10-07-memount-v3-w5-beranda/progress.md`, yaitu:
+- W5-C1 sampai W5-C9, W5-P4, dan W5-P8;
+- W5-1a sampai W5-7a;
+- W5-Fpre, W5-FA sampai W5-FK, dan W5-FR;
+- W5-G1 dan W5-G1b.
+
+Setiap tugas ditinjau terpisah. Tugas 2 butuh satu putaran perbaikan, Tugas 3 satu putaran mikro, dan Tugas 5 serta
+Tugas 6 masing-masing dua putaran. Sesudah itu:
+- satu tinjauan akhir lintas tugas: 0 Critical, 3 Important, 10 Minor;
+- satu gelombang perbaikan dengan sebelas kelompok;
+- satu tinjauan ulang (13 dari 13 temuan tertutup);
+- satu putaran residu;
+- satu perbaikan Delivery Gate.
+
+Nilai di bawah terukur 8 Oktober 2026 pada pohon kerja akhir W5 (snapshot tree `d4a78fe`).
+
+| Butir | Nilai | Bukti |
+|---|---|---|
+| Suite Unit dan Feature | 2.093 test, 2.091 lulus, 2 dilewati, 0 gagal (W4 akhir: 1.991) | `php artisan test --compact --testsuite=Unit,Feature` |
+| Suite bawaan | 2.128 test, 2.091 lulus, 37 dilewati (Spatial melewati dirinya tanpa `SPATIAL_TEST_DSN`) | `php artisan test --compact` |
+| TypeScript dan format | `npx tsc --noEmit` 0 galat; `vendor/bin/pint --dirty` lulus | gerbang akhir W5 |
+| Bundel | `app` JS 355,97 kB (gzip 111,89); `app` CSS 87,54 kB (gzip 16,50); potongan Dashboard 18,62 kB (gzip 5,09) | build 8 Oktober |
+| Pratinjau | 22 halaman (W4: 18) | suite `Pratinjau` 22/22 |
+| Anggaran kueri | Beranda B2 33 kueri dan tidak tumbuh bersama trip, kabar, riwayat (tangga 18 = 18 dari 1 ke 12 riwayat), atau gunung yang diikuti; Jelajah 15, rincian 26, Bandingkan 17, tidak berubah oleh gelombang perbaikan | `PageQueryBudgetTest`, probe tinjauan ulang akhir |
+| Tangkapan | 20 tangkapan Beranda (lima fase; 390 dan 1440 px; terang dan gelap) dibandingkan dengan acuan 01; empat tangkapan Bandingkan dan rincian jalur untuk perubahan Tugas 7; satu tangkapan fokus. Empat tangkapan B2 dan tangkapan fokus dipotret ulang sesudah perbaikan gerbang | `docs/desain/tangkapan/w5/README.md` |
+| Lapisan dan reflow | `scrollWidth` sama dengan `clientWidth` di 320 dan 390 untuk kelima fase; empat langkah B2 satu baris di 320 (47, 73, 62, 47 px); kartu bertinggi isi; kolom samping 352 px di B1, B2, B4 | README tangkapan W5 |
+| Papan ketik | 390 px B2 lengkap tanpa tertutup bilah tab; aksi utama B0, B1, B3, B4 fokus pertama di isi halaman; 1440 px kolom utama lalu kolom samping | README tangkapan W5 |
+| Delivery Gate | Salinan 5 butir, Desain 4, Interaksi 3, Kebenaran 6; satu FAIL salinan (klaim "menautkan sistem resmi" tanpa tautan tampil) diperbaiki W5-G1 dan W5-G1b; tidak ada FAIL tanpa putusan | `.superpowers/.../delivery-gate-w5.md` |
+
+Yang dibangun W5:
+- **Beranda berfase** (`RingkasanDasbor`, `KonteksBeranda`): lima fase dengan satu aksi utama per fase, urutan
+  kepentingan B3, B2, B4, B0, B1. Aksi B2 mengikuti keadaan trip: izin, "Ingatkan saat dibuka", persiapan (tanpa butir
+  yang menunggu BMKG), cek kesiapan pada H-3 sampai H-1, dan mulai pendakian pada hari H.
+- **Tenggat terdekat** (`TenggatTrip`, `TenggatIzin` satu sumber dengan lembar Pengingat): jendela izin, terbit
+  prakiraan BMKG, dan pengingat surel yang masih akan datang (`TripReminder::akanDatang()`), dalam zona gunung.
+- **Pengingat hari pemesanan izin dibuka** (FR-24, GR-06): satu surel pukul 07.00 zona gunung. Diputuskan terpisah dari
+  H-3 dan H-1, menurut aturan izin yang berlaku saat kirim, dan tidak dikirim bila butir izin sudah diurus. Perubahan
+  butir izin di Persiapan menyelaraskan pengingat.
+- **Kabar gunung yang diikuti** (`KabarBeranda`, `KabarJalur::ringkas()`): status resmi dipisah dari satu laporan
+  komunitas, dengan kalimat R-012. Tombol "Ikuti" lewat rute `mountains.follow` (auth dan batas laju); sesudahnya
+  fokus pindah ke judul kabar dengan pengumuman status.
+- **Jalur lain untuk Anda** (`TrailFitService::teratas()`, `JalurUntukAnda`): paling banyak tiga, tanpa jalur yang
+  sedang direncanakan, Cocok lebih dulu, dan kalimat yang tidak berulang. Satu daftar sebab (faktor lemah, pembatasan
+  segmen, data yang belum tersedia) kini menjelaskan label Perlu persiapan di semua permukaan; "Kenapa?" Jelajah tidak
+  mengulang kalimat kartu.
+- **Tangga tanjakan** (`TanggaTanjakan`): anak tangga membawa id jalur dan nama gunung, karena nama jalur tidak unik.
+- **Titipan W3:** rute `trails.timbang` dihapus, laporan komunitas rincian jalur dipisah garis, dan tombol "Kenapa?"
+  Bandingkan menyebut jalurnya.
+- **Formulir laporan dari B4:** tanggal pendakian bawaan diambil dari riwayat milik pengguna dalam zona gunung, bukan
+  tanggal UTC hari ini.
+- **Dokumen:** GR-06 di `docs/PRD.md` §146 (penunjuk berikutnya GR-07), DESIGN, ARCHITECTURE, tiga dokumen fitur, dan
+  CONTRIBUTING.
+
+Ruling koordinator atas konflik rencana W5-C1 sampai W5-C9, semuanya diterima:
+- C1: FR-24 ditambah pengingat hari buka izin (GR-06).
+- C2: urutan alasan kartu W3-C7 berlaku global.
+- C3: urutan fase B3, B2, B4, B0, B1.
+- C4: aksi B2 menurut fase waktu.
+- C5: judul halaman "Beranda".
+- C6: navigasi "Lanjutkan ke" dilepas.
+- C7: trip lama tanpa jadwal IZIN sampai disinkronkan ulang; sinkronisasi sekali jalan hanya atas izin.
+- C8: strip pendakian dan kartu B3 sama-sama ke mode lapangan.
+- C9: redesain halaman Kabar dipindah ke W8.
+
+Perubahan penting dari tinjauan (selain isi rencana):
+- **W5-5c dan W5-FB:** kartu Perlu persiapan dijelaskan sebab turunnya label, tidak pernah status resmi atau izin.
+  Awalnya untuk Beranda saja, lalu disatukan untuk Jelajah, rincian jalur, dan semua pemakai `forTrails()` lewat
+  pembatasan segmen yang dibawa `RouteFitResult`, tanpa kueri tambahan.
+- **W5-FA:** surel IZIN tidak lagi menghilangkan atau menggusur H-3. Surel itu tidak terkirim pada hari yang salah
+  sesudah penjadwal terlambat atau aturan dikoreksi.
+- **W5-FC:** tanggal pendakian bawaan formulir laporan dari riwayat milik sendiri. Id trip pendaki lain tidak
+  berpengaruh (IDOR).
+- **W5-G1 dan W5-G1b:** klaim "Memount menautkan sistem resmi" hanya bila tautannya tampil. Berlaku di Tenggat,
+  Rencanakan, lembar Pengingat, dan surel, lewat satu sumber `PermitService::kalimatTautan()`.
+
+OPEN ISSUE dan butir yang ditunda dengan putusan tertulis:
+- **Ke W6:**
+  - pintu tab Mendaki memulai pendakian yang dirujuk aksi hari H Beranda;
+  - kata status di Mendaki.
+- **Ke W8:**
+  - aturan izin yang dimajukan atau dihapus sesudah baris IZIN dijadwalkan (penyelarasan saat aturan ditulis);
+  - `bookingUrl` truthy di lembar Pengingat, `KartuIzin`, dan `Kondisi`;
+  - redesain `/kabar` dan dokumen fitur 05;
+  - foto hero kartu perjalanan (DK-37).
+- **Ke W9:**
+  - biaya hitung kecocokan hingga 500 kandidat per muat Beranda;
+  - `mountain_follows` dua kali;
+  - aturan izin dibaca per baris di penjadwal;
+  - dua kalimat status UNKNOWN di "Kenapa?" Jelajah;
+  - bilah tab 320 px;
+  - waktu data contoh "0 detik yang lalu".
+- **Menunggu izin:** klik kiriman "Ingatkan saat dibuka" dan "Ikuti" di peramban butuh server lokal (Q1) atau
+  Playwright (Q17); keduanya dijaga test Feature.
+
+Daftar izin akhir dari W5 (rincian di pelacak program):
+- **W5 tidak menambah migrasi.** `trip_reminders.jenis` menerima nilai `IZIN` dalam kolom yang ada.
+- **Keputusan pemilik yang tercatat di GR-06:**
+  - pengingat hari buka izin dengan sakelar yang sama;
+  - Beranda berfase;
+  - urutan alasan kartu dan daftar sebab Perlu persiapan.
+- **Menunggu keputusan:** penjadwalan ulang pengingat trip lama (W5-C7).
+- **Pelanggaran pagar** implementer Tugas 4 (butir 28): tiga perintah artisan tanpa awalan DB.
+
+Titik lanjut: W6 Mendaki dan paket luring. Rencananya `scratchpad/rencana/2026-10-07-memount-v3-w6-mendaki.md` milik
+sesi koordinator (13 tugas), dipindah ke `docs/superpowers/plans/` saat W6 dimulai. Pra-ceknya terhadap pohon akhir W5
+ini memakai uji kering `alat6/uji_kering6.py --tanpa-w5` dan memutus konflik K1 sampai K13. Rencana W7 dan W8 sudah
+ditulis dan disimulasikan; rencana W9 sedang ditulis.
 
 ### W4 Klaster Trip (selesai 7 Oktober 2026, menunggu izin commit)
 

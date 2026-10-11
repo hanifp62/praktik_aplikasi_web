@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id', 'trip_plan_id', 'trail_id', 'trail_condition_report_id', 'trip_type',
     'completion_state', 'preparation_completion_percent', 'personal_notes', 'completed_at',
+    'recorded_distance_m', 'recorded_gain_m', 'recorded_moving_minutes', 'recorded_highest_m', 'numbers_edited_at',
 ])]
 class HikingHistory extends Model
 {
@@ -25,6 +26,11 @@ class HikingHistory extends Model
             'trip_type' => TripType::class,
             'completion_state' => CompletionState::class,
             'completed_at' => 'datetime',
+            'recorded_distance_m' => 'integer',
+            'recorded_gain_m' => 'integer',
+            'recorded_moving_minutes' => 'integer',
+            'recorded_highest_m' => 'integer',
+            'numbers_edited_at' => 'datetime',
         ];
     }
 

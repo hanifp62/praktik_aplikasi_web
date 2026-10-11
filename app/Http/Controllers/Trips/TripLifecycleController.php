@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Trips;
 
+use App\Enums\CancellationReason;
 use App\Enums\CompletionState;
 use App\Enums\TripStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Trips\CancelTripRequest;
 use App\Http\Requests\Trips\CompleteTripRequest;
 use App\Models\TripPlan;
 use App\Services\Trips\TripLifecycle;
@@ -25,40 +27,42 @@ class TripLifecycleController extends Controller
     {
         $this->authorize('update', $trip);
 
-        if ($penolakan = $lifecycle->refusal($trip, TripStatus::IN_PROGRESS)) {
+        if ($penolakan = $lifecycle->refusal($trip, TripStatus::IN_PROGRESS) ?? $lifecycle->start($trip)) {
             return redirect()->route('trips.show', $trip)->with('penolakan-trip', $penolakan);
         }
-
-        $lifecycle->start($trip);
 
         return redirect()->route('trips.hike', $trip);
     }
 
+    /**
+     * complete() dan cancel() sekarang mengembalikan kalimat penolakan sendiri (ruling
+     * W6-5g/K-2 putaran perbaikan 1): refusal() di bawah membaca $trip yang dimuat di awal
+     * permintaan dan bisa basi, sedangkan UPDATE bersyarat di dalam kedua metode lifecycle
+     * adalah penjaga yang sebenarnya. Pola `??` sama dengan start() di atas: refusal() dicek
+     * dulu untuk kalimat yang sudah dikenal (transisi biasa yang tidak sah), dan lifecycle
+     * hanya dipanggil bila refusal() tidak menemukan masalah.
+     */
     public function complete(CompleteTripRequest $request, TripPlan $trip, TripLifecycle $lifecycle): Response
     {
-        if ($penolakan = $lifecycle->refusal($trip, TripStatus::COMPLETED)) {
-            return redirect()->route('trips.show', $trip)->with('penolakan-trip', $penolakan);
-        }
-
-        $lifecycle->complete(
+        if ($penolakan = $lifecycle->refusal($trip, TripStatus::COMPLETED) ?? $lifecycle->complete(
             $trip,
             CompletionState::from($request->validated('completion_state')),
             $request->validated('personal_notes'),
             $request->user(),
-        );
-
-        return redirect()->route('reports.create', ['trail' => $trip->trail_id, 'trip' => $trip->id]);
-    }
-
-    public function cancel(TripPlan $trip, TripLifecycle $lifecycle): RedirectResponse
-    {
-        $this->authorize('update', $trip);
-
-        if ($penolakan = $lifecycle->refusal($trip, TripStatus::CANCELLED)) {
+            CancellationReason::tryFrom((string) $request->validated('alasan')),
+        )) {
             return redirect()->route('trips.show', $trip)->with('penolakan-trip', $penolakan);
         }
 
-        $lifecycle->cancel($trip);
+        // Ringkasan memuat formulir laporan kondisi (spec v3 bagian 5.3 dan 6.13).
+        return redirect()->route('history.summary', $trip);
+    }
+
+    public function cancel(CancelTripRequest $request, TripPlan $trip, TripLifecycle $lifecycle): RedirectResponse
+    {
+        if ($penolakan = $lifecycle->refusal($trip, TripStatus::CANCELLED) ?? $lifecycle->cancel($trip, CancellationReason::tryFrom((string) $request->validated('alasan')))) {
+            return redirect()->route('trips.show', $trip)->with('penolakan-trip', $penolakan);
+        }
 
         return redirect()->route('trips.show', $trip)->with('status', 'Trip dibatalkan.');
     }

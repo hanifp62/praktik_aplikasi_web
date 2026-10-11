@@ -60,13 +60,17 @@ class ElevationProfileDisplayTest extends TestCase
     /**
      * Grafik adalah gambar, dan pembaca layar tidak dapat menelusuri seratus titiknya.
      * Padanannya kalimat dari server di figcaption (WCAG 1.1.1), jadi SVG-nya disembunyikan.
+     *
+     * Diperbarui untuk ruling W6-6h (m-2): angka dan satuannya, juga "km" dengan angka posisi
+     * sesudahnya, kini diikat spasi tak terputus U+00A0 supaya tidak terpisah baris di 320 px.
+     * Kata dan angkanya tidak berubah.
      */
     public function test_the_chart_carries_a_text_summary_for_screen_readers(): void
     {
         $profil = $this->profilDiHalaman($this->profil());
 
         $this->assertSame([0.0, 1200.0], $profil['titik'][0]);
-        $this->assertSame('Dari 1.200 m sampai titik tertinggi 2.560 m dalam 4,2 km. Bagian tercuram, km 3,2 sampai 4,2, naik 403 m dalam 1,0 km (diarsir).', $profil['keterangan']);
+        $this->assertSame("Dari 1.200\u{a0}m sampai titik tertinggi 2.560\u{a0}m dalam 4,2\u{a0}km. Bagian tercuram, km\u{a0}3,2 sampai 4,2, naik 403\u{a0}m dalam 1,0\u{a0}km (diarsir).", $profil['keterangan']);
 
         $grafik = file_get_contents(resource_path('js/components/trails/ProfilElevasi.tsx'));
         $this->assertStringContainsString('<p>{profil.keterangan}</p>', $grafik);

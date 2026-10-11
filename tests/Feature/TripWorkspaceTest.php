@@ -393,12 +393,15 @@ class TripWorkspaceTest extends TestCase
      * seperti penghapusan akun) tidak lagi bersaing dengan satu titik fokus. "Mulai pendakian"
      * ganti variant menurut trip.hariBerangkat; "Hapus rencana" bukan lagi tombol danger penuh,
      * dan dialog konfirmasinya tetap memperingatkan bahwa penghapusan tidak dapat dibatalkan.
+     *
+     * Diubah ruling W6-FE: tombol mulai kini ber-id "mulai-ruang-kerja", tujuan fokus sesudah galat
+     * HTTP; variant-nya tidak berubah.
      */
     public function test_the_start_hike_and_delete_buttons_are_not_second_focal_points(): void
     {
         $halaman = File::get(resource_path('js/pages/Trips/Show.tsx'));
         $this->assertStringContainsString(
-            "<Button onClick={mulai} processing={memulai} variant={trip.hariBerangkat ? 'primary' : 'secondary'}>",
+            "<Button id=\"mulai-ruang-kerja\" onClick={mulai} processing={memulai} variant={trip.hariBerangkat ? 'primary' : 'secondary'}>",
             $halaman,
         );
 
@@ -408,5 +411,28 @@ class TripWorkspaceTest extends TestCase
             "window.confirm('Hapus rencana trip ini? Daftar persiapan, penilaian kesiapan, dan pengingatnya ikut terhapus dan tidak dapat dikembalikan.')",
             $hapusRencana,
         );
+    }
+
+    /**
+     * Ruling W6-6s (b), titipan Tugas 6: trip yang dibatalkan sesudah pendakiannya dimulai
+     * menautkan ringkasannya, tempat jejak tersimpan dapat dihapus (W6-6s (a)). Trip batal yang
+     * belum pernah dimulai tidak punya jejak, jadi tidak ditautkan; trip aktif juga tidak.
+     * Kalimatnya tidak menyebut trip itu selesai.
+     */
+    public function test_a_trip_cancelled_after_its_hike_started_links_its_summary(): void
+    {
+        $dimulai = $this->trip(['status' => TripStatus::CANCELLED->value]);
+        $dimulai->hikingSession()->create(['user_id' => $dimulai->user_id, 'status' => 'COMPLETED', 'started_at' => now()->subDay()]);
+        $belumDimulai = $this->trip(['status' => TripStatus::CANCELLED->value]);
+        $aktif = $this->trip();
+        $aktif->hikingSession()->create(['user_id' => $aktif->user_id, 'status' => 'ACTIVE', 'started_at' => now()]);
+
+        $this->assertSame(['url' => route('history.summary', $dimulai), 'label' => 'Dibatalkan'], $this->props($dimulai)['ringkasanBatal']);
+        $this->assertNull($this->props($belumDimulai)['ringkasanBatal']);
+        $this->assertNull($this->props($aktif)['ringkasanBatal']);
+
+        $halaman = File::get(resource_path('js/pages/Trips/Show.tsx'));
+        $this->assertStringContainsString('<Card title={`Trip ini tercatat: ${ringkasanBatal.label}.`} subtitle="Pendakiannya sempat dimulai sebelum trip dibatalkan.">', $halaman);
+        $this->assertStringContainsString('<Button href={ringkasanBatal.url}>Lihat ringkasan trip</Button>', $halaman);
     }
 }

@@ -51,6 +51,25 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
         ],
+        "inspeksi": [
+            "Composer\\Config::disableProcessTimeout",
+            "@putenv DB_CONNECTION=demo",
+            "@putenv APP_DEMO=true",
+            "@putenv SESSION_DRIVER=file",
+            "@putenv CACHE_STORE=file",
+            "@putenv QUEUE_CONNECTION=sync",
+            "@putenv FILESYSTEM_DISK=local",
+            "@putenv REPORT_PHOTOS_DISK=local",
+            "@putenv MAIL_MAILER=log",
+            "@putenv BROADCAST_CONNECTION=null",
+            "@putenv FIELD_PACK_ENABLED=true",
+            "@putenv FIELD_SAFETY_ENABLED=true",
+            "@php artisan serve --no-reload"
+        ],
+        "inspeksi:data": [
+            "@putenv DB_CONNECTION=demo",
+            "@php artisan memount:demo"
+        ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"

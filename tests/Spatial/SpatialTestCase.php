@@ -2,9 +2,11 @@
 
 namespace Tests\Spatial;
 
+use Closure;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Tests\TestCase;
 use Throwable;
 
@@ -55,10 +57,24 @@ abstract class SpatialTestCase extends TestCase
 
         parent::setUp();
 
+        self::pastikanPostGis(fn () => DB::statement('CREATE EXTENSION IF NOT EXISTS postgis'));
+    }
+
+    /**
+     * Memasang PostGIS, dan bila gagal, test GALAT, bukan dilewati (ruling W6-FI): DSN yang diisi
+     * berarti suite ini diminta berjalan, dan PostGIS yang tidak tersedia adalah lingkungan uji
+     * yang rusak. Sampai W6-FI kegagalan ini melewati test, sehingga CI dapat hijau dengan nol test
+     * Spatial yang benar-benar berjalan (R-024). Publik dan statis supaya dapat diuji tanpa
+     * aplikasi dan tanpa basis data (SpatialDsnTest).
+     *
+     * @param  Closure(): mixed  $pasang
+     */
+    public static function pastikanPostGis(Closure $pasang): void
+    {
         try {
-            DB::statement('CREATE EXTENSION IF NOT EXISTS postgis');
+            $pasang();
         } catch (Throwable $exception) {
-            $this->markTestSkipped('PostGIS tidak tersedia pada basis data uji: '.$exception->getMessage());
+            throw new RuntimeException('PostGIS tidak tersedia pada basis data uji: '.$exception->getMessage(), previous: $exception);
         }
     }
 

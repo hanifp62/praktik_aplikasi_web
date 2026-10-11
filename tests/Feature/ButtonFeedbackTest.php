@@ -124,7 +124,11 @@ class ButtonFeedbackTest extends TestCase
             'hapus checkpoint' => ['pages/Admin/Checkpoints.tsx', "konfirmasiLalu('Hapus checkpoint ini?'"],
             'hapus aturan perizinan' => ['pages/Admin/Permits.tsx', "window.confirm('Hapus aturan perizinan ini?')"],
             'arsipkan gunung' => ['pages/Admin/Mountains.tsx', "konfirmasiLalu(baris.archived ? null : 'Arsipkan gunung ini? Seluruh jalurnya ikut hilang dari pencarian pendaki.'"],
-            'batalkan trip' => ['pages/Trips/Show.tsx', "window.confirm('Batalkan trip ini? Trip yang dibatalkan tidak dapat dimulai lagi.')"],
+            // W6: dialog BatalkanTrip (alasan opsional DK-50) menggantikan window.confirm.
+            // Putaran perbaikan 1 (ruling W6-5f): keterangan kini bercabang menurut
+            // trip.berlangsung, jadi anchor memeriksa kalimat itu sendiri, bukan lagi atribut
+            // keterangan="..." yang literal (sekarang sebuah ekspresi ternary).
+            'batalkan trip' => ['components/trips/BatalkanTrip.tsx', 'Trip yang dibatalkan tidak dapat dimulai lagi. Alasannya opsional dan hanya untuk catatan Anda sendiri.'],
             'hapus jejak pendakian' => ['pages/Community/HikeSummary.tsx', "window.confirm('Hapus jejak pendakian ini? Pendakiannya sendiri tetap tersimpan.')"],
             'keputusan kredensial' => ['pages/Admin/Credentials.tsx', 'if (k.konfirmasi && !window.confirm(k.konfirmasi))'],
             'tindakan moderasi' => ['pages/Moderation/Queue.tsx', 'if (t.konfirmasi && !window.confirm(t.konfirmasi))'],

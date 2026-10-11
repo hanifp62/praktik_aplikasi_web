@@ -132,6 +132,20 @@ class OfficialStatusSafetySentenceTest extends TestCase
     }
 
     /**
+     * Penjaga graf impor (W6-FJ): modul yang diuji lewat Node mengimpor jalur relatif berakhiran
+     * .ts, dan sisi itu harus ikut terbaca. Tanpa itu, halaman yang mencapai komponen status resmi
+     * hanya lewat impor semacam itu lolos dari test di atas tanpa diperiksa.
+     */
+    public function test_the_import_graph_follows_specifiers_that_end_in_ts(): void
+    {
+        $graf = $this->grafImpor();
+        $akar = str_replace(chr(92), '/', (string) realpath(resource_path('js'))).'/';
+
+        $this->assertContains($akar.'lib/waktuBergerak.ts', $graf[$akar.'components/mendaki/hitung.ts'] ?? []);
+        $this->assertContains($akar.'lib/waktuBergerak.ts', $graf[$akar.'luring/kalimatSumber.ts'] ?? []);
+    }
+
+    /**
      * Graf impor nilai antarberkas resources/js (tanpa keluaran Wayfinder).
      *
      * @return array<string, array<int, string>>
@@ -167,7 +181,8 @@ class OfficialStatusSafetySentenceTest extends TestCase
             return null;
         }
 
-        foreach (['.tsx', '.ts', '/index.tsx', '/index.ts'] as $akhiran) {
+        // Spesifikasi yang sudah berakhiran .ts (impor relatif modul yang diuji Node, W6-FJ) dicoba apa adanya dulu.
+        foreach (['', '.tsx', '.ts', '/index.tsx', '/index.ts'] as $akhiran) {
             $nyata = realpath($dasar.$akhiran);
 
             if ($nyata !== false && is_file($nyata)) {

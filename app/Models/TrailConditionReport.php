@@ -127,6 +127,27 @@ class TrailConditionReport extends Model
     }
 
     /**
+     * Sidik isi laporan (ruling W6-6c, I-1): sha256 atas JSON berurutan tetap dari isian yang
+     * dapat diubah pelapor sendiri lewat "Ubah sebelum dimoderasi" (catatan, tag terurut,
+     * segmen, tanggal pendakian, dan foto bila ada). Moderator membawa sidik yang ia baca saat
+     * menyetujui atau menolak; bila isinya berubah sesudah itu sidiknya ikut berubah, dan
+     * tindakan ditolak alih-alih diam-diam menerbitkan isi yang tidak pernah dibaca moderator.
+     * Urutan kunci array ditulis tetap di sini, bukan bergantung pada urutan properti model,
+     * supaya sidik yang dihitung ulang sesudah lockForUpdate selalu sebanding dengan yang
+     * dikirim klien.
+     */
+    public function sidik(): string
+    {
+        return hash('sha256', json_encode([
+            'catatan' => $this->note,
+            'tag' => collect($this->condition_tags ?? [])->sort()->values()->all(),
+            'segmen' => $this->trail_segment_id,
+            'tanggal' => $this->hike_date?->toDateString(),
+            'foto' => $this->photo_path,
+        ]));
+    }
+
+    /**
      * Alasan penolakan, untuk ditunjukkan kepada pelapornya (PRD §57).
      *
      * Moderator mengetik alasan pada setiap tindakan, tetapi sebelumnya alasan itu

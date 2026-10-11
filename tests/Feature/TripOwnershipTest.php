@@ -98,7 +98,10 @@ class TripOwnershipTest extends TestCase
             route('trips.preparation.update', ['trip' => $trip, 'item' => $butir->id]) => ['status' => PreparationStatus::CONFIRMED->value],
             route('trips.readiness.recompute', $trip) => [],
             route('trips.readiness.confirm', $trip) => [],
-            route('trips.hike.position', $trip) => ['latitude' => -7.99, 'longitude' => 112.95],
+            // W6: rute posisi lama dihapus; aksi mode lapangan menggantikannya.
+            route('trips.hike.arrive', $trip) => ['urutan' => 1],
+            route('trips.hike.pause', $trip) => [],
+            route('trips.hike.resume', $trip) => [],
         ];
 
         foreach ($aksi as $url => $isian) {

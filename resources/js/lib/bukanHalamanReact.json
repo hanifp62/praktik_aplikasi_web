@@ -9,6 +9,8 @@
         "^/reports/[^/]+/photo$",
         "^/storage/",
         "^/up$",
-        "^/b/[^/]+$"
+        "^/b/[^/]+$",
+        "^/trips/[^/]+/paket(/|$)",
+        "^/hike/[^/]+/track$"
     ]
 }

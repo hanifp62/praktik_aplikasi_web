@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Trips;
 
+use App\Enums\CancellationReason;
 use App\Enums\CompletionState;
 use App\Models\TripPlan;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,6 +31,9 @@ class CompleteTripRequest extends FormRequest
             // menghasilkan error 500 alih-alih pesan yang dapat dibaca pengguna.
             'completion_state' => ['required', new Enum(CompletionState::class)],
             'personal_notes' => ['nullable', 'string', 'max:1000'],
+            // DK-50: alasan berbalik di jalur, opsional; disimpan hanya bila hasilnya
+            // "Dibatalkan di jalur" (TripLifecycle::complete).
+            'alasan' => ['nullable', new Enum(CancellationReason::class)],
         ];
     }
 

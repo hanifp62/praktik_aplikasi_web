@@ -301,6 +301,58 @@ class OfficialStatusService
     }
 
     /**
+     * Pembatasan segmen untuk paket lapangan luring (ruling W6-8c, pra-tinjau PT8-3).
+     *
+     * Kembaran segmentRestrictionsForTrail(), yang dipakai mesin Route Fit (RouteFitService),
+     * penilaian kecocokan (PenilaianKecocokan), dan peringatan kondisi daring
+     * (ConditionAggregatorService) dan sengaja tidak diubah di sini; W8 menyatukan keduanya saat
+     * service ini ditulis ulang. Bedanya dengan kembarannya: setiap baris membawa id segmen dan
+     * verified_at catatannya (R-013). Urutannya urutan rute dari Trail::segments() (sequence, unik
+     * per jalur), sama dengan peringatan daring, dengan pemecah seri id (ruling W6-8h); urutan ini
+     * ikut menentukan hash versi paket, jadi harus sama di SQLite dan PostgreSQL. Status terakhir
+     * per segmen memakai scope currentlyEffective()->terbaruDulu() yang sama, dan hanya Tutup
+     * dan Dibatasi yang ikut.
+     *
+     * @return array<int, array{segment_id: int, segment: string, status: OfficialStatusValue, reason: ?string, verified_at: ?CarbonInterface}>
+     */
+    public function pembatasanSegmenPaket(Trail $trail): array
+    {
+        $segments = $trail->segments()->orderBy('id')->get(['id', 'name']);
+
+        if ($segments->isEmpty()) {
+            return [];
+        }
+
+        $statuses = OfficialStatus::query()
+            ->where('statusable_type', (new TrailSegment)->getMorphClass())
+            ->whereIn('statusable_id', $segments->pluck('id'))
+            ->currentlyEffective()
+            ->terbaruDulu()
+            ->get();
+
+        $restrictions = [];
+
+        foreach ($segments as $segment) {
+            // Urutan catatan sudah menurun, jadi kemunculan pertama adalah yang berlaku.
+            $latest = $statuses->firstWhere('statusable_id', $segment->id);
+
+            if ($latest === null || ! $this->isRestrictive($latest->status)) {
+                continue;
+            }
+
+            $restrictions[] = [
+                'segment_id' => (int) $segment->id,
+                'segment' => $segment->name,
+                'status' => $latest->status,
+                'reason' => $latest->reason,
+                'verified_at' => $latest->verified_at,
+            ];
+        }
+
+        return $restrictions;
+    }
+
+    /**
      * PRD §97: hanya data publik yang boleh masuk cache bersama. Snapshot status resmi
      * adalah data publik yang sama untuk setiap pengguna, sehingga aman dibagikan.
      * Tidak ada apa pun yang terikat pengguna di dalamnya.

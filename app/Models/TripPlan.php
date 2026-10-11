@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CancellationReason;
 use App\Enums\OfficialStatusValue;
 use App\Enums\PreparationStatus;
 use App\Enums\TripStatus;
@@ -18,8 +19,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'user_id', 'trail_id', 'hiking_goal_id', 'name', 'planned_date', 'end_date',
+    'expected_return_at', 'registration_number',
     'start_time', 'participants_count', 'trip_type', 'notes', 'reminders_enabled',
-    'status', 'completed_at',
+    'status', 'cancellation_reason', 'completed_at',
 ])]
 class TripPlan extends Model
 {
@@ -30,10 +32,12 @@ class TripPlan extends Model
         return [
             'planned_date' => 'date',
             'end_date' => 'date',
+            'expected_return_at' => 'datetime',
             'participants_count' => 'integer',
             'trip_type' => TripType::class,
             'reminders_enabled' => 'boolean',
             'status' => TripStatus::class,
+            'cancellation_reason' => CancellationReason::class,
             'completed_at' => 'datetime',
         ];
     }

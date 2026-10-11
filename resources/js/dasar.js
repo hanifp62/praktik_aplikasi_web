@@ -113,15 +113,59 @@ window.muatPeta = () => {
     return pemuatan;
 };
 
-/*
- * Perekam jejak dimuat hanya oleh pendaki yang menyalakannya, dan hanya di mode
- * pendakian. Pola yang sama dengan peta: modul yang tidak dipakai tidak boleh menagih
- * bita kepada siapa pun.
+/**
+ * Teks spesifier impor pertama di dalam fungsi `impor`, atau null. Spesifier itu wajib ada di
+ * teks fungsinya sebagai literal supaya impornya berjalan, juga sesudah bundler menulisnya
+ * menjadi nama potongan berhash; Function.prototype.toString mengembalikan teks sumber fungsi.
  */
-let pemuatanJejak = null;
+export function spesifierImpor(impor) {
+    const cocok = String(impor).match(/import\(\s*(['"`])([^'"`]+?)\1\s*\)/);
 
-window.muatJejak = () => {
-    pemuatanJejak ??= import('./jejak.js');
+    return cocok ? cocok[2] : null;
+}
 
-    return pemuatanJejak;
-};
+/**
+ * Pemuat modul yang tidak menyimpan kegagalan (ruling W6-P2n). Janji yang berhasil dipakai
+ * bersama; janji yang ditolak dikosongkan, dan panggilan berikutnya memanggil `imporUlang(n)`
+ * dengan n percobaan ulang ke berapa.
+ */
+export function pemuatUlang(impor, imporUlang) {
+    let janji = null;
+    let gagal = 0;
+
+    return () => {
+        if (janji === null) {
+            const ke = gagal;
+
+            janji = (ke === 0 ? impor() : imporUlang(ke)).catch((galat) => {
+                janji = null;
+                gagal = ke + 1;
+
+                throw galat;
+            });
+        }
+
+        return janji;
+    };
+}
+
+/*
+ * Perekam jejak dimuat hanya saat dipakai: perekam di mode pendakian, pengirim dan ringkasan bila
+ * perangkat memegang jejak, dan pertanyaan sebelum keluar. Pola yang sama dengan peta: modul yang
+ * tidak dipakai tidak boleh menagih bita kepada siapa pun.
+ *
+ * Impor yang gagal (sinyal hilang tepat saat itu) tidak mengunci perekam dan pengirim sampai muat
+ * penuh (ruling W6-P2n). Peramban menyimpan kegagalan impor per URL di peta modul dokumen
+ * (terbukti di Chrome, tinjauan Tugas 11): mengulang import yang sama tetap gagal walau sudah
+ * daring. Karena itu percobaan ulang meminta URL potongan yang sama dengan penanda ?ulang=n, yang
+ * berbeda per percobaan dan karena itu benar-benar diminta lagi. URL-nya dibaca dari teks fungsi
+ * impor itu sendiri (spesifierImpor) dan diselesaikan terhadap potongan ini. Bila tidak terbaca,
+ * impor yang sama diulang. Hanya satu salinan modul yang pernah berhasil dimuat di satu dokumen,
+ * karena setiap pemakai memuatnya lewat window.muatJejak.
+ */
+const imporJejak = () => import('./jejak.js');
+const spesifierJejak = spesifierImpor(imporJejak);
+
+window.muatJejak = pemuatUlang(imporJejak, (ke) =>
+    spesifierJejak === null ? imporJejak() : import(/* @vite-ignore */ `${new URL(spesifierJejak, import.meta.url).href}?ulang=${ke}`),
+);

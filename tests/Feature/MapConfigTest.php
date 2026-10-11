@@ -90,6 +90,22 @@ class MapConfigTest extends TestCase
     }
 
     /**
+     * Tema lapangan dapat dibalik di jalur (DK-49), dan peta dasar topografi diredupkan di tema
+     * gelap (DK-18). Peta mode lapangan mengikuti atribut akar tema lapangan, bukan hanya tema
+     * aplikasi saat peta dimuat: tanpa itu peta tetap terang di tema lapangan gelap pada malam hari.
+     */
+    public function test_the_field_map_follows_the_field_theme_toggle(): void
+    {
+        $peta = File::get(resource_path('js/components/trips/PetaPendakian.tsx'));
+        $dasar = File::get(resource_path('js/components/peta/usePetaDasar.ts'));
+
+        $this->assertStringContainsString("attributeFilter: ['data-tema-lapangan']", $peta);
+        $this->assertStringContainsString("ikutkanTemaPetaDasar(map, akar.dataset.temaLapangan === 'gelap')", $peta);
+        $this->assertStringContainsString('ikutkanTemaPetaDasar(petaIni, window.temaGelapAktif?.() ?? false)', $dasar);
+        $this->assertStringContainsString("'raster-brightness-max', gelap ? 0.78 : 1", $dasar);
+    }
+
+    /**
      * Teks bawaan MapLibre berbahasa Inggris ("Zoom in", "Map marker", "Close popup").
      * Di halaman berbahasa Indonesia pembaca layar melafalkannya dengan keliru.
      * AttributionControl dimatikan (CVE-2026-85061) dan tidak perlu dilokalisasi.
@@ -108,9 +124,11 @@ class MapConfigTest extends TestCase
     public function test_a_text_alternative_to_the_map_exists(): void
     {
         // Pendaki yang tidak dapat melihat peta tetap harus tahu urutan posnya.
+        // W6: pos dikirim sebagai `pos`, dan daftar "Semua pos" mode lapangan adalah padanan
+        // non-visual peta.
         $this->hikeModeResponse()->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('checkpoints.0.name', 'Pos 1'));
-        $this->assertStringContainsString('Daftar checkpoint', File::get(resource_path('js/pages/Trips/Hike.tsx')));
+            ->where('pos.0.nama', 'Pos 1'));
+        $this->assertStringContainsString('Semua pos', File::get(resource_path('js/components/mendaki/ModeLapangan.tsx')));
     }
 
     private function renderHikeMode(): string

@@ -3,6 +3,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { TombolIkon } from '@/components/ui/TombolIkon';
+import { kunciTersimpan } from '@/luring/simpan';
+import { offline } from '@/routes/pwa';
 import type { PropsBersama } from '@/types';
 import { adaMuatUlangMilikKerangka, muatPenuhVersiBaru } from './Kerangka';
 
@@ -11,8 +13,13 @@ import { adaMuatUlangMilikKerangka, muatPenuhVersiBaru } from './Kerangka';
  * ruling W2-R3). Aplikasi tidak tahu apakah permintaan terakhir sempat sampai ke server:
  * yang putus bisa jawabannya, bukan permintaannya. Karena itu salinannya tidak menyuruh
  * mengirim ulang, sebab mengirim ulang formulir buat bisa menggandakan data; pesannya
- * hanya meminta memeriksa hasilnya lebih dulu (ruling W2-5d). Penawaran "Buka paket
- * luring" menyusul di W6.
+ * hanya meminta memeriksa hasilnya lebih dulu (ruling W2-5d). Bila paket lapangan dibuka (W6,
+ * ruling W6-R9), pesan menawarkan "Buka paket luring" hanya bila paket trip pengguna ini ada di
+ * perangkat ini (kunci tersimpan sama dengan kunci perangkat; PT10-2): tautan dokumen biasa di
+ * tab yang sama ke /offline?dibuka=paket (ruling W6-9k bagian b), yang dijawab server dengan
+ * judul paket luring bila sinyal kembali, atau service worker dengan shell luring dari cache bila
+ * tidak; bukan kunjungan Inertia, yang gagal tanpa sinyal, dan bukan tab baru, yang di aplikasi
+ * Layar Utama terbuka di peramban dengan penyimpanan terpisah.
  *
  * Pesan mengikuti kunjungan terakhir, bukan hanya yang berhasil (ruling W2-5b): ia
  * disembunyikan begitu kunjungan berikutnya DIMULAI (event start), apa pun hasilnya
@@ -74,7 +81,7 @@ export function PesanJaringan() {
     const [tampil, setTampil] = useState(false);
     const [jenis, setJenis] = useState<'jaringan' | 'versi'>('jaringan');
     const wadah = useRef<HTMLDivElement>(null);
-    const { merek } = usePage<PropsBersama>().props;
+    const { merek, perangkat } = usePage<PropsBersama>().props;
 
     useEffect(() => {
         const lepasMulai = router.on('start', (event) => {
@@ -187,6 +194,11 @@ export function PesanJaringan() {
                         >
                             Muat ulang halaman
                         </Button>
+                        {perangkat?.paket && perangkat.kunci === kunciTersimpan() ? (
+                            <Button variant="ghost" size="sm" className="mt-3" href={offline.url({ query: { dibuka: 'paket' } })}>
+                                Buka paket luring
+                            </Button>
+                        ) : null}
                     </Alert>
                 )}
                 <TombolIkon ikon="x" label="Tutup pesan" varian="polos" className="absolute end-1 top-1" onClick={tutup} />

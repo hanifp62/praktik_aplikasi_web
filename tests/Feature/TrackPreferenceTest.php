@@ -32,6 +32,11 @@ class TrackPreferenceTest extends TestCase
         return $user->fresh();
     }
 
+    /**
+     * Kabar sesudah simpan diubah sisipan W6-P2 dengan alasan (rancangan W6-P2 bagian 4): kalimat
+     * lama "untuk pendakian berikutnya" salah saat pendakian berlangsung, karena mode lapangan
+     * yang dibuka ulang ikut merekam pendakian itu.
+     */
     public function test_recording_starts_off_and_can_be_turned_on(): void
     {
         $user = $this->pendaki();
@@ -42,17 +47,22 @@ class TrackPreferenceTest extends TestCase
         $this->actingAs($user)->put(route('profile.preference'), ['record_track' => true])
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('profile'))
-            ->assertSessionHas('status-jejak', 'Perekaman jejak dinyalakan untuk pendakian berikutnya.');
+            ->assertSessionHas('status-jejak', 'Perekaman jejak dinyalakan untuk mode lapangan yang dibuka dengan sinyal sesudah ini.');
 
         $this->assertTrue($user->fresh()->preference->record_track);
     }
 
+    /**
+     * Diubah sisipan W6-P2 dengan alasan (ruling W6-P2f): titik yang belum terkirim ditahan, tidak
+     * dihapus, dan server tidak menerimanya selama perekaman mati. Kalimatnya tidak mengklaim
+     * perekaman berhenti di tab atau perangkat lain.
+     */
     public function test_it_can_be_turned_back_off(): void
     {
         $user = $this->pendaki(merekam: true);
 
         $this->actingAs($user)->put(route('profile.preference'), ['record_track' => false])
-            ->assertSessionHas('status-jejak', 'Perekaman jejak dimatikan. Jejak yang sudah tersimpan tidak ikut terhapus.');
+            ->assertSessionHas('status-jejak', 'Perekaman jejak dimatikan untuk mode lapangan yang dibuka dengan sinyal sesudah ini. Titik yang belum terkirim tetap di perangkat dan tidak diterima Memount selama perekaman mati; jejak yang sudah tersimpan di Memount tidak ikut terhapus.');
 
         $this->assertFalse($user->fresh()->preference->record_track);
     }
@@ -95,7 +105,31 @@ class TrackPreferenceTest extends TestCase
             $this->assertStringContainsString($kalimat, $sumber);
         }
 
+        // Ruling W6-P2l: dua kalimat janji dijaga utuh, karena perilaku kiriman (ruling W6-P2)
+        // mengikuti kalimat ini, bukan sebaliknya. Mengubahnya butuh izin pemilik.
+        $this->assertStringContainsString('<span>Selama mendaki, titik-titiknya disimpan <strong>hanya di perangkat Anda</strong>. Tidak ada yang dikirim saat Anda masih di jalur.</span>', $sumber);
+        $this->assertStringContainsString('<span>Jejaknya dikirim <strong>setelah Anda turun</strong> dan mendapat sinyal kembali.</span>', $sumber);
+
         $this->assertStringContainsString('<FormRekamJejak', File::get(resource_path('js/pages/Profile/Edit.tsx')));
+    }
+
+    /**
+     * Sesudah tersimpan (ruling W6-P2f, W6-9h): setiap simpan melupakan keputusan pengirim jejak
+     * yang diingat di tab ini, dan hanya simpan "mati" yang mencabut izin rekam jejak di rekaman
+     * sesi paket luring perangkat ini. Nilainya diambil saat formulir dikirim, dan pencabutan
+     * hanya terjadi sesudah server menyimpan (onSuccess), bukan sebelum.
+     */
+    public function test_saving_the_switch_revokes_the_shell_permission_only_when_turned_off(): void
+    {
+        $sumber = File::get(resource_path('js/components/akun/FormRekamJejak.tsx'));
+        $kirim = substr($sumber, (int) strpos($sumber, 'const kirim = (e: FormEvent) => {'));
+
+        $this->assertStringContainsString("const mati = !form.data.record_track;\n\n        form.put(preference.url(), {", $kirim);
+        $this->assertStringContainsString(
+            "onSuccess: () => {\n                lupakanKeputusanJejak();\n\n                if (mati && kunci !== null) {\n                    void cabutRekamJejakSesi(kunci).catch(() => undefined);\n                }\n            },",
+            $kirim,
+        );
+        $this->assertSame(1, substr_count($sumber, 'cabutRekamJejakSesi('), 'Satu-satunya pemanggil ada di cabang mati sesudah tersimpan.');
     }
 
     /**

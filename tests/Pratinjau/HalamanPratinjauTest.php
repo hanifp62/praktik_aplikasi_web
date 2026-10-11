@@ -2,6 +2,7 @@
 
 namespace Tests\Pratinjau;
 
+use App\Enums\CancellationReason;
 use App\Enums\CompletionState;
 use App\Enums\HikingSessionStatus;
 use App\Enums\PreparationStatus;
@@ -18,6 +19,7 @@ use App\Services\PreparationService;
 use App\Services\ReadinessService;
 use App\Services\Trails\TautanBagikan;
 use Database\Seeders\DemoSeeder;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia;
 
@@ -125,6 +127,109 @@ class HalamanPratinjauTest extends PratinjauTestCase
         $respons->assertInertia(fn (AssertableInertia $page) => $page->where('fase.kunci', 'B3'));
 
         $this->tulisPratinjau('dasbor-b3', $respons, 'Dashboard');
+    }
+
+    /**
+     * Mode lapangan (W6, prototype 11): Budi sedang mendaki Gede via Cibodas, sudah mencapai
+     * pos pertama, berjalan 2 jam 15 menit. Posisi perangkat diberikan peramban saat dipotret.
+     */
+    public function test_mode_lapangan(): void
+    {
+        $trip = $this->budiSedangMendaki();
+        $respons = $this->get(self::ASAL.'/trips/'.$trip->id.'/hike');
+
+        // Pratinjau ini memotret keadaan bawaan: sakelar alat keselamatan mati (PT7-18).
+        $respons->assertInertia(fn (AssertableInertia $page) => $page->where('darurat', null));
+
+        $this->tulisPratinjau('mode-lapangan', $respons, 'Trips/Hike');
+    }
+
+    /**
+     * Kartu darurat di mode lapangan (W6, ruling W6-R4) dengan sakelar alat keselamatan
+     * dinyalakan; keadaan pendakiannya sama dengan pratinjau mode-lapangan. Keadaannya disusun
+     * budiSedangMendaki(), bukan dengan memanggil test_mode_lapangan() (PT7-18): pemanggilan itu
+     * menulis ulang mode-lapangan.html dengan sakelar menyala, sehingga pratinjau keadaan bawaan
+     * ikut memuat tombol Kartu darurat.
+     */
+    public function test_kartu_darurat(): void
+    {
+        config(['hiking.field_safety.enabled' => true]);
+        $trip = $this->budiSedangMendaki();
+
+        $this->tulisPratinjau('kartu-darurat', $this->get(self::ASAL.'/trips/'.$trip->id.'/hike'), 'Trips/Hike');
+    }
+
+    /**
+     * Budi sedang mendaki Gede via Cibodas, sudah mencapai pos pertama, berjalan 2 jam 15 menit;
+     * keadaan bersama pratinjau mode-lapangan dan kartu-darurat.
+     */
+    private function budiSedangMendaki(): TripPlan
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+        $trip->update(['status' => TripStatus::IN_PROGRESS->value]);
+
+        HikingSession::create([
+            'trip_plan_id' => $trip->id,
+            'user_id' => $budi->id,
+            'reached_checkpoint_sequence' => 1,
+            'current_checkpoint_id' => Checkpoint::where('trail_id', $trip->trail_id)->where('sequence', 2)->value('id'),
+            'status' => HikingSessionStatus::ACTIVE->value,
+            'started_at' => now()->subMinutes(135),
+        ]);
+
+        // Koordinat pos untuk pratinjau saja: DemoSeeder tidak mencatat koordinat pos, dan tanpa
+        // koordinat peta dan sisa jarak tidak dapat dipotret. Enam pos berjajar ke barat daya.
+        Checkpoint::where('trail_id', $trip->trail_id)->orderBy('sequence')->get()
+            ->each(fn (Checkpoint $pos, int $i) => $pos->setCoordinates(-6.7400 - 0.0080 * $i, 107.0060 - 0.0030 * $i));
+
+        return $trip;
+    }
+
+    /**
+     * Ringkasan pendakian (W6, prototype 12): Budi menuntaskan Gede via Cibodas dua hari lalu
+     * dengan mode lapangan 04.00 sampai 15.05 dan jeda 30 menit, tanpa rekam jejak. Riwayat
+     * Andong, Batur, dan Prau dari DemoSeeder menjadi anak tangga sebelumnya.
+     */
+    public function test_ringkasan(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+        $mulai = now()->subDays(2)->setTime(4, 0);
+        $trip->update(['planned_date' => $mulai->toDateString(), 'status' => TripStatus::COMPLETED->value, 'completed_at' => $mulai->copy()->setTime(15, 5)]);
+
+        HikingSession::create([
+            'trip_plan_id' => $trip->id,
+            'user_id' => $budi->id,
+            'reached_checkpoint_sequence' => Checkpoint::where('trail_id', $trip->trail_id)->max('sequence'),
+            'status' => HikingSessionStatus::COMPLETED->value,
+            'started_at' => $mulai,
+            'ended_at' => $mulai->copy()->setTime(15, 5),
+            'paused_seconds' => 1800,
+        ]);
+
+        HikingHistory::create([
+            'user_id' => $budi->id,
+            'trip_plan_id' => $trip->id,
+            'trail_id' => $trip->trail_id,
+            'trip_type' => $trip->trip_type->value,
+            'completion_state' => CompletionState::COMPLETED->value,
+            'completed_at' => $mulai->copy()->setTime(15, 5),
+        ]);
+
+        $this->tulisPratinjau('ringkasan', $this->get(self::ASAL.route('history.summary', $trip, false)), 'Community/HikeSummary');
+    }
+
+    /**
+     * Varian dibatalkan (DK-50): trip Pangrango Budi dari DemoSeeder, dibatalkan karena cuaca.
+     */
+    public function test_ringkasan_batal(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::CANCELLED->value)->sole();
+        $trip->update(['cancellation_reason' => CancellationReason::WEATHER->value]);
+
+        $this->tulisPratinjau('ringkasan-batal', $this->get(self::ASAL.route('history.summary', $trip, false)), 'Community/HikeSummary');
     }
 
     /**
@@ -254,6 +359,25 @@ class HalamanPratinjauTest extends PratinjauTestCase
     }
 
     /**
+     * Alat keselamatan W6 dengan sakelar dinyalakan (ruling W6-R4): ruang kerja dengan rencana
+     * untuk kontak berisi jam kembali dan nomor registrasi, lalu versi cetaknya. Bawaannya mati,
+     * jadi pratinjau ruang-kerja di atas tetap memotret keadaan bawaan.
+     */
+    public function test_ruang_kerja_keselamatan(): void
+    {
+        config(['hiking.field_safety.enabled' => true]);
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+        $trip->update(['expected_return_at' => $trip->end_date->copy()->setTime(15, 0)->shiftTimezone('Asia/Jakarta')->utc(), 'registration_number' => 'GPP-'.$trip->planned_date->format('md').'-0042']);
+
+        $this->tulisPratinjau('ruang-kerja-keselamatan', $this->get(self::ASAL.'/trips/'.$trip->id), 'Trips/Show');
+        // Koordinat pos untuk pratinjau saja, seperti mode-lapangan: tanpa itu sketsa rute kosong.
+        Checkpoint::where('trail_id', $trip->trail_id)->orderBy('sequence')->get()
+            ->each(fn (Checkpoint $pos, int $i) => $pos->setCoordinates(-6.7400 - 0.0080 * $i, 107.0060 - 0.0030 * $i));
+        $this->tulisPratinjau('cetak', $this->get(self::ASAL.'/trips/'.$trip->id.'/cetak'), 'Trips/Print');
+    }
+
+    /**
      * Rencanakan trip W4 (acuan 08): Gede via Cibodas, camping dua hari, lima belas hari lagi,
      * jadi jendela izin data contoh terbuka dan prakiraan BMKG belum terbit.
      */
@@ -341,5 +465,72 @@ class HalamanPratinjauTest extends PratinjauTestCase
         $this->actingAs($pendaki);
 
         $this->tulisPratinjau('jelajah-kosong', $this->get(self::ASAL.'/trails'), 'Trails/Index');
+    }
+
+    /**
+     * Shell luring W6 (ruling W6-R9) dengan paket lapangan yang sudah lolos pemeriksaan di
+     * perangkat: keadaan pendakian sama dengan pratinjau mode-lapangan, paket dirakit dari
+     * manifest dan tiga bagiannya, lalu ditanam ke IndexedDB oleh skrip pratinjau sebelum shell
+     * berjalan. Halaman ini memotret daftar paket dan mode lapangan dari paket tanpa server.
+     *
+     * Keadaan disusun budiSedangMendaki(), bukan dengan memanggil test_mode_lapangan() (Varian
+     * V9-2, pola PT7-18): pemanggilan itu menulis ulang mode-lapangan.html dengan sakelar paket
+     * menyala. Benih memakai bentuk Tugas 8 sampai 9: manifest.trip membawa gunung dan tanggal,
+     * rekaman sesi membawa waktu diperbaruinya, dan toko antrean ikut dibuat.
+     */
+    public function test_luring(): void
+    {
+        config(['hiking.field_pack.enabled' => true]);
+        $trip = $this->budiSedangMendaki();
+
+        $manifest = $this->getJson(self::ASAL.'/trips/'.$trip->id.'/paket')->assertOk()->json();
+        $bagian = collect($manifest['bagian'])->mapWithKeys(fn (array $b) => [$b['nama'] => $this->get($b['url'])->assertOk()->getContent()])->all();
+        $sesi = $trip->hikingSession;
+        $benih = [
+            'kunci' => 'pratinjau',
+            'manifest' => $manifest,
+            'bagian' => $bagian,
+            'sesi' => [
+                'tripId' => $trip->id,
+                'trip' => ['berlangsung' => true, 'mulai' => $sesi->started_at->utc()->toIso8601String(), 'jedaSejak' => null, 'jedaDetik' => 0],
+                'tercapai' => (int) $sesi->reached_checkpoint_sequence,
+                'sesiId' => $sesi->id,
+                'rekamJejak' => false,
+                'jejak' => null,
+                'diperbarui' => now()->utc()->toIso8601String(),
+            ],
+        ];
+
+        $this->assertSame(['gunung', 'tanggal'], array_values(array_intersect(['gunung', 'tanggal'], array_keys($manifest['trip']))));
+        $this->assertTrue($manifest['dataContoh']);
+
+        $html = (string) $this->get(self::ASAL.'/offline')->assertOk()->getContent();
+        $skrip = '<script>(() => { const b = '.json_encode($benih, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE).';'
+            .'localStorage.setItem("memount-perangkat", b.kunci);'
+            .'const m = indexedDB.open("memount-luring-" + b.kunci, 1);'
+            .'m.onupgradeneeded = () => { const d = m.result; d.createObjectStore("bagian", { keyPath: ["tripId", "versi", "nama"] }); d.createObjectStore("paket", { keyPath: ["tripId", "versi"] }); d.createObjectStore("sesi", { keyPath: "tripId" }); d.createObjectStore("antrean"); };'
+            .'m.onsuccess = () => { const d = m.result; const t = d.transaction(["bagian", "paket", "sesi"], "readwrite");'
+            .'for (const x of b.manifest.bagian) { t.objectStore("bagian").put({ tripId: b.manifest.trip.id, versi: b.manifest.versi, nama: x.nama, teks: b.bagian[x.nama], sha256: x.sha256 }); }'
+            .'t.objectStore("paket").put({ tripId: b.manifest.trip.id, versi: b.manifest.versi, manifest: b.manifest, siap: true, diverifikasi: new Date().toISOString() });'
+            .'t.objectStore("sesi").put(b.sesi); t.oncomplete = () => d.close(); };'
+            .'})();</script>';
+
+        File::ensureDirectoryExists(public_path('_pratinjau'));
+        File::put(public_path('_pratinjau/luring.html'), str_replace('<head>', '<head>'.$skrip, $html));
+
+        $this->assertStringContainsString('/build/assets/shell-', $html);
+        $this->assertStringContainsString('<meta name="memount-shell-luring"', $html);
+    }
+
+    /**
+     * Tab Mendaki dengan sakelar paket menyala (W6, ruling W6-R3): pintu unduh paket di
+     * pratinjau hari-H, sebelum ada paket di perangkat.
+     */
+    public function test_mendaki_paket(): void
+    {
+        config(['hiking.field_pack.enabled' => true]);
+        $this->sebagaiBudi();
+
+        $this->tulisPratinjau('mendaki-paket', $this->get(self::ASAL.'/mendaki'), 'Track/Index');
     }
 }

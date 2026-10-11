@@ -1,101 +1,220 @@
-import { useEffect, useRef } from 'react';
-import { kotakDari, tambahPenanda, usePetaDasar, type Peta, type Pustaka } from '@/components/peta/usePetaDasar';
+import { usePage } from '@inertiajs/react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { potongGaris, type Titik } from '@/components/mendaki/hitung';
+import type { PosLapangan, PosisiPerangkat } from '@/components/mendaki/types';
+import { ikutkanTemaPetaDasar, kotakDari, usePetaDasar, type Peta, type Pustaka } from '@/components/peta/usePetaDasar';
 import { WadahPeta } from '@/components/peta/WadahPeta';
 import { warnaToken } from '@/components/peta/warnaToken';
-import type { GeometriJalur, Penanda } from './types';
+import { fokusTerlihat, umpanTekan } from '@/components/ui/gaya';
+import { Icon } from '@/components/ui/Icon';
+import { kelas } from '@/lib/kelas';
+import type { PropsBersama } from '@/types';
 
 interface PetaPendakianProps {
     id: string;
     label: string;
-    geometri: GeometriJalur | null;
-    penanda: Penanda[];
-    posisi: { lat: number; lng: number } | null;
+    garis: Titik[] | null;
+    pos: PosLapangan[];
+    tercapai: number;
+    /** Letak sepanjang garis yang sudah dilalui, meter; null bila tidak diketahui. */
+    dilaluiM: number | null;
+    posisi: PosisiPerangkat | null;
+}
+
+/** Kendali 48 px di atas peta, pengganti kendali bawaan MapLibre yang hanya 29 px. */
+function TombolPeta({ label, onClick, className, children }: { label?: string; onClick: () => void; className?: string; children: ReactNode }) {
+    return (
+        <button
+            type="button"
+            aria-label={label}
+            onClick={onClick}
+            className={kelas('pointer-events-auto inline-flex min-h-12 min-w-12 items-center justify-center rounded-full border border-control bg-surface px-3 text-kecil font-bold text-primary shadow-overlay', fokusTerlihat, umpanTekan, className)}
+        >
+            {children}
+        </button>
+    );
+}
+
+/** Lingkaran akurasi sebagai poligon bermeter: lingkaran MapLibre berukuran piksel, bukan meter. */
+function lingkaran(pusat: Titik, meter: number): Titik[] {
+    const lintang = (pusat[1] * Math.PI) / 180;
+    const derajatY = meter / 111_195;
+    const derajatX = derajatY / Math.max(0.01, Math.cos(lintang));
+
+    return Array.from({ length: 37 }, (_, i) => {
+        const sudut = (i / 36) * 2 * Math.PI;
+
+        return [pusat[0] + derajatX * Math.cos(sudut), pusat[1] + derajatY * Math.sin(sudut)] as Titik;
+    });
 }
 
 /**
- * Peta mode pendakian: garis jalur, pos, dan penanda posisi pendaki. Padanan
- * non-visualnya adalah daftar pos yang selalu menyertai peta ini.
+ * Peta mode lapangan (prototype 11): bagian jalur yang sudah dilalui bergaris utuh redup, sisa
+ * jalur bergaris putus-putus merek, pos bernomor, dan posisi dengan lingkaran akurasinya.
+ * Padanan non-visualnya adalah pos berikutnya dan angka di bawah peta.
  *
- * Geometri dan pos tidak berubah selama halaman terbuka, jadi peta dibangun sekali.
- * Setiap posisi baru hanya memindahkan penandanya; tampilan tidak digeser otomatis
- * supaya tetap fokus pada jalur, kecuali jalurnya sendiri belum punya apa pun untuk
- * dibingkai.
+ * Kendali 48 px di atas peta (perbesar, perkecil, ke posisi saya) menggantikan kendali bawaan
+ * MapLibre yang hanya 29 px. Tanpa peta dasar (paket luring tahap 1, spec v3 bagian 10.5),
+ * kanvasnya polos dan diberi label, sehingga garis dan pos tidak terbaca sebagai peta lengkap.
  */
-export function PetaPendakian({ id, label, geometri, penanda, posisi }: PetaPendakianProps) {
+export function PetaPendakian({ id, label, garis, pos, tercapai, dilaluiM, posisi }: PetaPendakianProps) {
+    const { peta: konfigurasi } = usePage<PropsBersama>().props;
+    const tanpaPetaDasar = !konfigurasi.styleUrl && konfigurasi.rasterTiles.length === 0;
     const wadah = useRef<HTMLDivElement>(null);
+    const penanda = useRef<Array<import('maplibre-gl').Marker>>([]);
     const tandaPosisi = useRef<import('maplibre-gl').Marker | null>(null);
-    const posisiTerbaru = useRef(posisi);
-    const awal = useRef({ geometri, penanda });
+    const terbaru = useRef({ garis, pos, tercapai, dilaluiM, posisi });
 
-    posisiTerbaru.current = posisi;
+    terbaru.current = { garis, pos, tercapai, dilaluiM, posisi };
 
-    const pasangPosisi = (map: Peta, maplibregl: Pustaka) => {
-        const p = posisiTerbaru.current;
+    const gambar = (map: Peta, maplibregl: Pustaka) => {
+        const { garis: g, pos: p, tercapai: t, dilaluiM: d, posisi: s } = terbaru.current;
 
-        if (!p) {
-            return;
+        if (g && g.length > 1) {
+            const belah = potongGaris(g, d ?? 0);
+            const dilalui = { type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: belah.dilalui.length > 1 ? belah.dilalui : [] } };
+            const sisa = { type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: belah.sisa.length > 1 ? belah.sisa : [] } };
+            const sumberDilalui = map.getSource('jalur-dilalui') as import('maplibre-gl').GeoJSONSource | undefined;
+            const sumberSisa = map.getSource('jalur-sisa') as import('maplibre-gl').GeoJSONSource | undefined;
+
+            if (sumberDilalui && sumberSisa) {
+                sumberDilalui.setData(dilalui);
+                sumberSisa.setData(sisa);
+            }
         }
 
-        if (tandaPosisi.current) {
-            tandaPosisi.current.setLngLat([p.lng, p.lat]);
-        } else {
-            const el = document.createElement('div');
-            el.className = 'size-5 rounded-full border-4 border-surface bg-brand-700 shadow-overlay';
-            el.title = 'Posisi Anda';
-            tandaPosisi.current = new maplibregl.Marker({ element: el }).setLngLat([p.lng, p.lat]).addTo(map);
-        }
+        penanda.current.forEach((tanda) => tanda.remove());
+        penanda.current = p
+            .filter((c) => c.lng !== null && c.lat !== null)
+            .map((c) => {
+                const el = document.createElement('div');
+                const berikutnya = c.urutan === p.find((x) => x.urutan > t)?.urutan;
 
-        if (!awal.current.geometri && awal.current.penanda.length === 0) {
-            map.jumpTo({ center: [p.lng, p.lat], zoom: 14 });
+                el.className = kelas(
+                    'flex size-7 items-center justify-center rounded-full border-2 text-meta font-bold tabular-nums',
+                    berikutnya ? 'border-primary bg-aksen-pos text-aksen-pos-teks' : c.urutan <= t ? 'border-surface bg-brand-700 text-on-brand' : 'border-brand-700 bg-surface text-primary',
+                );
+                el.textContent = String(c.urutan);
+                el.title = `${c.urutan}. ${c.nama}`;
+
+                return new maplibregl.Marker({ element: el }).setLngLat([c.lng as number, c.lat as number]).addTo(map);
+            });
+
+        const akurasi = map.getSource('akurasi') as import('maplibre-gl').GeoJSONSource | undefined;
+
+        if (s) {
+            akurasi?.setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [lingkaran([s.lng, s.lat], s.akurasi)] } });
+
+            if (tandaPosisi.current) {
+                tandaPosisi.current.setLngLat([s.lng, s.lat]);
+            } else {
+                const el = document.createElement('div');
+                el.className = 'size-5 rounded-full border-4 border-surface bg-primary shadow-overlay';
+                el.title = 'Posisi Anda';
+                tandaPosisi.current = new maplibregl.Marker({ element: el }).setLngLat([s.lng, s.lat]).addTo(map);
+            }
         }
     };
 
-    const pertama = penanda[0];
-    const { peta, pustaka, gagal } = usePetaDasar(wadah, {
-        pusat: pertama ? [pertama.lng, pertama.lat] : null,
-        // Posisi dipasang begitu peta ada, tidak menunggu tile: di sinyal tipis basemap
-        // bisa lama, sedangkan posisi pendaki sudah diketahui. Penanda lama ikut hilang
-        // bersama peta sebelumnya.
-        saatDibuat: (map, maplibregl) => {
+    const pertama = pos.find((c) => c.lng !== null && c.lat !== null);
+    const { peta, pustaka, siap, gagal } = usePetaDasar(wadah, {
+        pusat: pertama ? [pertama.lng as number, pertama.lat as number] : posisi ? [posisi.lng, posisi.lat] : null,
+        kendaliBawaan: false,
+        saatDibuat: () => {
             tandaPosisi.current = null;
-            pasangPosisi(map, maplibregl);
+            penanda.current = [];
         },
         saatSiap: (map, maplibregl) => {
-            const { geometri: garis, penanda: pos } = awal.current;
+            const kosong = { type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: [] as Titik[] } };
+            const tepi = warnaToken('--surface', '#ffffff');
 
-            if (garis && garis.coordinates.length > 1) {
-                map.addSource('jalur', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: garis.coordinates } } });
+            map.addSource('akurasi', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [] } } });
+            map.addLayer({ id: 'akurasi-isi', type: 'fill', source: 'akurasi', paint: { 'fill-color': warnaToken('--brand-700', 'rgb(35, 79, 50)'), 'fill-opacity': 0.15 } });
+            map.addSource('jalur', { type: 'geojson', data: { ...kosong, geometry: { type: 'LineString', coordinates: terbaru.current.garis ?? [] } } });
+            map.addSource('jalur-dilalui', { type: 'geojson', data: kosong });
+            map.addSource('jalur-sisa', { type: 'geojson', data: kosong });
+            map.addLayer({ id: 'garis-jalur-tepi', type: 'line', source: 'jalur', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': tepi, 'line-width': 8 } });
+            map.addLayer({ id: 'garis-dilalui', type: 'line', source: 'jalur-dilalui', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': warnaToken('--text-muted', 'rgb(98, 105, 101)'), 'line-width': 4 } });
+            map.addLayer({ id: 'garis-sisa', type: 'line', source: 'jalur-sisa', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': warnaToken('--brand-700', 'rgb(35, 79, 50)'), 'line-width': 5, 'line-dasharray': [1.5, 1] } });
 
-                // Tepi --surface di bawah garis, seperti Jelajah: basemap tetap terang di tema
-                // gelap, dan garis hijau muda tanpa tepi hampir tak terlihat di atasnya.
-                const tepi = warnaToken('--surface', '#ffffff');
-                map.addLayer({ id: 'garis-jalur-tepi', type: 'line', source: 'jalur', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': tepi, 'line-width': 7 } });
-                map.addLayer({ id: 'garis-jalur', type: 'line', source: 'jalur', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': warnaToken('--brand-700', 'rgb(35, 79, 50)'), 'line-width': 4 } });
+            const { garis: g, pos: p } = terbaru.current;
+            const titik = [...(g ?? []), ...p.filter((c) => c.lng !== null && c.lat !== null).map((c) => [c.lng, c.lat] as Titik)];
 
-                // Dibingkai ke jalurnya, bukan dibiarkan pada titik tengah Indonesia.
-                map.fitBounds(kotakDari(maplibregl, garis.coordinates), { padding: 40, duration: 0 });
+            if (titik.length > 1) {
+                map.fitBounds(kotakDari(maplibregl, titik), { padding: 48, duration: 0 });
             }
 
-            for (const titik of pos) {
-                tambahPenanda(map, maplibregl, titik);
-            }
+            gambar(map, maplibregl);
         },
     });
 
     useEffect(() => {
-        if (peta.current && pustaka.current) {
-            pasangPosisi(peta.current, pustaka.current);
+        if (siap && peta.current && pustaka.current) {
+            gambar(peta.current, pustaka.current);
         }
-    }, [posisi?.lat, posisi?.lng]);
+    }, [siap, tercapai, dilaluiM, posisi?.lng, posisi?.lat, posisi?.akurasi]);
 
-    // Bila peta gagal, kotak setinggi setengah layar tidak dipertahankan: di lapangan
-    // daftar checkpoint di bawahnya yang dipakai, dan ia tidak boleh terdorong menjauh.
-    const ukuran = gagal ? undefined : 'h-[55dvh] min-h-72';
+    // Tema lapangan dibalik sekali ketuk (DK-49) tanpa membangun ulang peta: peredupan peta
+    // dasar dan warna lapisan dibaca ulang dari akar tema lapangan setiap kali atributnya
+    // berubah. Penanda pos ikut sendiri karena kelasnya membaca token CSS.
+    useEffect(() => {
+        const akar = wadah.current?.closest<HTMLElement>('[data-tema-lapangan]');
+
+        if (!siap || !akar) {
+            return;
+        }
+
+        const ikutiTema = () => {
+            const map = peta.current;
+
+            if (!map) {
+                return;
+            }
+
+            ikutkanTemaPetaDasar(map, akar.dataset.temaLapangan === 'gelap');
+            map.setPaintProperty('akurasi-isi', 'fill-color', warnaToken('--brand-700', 'rgb(35, 79, 50)'));
+            map.setPaintProperty('garis-jalur-tepi', 'line-color', warnaToken('--surface', '#ffffff'));
+            map.setPaintProperty('garis-dilalui', 'line-color', warnaToken('--text-muted', 'rgb(98, 105, 101)'));
+            map.setPaintProperty('garis-sisa', 'line-color', warnaToken('--brand-700', 'rgb(35, 79, 50)'));
+        };
+
+        ikutiTema();
+        const pengamat = new MutationObserver(ikutiTema);
+        pengamat.observe(akar, { attributes: true, attributeFilter: ['data-tema-lapangan'] });
+
+        return () => pengamat.disconnect();
+    }, [siap]);
+
+    const keKeposisi = () => {
+        if (peta.current && posisi) {
+            peta.current.easeTo({ center: [posisi.lng, posisi.lat], zoom: Math.max(peta.current.getZoom(), 15), duration: 0 });
+        }
+    };
 
     return (
-        <div className="space-y-1">
-            <WadahPeta wadahRef={wadah} id={id} label={label} gagal={gagal} ukuran={ukuran} cadangan="Keterangan jalur dan daftar pos di bawah tetap dapat dipakai." />
-            <span className="sr-only">{penanda.map((p) => p.label).join(', ')}</span>
-        </div>
+        <WadahPeta
+            wadahRef={wadah}
+            id={id}
+            label={label}
+            gagal={gagal}
+            ukuran="h-[45dvh] min-h-64"
+            keterangan={tanpaPetaDasar ? 'Peta dasar tidak tersedia luring; garis dan pos dari paket.' : undefined}
+            cadangan="Pos berikutnya dan angka di bawah tetap dapat dipakai."
+        >
+            {tanpaPetaDasar ? <p className="pointer-events-none absolute left-3 top-3 rounded-kecil bg-surface px-2 py-1 text-meta font-bold text-secondary">Peta dasar tidak tersedia luring</p> : null}
+            <div className="pointer-events-none absolute right-3 top-3 flex flex-col gap-2">
+                <TombolPeta label="Perbesar peta" onClick={() => peta.current?.zoomIn({ duration: 0 })}>
+                    <Icon name="plus" size={22} />
+                </TombolPeta>
+                <TombolPeta label="Perkecil peta" onClick={() => peta.current?.zoomOut({ duration: 0 })}>
+                    <Icon name="minus" size={22} />
+                </TombolPeta>
+            </div>
+            {posisi ? (
+                <TombolPeta onClick={keKeposisi} className="absolute bottom-3 right-3">
+                    Posisi saya
+                </TombolPeta>
+            ) : null}
+        </WadahPeta>
     );
 }

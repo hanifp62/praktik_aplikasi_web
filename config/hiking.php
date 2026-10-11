@@ -61,6 +61,55 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Paket lapangan luring (spec v3 bagian 10, DK-36; ruling W6-R3)
+    |--------------------------------------------------------------------------
+    |
+    | Paket dibangun dan diuji, tetapi tidak dibuka untuk pengguna sampai pemilik memutus
+    | Q10 (kebijakan data di perangkat) dan Q14 (telaah hukum). Selama mati, tab Mendaki dan
+    | ruang kerja trip tidak menawarkan unduhan dan manifest paket menjawab 404.
+    |
+    */
+    'field_pack' => [
+        'enabled' => (bool) env('FIELD_PACK_ENABLED', false),
+
+        // Q9 (keputusan pemilik, ruling W6-R8): status Buka di paket turun menjadi "belum dapat
+        // dipastikan" sesudah sekian jam dari verified_at. Usul spec v3 bagian 15 Q9: 24 jam,
+        // "diuji dulu"; angkanya sama dengan ambang usang cuaca (conditions.weather_aging_hours).
+        // Dihitung server dan dikirim di paket.
+        'open_status_stale_after_hours' => (int) env('FIELD_PACK_OPEN_STALE_HOURS', 24),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rahasia kunci perangkat (ruling W6-10c)
+    |--------------------------------------------------------------------------
+    |
+    | App\Support\KunciPerangkat menamai basis data paket lapangan dan perekam jejak di perangkat
+    | dengan HMAC id pengguna memakai rahasia ini, atau app.key bila kosong. Rahasia ini tidak
+    | diputar: memutarnya menghapus paket dan jejak yang belum terkirim di setiap perangkat pada
+    | kunjungan berikutnya, karena penjaga ganti akun (W6 Tugas 11) melihat kunci lain. Nilai
+    | produksi diputus pemilik di daftar izin akhir.
+    |
+    */
+    'device_key_secret' => env('DEVICE_KEY_SECRET'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Alat keselamatan trip (spec v3 bagian 10.8; rencana induk W6 butir 8; ruling W6-R4)
+    |--------------------------------------------------------------------------
+    |
+    | Kartu darurat di mode lapangan, versi cetak, dan pesan rencana untuk kontak. Spec v3
+    | bagian 15 mengaitkannya dengan Q14 (telaah hukum), jadi dibangun dan diuji tetapi mati
+    | sampai pemilik memutus. Selama mati, mode lapangan dan ruang kerja tidak menampilkannya
+    | dan rute cetak serta jam kembali menjawab 404.
+    |
+    */
+    'field_safety' => [
+        'enabled' => (bool) env('FIELD_SAFETY_ENABLED', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Agregasi Kondisi (PRD §51, §59)
     |--------------------------------------------------------------------------
     |

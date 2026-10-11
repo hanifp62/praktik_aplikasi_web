@@ -5,8 +5,9 @@ import { TombolIkon } from './TombolIkon';
 /**
  * Dialog asli dengan showModal() (spec v3 bagian 8.5, W1-K6): fokus terkurung di dalam,
  * halaman di belakangnya inert, dan Escape menutup, semuanya bawaan peramban. Ketika
- * tertutup dengan cara apa pun, fokus kembali ke pemicunya; bila pemicu sudah hilang dari
- * DOM, fokus jatuh ke isi utama #konten, bukan ke body.
+ * tertutup dengan cara apa pun DAN fokus memang akan hilang (lihat saatTutup di bawah),
+ * fokus kembali ke pemicunya; bila pemicu sudah hilang dari DOM, fokus jatuh ke isi utama
+ * #konten, bukan ke body.
  *
  * Pemicunya ref eksplisit dari pemanggil bila ada, atau unsur yang difokus saat lapisan
  * dibuka. Body tidak dihitung sebagai pemicu: Safari tidak memfokus tombol yang diklik, jadi
@@ -46,13 +47,27 @@ function useDialogAsli(terbuka: boolean, onTutup: () => void, pemicuDariPemanggi
             return;
         }
 
+        /**
+         * Merebut fokus HANYA bila fokus memang akan hilang: aktif saat ini ada di dalam
+         * dialog yang baru ditutup (tujuan wajarnya, misalnya tombol "Tutup" yang baru
+         * diklik), atau sudah jatuh ke body (ruling W6-5p putaran perbaikan 3). Fokus yang
+         * sudah dipindah dengan sengaja ke luar dialog oleh pemanggil (misalnya kabarBatal di
+         * Show.tsx, ruling W6-5o) dibiarkan: sebelum perbaikan ini, saatTutup merebutnya tanpa
+         * syarat sesaat sesudah pemanggil memindahkannya, membuat fokus pengguna berbalik ke
+         * tombol pemicu padahal halaman sudah menampilkan wilayah penolakan (tinjauan ulang
+         * putaran 2 membuktikan race ini di peramban lewat intersepsi .focus() nyata).
+         */
         const saatTutup = () => {
-            const tujuan = pemicuEksplisit.current?.current ?? pemicu.current;
+            const aktif = document.activeElement;
 
-            if (tujuan?.isConnected) {
-                tujuan.focus();
-            } else {
-                document.getElementById('konten')?.focus({ preventScroll: true });
+            if (dialog.contains(aktif) || aktif === document.body) {
+                const tujuan = pemicuEksplisit.current?.current ?? pemicu.current;
+
+                if (tujuan?.isConnected) {
+                    tujuan.focus();
+                } else {
+                    document.getElementById('konten')?.focus({ preventScroll: true });
+                }
             }
 
             onTutupTerakhir.current();

@@ -28,7 +28,8 @@
 
         <x-brand.head />
 
-        @vite(['resources/css/app.css', 'resources/js/app.tsx'])
+        {{-- Modul halaman ikut sebagai entri supaya potongannya dipramuat dari HTML (WP-2); lihat App\Support\PramuatHalaman. --}}
+        {{ \App\Support\PramuatHalaman::tag($page['component']) }}
     </head>
     <body class="font-sans text-primary antialiased">
         {{-- WCAG 2.4.1, di luar React supaya sudah ada sebelum skrip berjalan. --}}

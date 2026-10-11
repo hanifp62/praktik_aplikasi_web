@@ -30,10 +30,15 @@ class ReportResource extends JsonResource
             'pelapor' => $this->authorLabel(),
             'tanggalPendakian' => $tanggalPendakian,
             'dikirim' => $this->created_at->diffForHumans(),
+            // Ruling W6-6q: status ini juga yang dikirim balik sebagai status_dibaca oleh setuju
+            // dan tolak, supaya server menolak tindakan atas status yang sudah berubah.
             'status' => $this->moderation_status->value,
             'statusText' => $this->moderation_status->label(),
             'tags' => array_map(fn (ConditionTag $t) => $t->label(), $this->tags()),
             'catatan' => $this->note,
+            // Ruling W6-6c (I-1): sidik isi yang moderator baca sekarang, dikirim balik oleh
+            // tindakan setuju/tolak supaya server dapat menolaknya bila isinya sudah berubah.
+            'sidik' => $this->sidik(),
             // PRD §67: moderasi foto hanya mungkin bila fotonya terlihat.
             'foto' => $this->photo_path ? [
                 'url' => route('reports.photo', $this->resource),

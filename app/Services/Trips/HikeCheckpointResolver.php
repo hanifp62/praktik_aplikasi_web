@@ -7,15 +7,15 @@ use App\Models\HikingSession;
 use App\Models\Trail;
 
 /**
- * Pos berikutnya di mode pendakian (FR-15).
+ * Kemajuan antarpos di mode lapangan (FR-15).
  *
- * Pos berikutnya adalah pos pertama menurut urutan yang belum tercapai. Aturan lama,
- * "satu setelah yang terdekat", melewati pos yang sedang dituju: pendaki 100 m sebelum
- * Pos 3 paling dekat ke Pos 3, lalu sistem menunjuk Pos 4.
+ * Pos berikutnya dihitung di perangkat dari data yang sudah dimuat (spec v3 bagian 6.12,
+ * resources/js/components/mendaki/hitung.ts): posisi pendaki tidak dikirim ke server (PRD
+ * §82, §145.1). Yang diterima server hanya urutan pos yang sudah dicapai, lalu dicatat pada
+ * sesi supaya strip pendakian, Beranda, dan ringkasan tahu sampai mana pendakian ini.
  *
- * Sebuah pos dianggap tercapai setelah pendaki pernah berada dalam radius kedatangannya,
- * dan kemajuan itu diingat pada sesi sehingga tidak hilang ketika pendaki turun kembali
- * atau berputar.
+ * Kemajuan tidak pernah mundur: pendaki yang turun kembali atau mengirim ulang tiba di pos
+ * yang lebih awal (antrean luring yang diputar ulang) tidak menghapus pos yang sudah dicapai.
  */
 class HikeCheckpointResolver
 {
@@ -28,6 +28,7 @@ class HikeCheckpointResolver
     public function checkpoints(Trail $trail): array
     {
         return $trail->checkpoints
+            ->sortBy('sequence')
             ->map(fn (Checkpoint $checkpoint) => [
                 'id' => $checkpoint->id,
                 'name' => $checkpoint->name,
@@ -40,8 +41,7 @@ class HikeCheckpointResolver
     }
 
     /**
-     * Pos yang tercatat pada sesi sebagai tujuan sekarang, tanpa jarak: posisi pendaki
-     * tidak disimpan di server, jadi jaraknya hanya ada sesaat setelah posisi dikirim.
+     * Pos yang tercatat pada sesi sebagai tujuan sekarang.
      *
      * @param  array<int, array{id: int, name: string, sequence: int, lat: float|null, lng: float|null}>  $checkpoints
      * @return array{id: int, name: string, sequence: int}|null
@@ -64,102 +64,33 @@ class HikeCheckpointResolver
     }
 
     /**
-     * Menentukan pos berikutnya dari posisi terkini, dan mencatat kemajuannya pada sesi.
+     * Mencatat pendaki tiba di pos berurutan $urutan. Satu UPDATE bersyarat: baris hanya berubah
+     * bila urutan yang tercatat lebih kecil, jadi dua kiriman yang tiba bersamaan tidak saling
+     * menurunkan kemajuan. Pos yang dituju menjadi pos pertama sesudahnya, atau pos terakhir
+     * bila semua sudah dicapai.
      *
      * @param  array<int, array{id: int, name: string, sequence: int, lat: float|null, lng: float|null}>  $checkpoints
-     * @return array{checkpoint: array{id: int, name: string, sequence: int}, distanceMeters: float|null}|null
      */
-    public function resolve(array $checkpoints, ?HikingSession $session, float $latitude, float $longitude): ?array
+    public function tiba(HikingSession $session, array $checkpoints, int $urutan): void
     {
-        if ($checkpoints === []) {
-            return null;
-        }
-
-        $radius = (int) config('hiking.hike_mode.checkpoint_arrival_radius_m');
-        $reached = (int) ($session?->reached_checkpoint_sequence ?? 0);
-
-        // Pendaki bisa membuka Hike Mode di tengah jalur, jadi pos sebelum yang terdekat
-        // dianggap terlewati. Yang terdekat sendiri hanya tercapai bila masuk radius.
-        $nearest = $this->nearest($checkpoints, $latitude, $longitude);
-
-        if ($nearest !== null) {
-            $reached = max($reached, $nearest['sequence'] - 1);
-        }
+        $tujuan = null;
 
         foreach ($checkpoints as $checkpoint) {
-            if ($checkpoint['lat'] === null || $checkpoint['lng'] === null || $checkpoint['sequence'] <= $reached) {
-                continue;
-            }
-
-            if ($this->haversineMeters($latitude, $longitude, $checkpoint['lat'], $checkpoint['lng']) <= $radius) {
-                // Kemajuan tidak pernah mundur, sehingga pendaki yang turun kembali
-                // tidak dikembalikan ke pos yang sudah ia lewati.
-                $reached = max($reached, $checkpoint['sequence']);
-            }
-        }
-
-        $next = null;
-
-        foreach ($checkpoints as $checkpoint) {
-            if ($checkpoint['sequence'] > $reached) {
-                $next = $checkpoint;
+            if ($checkpoint['sequence'] > $urutan) {
+                $tujuan = $checkpoint;
                 break;
             }
         }
 
-        // Seluruh pos sudah dilewati: tetap tunjukkan yang terakhir sebagai rujukan.
-        $next ??= end($checkpoints) ?: null;
+        $tujuan ??= end($checkpoints) ?: null;
 
-        if ($next === null) {
-            return null;
-        }
-
-        $session?->update([
-            'reached_checkpoint_sequence' => $reached,
-            'current_checkpoint_id' => $next['id'],
-        ]);
-
-        return [
-            'checkpoint' => ['id' => $next['id'], 'name' => $next['name'], 'sequence' => $next['sequence']],
-            'distanceMeters' => ($next['lat'] === null || $next['lng'] === null)
-                ? null
-                : round($this->haversineMeters($latitude, $longitude, $next['lat'], $next['lng'])),
-        ];
-    }
-
-    /**
-     * @param  array<int, array{id: int, name: string, sequence: int, lat: float|null, lng: float|null}>  $checkpoints
-     * @return array{id: int, name: string, sequence: int, lat: float|null, lng: float|null}|null
-     */
-    private function nearest(array $checkpoints, float $latitude, float $longitude): ?array
-    {
-        $nearest = null;
-        $shortest = null;
-
-        foreach ($checkpoints as $checkpoint) {
-            if ($checkpoint['lat'] === null || $checkpoint['lng'] === null) {
-                continue;
-            }
-
-            $distance = $this->haversineMeters($latitude, $longitude, $checkpoint['lat'], $checkpoint['lng']);
-
-            if ($shortest === null || $distance < $shortest) {
-                $shortest = $distance;
-                $nearest = $checkpoint;
-            }
-        }
-
-        return $nearest;
-    }
-
-    private function haversineMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
-    {
-        $earthRadius = (int) config('hiking.hike_mode.earth_radius_m');
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLon = deg2rad($lon2 - $lon1);
-
-        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) ** 2;
-
-        return $earthRadius * 2 * atan2(sqrt($a), sqrt(1 - $a));
+        HikingSession::query()
+            ->whereKey($session->id)
+            ->where(fn ($kueri) => $kueri->whereNull('reached_checkpoint_sequence')->orWhere('reached_checkpoint_sequence', '<', $urutan))
+            ->update([
+                'reached_checkpoint_sequence' => $urutan,
+                'current_checkpoint_id' => $tujuan['id'] ?? null,
+                'updated_at' => now(),
+            ]);
     }
 }

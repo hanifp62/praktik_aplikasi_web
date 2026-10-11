@@ -6,9 +6,13 @@
  * warnanya dari token yang sama dengan antarmuka, bukan dari warna mentah. Nilainya
  * dibaca saat peta menggambar, sehingga ikut tema yang sedang berlaku. Cadangan hanya
  * dipakai bila CSS belum terbaca.
+ *
+ * Di mode lapangan tokennya dibaca dari akar tema lapangan (DK-49), yang dapat berbeda dari
+ * tema aplikasi di <html>.
  */
 export function warnaToken(nama: string, cadangan: string): string {
-    const nilai = getComputedStyle(document.documentElement).getPropertyValue(nama).trim().split(/\s+/);
+    const akar = document.querySelector<HTMLElement>('[data-tema-lapangan]') ?? document.documentElement;
+    const nilai = getComputedStyle(akar).getPropertyValue(nama).trim().split(/\s+/);
 
     return nilai.length === 3 ? `rgb(${nilai.join(', ')})` : cadangan;
 }

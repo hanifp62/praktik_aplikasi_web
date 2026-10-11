@@ -87,20 +87,28 @@ class ProfileController extends Controller
             ['record_track' => $rekam]
         );
 
+        // Kalimat ini tidak mengklaim perekaman berhenti di tab atau perangkat lain yang mode
+        // lapangannya masih terbuka; "tidak diterima" ditegakkan server (PenerimaanJejak, ruling W6-P2).
         return to_route('profile')->with('status-jejak', $rekam
-            ? 'Perekaman jejak dinyalakan untuk pendakian berikutnya.'
-            : 'Perekaman jejak dimatikan. Jejak yang sudah tersimpan tidak ikut terhapus.');
+            ? 'Perekaman jejak dinyalakan untuk mode lapangan yang dibuka dengan sinyal sesudah ini.'
+            : 'Perekaman jejak dimatikan untuk mode lapangan yang dibuka dengan sinyal sesudah ini. Titik yang belum terkirim tetap di perangkat dan tidak diterima Memount selama perekaman mati; jejak yang sudah tersimpan di Memount tidak ikut terhapus.');
     }
 
     /**
      * Sama persis dengan komponen Volt sebelumnya: keluar, lalu hapus baris pengguna.
      * Apa yang ikut terhapus dan apa yang dipertahankan tanpa nama diatur foreign key
      * dan docs/KEBIJAKAN-DATA-PRIBADI.md, bukan di sini.
+     *
+     * Data Memount di perangkat ini ikut dihapus, karena KEBIJAKAN bagian 4 menghapus GPS presisi
+     * pada penghapusan akun, termasuk titik jejak yang belum terkirim (ruling W6-11b). Halaman
+     * menghapusnya sesudah jawaban ini berhasil, dan Clear-Site-Data menjadi lapis kedua di
+     * peramban yang mendukungnya. Kata sandi yang salah ditolak DestroyAccountRequest sebelum
+     * sampai ke sini, jadi tidak ada yang dihapus.
      */
     public function destroy(DestroyAccountRequest $request, Logout $logout): RedirectResponse
     {
         tap($request->user(), $logout(...))->delete();
 
-        return redirect('/');
+        return redirect('/')->header('Clear-Site-Data', '"storage"');
     }
 }

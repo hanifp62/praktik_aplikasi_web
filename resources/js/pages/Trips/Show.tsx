@@ -1,18 +1,24 @@
-import { router, useForm, usePage } from '@inertiajs/react';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { router, usePage } from '@inertiajs/react';
+import { useState, type ReactNode } from 'react';
+import { BatalkanTrip } from '@/components/trips/BatalkanTrip';
 import { FitTrip } from '@/components/trips/FitTrip';
+import { FormulirSelesai, type SelesaiTertahan } from '@/components/trips/FormulirSelesai';
+import { PintuPaket } from '@/components/mendaki/PintuPaket';
 import { KepalaTrip } from '@/components/trips/KepalaTrip';
+import { KeselamatanTrip, type KeselamatanHalaman } from '@/components/trips/KeselamatanTrip';
 import { LangkahTrip } from '@/components/trips/LangkahTrip';
 import { PengingatTrip, type PengingatHalaman } from '@/components/trips/PengingatTrip';
 import { HapusRencana, type KelolaRencana } from '@/components/trips/rencana/HapusRencana';
 import type { FitRingkas, KepalaTripData, Langkah, Opsi } from '@/components/trips/types';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { InputError, Label, Select, Textarea } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Tautan } from '@/components/ui/Tautan';
+import { useFokusSesudahRender } from '@/components/ui/ToastUrungkan';
 import { AppLayout } from '@/layouts/AppLayout';
+import { kelas } from '@/lib/kelas';
 import { cancel, complete, hike, index as tripsIndex, start } from '@/routes/trips';
+import { arrive, pause, resume } from '@/routes/trips/hike';
 import type { PropsBersama } from '@/types';
 
 interface Props extends PropsBersama {
@@ -30,10 +36,15 @@ interface Props extends PropsBersama {
     fit: FitRingkas | null;
     penilaian: string | null;
     izin: { ditutup: boolean; pesan: string; tautanPemesanan: string | null } | null;
-    hasilPendakian: string | null;
+    hasilPendakian: { url: string; label: string } | null;
+    /** Ringkasan trip yang dibatalkan sesudah pendakiannya dimulai (ruling W6-6s (b)); null selain itu. */
+    ringkasanBatal: { url: string; label: string } | null;
     completionStates: Opsi[];
+    alasanBatal: Opsi[];
     penolakan: string | null;
     pengingat: PengingatHalaman;
+    /** Rencana untuk kontak dan versi cetak (ruling W6-R4); null selama menunggu Q14. */
+    keselamatan: KeselamatanHalaman | null;
     kelola: KelolaRencana;
 }
 
@@ -46,28 +57,81 @@ const tautanTeks =
  * aksi yang mengubah status trip. Langkah memandu, tidak mengunci.
  */
 export default function Show() {
-    const { kepala, trip, langkah, fit, penilaian, izin, hasilPendakian, completionStates, penolakan, pengingat, kelola, flash } = usePage<Props>().props;
+    const { kepala, trip, langkah, fit, penilaian, izin, hasilPendakian, completionStates, alasanBatal, penolakan, pengingat, keselamatan, kelola, flash, perangkat } = usePage<Props>().props;
     const [memulai, setMemulai] = useState(false);
-    const [membatalkan, setMembatalkan] = useState(false);
-    const selesai = useForm({ completion_state: 'COMPLETED', personal_notes: '' });
+    const fokusKe = useFokusSesudahRender();
+    // Dibaca terpisah dari destrukturisasi di atas, yang menjadi jangkar Tugas 10.
+    const { ringkasanBatal } = usePage<Props>().props;
 
+    const [pesanMulai, setPesanMulai] = useState('');
+
+    /**
+     * Galat HTTP tanpa header Inertia saat mulai (ruling W6-FE): kalimat "belum pasti" di wilayah
+     * status dekat tombol, bukan dialog galat bawaan Inertia, dan fokus kembali ke tombol sesudah
+     * tombolnya aktif lagi. Galat jaringan tetap ditangani spanduk jaringan AppLayout.
+     */
     const mulai = () => {
+        let gagalHttp = false;
+
         setMemulai(true);
-        router.post(start.url(trip.id), {}, { onFinish: () => setMemulai(false) });
+        setPesanMulai('');
+        router.post(
+            start.url(trip.id),
+            {},
+            {
+                onHttpException: () => {
+                    gagalHttp = true;
+                    setPesanMulai('Belum pasti dimulai: jawaban server tidak dapat dibaca. Muat ulang halaman, lalu periksa apakah pendakian sudah berjalan sebelum mencoba lagi.');
+
+                    return false;
+                },
+                onFinish: () => {
+                    setMemulai(false);
+
+                    if (gagalHttp) {
+                        fokusKe('mulai-ruang-kerja');
+                    }
+                },
+            },
+        );
     };
 
-    // Dibatalkan bersifat final (PRD §35), jadi ditanyakan dulu.
-    const batalkan = () => {
-        if (!window.confirm('Batalkan trip ini? Trip yang dibatalkan tidak dapat dimulai lagi.')) {
-            return;
+    /**
+     * Selesai di ruang kerja menunggu aksi lapangan trip ini yang masih di perangkat ini (ruling
+     * W6-FC): antrean dibaca tanpa membuat basis data dan tanpa mengirim apa pun; mode lapangan,
+     * yang memutar antrean, ditautkan. Tanpa kunci perangkat, atau bila modul atau penyimpanannya
+     * tidak dapat dibaca, Selesai dikirim seperti sebelum ruling ini. Modul antrean dan simpan
+     * dimuat saat Simpan ditekan, bukan bersama halaman.
+     */
+    const tahanSelesai = async (): Promise<SelesaiTertahan | null> => {
+        const kunci = perangkat?.kunci;
+
+        if (!kunci) {
+            return null;
         }
-        setMembatalkan(true);
-        router.post(cancel.url(trip.id), {}, { preserveScroll: true, onFinish: () => setMembatalkan(false) });
+
+        const [antrean, simpan] = await Promise.all([import('@/components/mendaki/antrean'), import('@/luring/simpan')]);
+
+        return antrean.selesaiTertahan(
+            await antrean.aksiTersimpanDiPerangkat(kunci, simpan.namaBasisData(kunci)),
+            { tiba: arrive.url(trip.id), jeda: pause.url(trip.id), lanjut: resume.url(trip.id) },
+            'ruang-kerja',
+            false,
+            { href: hike.url(trip.id), label: 'Buka mode lapangan' },
+        );
     };
 
-    const tandaiSelesai = (e: FormEvent) => {
-        e.preventDefault();
-        selesai.post(complete.url(trip.id), { preserveScroll: true });
+    /**
+     * Fokus sesudah batal berhasil atau ditolak (ruling W6-5o putaran perbaikan 3): Show
+     * memegang `useFokusSesudahRender` sendiri dan meneruskan fungsi biasa ini ke BatalkanTrip
+     * lewat prop `onHasil`, supaya target fokusnya tetap tercapai walau BatalkanTrip sendiri
+     * sudah lepas dari DOM (batal berhasil membuat trip.aktif false, melepas kartu Tindakan
+     * SEBELUM callback aksi Inertia berefek). "Berhasil" memakai wilayah kabar yang sudah
+     * dipakai sejak putaran 1 (konsisten, bukan judul halaman); "ditolak" memakai wilayah
+     * penolakan yang sama dengan FormulirSelesai.
+     */
+    const kabarBatal = (hasil: 'berhasil' | 'ditolak') => {
+        fokusKe(hasil === 'ditolak' ? 'penolakan-trip' : 'kabar-trip');
     };
 
     return (
@@ -79,11 +143,19 @@ export default function Show() {
 
                 {/* M7 tinjauan akhir W4 (konvensi DESIGN.md "Umpan balik aksi di wilayah yang selalu
                     terpasang"): kabar dan penolakan aksi ruang kerja dibacakan lewat dua wilayah yang
-                    terpasang sejak halaman dimuat; hanya isi dan bingkainya yang muncul. */}
-                <p role="status" className={flash.status ? 'mb-6 rounded-kartu border border-brand-300 bg-brand-100 p-4 text-sm text-brand-900' : undefined}>
+                    terpasang sejak halaman dimuat; hanya isi dan bingkainya yang muncul. id dan
+                    tabIndex={-1} adalah target fokus sesudah aksi batal atau selesai, bukan Show
+                    sendiri lewat efek saat dipasang (preserveState bawaan Inertia membuat Show tidak
+                    dipasang ulang untuk aksi di halaman yang sama). FormulirSelesai memindah fokus
+                    lewat id di onFinish miliknya sendiri (ruling W6-5i putaran perbaikan 2, masih
+                    berlaku: kartunya tidak lepas sesudah penolakan). BatalkanTrip TIDAK lagi memegang
+                    fokusnya sendiri (ruling W6-5o putaran perbaikan 3): kabarBatal di atas, milik Show,
+                    dipanggil lewat prop onHasil, supaya tetap tercapai walau BatalkanTrip sudah lepas
+                    dari DOM (batal berhasil melepas kartu Tindakan sebelum callback Inertia berefek). */}
+                <p role="status" className={flash.status ? 'mb-6 rounded-kartu border border-brand-300 bg-brand-100 p-4 text-sm text-brand-900' : undefined} id="kabar-trip" tabIndex={-1}>
                     {flash.status ?? ''}
                 </p>
-                <p role="alert" className={penolakan ? 'mb-6 rounded-kartu border border-warn-300 bg-warn-100 p-4 text-sm font-bold text-warn-900' : undefined}>
+                <p role="alert" className={penolakan ? 'mb-6 rounded-kartu border border-warn-300 bg-warn-100 p-4 text-sm font-bold text-warn-900' : undefined} id="penolakan-trip" tabIndex={-1}>
                     {penolakan ?? ''}
                 </p>
 
@@ -129,15 +201,37 @@ export default function Show() {
                             sakelarnya pasti ditolak server dan daftarnya kosong. */}
                         {pengingat.dapatDiatur || pengingat.daftar.length > 0 ? <PengingatTrip tripId={trip.id} pengingat={pengingat} /> : null}
 
+                        {keselamatan ? <KeselamatanTrip keselamatan={keselamatan} /> : null}
+
+                        {trip.aktif && perangkat?.paket ? (
+                            <Card title="Paket lapangan luring" subtitle="Paket luring membantu mengikuti jalur resmi. Bawa cadangan: peta cetak atau perangkat lain.">
+                                <PintuPaket tripId={trip.id} />
+                            </Card>
+                        ) : null}
+
                         {trip.catatan ? (
                             <Card title="Catatan">
                                 <p className="whitespace-pre-line break-words text-isi text-secondary">{trip.catatan}</p>
                             </Card>
                         ) : null}
 
+                        {/* "Sudah selesai" hanya benar untuk COMPLETED (konvensi W5 M10);
+                            "Dibatalkan di jalur" dan "Selesai sebagian" bukan kegagalan yang
+                            perlu disamarkan, tetapi juga bukan "selesai" dalam arti itu.
+                            Kalimat per keadaan dari label hasil yang sama dengan formulir
+                            Selesai (ruling W6-5e/M-3 putaran perbaikan 1). */}
                         {hasilPendakian ? (
-                            <Card title="Pendakian ini sudah selesai">
-                                <Button href={hasilPendakian}>Lihat hasil pendakian</Button>
+                            <Card title={`Pendakian ini tercatat: ${hasilPendakian.label}.`}>
+                                <Button href={hasilPendakian.url}>Lihat hasil pendakian</Button>
+                            </Card>
+                        ) : null}
+
+                        {/* Ruling W6-6s (b): trip batal yang pendakiannya sempat dimulai menautkan
+                            ringkasannya (tempat jejak tersimpan dapat dihapus), tanpa menyebutnya
+                            selesai dan tanpa "hasil pendakian" yang memang tidak ada. */}
+                        {ringkasanBatal ? (
+                            <Card title={`Trip ini tercatat: ${ringkasanBatal.label}.`} subtitle="Pendakiannya sempat dimulai sebelum trip dibatalkan.">
+                                <Button href={ringkasanBatal.url}>Lihat ringkasan trip</Button>
                             </Card>
                         ) : null}
 
@@ -147,14 +241,15 @@ export default function Show() {
                                     {trip.berlangsung ? (
                                         <Button href={hike.url(trip.id)}>Buka mode lapangan</Button>
                                     ) : (
-                                        <Button onClick={mulai} processing={memulai} variant={trip.hariBerangkat ? 'primary' : 'secondary'}>
+                                        <Button id="mulai-ruang-kerja" onClick={mulai} processing={memulai} variant={trip.hariBerangkat ? 'primary' : 'secondary'}>
                                             Mulai pendakian
                                         </Button>
                                     )}
-                                    <Button variant="secondary" size="sm" onClick={batalkan} processing={membatalkan}>
-                                        Batalkan trip
-                                    </Button>
+                                    <BatalkanTrip url={cancel.url(trip.id)} alasan={alasanBatal} berlangsung={trip.berlangsung} onHasil={kabarBatal} />
                                 </div>
+                                <p role="status" className={kelas('text-kecil font-bold text-warn-900', pesanMulai !== '' && 'mt-3')}>
+                                    {pesanMulai}
+                                </p>
                             </Card>
                         ) : null}
 
@@ -165,46 +260,7 @@ export default function Show() {
                             sengaja disembunyikan kepala trip (R-014). */}
                         {trip.berlangsung ? (
                             <Card title="Selesaikan trip" subtitle="Tandai trip selesai untuk menyimpannya ke riwayat dan melaporkan kondisi jalur.">
-                                <form onSubmit={tandaiSelesai} className="space-y-4">
-                                    <div>
-                                        <Label htmlFor="completion_state">Hasil pendakian</Label>
-                                        <Select
-                                            id="completion_state"
-                                            name="completion_state"
-                                            required
-                                            value={selesai.data.completion_state}
-                                            onChange={(e) => selesai.setData('completion_state', e.target.value)}
-                                            aria-invalid={selesai.errors.completion_state ? true : undefined}
-                                            aria-describedby={selesai.errors.completion_state ? 'completion_state-error' : undefined}
-                                        >
-                                            <option value="">Pilih hasil</option>
-                                            {completionStates.map((s) => (
-                                                <option key={s.value} value={s.value}>
-                                                    {s.label}
-                                                </option>
-                                            ))}
-                                        </Select>
-                                        <InputError id="completion_state-error" messages={selesai.errors.completion_state} className="mt-2" />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="personal_notes">Catatan pribadi (opsional)</Label>
-                                        <Textarea
-                                            id="personal_notes"
-                                            name="personal_notes"
-                                            rows={3}
-                                            value={selesai.data.personal_notes}
-                                            onChange={(e) => selesai.setData('personal_notes', e.target.value)}
-                                            aria-invalid={selesai.errors.personal_notes ? true : undefined}
-                                            aria-describedby={selesai.errors.personal_notes ? 'personal_notes-error' : undefined}
-                                        />
-                                        <InputError id="personal_notes-error" messages={selesai.errors.personal_notes} className="mt-2" />
-                                    </div>
-
-                                    <Button type="submit" processing={selesai.processing}>
-                                        Tandai selesai
-                                    </Button>
-                                </form>
+                                <FormulirSelesai url={complete.url(trip.id)} hasil={completionStates} alasan={alasanBatal} id="selesai-ruang-kerja" tahan={tahanSelesai} />
                             </Card>
                         ) : null}
 

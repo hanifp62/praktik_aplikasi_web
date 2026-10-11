@@ -157,7 +157,10 @@ class PageHeaderContractTest extends TestCase
         $this->assertStringContainsString('<PintuAkun />', File::get(resource_path('js/pages/Profile/Edit.tsx')));
         $this->assertStringContainsString('{pengguna.isModerator ? <TautanMenu href="/moderation">Moderasi</TautanMenu> : null}', $pintu);
         $this->assertStringContainsString('{pengguna.isAdmin ? <TautanMenu href="/admin/trails">Admin</TautanMenu> : null}', $pintu);
-        $this->assertStringContainsString("onClick={() => router.post('/logout')}", $pintu);
+        // W6 (ruling W6-R10): Keluar membersihkan data perangkat lebih dulu lewat keluar(), yang
+        // sesudahnya memanggil rute logout yang sama. Putaran perbaikan 1 Tugas 11 (m-4) menambah
+        // asal tombol, supaya kalimat kegagalan hanya tampil di wilayah status kartu ini.
+        $this->assertStringContainsString("onClick={() => void keluar(perangkat?.kunci ?? null, 'kartu')}", $pintu);
         $this->assertMatchesRegularExpression('/>\s*Keluar\s*<\/button>/', $pintu);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Trips;
 
+use App\Enums\CancellationReason;
 use App\Enums\CompletionState;
 use App\Enums\RouteFitLabel;
 use App\Enums\TripStatus;
@@ -15,6 +16,7 @@ use App\Services\PermitService;
 use App\Services\TrailFitService;
 use App\Services\Trips\IndeksTrip;
 use App\Services\Trips\KepalaTrip;
+use App\Services\Trips\PesanRencana;
 use App\Services\Trips\RencanaTrip;
 use App\Services\Trips\TripLifecycle;
 use App\Services\Trips\TripReminderScheduler;
@@ -109,25 +111,29 @@ class TripController extends Controller
             return redirect()->route('trips.show', $trip)->with('penolakan-trip', $penolakan);
         }
 
-        $lifecycle->update($trip, $request->validated());
+        $jamKembaliDikosongkan = $lifecycle->update($trip, $request->validated());
 
-        return redirect()->route('trips.show', $trip)->with('status', 'Rencana trip diperbarui.');
+        // Ruling W6-7b: ruang kerja menyebut sebab jam kembali kosong sekali, sesudah perubahan ini.
+        return redirect()->route('trips.show', $trip)
+            ->with('status', 'Rencana trip diperbarui.')
+            ->with('jam-kembali-dikosongkan', $jamKembaliDikosongkan);
     }
 
     public function destroy(TripPlan $trip, TripLifecycle $lifecycle): RedirectResponse
     {
         $this->authorize('delete', $trip);
 
-        if ($penolakan = $lifecycle->deleteRefusal($trip)) {
+        // deleteRefusal() membaca model hasil pengikatan rute untuk kalimat yang sudah dikenal;
+        // penjaga yang sebenarnya adalah DELETE bersyarat di delete() (ruling W6-FA), pola `??`
+        // yang sama dengan TripLifecycleController.
+        if ($penolakan = $lifecycle->deleteRefusal($trip) ?? $lifecycle->delete($trip)) {
             return redirect()->route('trips.show', $trip)->with('penolakan-trip', $penolakan);
         }
-
-        $lifecycle->delete($trip);
 
         return redirect()->route('trips.index')->with('status', 'Rencana trip dihapus.');
     }
 
-    public function show(Request $request, TripPlan $trip, PermitService $permits, TrailFitService $trailFit, OfficialStatusService $statusResmi, TripSteps $steps, TripLifecycle $lifecycle, TripReminderScheduler $pengingat, KepalaTrip $kepala): Response
+    public function show(Request $request, TripPlan $trip, PermitService $permits, TrailFitService $trailFit, OfficialStatusService $statusResmi, TripSteps $steps, TripLifecycle $lifecycle, TripReminderScheduler $pengingat, KepalaTrip $kepala, PesanRencana $pesan): Response
     {
         $this->authorize('view', $trip);
 
@@ -185,10 +191,26 @@ class TripController extends Controller
                 'pesan' => $jendela['message'],
                 'tautanPemesanan' => $jendela['requirement']->booking_url,
             ],
-            'hasilPendakian' => $trip->history !== null ? route('history.summary', $trip) : null,
+            // M-3 putaran perbaikan 1 (ruling W6-5e): "Pendakian ini sudah selesai" tertulis
+            // untuk setiap hasil, termasuk Dibatalkan di jalur, bertentangan konvensi W5 M10.
+            // Label hasil dikirim bersama URL supaya Show.tsx dapat menulis kalimat per
+            // keadaan; $trip->history sudah dimuat eager di atas, tanpa query tambahan.
+            'hasilPendakian' => $trip->history !== null
+                ? ['url' => route('history.summary', $trip), 'label' => $trip->history->completion_state->label()]
+                : null,
+            // Ruling W6-6s (b): trip yang dibatalkan sesudah pendakiannya dimulai menautkan
+            // ringkasannya, tempat jejak tersimpan dapat dihapus (W6-6s (a)). Trip batal yang belum
+            // pernah dimulai tidak punya jejak. Satu exists, hanya untuk trip yang dibatalkan.
+            'ringkasanBatal' => $trip->status === TripStatus::CANCELLED && $trip->hikingSession()->exists()
+                ? ['url' => route('history.summary', $trip), 'label' => $trip->status->label()]
+                : null,
             'completionStates' => array_map(fn (CompletionState $s) => ['value' => $s->value, 'label' => $s->label()], CompletionState::cases()),
+            'alasanBatal' => CancellationReason::pilihan(),
             'penolakan' => session('penolakan-trip'),
             'pengingat' => $pengingat->untukHalaman($trip),
+            // Pesan rencana untuk kontak dan versi cetak (ruling W6-R4): null sampai pemilik memutus Q14.
+            // Sesudah ubah rencana yang mengosongkan jam kembali, kalimatnya menyebut sebabnya (ruling W6-7b).
+            'keselamatan' => config('hiking.field_safety.enabled') && $trip->status->isActive() ? $pesan->untuk($trip, $user, session('jam-kembali-dikosongkan') === true) : null,
             // Dijelaskan sebelum pendaki mencoba, bukan baru ditolak sesudahnya.
             'kelola' => [
                 'bolehUbah' => $lifecycle->editRefusal($trip) === null,

@@ -7,6 +7,7 @@ use App\Enums\ConditionTag;
 use App\Enums\ModerationStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreConditionReportRequest;
+use App\Http\Requests\UpdateConditionReportRequest;
 use App\Models\HikingHistory;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
@@ -17,6 +18,7 @@ use App\Support\ImageSanitizer;
 use App\Support\Timezone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
@@ -132,15 +134,15 @@ class ConditionReportController extends Controller
             'moderation_status' => ModerationStatus::PENDING->value,
         ]);
 
-        if (! empty($data['trip_plan_id'])) {
-            HikingHistory::where('trip_plan_id', $data['trip_plan_id'])
-                ->where('user_id', $user->id)
-                ->update(['trail_condition_report_id' => $laporan->id]);
-        }
+        $tertaut = ! empty($data['trip_plan_id']) && HikingHistory::where('trip_plan_id', $data['trip_plan_id'])
+            ->where('user_id', $user->id)
+            ->update(['trail_condition_report_id' => $laporan->id]) > 0;
 
         $analytics->record(AnalyticsEvent::CONDITION_REPORT_SUBMITTED, $user, ['trail_id' => (int) $data['trail_id']]);
 
-        $respons = redirect()->route('history')
+        // Laporan dari ringkasan pendakian kembali ke ringkasannya (spec v3 bagian 6.13), tempat
+        // keadaannya dan "Ubah sebelum dimoderasi" tampil.
+        $respons = ($tertaut ? redirect()->route('history.summary', (int) $data['trip_plan_id']) : redirect()->route('history'))
             ->with('status', 'Laporan terkirim dan menunggu moderasi sebelum tampil untuk pengguna lain.');
 
         // Kunci terpisah dari 'status'. Versi Livewire menulis keduanya ke 'status'
@@ -149,5 +151,47 @@ class ConditionReportController extends Controller
         return $fotoGagal
             ? $respons->with('foto-tidak-disertakan', 'Foto tidak dapat diproses dan tidak disertakan. Laporan tetap tersimpan.')
             : $respons;
+    }
+
+    /**
+     * Mengubah laporan sebelum dimoderasi (spec v3 bagian 6.13): hanya pemiliknya
+     * (UpdateConditionReportRequest) dan hanya selama menunggu moderasi. Jalur, tanggal, dan foto
+     * tetap; yang dapat diubah kondisi, segmen, dan catatan. Laporannya tetap menunggu moderasi.
+     *
+     * Ruling W6-6r huruf (a): tulisannya UPDATE bersyarat "masih PENDING", bukan periksa lalu
+     * tulis. Moderator dapat menyetujui isi lama di antara otorisasi dan tulisan ini; UPDATE
+     * tanpa syarat lalu menerbitkan isi yang tidak pernah dibaca moderator (probe P1-balapan,
+     * tinjauan task-6-fix1-review bagian 2.2). Bila tidak ada baris yang terubah, pelapor
+     * menerima kalimat di formulirnya, bukan 403 atau 500. Kalimatnya menyebut moderator
+     * "mulai meninjau", bukan "sudah dimoderasi", karena laporan FLAGGED tampil ke pelapor
+     * sebagai menunggu moderasi (ruling W6-6c2).
+     *
+     * Builder::update() tidak menerapkan cast model, jadi isiannya diisi ke model lebih dulu dan
+     * nilai mentahnya yang ditulis: tag, segmen, dan catatan tersimpan dalam bentuk yang sama
+     * dengan Eloquent update(), dan updated_at ditambahkan Builder dengan format model yang sama.
+     */
+    public function update(UpdateConditionReportRequest $request, TrailConditionReport $report): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $report->fill([
+            'condition_tags' => $data['condition_tags'],
+            'trail_segment_id' => $data['trail_segment_id'] ?? null,
+            'note' => $data['note'] ?? null,
+        ]);
+
+        $terubah = TrailConditionReport::query()
+            ->whereKey($report->getKey())
+            ->where('moderation_status', ModerationStatus::PENDING->value)
+            ->update(Arr::only($report->getAttributes(), ['condition_tags', 'trail_segment_id', 'note']));
+
+        if ($terubah === 0) {
+            return back()->withErrors(['form' => 'Moderator sudah mulai meninjau laporan ini, jadi laporan tidak dapat diubah lagi. Perubahan Anda tidak tersimpan.']);
+        }
+
+        $trip = HikingHistory::where('trail_condition_report_id', $report->id)->where('user_id', $request->user()->id)->value('trip_plan_id');
+
+        return ($trip !== null ? redirect()->route('history.summary', $trip) : redirect()->route('history'))
+            ->with('status', 'Laporan diperbarui dan tetap menunggu moderasi.');
     }
 }

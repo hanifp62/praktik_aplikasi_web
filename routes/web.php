@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\TrailController;
 use App\Http\Controllers\Admin\TrailGeometryController;
 use App\Http\Controllers\Admin\UsabilityStudyController;
 use App\Http\Controllers\Community\ConditionReportController;
+use App\Http\Controllers\Community\HikeNumbersController;
 use App\Http\Controllers\Community\HikerProgressController;
 use App\Http\Controllers\Community\HikeSummaryController;
 use App\Http\Controllers\Community\HikingHistoryController;
@@ -42,6 +43,7 @@ use App\Http\Controllers\Trails\SavedTrailNoteController;
 use App\Http\Controllers\Trails\TrailDetailController;
 use App\Http\Controllers\Trails\TrailFitAssessmentController;
 use App\Http\Controllers\Trails\TrailIndexController;
+use App\Http\Controllers\Trips\FieldPackController;
 use App\Http\Controllers\Trips\HikeModeController;
 use App\Http\Controllers\Trips\PreparationController;
 use App\Http\Controllers\Trips\ReadinessController;
@@ -49,6 +51,7 @@ use App\Http\Controllers\Trips\TrackController;
 use App\Http\Controllers\Trips\TripController;
 use App\Http\Controllers\Trips\TripLifecycleController;
 use App\Http\Controllers\Trips\TripReminderController;
+use App\Http\Controllers\Trips\TripSafetyController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -173,22 +176,42 @@ Route::middleware(['auth'])->group(function () {
     // Tab Mendaki (IA v2): membuka pendakian yang berjalan, atau menawarkan trip yang dapat dimulai.
     Route::get('mendaki', TrackController::class)->name('track');
     Route::get('trips/{trip}/hike', [HikeModeController::class, 'show'])->name('trips.hike');
-    Route::post('trips/{trip}/hike/position', [HikeModeController::class, 'position'])->name('trips.hike.position');
+    // Aksi mode lapangan (W6): urutan pos dan waktu jeda, tanpa posisi. Dikirim antrean
+    // perangkat dan aman diputar ulang, dengan hitungan mode-lapangan sendiri.
+    Route::post('trips/{trip}/hike/tiba', [HikeModeController::class, 'arrive'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,mode-lapangan')->name('trips.hike.arrive');
+    Route::post('trips/{trip}/hike/jeda', [HikeModeController::class, 'pause'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,mode-lapangan')->name('trips.hike.pause');
+    Route::post('trips/{trip}/hike/lanjut', [HikeModeController::class, 'resume'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,mode-lapangan')->name('trips.hike.resume');
+    // Alat keselamatan trip (W6, ruling W6-R4): versi cetak dan jam kembali untuk pesan rencana.
+    // Menjawab 404 sampai pemilik memutus Q14 (middleware fitur).
+    Route::get('trips/{trip}/cetak', [TripSafetyController::class, 'print'])->middleware('fitur:field_safety')->name('trips.print');
+    Route::put('trips/{trip}/kembali', [TripSafetyController::class, 'updateReturn'])->middleware(['fitur:field_safety', 'throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,jam-kembali'])->name('trips.return.update');
+    // Paket lapangan luring (W6, ruling W6-R3): manifest dan tiga bagiannya, dibaca halaman yang
+    // mengunduh. Menjawab 404 sampai pemilik memutus Q10 dan Q14 (middleware fitur).
+    Route::get('trips/{trip}/paket', [FieldPackController::class, 'manifest'])->middleware(['fitur:field_pack', 'throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,paket-lapangan'])->name('trips.pack');
+    Route::get('trips/{trip}/paket/{bagian}', [FieldPackController::class, 'section'])->whereIn('bagian', ['lapangan', 'rencana', 'dinamis'])->middleware(['fitur:field_pack', 'throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,paket-lapangan'])->name('trips.pack.section');
 
     /*
-     * Jejak dikirim setelah pendaki turun dan mendapat sinyal, ketika halaman hike mode
-     * sudah lama ditutup. Karena itu lewat route tersendiri, bukan lewat komponennya.
+     * Jejak dikirim sesudah pendakian selesai atau dibatalkan, saat ada sinyal, dari halaman
+     * aplikasi biasa, bukan dari mode lapangan (ruling W6-P2). Pengirim bertanya lebih dulu
+     * (GET, tanpa lokasi) apakah sesi itu boleh menerima, dan server menegakkan predikat yang
+     * sama saat unggahan. Pertanyaan punya kunci batas laju sendiri, supaya tidak memakan jatah
+     * unggahan dan hapus jejak (ruling W6-P2d).
      */
-    Route::post('hike/{session}/track', [HikeTrackController::class, 'store'])->name('hike.track');
-    Route::delete('hike/{session}/track', [HikeTrackController::class, 'destroy'])->name('hike.track.destroy');
+    Route::get('hike/{session}/track', [HikeTrackController::class, 'status'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,jejak-periksa')->name('hike.track.status');
+    Route::post('hike/{session}/track', [HikeTrackController::class, 'store'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,jejak')->name('hike.track');
+    Route::delete('hike/{session}/track', [HikeTrackController::class, 'destroy'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,jejak')->name('hike.track.destroy');
 
     Route::get('reports/create', [ConditionReportController::class, 'create'])->name('reports.create');
     Route::post('reports', [ConditionReportController::class, 'store'])->name('reports.store');
+    // Ubah sebelum dimoderasi (W6, spec v3 bagian 6.13): pemilik, selama menunggu moderasi.
+    Route::put('reports/{report}', [ConditionReportController::class, 'update'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,ubah-laporan')->name('reports.update');
     Route::get('reports/{report}/photo', ReportPhotoController::class)->name('reports.photo');
     Route::get('kabar', TrailNewsController::class)->name('news');
     Route::get('progres', HikerProgressController::class)->name('progress');
     Route::get('history', HikingHistoryController::class)->name('history');
     Route::get('history/{trip}', HikeSummaryController::class)->name('history.summary');
+    // "Ubah angka" ringkasan pendakian (W6, spec v3 bagian 6.13).
+    Route::put('history/{trip}/angka', HikeNumbersController::class)->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,angka-pendakian')->name('history.numbers.update');
 
     // Terbuka untuk pemegang kredensial yang berlaku; controllernya menolak yang lain.
     Route::get('kontribusi', [TrailContributionController::class, 'index'])->name('contribute');

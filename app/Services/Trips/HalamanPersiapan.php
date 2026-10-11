@@ -85,6 +85,24 @@ final class HalamanPersiapan
     }
 
     /**
+     * Butir dalam urutan tampil halaman Persiapan: kelompok PreparationCategory::cases(), lalu
+     * urutkan() di dalam kelompok (kritis dulu, urutan templat, lalu id). Satu sumber untuk
+     * halaman ini dan paket lapangan luring (ruling W6-8j). Membutuhkan relasi preparationItem
+     * (id, sort_order) sudah dimuat.
+     *
+     * @param  iterable<int, TripPreparationItem>  $items
+     * @return Collection<int, TripPreparationItem>
+     */
+    public static function urutanTampil(iterable $items): Collection
+    {
+        $perKategori = self::urutkan($items)->groupBy(fn (TripPreparationItem $item) => $item->category->value);
+
+        return collect(PreparationCategory::cases())
+            ->flatMap(fn (PreparationCategory $k) => $perKategori->get($k->value, collect()))
+            ->values();
+    }
+
+    /**
      * @param  array{tautan: array{href: string, teks: string, label: string}|null, keterangan: string}|null  $izin
      * @return array{id: int, label: string, keterangan: string|null, kritis: bool, status: string, menunggu: string|null, tautan: array{href: string, teks: string}|null}
      */

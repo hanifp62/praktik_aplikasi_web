@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { BilahTab } from '@/components/ui/BilahTab';
 import { JudulHalaman } from '@/components/ui/JudulHalaman';
 import { WadahToast, useToastUrungkan } from '@/components/ui/ToastUrungkan';
+import { usePenjagaPerangkat } from '@/luring/keluar';
+import { usePengirimJejak } from '@/luring/kirimJejak';
 import type { PropsBersama } from '@/types';
 import { KepalaLebar } from './KepalaLebar';
 import { KonteksKerangka, type NilaiKerangka } from './Kerangka';
@@ -64,6 +66,11 @@ export function AppLayout({ bilahTab = true, children }: AppLayoutProps) {
         pemicuPengingat.current = pemicu;
         setPengingatTerbuka(true);
     }, []);
+    // Data perangkat akun lain di peramban ini dihapus sebelum dipakai (W6, ruling W6-R10).
+    usePenjagaPerangkat();
+    // Titik jejak dikirim sesudah pendakian berakhir, hanya dari halaman berkerangka ini, tidak
+    // dari mode lapangan atau shell luring (ruling W6-P2a).
+    usePengirimJejak();
     const layanan = useMemo<NilaiKerangka>(() => ({ tampilkanToastMilik: tampilkanMilik, tutupToastMilik: tutupMilik, bukaPengingat }), [tampilkanMilik, tutupMilik, bukaPengingat]);
 
     useEffect(() => {

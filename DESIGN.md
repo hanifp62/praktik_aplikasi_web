@@ -130,6 +130,17 @@ satu-satunya tempat kuning pos membawa arti karena berdiri di atas gelap. Kontro
 `ColourContrastTest` menghitung kedua tema lapangan dengan ambangnya sendiri, dan keempat kombinasi tema aplikasi dan
 tema lapangan dengan ambang tema aplikasi.
 
+Ukuran di jalur (W6): "Mulai pendakian" di tab Mendaki 66 px, Jeda, Lanjut, Selesai, dan Kartu darurat 60 px, kontrol
+peta 48 px. Nama pos berikutnya memakai `text-tampilan`, tiga petak angka menulis "Belum ada" dengan huruf biasa bila
+angkanya tidak diketahui. Tiba di pos satu-satunya gerak (`denyut-tiba`, `--dur-sedang`), dan ia ikut dipangkas gerak
+dikurangi. Data dinamis dari paket luring memakai label "Terakhir diketahui" dengan ikon jam dan garis putus-putus,
+atau "Status belum dapat dipastikan" bila Buka melewati ambangnya: kata, ikon, dan garis, bukan warna saja (R-013).
+
+Isian nomor darurat 112 dan 115 di Kartu darurat (W6 Tugas 7) adalah pengecualian pada tema lapangan gelap: latar
+`danger-900` bernilai terang di blok gelap (salem), sehingga angkanya memakai teks gelap (`text-inverse` di atas
+`danger-900`, 9,46:1) alih-alih "isian bahaya merah bata dengan teks putih" di atas. `ColourContrastTest::fieldPairs`
+menjaga rasio ini di kedua tema lapangan.
+
 ### Tipografi
 
 **Satu keluarga: Plus Jakarta Sans variabel** untuk antarmuka, judul, dan angka (DK-38). Alasannya tertulis di laporan

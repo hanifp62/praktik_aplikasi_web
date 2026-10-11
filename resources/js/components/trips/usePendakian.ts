@@ -1,104 +1,59 @@
-import { router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { kunciPerekam, kunciTersimpan, kunciTertutup } from '@/luring/simpan';
 
 interface ModulJejak {
+    aturPengguna: (kunci: string) => void;
     mulaiMerekam: (sesi: number) => () => void;
-    kirimJejak: (sesi: number, url: string, token: string) => Promise<number>;
 }
 
 /**
- * Posisi diambil hanya ketika pendaki memintanya, dan hanya di halaman ini (PRD §120).
- * getCurrentPosition, bukan watchPosition: mode pendakian tidak melacak di latar
- * belakang (PRD §53-54). Posisinya dikirim ke server yang menentukan pos berikutnya.
- */
-export function usePosisiPendakian(urlKirim: string) {
-    const [pesan, setPesan] = useState('Izin lokasi belum diminta.');
-    const [memproses, setMemproses] = useState(false);
-
-    const minta = () => {
-        if (!navigator.geolocation) {
-            setPesan('Browser Anda tidak mendukung layanan lokasi.');
-            return;
-        }
-
-        setMemproses(true);
-        setPesan('Mengambil posisi...');
-
-        navigator.geolocation.getCurrentPosition(
-            (posisi) => {
-                router.post(
-                    urlKirim,
-                    { latitude: posisi.coords.latitude, longitude: posisi.coords.longitude },
-                    {
-                        preserveScroll: true,
-                        preserveState: true,
-                        onSuccess: () => setPesan('Posisi diperbarui.'),
-                        onError: (galat) => setPesan(galat.latitude ?? galat.longitude ?? 'Posisi tidak dapat disimpan.'),
-                        // Di jalur sinyal sering hilang. Mengaku gagal lebih jujur daripada
-                        // membiarkan jarak lama terbaca sebagai jarak sekarang.
-                        onNetworkError: () => {
-                            setPesan('Posisi belum terkirim karena tidak ada sinyal. Coba lagi saat sinyal kembali.');
-                            return false;
-                        },
-                        onFinish: () => setMemproses(false),
-                    },
-                );
-            },
-            () => {
-                setPesan('Posisi tidak dapat diambil. Periksa izin lokasi browser.');
-                setMemproses(false);
-            },
-            { enableHighAccuracy: true, timeout: 15000 },
-        );
-    };
-
-    return { pesan, memproses, minta };
-}
-
-/**
- * Perekaman jejak berjalan sendiri selama halaman ini terbuka, dan hanya bila pendaki
- * menyalakannya di profilnya (penjagaan yang sama ada di server).
+ * Perekaman jejak berjalan sendiri selama mode lapangan terbuka, dan hanya bila pendaki
+ * menyalakannya di profilnya (penjagaan yang sama ada di server). Posisi mode lapangan sendiri
+ * diminta di components/mendaki/usePosisiLapangan.ts dan tidak dikirim ke mana pun.
  *
- * Tidak ada yang dikirim selama pendakian. Titiknya menumpuk di perangkat (jejak.js),
- * lalu berangkat ketika sinyal kembali: saat peramban mengabarkan "online", dan sekali
- * saat halaman dibuka untuk jejak pendakian sebelumnya yang belum sempat terkirim.
+ * Hook ini hanya merekam (ruling W6-P2, W6-P2a). Selama pendakian tidak ada titik yang dikirim,
+ * juga saat sinyal kembali: titiknya menumpuk di perangkat (jejak.js), lalu pengirim di halaman
+ * aplikasi biasa (resources/js/luring/kirimJejak.ts, dipasang AppLayout) mengirimnya sesudah
+ * pendakian selesai atau dibatalkan, sesudah server memastikan sesi itu boleh menerima. Mode
+ * lapangan memakai TataLetakPendakian, bukan AppLayout, dan shell luring juga, jadi keduanya
+ * tidak pernah memasang pengirim.
+ *
+ * Basis data jejak diikat ke pengguna perangkat (W6, ruling W6-R10), jadi tanpa kunci perangkat
+ * tidak ada yang direkam. Shell luring merakit props tanpa perangkat, jadi di sana kuncinya kunci
+ * tersimpan, yaitu pemilik paket yang dibuka shell (kunciPerekam, ruling W6-11f). Kunci yang sudah
+ * ditutup di tab ini sesudah keluar atau ganti akun (ruling W6-11d) tidak diikat lagi sampai muat
+ * penuh: halaman yang dipulihkan tombol Kembali tidak menyalakan perekam jejak dan tidak membuat
+ * ulang basis data yang baru dihapus. aturPengguna yang melempar untuk basis data yang sudah
+ * dihapus (tinjauan Tugas 11 m-7) berakhir di catch, jadi perekam tidak dimulai. Posisi untuk
+ * tampilan mode lapangan tetap diminta (usePosisiLapangan) dan tidak disimpan.
  */
-export function useJejakPendakian(aktif: boolean, sesiId: number | null, urlKirim: string | null) {
+export function useJejakPendakian(aktif: boolean, sesiId: number | null, kunciHalaman: string | null) {
+    const kunci = kunciPerekam(kunciHalaman, kunciTersimpan());
+
     useEffect(() => {
-        if (!aktif || sesiId === null || urlKirim === null || typeof window.muatJejak !== 'function') {
+        if (!aktif || sesiId === null || kunci === null || kunciTertutup(kunci) || typeof window.muatJejak !== 'function') {
             return;
         }
 
         let batal = false;
         let berhenti: (() => void) | null = null;
-        let kirim: (() => void) | null = null;
 
         window
             .muatJejak()
             .then((modul) => {
-                if (batal) {
+                if (batal || kunciTertutup(kunci)) {
                     return;
                 }
 
                 const jejak = modul as ModulJejak;
+                jejak.aturPengguna(kunci);
                 berhenti = jejak.mulaiMerekam(sesiId);
-                kirim = () => {
-                    const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-                    jejak.kirimJejak(sesiId, urlKirim, token).catch(() => {});
-                };
-
-                window.addEventListener('online', kirim);
-                kirim();
             })
             .catch(() => {});
 
         return () => {
             batal = true;
             berhenti?.();
-
-            if (kirim) {
-                window.removeEventListener('online', kirim);
-            }
         };
-    }, [aktif, sesiId, urlKirim]);
+    }, [aktif, sesiId, kunci]);
 }

@@ -55,8 +55,8 @@ Ketiga migrasi rintisan FR-25 tidak boleh dijalankan di basis data pemilik sebel
 | Keadaan | Perilaku yang dituntut | Keadaan sekarang |
 |---|---|---|
 | Tidak ada trip yang dapat dimulai | Pintu tab menjelaskan dan menawarkan trip lain | Ada: `tests/Feature/TrackTabTest.php` |
-| Izin lokasi ditolak | Kalimat jujur; peta dan pos tetap terbaca | Ada di `resources/js/components/trips/usePendakian.ts`; keadaan khusus prototype 11 menyusul W6 |
-| Sinyal hilang | Data yang sudah dibuka tetap terbaca; jejak diantrekan | Sebagian: halaman yang sudah dimuat tetap terbaca, antrean jejak di `resources/js/jejak.js`; paket luring menyusul W6 (DK-36) |
+| Izin lokasi ditolak | Kalimat jujur; peta dan pos tetap terbaca | Ada: `resources/js/components/mendaki/usePosisiLapangan.ts` dan kalimat lokasi di `ModeLapangan.tsx`; tiba di pos dapat ditandai sendiri |
+| Sinyal hilang | Data yang sudah dibuka tetap terbaca; jejak dan aksi diantrekan | Ada: hitungan di perangkat (`hitung.ts`), antrean aksi (`antrean.ts`), perekam jejak di perangkat lalu pengirim sesudah turun (`resources/js/jejak.js`, `resources/js/luring/kirimJejak.ts`); paket luring di balik sakelar (GR-07) |
 | Riwayat kosong | Kalimat dan ajakan | Ada: prop `kosong` dari `HikerProgressController` |
 | Grafik kurang dari dua titik | Tidak digambar, dijelaskan | Ada: penjaga `titik.length < 2` di `resources/js/components/community/GrafikTanjakan.tsx` |
 
@@ -65,13 +65,14 @@ Ketiga migrasi rintisan FR-25 tidak boleh dijalankan di basis data pemilik sebel
 | Sub-fitur | Status | Bukti |
 |---|---|---|
 | Peta navigasi langsung | Ada | `app/Http/Controllers/Trips/HikeModeController.php`, `resources/js/pages/Trips/Hike.tsx`, `resources/js/components/trips/PetaPendakian.tsx`, `usePendakian.ts`, `resources/js/components/trips/TataLetakPendakian.tsx`, `tests/Feature/LocationPrivacyTest.php` |
-| Titik berikutnya dan sisa waktu | Ada, sebagian | `app/Services/Trips/HikeCheckpointResolver.php`, `app/Services/CheckpointPaceService.php`, `tests/Feature/HikeModeCheckpointTest.php`; akurasi dan umur posisi, konfirmasi tiba di pos, dan rentang waktu bersumber menyusul W6 |
+| Titik berikutnya dan sisa waktu | Ada | `app/Services/Trips/HalamanMendaki.php`, `app/Services/Trips/HikeCheckpointResolver.php`, `resources/js/components/mendaki/hitung.ts`, `tests/Feature/HikeModeCheckpointTest.php`, `tests/Feature/FieldModeFiguresTest.php` |
 | Tab Mendaki | Ada | `app/Http/Controllers/Trips/TrackController.php`, `resources/js/pages/Track/Index.tsx`, `tests/Feature/TrackTabTest.php` |
-| Rekam jejak | Ada | `app/Http/Controllers/HikeTrackController.php`, `resources/js/jejak.js`, `tests/Feature/TrackPreferenceTest.php`, `tests/Feature/HikeTrackOnSummaryTest.php` |
+| Rekam jejak | Ada | Perekam di perangkat `resources/js/jejak.js`; pengirim sesudah pendakian `resources/js/luring/kirimJejak.ts` (W6-P2); server `app/Http/Controllers/HikeTrackController.php` dan predikat `app/Services/Trips/PenerimaanJejak.php`; `tests/Feature/PengirimJejakTest.php`, `tests/Feature/TrackPreferenceTest.php`, `tests/Feature/HikeTrackOnSummaryTest.php` |
 | Catat pendakian selesai | Ada untuk trip | `app/Http/Controllers/Trips/TripLifecycleController.php` (`complete`), `app/Http/Requests/Trips/CompleteTripRequest.php`, `app/Http/Controllers/Community/HikeSummaryController.php`, `app/Services/Community/HasilPendakian.php`, `tests/Feature/HikeSummaryTest.php` |
 | Riwayat dan grafik progres | Ada | `app/Http/Controllers/Community/HikingHistoryController.php`, `app/Http/Controllers/Community/HikerProgressController.php`, `app/Services/HikerProgressService.php`, `app/Services/ProgressLadderService.php`, `GrafikTanjakan.tsx`, `tests/Feature/HikerProgressTest.php`, `tests/Feature/HikingHistoryPageTest.php`, `tests/Feature/ProgressLadderTest.php`, `tests/Feature/ProgressLadderOnTrailDetailTest.php` |
 | Target pribadi dan catat manual (FR-25) | Belum ada | Migrasi rintisan kosong (lihat Data dan sumber); `tests/Feature/PersonalTargetTest.php`, `OwnedEquipmentTest.php`, `ManualHikeRecordTest.php` hanya membuka `/` dan tidak menguji fitur (W7) |
-| Paket lapangan luring | Belum ada | DK-36, spec v3 bagian 10, W6 |
+| Paket lapangan luring | Ada, di balik sakelar mati (Q10, Q14) | `app/Services/Trips/PaketLapangan.php`, `resources/views/sw.blade.php`, `resources/js/luring/`, `tests/Feature/FieldPackManifestTest.php`, `tests/Feature/FieldPackStalenessTest.php`, `tests/Feature/OfflineShellTest.php`, `tests/Feature/LogoutClearsDeviceDataTest.php` |
+| Kartu darurat, versi cetak, pesan rencana | Ada, di balik sakelar mati (Q14) | `app/Services/Trips/KartuDarurat.php`, `app/Services/Trips/PesanRencana.php`, `app/Services/Trips/CetakTrip.php`, `tests/Feature/EmergencyCardTest.php`, `tests/Feature/TripPlanMessageTest.php` |
 
 ## Task NgodingPakeAI
 
@@ -84,17 +85,17 @@ Ketiga migrasi rintisan FR-25 tidak boleh dijalankan di basis data pemilik sebel
 | 5 | Buat halaman riwayat daftar pendakian | `resources/js/pages/Community/HikingHistory.tsx` | Ada |
 | 6 | Buat komponen grafik progres pendakian | `GrafikTanjakan.tsx` | Ada |
 | 7 | Buat halaman detail dan kelola catatan pendakian | `resources/js/pages/Community/HikeSummary.tsx` | Sebagian: ubah dan hapus catatan manual menunggu FR-25 |
-| 8 | Tambahkan state offline dan keterangan data kosong | `resources/views/offline.blade.php`, `resources/js/jejak.js`, kalimat kosong per bagian | Sebagian (paket luring W6) |
+| 8 | Tambahkan state offline dan keterangan data kosong | `resources/views/offline.blade.php`, `resources/js/luring/shell.tsx`, `resources/js/jejak.js`, kalimat kosong per bagian | Ada (paket luring di balik sakelar) |
 | 9 | Buat skema dan migrasi sesi pendakian | `create_hiking_sessions_table`, `add_reached_sequence_to_hiking_sessions`, `create_hike_track_points_table` | Ada |
 | 10 | Buat skema dan migrasi catatan pendakian | `create_hiking_history_table`; kolom sumber manual belum ada | Sebagian |
 | 11 | Buat skema titik penting dan ketinggian jalur | `create_checkpoints_table`, `add_coordinates_to_checkpoints`, `add_elevation_profile_to_trails_table` | Ada |
 | 12 | Buat endpoint titik penting dan ketinggian jalur | Props mode lapangan dari `HikeModeController` | Ada, bentuk berbeda |
-| 13 | Buat endpoint sesi pendakian dan posisi | Rute `trips.start`, `trips.hike.position`, `hike.track` | Ada |
+| 13 | Buat endpoint sesi pendakian dan posisi | Rute `trips.start`, `trips.hike.arrive`, `trips.hike.pause`, `trips.hike.resume`, `hike.track`; posisi tidak dikirim (GR-07) | Ada, bentuk berbeda |
 | 14 | Buat endpoint CRUD catatan pendakian | Tidak ada | Belum ada (FR-25) |
 | 15 | Buat endpoint ringkasan progres pendakian | `HikerProgressController`, `HikerProgressService` | Ada |
 
 ## Keputusan dan konflik terkait
 
-- **DK-07** FR-25 masuk cakupan; **DK-36** paket lapangan luring berisi data stabil; **DK-49** mode lapangan mengikuti tema pengguna; **DK-50** alasan pembatalan dicatat opsional (W7).
+- **DK-07** FR-25 masuk cakupan; **DK-36** paket lapangan luring berisi data stabil; **DK-49** mode lapangan mengikuti tema pengguna; **DK-50** alasan pembatalan dicatat opsional dari daftar tetap (W6).
 - **K13** target bulanan sebagai target pribadi terhadap diri sendiri; **K14** catat pendakian manual tidak menaikkan pengalaman.
 - **Menunggu pemilik:** spec v3 bagian 15 Q9 (ambang data dinamis luring), Q10 (kebijakan data di perangkat), Q14 (telaah hukum dan fitur keselamatan).

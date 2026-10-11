@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 /**
@@ -40,8 +41,30 @@ class ActiveHikeStripTest extends TestCase
                     ->where('pendakianAktif.jalur', $trip->trail->name)
                     ->where('pendakianAktif.posBerikutnya', $pos->name)
                     ->where('pendakianAktif.mulai', '2026-09-27T00:30:00+00:00')
+                    ->where('pendakianAktif.jedaSejak', null)
+                    ->where('pendakianAktif.jedaDetik', 0)
                     ->where('pendakianAktif.url', '/trips/'.$trip->id.'/hike'));
         }
+    }
+
+    /**
+     * Ruling W6-FD (M-1 tinjauan akhir W6): strip membawa keadaan jeda sesi dari kueri yang sama,
+     * supaya waktunya waktu bergerak seperti mode lapangan dan berhenti selama dijeda. Instannya
+     * ISO 8601 UTC seperti mulai.
+     */
+    public function test_the_strip_carries_the_pause_state_of_the_session(): void
+    {
+        [$budi, $trip] = $this->pendakianBerlangsung();
+        $trip->hikingSession->update([
+            'paused_at' => Carbon::parse('2026-09-27 03:00:00', 'UTC'),
+            'paused_seconds' => 1800,
+            'status' => HikingSessionStatus::PAUSED->value,
+        ]);
+
+        $this->assertSame(
+            ['jedaSejak' => '2026-09-27T03:00:00+00:00', 'jedaDetik' => 1800],
+            array_intersect_key(app(PendakianAktif::class)->untuk($budi), ['jedaSejak' => true, 'jedaDetik' => true]),
+        );
     }
 
     public function test_another_hiker_never_sees_it(): void
@@ -98,6 +121,8 @@ class ActiveHikeStripTest extends TestCase
             'jalur' => $trip->trail->name,
             'posBerikutnya' => null,
             'mulai' => null,
+            'jedaSejak' => null,
+            'jedaDetik' => null,
             'url' => '/trips/'.$trip->id.'/hike',
         ], app(PendakianAktif::class)->untuk($budi));
     }
@@ -186,11 +211,41 @@ class ActiveHikeStripTest extends TestCase
         $this->assertStringContainsString('<span className="sr-only">Pendakian berlangsung: </span>', $strip);
         $this->assertMatchesRegularExpression('/>Buka<\/span>/', $strip);
         $this->assertStringNotContainsString('aria-live', $strip, 'Waktu berjalan tidak diumumkan setiap menit.');
+        // Ruling W6-FD: waktu bergerak dari fungsi mode lapangan, bukan hitungan sendiri dari mulai.
+        $this->assertStringContainsString('pendakian.mulai ? keteranganBerjalan(jedaSejak !== null, teksLama(detikBergerak(Date.parse(pendakian.mulai), pendakian.jedaDetik ?? 0, jedaSejak, sekarang))) : null,', $strip);
+        $this->assertStringContainsString('const jedaSejak = pendakian.jedaSejak ? Date.parse(pendakian.jedaSejak) : null;', $strip);
         $this->assertStringContainsString('{props.pendakianAktif ? <StripPendakian pendakian={props.pendakianAktif} /> : null}', $layout);
         $this->assertGreaterThan(strpos($layout, '</main>'), strpos($layout, '<StripPendakian '), 'Strip dijangkau sesudah isi halaman.');
         $this->assertLessThan(strpos($layout, '<BilahTab '), strpos($layout, '<StripPendakian '), 'Strip dijangkau sebelum bilah tab, sama dengan letaknya di layar.');
         $this->assertMatchesRegularExpression('/:root:has\(\[data-strip-pendakian\]\) \{\s*--strip-pendakian: 3\.5rem;/', File::get(resource_path('css/app.css')));
         $this->assertStringNotContainsString('StripPendakian', File::get(resource_path('js/components/trips/TataLetakPendakian.tsx')), 'Mode lapangan tidak memasang strip.');
+    }
+
+    /**
+     * Ruling W6-FJ (K-1 gelombang perbaikan akhir W6): strip ada di setiap halaman berkerangka, jadi ia mengimpor
+     * waktu bergerak dari lib/waktuBergerak.ts, bukan dari hitung.ts atau kalimatSumber.ts. Impor itu menarik kedua modul
+     * mode lapangan ke potongan tata letak (+3,0 kB gzip di setiap halaman, terukur di laporan). hitung.ts dan
+     * kalimatSumber.ts mengekspor ulang fungsi yang sama, jadi sumbernya tetap satu; identitasnya diperiksa di Node.
+     */
+    public function test_the_strip_takes_moving_time_from_the_small_module_only(): void
+    {
+        $strip = File::get(resource_path('js/layouts/StripPendakian.tsx'));
+
+        $this->assertStringContainsString("import { detikBergerak, keteranganBerjalan, teksLama } from '@/lib/waktuBergerak';", $strip);
+        $this->assertDoesNotMatchRegularExpression("/from '[^']*(?:mendaki\/hitung|luring\/kalimatSumber)'/", $strip, 'Strip tidak boleh menarik modul mode lapangan ke potongan tata letak.');
+        $this->assertDoesNotMatchRegularExpression('/^import (?!type\b)/m', File::get(resource_path('js/lib/waktuBergerak.ts')), 'Modul waktu bergerak tanpa impor (ruling L3).');
+
+        $skrip = 'import { pathToFileURL } from "node:url";'
+            .'const waktu = await import(pathToFileURL('.json_encode(resource_path('js/lib/waktuBergerak.ts')).').href);'
+            .'const hitung = await import(pathToFileURL('.json_encode(resource_path('js/components/mendaki/hitung.ts')).').href);'
+            .'const sumber = await import(pathToFileURL('.json_encode(resource_path('js/luring/kalimatSumber.ts')).').href);'
+            .'process.stdout.write(JSON.stringify([hitung.teksLama === waktu.teksLama, hitung.detikBergerak === waktu.detikBergerak, sumber.keteranganBerjalan === waktu.keteranganBerjalan, waktu.keteranganBerjalan(true, waktu.teksLama(waktu.detikBergerak(0, 7200, 12600000, 18000000)))]));';
+
+        $proses = new Process(['node', '--experimental-strip-types', '--input-type=module', '-'], base_path(), null, $skrip, 60);
+        $proses->run();
+
+        $this->assertTrue($proses->isSuccessful(), 'Node gagal: '.mb_substr($proses->getErrorOutput(), 0, 600));
+        $this->assertSame([true, true, true, 'Dijeda, 1 jam 30 menit bergerak'], json_decode($proses->getOutput(), true, flags: JSON_THROW_ON_ERROR));
     }
 
     /**

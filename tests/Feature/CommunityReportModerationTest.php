@@ -54,8 +54,9 @@ class CommunityReportModerationTest extends TestCase
         $report = TrailConditionReport::factory()->create();
         $moderator = User::factory()->create(['role' => UserRole::MODERATOR->value]);
 
+        // Ruling W6-6c dan W6-6q: setuju dan tolak membawa sidik isi dan status yang moderator baca.
         $this->actingAs($moderator)
-            ->post(route('moderation.act', $report), ['action' => 'APPROVE'])
+            ->post(route('moderation.act', $report), ['action' => 'APPROVE', 'sidik' => $report->sidik(), 'status_dibaca' => $report->moderation_status->value])
             ->assertSessionHasNoErrors();
 
         $report->refresh();

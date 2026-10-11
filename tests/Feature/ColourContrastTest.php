@@ -261,11 +261,18 @@ class ColourContrastTest extends TestCase
      * dibaca sambil berjalan, di bawah matahari atau dengan senter. Ambangnya 7:1, bukan
      * 4,5:1 (spec v3 bagian 8.1).
      *
+     * Kartu darurat (W6 Tugas 7, ruling W6-7d, PT7-19): nomor 112 dan 115 serta tombol "Kartu
+     * darurat" juga informasi kritis lapangan (DESIGN.md bagian Tema lapangan). Nomor ditulis
+     * text-inverse di atas isian danger-900, karena putih di atas danger-600 hanya 6,53:1 di
+     * lapangan terang dan 4,92:1 di lapangan gelap.
+     *
      * @return array<string, array{0: string, 1: string, 2: string, 3: float}>
      */
     public static function fieldPairs(): array
     {
         $pasangan = [
+            ['text-inverse', 'danger-900', self::INFO_KRITIS_LAPANGAN, 'nomor darurat 112 dan 115'],
+            ['danger-900', 'surface', self::INFO_KRITIS_LAPANGAN, 'tombol Kartu darurat'],
             ['text-primary', 'canvas', self::INFO_KRITIS_LAPANGAN, 'nama pos dan angka jarak di latar'],
             ['text-primary', 'surface', self::INFO_KRITIS_LAPANGAN, 'nama pos dan angka jarak di kartu'],
             ['text-secondary', 'canvas', self::INFO_KRITIS_LAPANGAN, 'keterangan pendukung di latar'],

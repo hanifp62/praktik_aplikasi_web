@@ -321,6 +321,10 @@ class TrailDetailPageTest extends TestCase
      * Profil elevasi membawa keterangan kalimat dan bagian tercuram yang diarsir (spec v3
      * bagian 6.4). Jalur yang tidak naik tidak diberi bagian tercuram; kurang dari dua
      * titik bukan profil.
+     *
+     * Diperbarui untuk ruling W6-6h (m-2): angka dan satuannya, juga "km" dengan angka posisi
+     * sesudahnya, kini diikat spasi tak terputus U+00A0; di 320 px "546" sempat terpisah dari
+     * "m dalam 2,4 km". Kata dan angkanya tidak berubah.
      */
     public function test_the_profile_names_its_steepest_part(): void
     {
@@ -335,7 +339,7 @@ class TrailDetailPageTest extends TestCase
         $profil = $this->actingAs($pembaca)->get(route('trails.show', $gede))->viewData('page')['props']['profilElevasi'];
 
         $this->assertSame(['dariKm' => 7.3, 'sampaiKm' => 9.7, 'naik' => 546], $profil['tercuram']);
-        $this->assertSame('Dari 1.340 m sampai titik tertinggi 2.958 m dalam 9,7 km. Bagian tercuram, km 7,3 sampai 9,7, naik 546 m dalam 2,4 km (diarsir).', $profil['keterangan']);
+        $this->assertSame("Dari 1.340\u{a0}m sampai titik tertinggi 2.958\u{a0}m dalam 9,7\u{a0}km. Bagian tercuram, km\u{a0}7,3 sampai 9,7, naik 546\u{a0}m dalam 2,4\u{a0}km (diarsir).", $profil['keterangan']);
         $this->assertSame([], $profil['pos'], 'Tanpa garis rute tidak ada jarak pos, jadi tidak ada penanda tebakan.');
 
         $this->assertNull($this->actingAs($pembaca)->get(route('trails.show', $datar))->viewData('page')['props']['profilElevasi']['tercuram']);

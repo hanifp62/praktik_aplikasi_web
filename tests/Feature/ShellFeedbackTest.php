@@ -436,7 +436,18 @@ class ShellFeedbackTest extends TestCase
         $this->assertStringContainsString('<Alert variant="info" title={`Versi baru ${merek.nama} tersedia`} className="pe-14 shadow-overlay">', $pesan);
         $this->assertStringContainsString('Halaman ini masih memakai versi lama, jadi sebagian isinya tidak dapat diperbarui. Muat ulang halaman sesudah isian Anda tersimpan.', $pesan);
         $this->assertMatchesRegularExpression('/onClick=\{\(\) => muatPenuhVersiBaru\(\)\}\s*>\s*Muat ulang halaman\s*<\/Button>/', $pesan, 'Tombol pemberitahuan memuat penuh halaman, bukan muat ulang parsial yang akan terkena konflik versi lagi.');
-        $this->assertStringContainsString('const { merek } = usePage<PropsBersama>().props;', $pesan);
+        // W6 (ruling W6-R9, PT10-2, W6-9k bagian b): pesan yang sama juga membaca sakelar paket
+        // untuk "Buka paket luring", hanya bila paket pengguna ini ada di perangkat ini (kunci
+        // tersimpan sama dengan kunci perangkat). Tautannya dokumen biasa di tab yang sama ke
+        // /offline?dibuka=paket, yang dijawab service worker: /offline tercatat bukan halaman
+        // React (resources/js/lib/bukanHalamanReact.json), jadi Tautan merender <a href> biasa
+        // (resources/js/components/ui/Tautan.tsx), bukan kunjungan Inertia yang gagal tanpa
+        // sinyal. Tanpa external: external membuka tab baru (resources/js/components/ui/Button.tsx),
+        // yang di aplikasi Layar Utama iPhone terbuka di Safari dengan penyimpanan terpisah.
+        $this->assertStringContainsString('const { merek, perangkat } = usePage<PropsBersama>().props;', $pesan);
+        $this->assertStringContainsString('{perangkat?.paket && perangkat.kunci === kunciTersimpan() ? (', $pesan);
+        $this->assertStringContainsString("<Button variant=\"ghost\" size=\"sm\" className=\"mt-3\" href={offline.url({ query: { dibuka: 'paket' } })}>", $pesan);
+        $this->assertStringNotContainsString("href={offline.url({ query: { dibuka: 'paket' } })} external", $pesan);
     }
 
     /**

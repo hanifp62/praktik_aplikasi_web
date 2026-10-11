@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -91,9 +92,12 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
 
+        // W6-11b: data Memount di perangkat ini ikut dihapus (KEBIJAKAN bagian 4); Clear-Site-Data
+        // adalah lapis kedua di samping penghapusan oleh halaman.
         $this->actingAs($user)->delete(route('profile.destroy'), ['password' => 'password'])
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
+            ->assertRedirect('/')
+            ->assertHeader('Clear-Site-Data', '"storage"');
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
@@ -103,11 +107,35 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
 
+        // Kata sandi salah tidak menghapus apa pun, termasuk data di perangkat (W6-11b).
         $this->actingAs($user)->from('/profile')->delete(route('profile.destroy'), ['password' => 'wrong-password'])
             ->assertSessionHasErrors(['password' => 'Kata sandi salah.'])
-            ->assertRedirect('/profile');
+            ->assertRedirect('/profile')
+            ->assertHeaderMissing('Clear-Site-Data');
 
         $this->assertNotNull($user->fresh());
         $this->assertAuthenticatedAs($user);
+    }
+
+    /**
+     * Hapus akun membersihkan data perangkat hanya sesudah server menghapus akunnya (ruling W6-11b,
+     * KEBIJAKAN bagian 4): kunci perangkat ditangkap sebelum kiriman, karena sesudah akun terhapus
+     * props bersama tidak lagi membawanya, dan pembersihan berjalan di onSuccess, jadi kata sandi
+     * yang salah tidak menghapus apa pun. Dialog menyebut bahwa data di perangkat ini ikut dihapus.
+     */
+    public function test_deleting_the_account_clears_this_devices_data_only_after_the_server_agrees(): void
+    {
+        $sumber = File::get(resource_path('js/components/akun/HapusAkun.tsx'));
+        $kirim = substr($sumber, (int) strpos($sumber, 'const kirim = '));
+        $sebelumKirim = substr($kirim, 0, (int) strpos($kirim, 'form.delete('));
+
+        $this->assertStringContainsString('const kunci = perangkat?.kunci ?? null;', $sebelumKirim);
+        $this->assertStringNotContainsString('bersihkanPerangkat', $sebelumKirim, 'Data perangkat tidak dihapus sebelum server menjawab.');
+        $this->assertStringContainsString('onSuccess: () => void bersihkanPerangkat(kunci, { saatKeluar: true }),', $kirim);
+        $this->assertSame(1, substr_count($sumber, 'bersihkanPerangkat('), 'Satu-satunya pemanggilan ada di onSuccess.');
+        $this->assertStringContainsString(
+            'Setelah akun dihapus, profil, rencana, dan trip Anda hilang permanen dan tidak dapat dikembalikan. Data Memount di perangkat ini, termasuk paket luring dan jejak yang belum terkirim, ikut dihapus. Masukkan kata sandi Anda untuk memastikan.',
+            $sumber,
+        );
     }
 }

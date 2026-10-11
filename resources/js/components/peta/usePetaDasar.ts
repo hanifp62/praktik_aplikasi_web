@@ -1,11 +1,29 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect, useEffectEvent, useRef, useState, type RefObject } from 'react';
 import type { PropsBersama } from '@/types';
+import { warnaToken } from './warnaToken';
 
 export type Peta = import('maplibre-gl').Map;
 export type Pustaka = typeof import('maplibre-gl');
 /** Satu titik [bujur, lintang], urutan GeoJSON. */
 export type Titik = [number, number];
+
+/**
+ * Peta dasar mengikuti tema: basemap topografi diredupkan di tema gelap, tidak dihitamkan
+ * (DK-18, M1), karena kontur adalah informasi keselamatan; kanvas polos tanpa basemap (paket
+ * luring) memakai warna latar tema. Dipakai saat peta dimuat dan saat tema lapangan dibalik
+ * (DK-49).
+ */
+export function ikutkanTemaPetaDasar(peta: Peta, gelap: boolean): void {
+    if (peta.getLayer('latar')) {
+        peta.setPaintProperty('latar', 'background-color', warnaToken('--surface-sunken', 'rgb(238, 234, 225)'));
+    }
+
+    if (peta.getLayer('basemap')) {
+        peta.setPaintProperty('basemap', 'raster-brightness-max', gelap ? 0.78 : 1);
+        peta.setPaintProperty('basemap', 'raster-saturation', gelap ? -0.25 : 0);
+    }
+}
 
 /**
  * Teks antarmuka MapLibre dalam bahasa halaman. Bawaannya berbahasa Inggris ("Zoom in",
@@ -40,6 +58,8 @@ interface OpsiPetaDasar {
     saatDibuat?: (peta: Peta, maplibregl: Pustaka) => void;
     /** Sesudah basemap dimuat: tempat source, layer, dan penanda. */
     saatSiap?: (peta: Peta, maplibregl: Pustaka) => void;
+    /** Kendali perbesar bawaan MapLibre (29 px). Mode lapangan memasang kendali 48 px sendiri. */
+    kendaliBawaan?: boolean;
 }
 
 /**
@@ -78,19 +98,25 @@ export function usePetaDasar(wadahRef: RefObject<HTMLDivElement | null>, opsi: O
             // Atribusi tampil sebagai teks di WadahPeta. Kontrol bawaan merender HTML atribusi
             // lewat innerHTML, dan sanitasinya dapat dilewati (CVE-2026-85061, sampai 6.4.0).
             attributionControl: false,
-            style: konfigurasi.styleUrl || {
-                version: 8,
-                sources: {
-                    basemap: {
-                        type: 'raster',
-                        tiles: konfigurasi.rasterTiles ?? [],
-                        tileSize: 256,
-                        maxzoom: konfigurasi.maxZoom ?? 17,
-                        attribution: konfigurasi.attribution ?? '',
-                    },
-                },
-                layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
-            },
+            // Tanpa sumber tile (paket lapangan luring tahap 1, spec v3 bagian 10.5) kanvasnya
+            // polos: hanya latar, tanpa permintaan jaringan apa pun.
+            style:
+                konfigurasi.styleUrl ||
+                ((konfigurasi.rasterTiles ?? []).length === 0
+                    ? { version: 8, sources: {}, layers: [{ id: 'latar', type: 'background', paint: { 'background-color': warnaToken('--surface-sunken', 'rgb(238, 234, 225)') } }] }
+                    : {
+                          version: 8,
+                          sources: {
+                              basemap: {
+                                  type: 'raster',
+                                  tiles: konfigurasi.rasterTiles ?? [],
+                                  tileSize: 256,
+                                  maxzoom: konfigurasi.maxZoom ?? 17,
+                                  attribution: konfigurasi.attribution ?? '',
+                              },
+                          },
+                          layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
+                      }),
             center: pusat ?? [113, -2],
             zoom: pusat ? 12 : 4,
             maxZoom: konfigurasi.maxZoom ?? 17,
@@ -99,7 +125,10 @@ export function usePetaDasar(wadahRef: RefObject<HTMLDivElement | null>, opsi: O
 
         peta.current = petaIni;
         pustaka.current = maplibregl;
-        petaIni.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+        if (opsi.kendaliBawaan ?? true) {
+            petaIni.addControl(new maplibregl.NavigationControl(), 'top-right');
+        }
 
         // Gaya dari URL yang gagal diambil (server mati, atau luring tanpa salinan) tidak
         // pernah memicu 'load', dan kotaknya diam kosong. Galat sebelum 'style.load'
@@ -123,10 +152,7 @@ export function usePetaDasar(wadahRef: RefObject<HTMLDivElement | null>, opsi: O
                 return;
             }
 
-            if (petaIni.getLayer('basemap') && window.temaGelapAktif?.()) {
-                petaIni.setPaintProperty('basemap', 'raster-brightness-max', 0.78);
-                petaIni.setPaintProperty('basemap', 'raster-saturation', -0.25);
-            }
+            ikutkanTemaPetaDasar(petaIni, window.temaGelapAktif?.() ?? false);
 
             saatSiap?.(petaIni, maplibregl);
             setSiap(true);

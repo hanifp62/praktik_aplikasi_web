@@ -24,7 +24,7 @@ Desain konsolidasi: `docs/superpowers/specs/2026-09-23-konsolidasi-dokumen-desig
 ## Cara membaca
 
 1. **Nomor § adalah ID permanen, bukan halaman.** Setiap bagian membawa ID-nya di judul. Urutan baca disusun untuk manusia yang membaca dari atas, sehingga boleh berbeda dari urutan nomor. Untuk mencari §N, buka Lampiran A.
-2. **Tidak ada ID yang dihapus atau dipakai ulang.** Bagian yang dipadatkan ke bagian lain tetap tercatat sebagai alias di Lampiran A, misalnya §137 dipadatkan ke §1. ID baru: bagian mulai §147 (kini terpakai sampai §161), fitur mulai FR-22 (terpakai sampai FR-27), aturan bisnis baru memakai nomor setelah BR-16 (belum ada), governance record berikutnya GR-07.
+2. **Tidak ada ID yang dihapus atau dipakai ulang.** Bagian yang dipadatkan ke bagian lain tetap tercatat sebagai alias di Lampiran A, misalnya §137 dipadatkan ke §1. ID baru: bagian mulai §147 (kini terpakai sampai §161), fitur mulai FR-22 (terpakai sampai FR-27), aturan bisnis baru memakai nomor setelah BR-16 (belum ada), governance record berikutnya GR-08.
 3. **Rujukan di kode tidak disentuh.** Karena ID tetap, ratusan rujukan `§N`, `BR-N`, dan `FR-N` di kode, test, dan dokumen tetap menunjuk isi yang sama. `tests/Feature/PrdReferenceIntegrityTest.php` menjaganya: setiap ID yang dirujuk harus punya heading atau alias di sini, indeks tidak boleh melompat, tidak ada ID yang dipakai dua kali, PRD hanya ada di `docs/PRD.md`, dan setiap berkas `.md` yang disebut dokumen hidup benar-benar ada.
 4. **Konvensi rujukan.** Di dokumen ini, "§N" selalu berarti ID PRD. Bagian dokumen lain ditulis "bagian N" beserta nama berkasnya, misalnya "HANDOVER.md bagian 3". Aturan R-001 sampai R-024 tidak disalin ke sini; PRD hanya merujuk pemiliknya (peta di bawah).
 5. **Istilah.** Teks untuk pengguna memakai pos (bukan checkpoint), jalur, kawasan, dan pengelola. Istilah domain di dokumen ini: Mountain, Trail, Route Fit. Nilai enum ditulis kapital, misalnya OPEN atau COCOK.
@@ -348,7 +348,7 @@ Enam tujuan PRD NgodingPakeAI dipetakan ke G1 sampai G5, dengan penyelarasan kan
 
 ## §13 Non-goals
 
-MVP tidak bertujuan menjadi: pusat komando darurat; aplikasi medis; marketplace; platform open trip; pemesanan porter; tiruan media sosial; platform navigasi lanjutan; platform navigasi offline; platform wearable; sistem keselamatan AI otonom; CRUD gunung; direktori wisata generik; aplikasi GPS semata; aplikasi ulasan semata; tiruan AllTrails, Traveloka, atau Strava.
+MVP tidak bertujuan menjadi: pusat komando darurat; aplikasi medis; marketplace; platform open trip; pemesanan porter; tiruan media sosial; platform navigasi lanjutan; platform navigasi offline penuh (paket lapangan luring §53 adalah sistem kedua yang terbatas, GR-07); platform wearable; sistem keselamatan AI otonom; CRUD gunung; direktori wisata generik; aplikasi GPS semata; aplikasi ulasan semata; tiruan AllTrails, Traveloka, atau Strava.
 
 Tambahan: **pemesanan izin pendakian tidak direplikasi**; produk menautkan sistem resmi pengelola (§153). Monetisasi dan kompetisi sosial tidak ditambahkan tanpa keputusan pemilik (R-021).
 
@@ -816,7 +816,7 @@ Nama Inggris adalah kata-kata pemilik. Label Indonesia mengikuti asumsi A1 spec 
 | **Beranda** (Home) | "Apa langkah saya berikutnya?" | Perjalanan berikutnya, rekomendasi "karena ...", status kesiapan, trip mendatang, ringkasan progres, kabar gunung yang diikuti, satu langkah berikutnya | Beranda tidak memutuskan untuk pengguna; kabar yang tampil adalah intel kondisi, bukan feed sosial |
 | **Jelajah** (Explore) | "Apa yang tersedia dan mana yang relevan?" | Peta, daftar jalur, tampilan gunung (gunung membuka jalurnya, R-001), saringan, pencarian kalimat sederhana (FR-27), Route Fit, detail jalur, simpanan dengan catatan pribadi (FR-22) | Jelajah tidak memutuskan; ia menyajikan kandidat beserta alasannya. Peta hanya menggambar jalur yang bergeometri; titik gunung tidak dipakai sebagai pengganti jalur (DK-06, **diputuskan atas delegasi pemilik**) |
 | **Trip** (Trips) | "Bagaimana saya memilih, merencanakan, dan bersiap?" | Rekomendasi Route Fit, banding maksimal 3 jalur yang dipilih dari simpanan (DK-05, **diputuskan atas delegasi pemilik**), trip, detail rencana (tanggal selesai, peserta), persiapan, cek kesiapan, pengingat (FR-24), tautan bagikan read-only (FR-23) | Banding tidak menghasilkan pemenang (R-016, §33). Tautan bagikan read-only dan tidak pernah menulis ke simpanan siapa pun. Kesiapan adalah dukungan keputusan, bukan izin medis atau hukum (§40) |
-| **Mendaki** (Track) | "Apa yang saya butuhkan di jalur sekarang?" | Mulai pendakian, peta langsung, posisi atas izin, pos berikutnya dan sisa jarak, posisi pada profil elevasi, selesai | Mode lapangan minimal (§54). Lokasi hanya diminta di sini, atas persetujuan di perangkat, dan tidak dikirim ke server di luar rekam jejak yang opsional (§82, §83). Tidak menjanjikan pelacakan latar, deteksi keluar jalur, navigasi offline, atau SOS (§53) |
+| **Mendaki** (Track) | "Apa yang saya butuhkan di jalur sekarang?" | Mulai pendakian, peta langsung, posisi atas izin, pos berikutnya dan sisa jarak, posisi pada profil elevasi, selesai; paket lapangan luring, kartu darurat, dan pesan rencana untuk kontak di balik sakelar (GR-07) | Mode lapangan minimal (§54). Lokasi hanya diminta di sini, atas persetujuan di perangkat, dan tidak dikirim ke server di luar rekam jejak yang opsional (§82, §83). Tidak menjanjikan pelacakan latar, deteksi keluar jalur, navigasi offline penuh, atau SOS (§53); data dinamis di paket selalu berlabel "terakhir diketahui" (GR-07) |
 | **Progres** (Progress) | "Bagaimana perkembangan saya?" | Riwayat pendakian, statistik, target pribadi (FR-25), pencapaian, catatan pendakian manual (FR-25) | Pembandingnya diri sendiri (R-015), tanpa papan peringkat antarpendaki; riwayat tidak menaikkan level pengalaman (BR-11); pencapaian tidak pernah memberi hadiah pada kecepatan (§156) |
 | **Profil** (Profile) | "Siapa saya sebagai pendaki, dan apa pengaturan saya?" | Pengalaman, preferensi, perlengkapan pribadi, pengaturan (tema §157, bahasa §158, akun, sandi), privasi (rekam jejak, hapus akun, kebijakan data); pintu ke konsol admin, moderator, dan kontribusi ahli bagi yang berhak | Pengalaman yang diisi sendiri adalah masukan, bukan sertifikasi (§22). Pintu konsol hanya tampilan; otorisasinya tetap di server (§76) |
 
@@ -978,7 +978,9 @@ MVP menyediakan: posisi saat ini; visualisasi rute; pos berikutnya; jarak ke pos
 
 MVP **tidak menjanjikan**: pelacakan latar terus-menerus; deteksi keluar jalur tingkat lanjut; navigasi offline; pusat komando darurat.
 
-Perekaman jejak bersifat pilihan, default mati, dan dapat dihapus pemiliknya (`user_preferences.record_track`, `hike_track_points`). Jejak direkam di perangkat dan dikirim setelah pendaki mendapat sinyal (§10). Di tab Mendaki (§145), peta mengikuti posisi hanya selama mode pendakian aktif dan atas persetujuan di perangkat. Tanpa geometri jalur dan koordinat pos, mode pendakian tidak dapat menentukan pos terdekat, dan ia menyatakannya, bukan menebak (§108).
+**Amandemen DK-36** (GR-07): pos berikutnya, sisa jarak, naik lagi, dan tiba di pos dihitung di perangkat dari data jalur yang sudah dimuat, dan posisi pendaki tidak dikirim ke server; server hanya mencatat urutan pos yang dicapai dan waktu jeda. Satu pengguna hanya punya satu pendakian berlangsung. Paket lapangan luring (spec v3 bagian 10) adalah sistem kedua, bukan navigasi offline penuh: jalur dan pos tanpa peta dasar, rencana, aturan resmi bertanggal cek, dan potret data dinamis yang selalu berlabel "terakhir diketahui". Kartu darurat, versi cetak, dan pesan rencana untuk kontak melengkapinya. Paket dan alat keselamatan dibangun di balik sakelar `hiking.field_pack.enabled` dan `hiking.field_safety.enabled` yang mati sampai pemilik memutus kebijakan data di perangkat (Q10) dan telaah hukum (Q14). Tetap tidak dijanjikan: pelacakan latar, deteksi keluar jalur, berbagi lokasi langsung, dan pusat komando darurat.
+
+Perekaman jejak bersifat pilihan, default mati, dan dapat dihapus pemiliknya (`user_preferences.record_track`, `hike_track_points`). Jejak direkam di perangkat selama pendakian aktif tanpa kiriman apa pun; satu pengirim di tata letak aplikasi mengirim titik sekali sesudah pendakian selesai atau dibatalkan, saat ada sinyal, sesudah server menjawab bahwa sesi itu menerima jejak (§10). Di tab Mendaki (§145), peta mengikuti posisi hanya selama mode pendakian aktif dan atas persetujuan di perangkat. Tanpa geometri jalur dan koordinat pos, mode pendakian tidak dapat menentukan pos terdekat, dan ia menyatakannya, bukan menebak (§108).
 
 ### §54 Mode rencana dan mode pendakian
 
@@ -997,6 +999,7 @@ MVP memakai **peta online**. Server ubin standar `tile.openstreetmap.org` tidak 
 
 - **Offline masa depan** lewat ubin self-hosted: PMTiles dan basemap Protomaps memungkinkan peta vektor offline tanpa server ubin ([Protomaps](https://docs.protomaps.com/pmtiles/maplibre), [maplibre-offline-pmtiles](https://github.com/makinacorpus/maplibre-offline-pmtiles)).
 - **Peta digerbang data** (DK-06, **diputuskan atas delegasi pemilik**): peta hanya menggambar jalur yang bergeometri; koordinat gunung tidak dipakai sebagai pengganti titik jalur (temuan F2).
+- **Paket lapangan tanpa peta dasar** (DK-36, GR-07): paket luring tahap 1 tidak membawa ubin; peta luring menggambar garis jalur dan pos di kanvas polos berlabel "Peta dasar tidak tersedia luring". Prefetch ubin menunggu izin tertulis penyedia atau ubin self-hosted (spec v3 bagian 15 Q8).
 - **Tema gelap** (DK-18): basemap topo tetap, diredupkan lewat `raster-brightness-max`. Peta gelap tanpa kontur hanya atas permintaan pemilik; self-host PMTiles jalur masa depan.
 - **Penyedia cadangan** untuk OpenTopoMap (yang berstatus "survival mode" menurut riset mode gelap) masih OPEN ISSUE; kandidat openmaps.fr lewat `MAP_TILE_URL` setelah kebijakan pemakaiannya diverifikasi.
 
@@ -1713,7 +1716,7 @@ Kriteria per permukaan ada di `docs/fitur/01` sampai `08`.
 5. Status resmi dapat berbeda antara gunung dan jalur.
 6. Laporan komunitas bersifat pelengkap.
 7. Dataset MVP dikurasi.
-8. PWA tidak berarti navigasi offline penuh.
+8. PWA tidak berarti navigasi offline penuh; paket lapangan luring adalah sistem kedua yang terbatas dan selalu menyebut umur datanya (GR-07).
 
 ## §122 Risiko produk
 
@@ -2171,6 +2174,73 @@ sinkronisasi berikutnya (ubah rencana atau sakelar pengingat); tidak ada pengisi
 - Apakah pengingat hari pemesanan dibuka perlu sakelar sendiri, terpisah dari pengingat H-3 dan H-1.
 - Apakah trip lama yang pengingatnya sudah menyala perlu dijadwalkan ulang sekali saat rilis.
 
+### GR-07: Mode lapangan di perangkat dan paket lapangan luring sebagai sistem kedua (gelombang W6)
+
+**Requirement changed.**
+
+- §13: "platform navigasi offline" menjadi "platform navigasi offline penuh"; paket lapangan luring adalah sistem kedua
+  yang terbatas (spec v3 bagian 10, DK-36).
+- §53 FR-15: pos berikutnya, sisa jarak, naik lagi, dan tiba di pos dihitung di perangkat; posisi pendaki tidak lagi
+  dikirim ke server (rute `trips.hike.position` dihapus, diganti `trips.hike.arrive`, `trips.hike.pause`, dan
+  `trips.hike.resume`) dan server hanya mencatat urutan pos yang dicapai dan waktu jeda. Satu pengguna hanya punya satu
+  pendakian berlangsung. Paket lapangan luring, kartu darurat, versi cetak, dan pesan rencana untuk kontak dibangun di
+  balik sakelar yang mati.
+- §55: paket tahap 1 tanpa peta dasar; prefetch ubin menunggu Q8.
+- §121 butir 8 dan baris Mendaki §145.1: paket disebut sebagai sistem kedua dengan data "terakhir diketahui".
+- §52 FR-14: ringkasan pendakian punya varian selesai dan dibatalkan (DK-50) dengan alasan pembatalan opsional dari
+  daftar tetap, angka yang dapat diubah pendaki, dan laporan kondisi yang dapat diubah sebelum dimoderasi.
+
+**Reason.** Spec v3 bagian 10 (DK-36), yang disetujui pemilik 25 September 2026, menetapkan paket lapangan sebagai sistem
+kedua, sementara §13, §53, §55, §121 butir 8, dan baris Mendaki §145.1 masih menyebut navigasi luring di luar MVP
+(spec v3 bagian 15 Q7). Menentukan pos berikutnya tidak membutuhkan posisi di server, dan mengirim posisi tiap beberapa
+detik bertentangan dengan minimisasi lokasi (§82).
+
+**Impact.** Mode lapangan tetap berguna tanpa sinyal dan tidak lagi menyimpan posisi pendaki di server. Pengguna tidak
+melihat paket, kartu darurat, versi cetak, maupun pesan rencana sampai pemilik menyalakan sakelarnya; selama mati, tab
+Mendaki menulis kalimat jujur tanpa tombol unduh.
+
+**Affected modules.** Trip (siklus, mode lapangan, ringkasan, jam kembali), Mendaki, Community (laporan dari
+ringkasan), PWA (service worker dan halaman luring), Akun (keluar).
+
+**Security impact.** Rute baru memakai Policy pemilik trip dan batas laju `personal_writes_per_minute`: tiba, jeda,
+lanjut, angka pendakian, jam kembali, serta manifest dan bagian paket (`Cache-Control: private, no-store`). Ubah laporan
+sebelum dimoderasi memakai Policy pemilik laporan (`TrailConditionReportPolicy`) dengan batas laju yang sama. Versi
+cetak adalah rute baca dengan Policy pemilik trip, tanpa batas laju. Rute posisi dihapus. Basis data perangkat diberi kunci HMAC id pengguna; keluar
+akun menghapus paket, jejak, cache paket, dan OPFS, lalu respons logout mengirim `Clear-Site-Data: "storage"`. Paket
+tidak memuat skor, keluaran AI, GPX komunitas, nama pelapor, atau rencana orang lain.
+
+**Data impact.** Migrasi aditif (DK-28). Suite Unit dan Feature menjalankannya di SQLite; suite Spatial PostGIS di CI
+(`.github/workflows/test.yml`) baru menjalankannya sesudah push, jadi bukti PostgreSQL untuk migrasi ini masih PERLU
+KLARIFIKASI (R-024). Migrasi tidak dijalankan di Supabase sebelum izin (Q2): indeks unik `hiking_sessions.trip_plan_id` (periksa duplikat lebih dulu, kueri di docblock migrasinya),
+`hiking_sessions.paused_at` dan `paused_seconds`, `trip_plans.cancellation_reason`, `hiking_history.recorded_*` dan
+`numbers_edited_at`, `trip_plans.expected_return_at` dan `registration_number`, dan `hiking_sessions.last_resumed_at`
+(menutup putar ulang jeda dan lanjut). Kolom `hiking_sessions.last_known_location`
+dan `location_updated_at` tidak lagi ditulis; isinya yang sudah ada tetap tersimpan sampai pemilik memutus
+pembersihannya.
+
+**Scope impact.** Feature gate §131 butir 4 (keterpakaian di lapangan) dan butir 3 (kesadaran kondisi). Batas MVP tidak
+melebar ke navigasi offline penuh: tanpa peta dasar, tanpa pelacakan latar, tanpa deteksi keluar jalur, tanpa berbagi
+lokasi langsung.
+
+**Keputusan terbuka untuk pemilik.**
+
+- Q7: amandemen ini sendiri, termasuk batas tertulis "paket lapangan, bukan navigasi luring penuh".
+- Q9: ambang turun status Buka di paket, bawaan 24 jam dari `verified_at` (`hiking.field_pack.open_status_stale_after_hours`).
+- Q10 dan Q14: kapan `hiking.field_pack.enabled` dan `hiking.field_safety.enabled` dinyalakan; kebijakan data di
+  perangkat ditulis pemilik di `docs/KEBIJAKAN-DATA-PRIBADI.md` lebih dulu.
+- Pembersihan posisi lama di `hiking_sessions` pada Supabase.
+- Migrasi W6, termasuk `2026_10_07_000500` dan `2026_10_07_000600`, diterapkan sebelum kode gelombang ini terbit (K-2, butir izin akhir 2, 43, dan 52).
+- Urutan sakelar: `FIELD_SAFETY_ENABLED` dinyalakan bersama atau sebelum `FIELD_PACK_ENABLED` (butir izin akhir 42).
+- Nilai `DEVICE_KEY_SECRET` produksi; kode memakai cadangan `app.key` sampai nilai khusus diisi; isi sebelum kode W6
+  pertama kali terbit; mengisinya sesudah itu sama dengan memutar kunci, dan penjaga ganti akun menghapus jejak yang
+  belum terkirim di setiap perangkat tanpa bertanya (butir izin akhir 40).
+- Retensi paket lapangan di perangkat sesudah trip (Q10); rekomendasi hapus 7 hari sesudah tanggal akhir trip (butir izin akhir 39).
+- Rumusan `docs/KEBIJAKAN-DATA-PRIBADI.md` untuk data di perangkat luring (butir izin akhir 41).
+- W6-P2k: opsi penutup residu jejak di perangkat lain atau tab basi; bawaan tidak dibangun (butir izin akhir 50).
+- W6-P2l: mengubah teks persetujuan rekam jejak Profil; bawaan tidak diubah (butir izin akhir 51).
+- Tautan badan pengelola ke jalur, supaya BASECAMP dapat menjadi kontak darurat jalurnya sendiri; sampai itu BASECAMP dikecualikan dari kontak darurat kartu, cetak, dan pesan rencana (W6-7a, butir izin akhir 44).
+- Header `Cache-Control: immutable` untuk `/build/assets/*` supaya pembawaan shell paket per deploy tidak mengunduh ulang (butir izin akhir 49).
+
 ### Log keputusan
 
 | ID | Keputusan | Oleh | Tanggal | Di PRD |
@@ -2204,6 +2274,7 @@ sinkronisasi berikutnya (ubah rencana atau sakelar pengingat); tidak ada pengisi
 | DK-27 | Rencana konsolidasi 23 September dieksekusi dengan pembaruan: merek Memount, frontend React, IA v2 (GR-02), visi, misi, ekspektasi, dan kesepakatan bersama di Bagian I dan VIII | Pemilik | 25 Sep 2026 | Dokumen ini, §160, §161 |
 | DK-28 | Fitur DK-07 tanpa dependensi dibangun sekarang dengan migrasi yang diuji di SQLite dan PostgreSQL CI; tidak dijalankan di Supabase sebelum izin; Google, passkey, WhatsApp, dan SMS menunggu izin dependensi dan penyedia | Agen, dalam batas DK-07, DK-23, DK-24 | 25 Sep 2026 | §64, §105 |
 | DK-29 | Batas banding diselaraskan ke 3 (DK-05); PRODUCT.md diperbaiki mengikutinya | Delegasi pemilik (mengikuti DK-05) | 25 Sep 2026 | §33, PRODUCT.md |
+| DK-36 (Q7) | Paket lapangan luring sebagai sistem kedua dan mode lapangan yang dihitung di perangkat; paket dan alat keselamatan dibangun di balik sakelar mati sampai Q10 dan Q14 | Keputusan pemilik tertunda (Q7); ditulis agen menurut spec v3 yang disetujui (pola W3 P8) | 7 Okt 2026 | §13, §53, §55, §121, §145, GR-07 |
 
 **Keputusan pemilik lain yang tercatat:**
 

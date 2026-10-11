@@ -3,24 +3,8 @@ import { fokusTerlihat } from '@/components/ui/gaya';
 import { Icon } from '@/components/ui/Icon';
 import { Tautan } from '@/components/ui/Tautan';
 import { kelas } from '@/lib/kelas';
+import { detikBergerak, keteranganBerjalan, teksLama } from '@/lib/waktuBergerak';
 import type { PendakianAktif } from '@/types';
-
-/**
- * Lama berjalan dalam jam dan menit, bentuk yang sama dengan Durasi::panjang di server
- * ("2 jam 15 menit"). Jam perangkat yang tertinggal dari server tidak pernah menghasilkan
- * waktu negatif.
- */
-export function lamaBerjalan(mulai: string, sekarang: number): string {
-    const menit = Math.max(0, Math.floor((sekarang - Date.parse(mulai)) / 60_000));
-    const jam = Math.floor(menit / 60);
-    const sisa = menit % 60;
-
-    if (jam === 0) {
-        return `${sisa} menit`;
-    }
-
-    return sisa === 0 ? `${jam} jam` : `${jam} jam ${sisa} menit`;
-}
 
 /**
  * Strip pendakian aktif (spec v3 bagian 5.1; riset D4): selama trip berlangsung, strip
@@ -34,6 +18,13 @@ export function lamaBerjalan(mulai: string, sekarang: number): string {
  * dirinya dan menulis tingginya (ditambah jarak 8 px) ke --strip-pendakian di :root, sehingga
  * bar aksi dan toast selalu duduk di atasnya; nilai 3,5rem di app.css hanya cadangan
  * sebelum skrip berjalan.
+ *
+ * Waktunya waktu bergerak, sama dengan kepala mode lapangan (ruling W6-FD): detikBergerak dan
+ * teksLama, dikurangi jeda yang selesai dan jeda yang sedang berjalan, dengan kata "Dijeda" atau
+ * "Berjalan" dari keteranganBerjalan. Selama dijeda angkanya berhenti, walau pewaktu menit tetap
+ * berdetak. Ketiganya diimpor dari lib/waktuBergerak.ts, bukan dari hitung.ts atau kalimatSumber.ts
+ * (ruling W6-FJ): strip ada di setiap halaman berkerangka, dan kedua modul mode lapangan itu tidak
+ * boleh ikut ke potongan tata letak.
  */
 export function StripPendakian({ pendakian }: { pendakian: PendakianAktif }) {
     const [sekarang, setSekarang] = useState(() => Date.now());
@@ -65,12 +56,13 @@ export function StripPendakian({ pendakian }: { pendakian: PendakianAktif }) {
         return () => window.clearInterval(pewaktu);
     }, []);
 
+    const jedaSejak = pendakian.jedaSejak ? Date.parse(pendakian.jedaSejak) : null;
     const keterangan = [
         pendakian.posBerikutnya ? `Menuju ${pendakian.posBerikutnya}` : 'Pos berikutnya belum tercatat',
-        pendakian.mulai ? `berjalan ${lamaBerjalan(pendakian.mulai, sekarang)}` : null,
+        pendakian.mulai ? keteranganBerjalan(jedaSejak !== null, teksLama(detikBergerak(Date.parse(pendakian.mulai), pendakian.jedaDetik ?? 0, jedaSejak, sekarang))) : null,
     ]
         .filter(Boolean)
-        .join(', ');
+        .join('. ');
 
     return (
         <aside ref={wadah} data-strip-pendakian="" aria-label="Pendakian berlangsung" className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--bilah-tab)+0.5rem)] z-30 px-4">

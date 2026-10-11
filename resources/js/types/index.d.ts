@@ -20,6 +20,10 @@ export interface PendakianAktif {
     posBerikutnya: string | null;
     /** Instan mulai sesi, ISO 8601; waktu berjalan dihitung peramban. */
     mulai: string | null;
+    /** Jeda yang sedang berjalan sejak (ISO 8601), null bila tidak dijeda atau tanpa sesi (W6-FD). */
+    jedaSejak: string | null;
+    /** Detik jeda yang sudah selesai (paused_seconds); null tanpa sesi. */
+    jedaDetik: number | null;
     url: string;
 }
 
@@ -44,6 +48,8 @@ export interface PropsBersama {
     tema: 'system' | 'light' | 'dark';
     tampilan: { efek: 'otomatis' | 'solid'; gerak: 'sistem' | 'kurangi' };
     peta: { styleUrl: string | null; rasterTiles: string[]; attribution: string; maxZoom: number };
+    /** Kunci penyimpanan perangkat per pengguna dan sakelar paket lapangan (W6-R10); null untuk tamu. */
+    perangkat: { kunci: string; paket: boolean } | null;
     flash: {
         /** Kabar yang datang bersama perpindahan halaman; halaman tujuan membacanya dekat kepalanya. */
         status: string | null;

@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
 import { fokusTerlihat, umpanTekan } from '@/components/ui/gaya';
 import { kelas } from '@/lib/kelas';
+import { keluar, keluarBerjalan, useKeadaanKeluar } from '@/luring/keluar';
 import { profile } from '@/routes';
 import type { PropsBersama } from '@/types';
 import { TautanMenu, tombolMenu } from './NavLinks';
@@ -17,18 +18,26 @@ import { TautanMenu, tombolMenu } from './NavLinks';
  * Elemen popover sendiri tidak diberi kelas display. Aturan peramban yang menyembunyikan
  * popover tertutup berasal dari lembar gaya peramban, dan kelas penulis seperti flex selalu
  * mengalahkannya, sehingga menu akan tampil terus. Tata letak isinya ada di anak.
+ *
+ * Keluar lewat keluar() (ruling W6-R10): data perangkat dibersihkan dulu, lalu sesi diakhiri.
+ * Selama itu tombolnya aria-busy dan menu tetap terbuka, supaya kalimat kegagalan di wilayah status
+ * di bawah tombol terbaca dan fokus tetap di tombol (W6-11c). Wilayah itu hanya memuat kalimat dari
+ * keluar yang dimulai di menu ini, bukan dari kartu Akun di Profil (tinjauan Tugas 11 m-4).
  */
 export function MenuAkun() {
-    const { auth } = usePage<PropsBersama>().props;
+    const { auth, perangkat } = usePage<PropsBersama>().props;
     const menu = useRef<HTMLDivElement>(null);
+    const keadaanKeluar = useKeadaanKeluar('menu');
     const pengguna = auth.user;
 
     // Kunjungan Inertia tidak memuat ulang dokumen, jadi popover yang terbuka akan tetap
-    // terbuka di halaman tujuan. Ia ditutup begitu kunjungan dimulai.
+    // terbuka di halaman tujuan. Ia ditutup begitu kunjungan dimulai, kecuali selama keluar berjalan:
+    // menutupnya memindah fokus ke avatar dan menyembunyikan kalimat bila keluar gagal, juga bila
+    // tautan di menu ini membatalkan permintaan keluar (kalimat "halaman berpindah", m-3).
     useEffect(
         () =>
             router.on('start', () => {
-                if (menu.current?.matches(':popover-open')) {
+                if (menu.current?.matches(':popover-open') && !keluarBerjalan()) {
                     menu.current.hidePopover();
                 }
             }),
@@ -55,9 +64,10 @@ export function MenuAkun() {
                         <TautanMenu href={profile.url()}>Profil</TautanMenu>
                         {pengguna.isModerator ? <TautanMenu href="/moderation">Moderasi</TautanMenu> : null}
                         {pengguna.isAdmin ? <TautanMenu href="/admin/trails">Admin</TautanMenu> : null}
-                        <button type="button" onClick={() => router.post('/logout')} className={tombolMenu}>
+                        <button type="button" onClick={() => void keluar(perangkat?.kunci ?? null, 'menu')} aria-busy={keadaanKeluar.sibuk} className={tombolMenu}>
                             Keluar
                         </button>
+                        <p role="status" className={kelas('px-3 text-kecil text-primary', keadaanKeluar.pesan ? 'pb-2 pt-1' : '')}>{keadaanKeluar.pesan}</p>
                     </div>
                 </div>
             </div>

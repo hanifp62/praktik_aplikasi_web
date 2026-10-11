@@ -93,7 +93,10 @@ jobs:
       - name: Feature tests
         run: php artisan test --testsuite=Feature
 
+      # --fail-on-skipped (ruling W6-FI): DSN di bawah selalu diisi, jadi test Spatial yang
+      # dilewati berarti suite tidak benar-benar berjalan. CI tidak boleh hijau tanpa bukti
+      # PostgreSQL (R-024).
       - name: Spatial tests (PostGIS)
         env:
           SPATIAL_TEST_DSN: pgsql://hiking:hiking@127.0.0.1:5432/hiking_test
-        run: php artisan test --testsuite=Spatial
+        run: php artisan test --testsuite=Spatial --fail-on-skipped
