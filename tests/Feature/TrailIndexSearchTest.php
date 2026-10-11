@@ -134,6 +134,9 @@ class TrailIndexSearchTest extends TestCase
         $this->assertStringContainsString('<TafsiranKalimat awalanId="panel"', $halaman);
         $this->assertStringContainsString('<TafsiranKalimat awalanId="ponsel"', $halaman);
         $this->assertStringContainsString('const idChip = (kunci: string) => `${awalanId}-tafsiran-${kunci}`;', $tafsiran);
+        // TE-m1 tinjauan mini: wadah grup juga berawalan instans; id ganda membuat getElementById
+        // menemukan grup panel, sehingga Urungkan di ponsel tidak lagi mendarat di chipnya (TM-1).
+        $this->assertStringContainsString('const idGrup = `${awalanId}-tafsiran-grup`;', $tafsiran);
 
         $this->assertStringContainsString('<SaringanJelajah opsi={saringan} draf={draf} onUbah={ubahPanel} />', $halaman);
         $this->assertStringContainsString('tundaNaik.current = setTimeout(() => terapkan(d), 400);', $halaman);

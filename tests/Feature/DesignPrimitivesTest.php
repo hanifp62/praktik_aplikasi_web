@@ -458,6 +458,10 @@ class DesignPrimitivesTest extends TestCase
         $this->assertMatchesRegularExpression('/onFocus=\{\(e\) => \{\s*fokusDiDalam\.current = true;\s*if \(fokusTerlihatPada\(e\.target\)\) \{\s*setJedaFokus\(true\);\s*\}/', $toast, 'Jeda fokus hanya untuk fokus terlihat (CF-7).');
         $this->assertMatchesRegularExpression("/function fokusTerlihatPada\(unsur: EventTarget\): boolean \{\s*try \{\s*return unsur instanceof Element && unsur\.matches\(':focus-visible'\);\s*\} catch \{\s*return true;\s*\}\s*\}/", $toast);
         $this->assertSame(1, substr_count($toast, 'setJedaFokus(true)'), 'Tidak ada jalan lain yang menjeda toast karena fokus.');
+        // TM-2: tujuan pengembalian fokus diperbarui setiap kali fokus masuk dari luar toast, bukan
+        // dicatat sekali; perpindahan di dalam toast mempertahankan tujuan lama.
+        $this->assertStringContainsString('sebelum.current = unsurLuar(e.relatedTarget, wadah.current) ?? sebelum.current;', $toast);
+        $this->assertStringNotContainsString('sebelum.current ??= unsurLuar(e.relatedTarget', $toast);
 
         // Ruling CC-2: DESIGN.md menulis perilaku yang sama, bukan jeda untuk setiap fokus.
         $desain = (string) preg_replace('/\s+/', ' ', File::get(base_path('DESIGN.md')));

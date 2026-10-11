@@ -85,7 +85,7 @@ interface WadahToastProps {
  * sendiri bagi pengguna tetikus. Jeda penunjuk tetap.
  *
  * Toast dengan opsi fokus memindah fokus ke Urungkan. Ketika toast hilang dengan fokus di
- * dalamnya, fokus kembali ke unsur yang difokus sebelum fokus masuk ke toast, atau ke
+ * dalamnya, fokus kembali ke unsur yang difokus sebelum fokus terakhir kali masuk ke toast, atau ke
  * #konten bila unsur itu sudah tidak ada; tidak ke body. Pengembalian itu menunggu satu
  * bingkai dan dilewati bila pemanggil sudah memindahkan fokus, misalnya ke unsur yang
  * dikembalikan Urungkan. Melayang di atas navigasi bawah dan bar aksi (--bar-aksi), di
@@ -184,7 +184,10 @@ function Toast({ toast, onTutup, durasiMs }: { toast: DataToast; onTutup: () => 
                     setJedaFokus(true);
                 }
 
-                sebelum.current ??= unsurLuar(e.relatedTarget, wadah.current);
+                // Tujuan pengembalian diperbarui setiap kali fokus masuk dari luar toast, supaya fokus
+                // kembali ke unsur terakhir sebelum fokus masuk; perpindahan di dalam toast memberi
+                // null dan tujuan lama tetap (TM-2 cek peramban).
+                sebelum.current = unsurLuar(e.relatedTarget, wadah.current) ?? sebelum.current;
             }}
             onBlur={(e) => {
                 if (e.currentTarget.contains(e.relatedTarget as Node | null)) {

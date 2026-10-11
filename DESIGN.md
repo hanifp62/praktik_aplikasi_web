@@ -367,7 +367,7 @@ halaman tetap satu kolom. Daftar yang bergulir menyamping diberi
 
 **Fokus tidak pernah jatuh ke body.** Chip saringan yang dilepas menyerahkan fokus ke chip tetangga atau wadah grupnya;
 toast yang dipicu papan ketik mengambil fokus ke Urungkan, dan fokus kembali ke unsur sebelumnya atau ke `#konten`
-ketika toast hilang; sesudah Urungkan, pemanggil memfokus unsur yang dikembalikan lewat `useFokusSesudahRender`; pesan
+ketika toast hilang; sesudah Urungkan, pemanggil memfokus unsur yang dikembalikan begitu jawaban server dirender; pesan
 jaringan yang ditutup, lewat "Tutup pesan" maupun "Muat ulang halaman", memindah fokus ke `#konten` sebelum hilang
 (`ShellFeedbackTest`); tombol stepper di batas rentang memakai `aria-disabled` alih-alih `disabled`.
 
