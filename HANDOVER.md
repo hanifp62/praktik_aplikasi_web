@@ -4,7 +4,8 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 11 Oktober 2026 (bagian 0, W6 selesai; W7 sampai W9 ditunda pemilik untuk evaluasi). Bagian 1–10 berasal dari 21 September 2026
+Terakhir diperbarui: 11 Oktober 2026 (bagian 0, W6 selesai; W1 sampai W6 di-commit per gelombang di branch hardening,
+belum di-push; W7 sampai W9 ditunda pemilik untuk evaluasi). Bagian 1–10 berasal dari 21 September 2026
 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
@@ -17,7 +18,9 @@ tugas anda telah selesai. lanjutkan!" Artinya: W1 sampai W9 dikerjakan berurutan
 yang butuh izin (commit, push, Supabase, migrasi, dependensi baru, menjalankan `memount:demo`) dikumpulkan untuk satu
 permintaan di akhir. Ledger tiap gelombang ada di `.superpowers/sdd/2026-09-26-memount-v3-w<N>-*/progress.md`
 (diabaikan git). Sesudah tiga commit M1 (`40c78d8`, `60400ce`, `ddc27e8`), pohon kerja kembali memuat perubahan
-yang belum di-commit sampai permintaan izin akhir.
+yang belum di-commit sampai permintaan izin akhir. Pada 11 Oktober 2026, atas permintaan pemilik, W1 sampai W6
+di-commit sebagai enam commit per gelombang (`857a7a2` sampai `3266069`), masing-masing dengan tree akhir gelombangnya,
+di branch `hardening`. Push belum dilakukan dan tetap butuh izin (R-018).
 
 **Arahan pemilik 11 Oktober 2026 (verbatim), menggantikan urutan sampai W9:** "segera selesaikan w6, jika sudah selesai saya minta berhenti terlebih dahulu saya akan mengadakan evaluasi besar"an. tunda pengerjaan w7-w9. lakukan integrasi ke server local utama karena saya butuh inspection untuk. disertai penjelasan hasil kinerja anda apa saja yang sudah anda kerjakan pastikan saya dapat melihat hasil kinerja anda. baru setelah itu saya tentukan langkah selanjutnya." Artinya: sesudah W6 tidak ada gelombang baru sampai pemilik memutuskan; permintaan izin akhir diajukan bersama laporan W1 sampai W6.
 
@@ -28,7 +31,7 @@ yang belum di-commit sampai permintaan izin akhir.
 > `php artisan test --compact --testsuite=Unit,Feature`, `npx tsc --noEmit`. Jangan commit, push, mengakses
 > Supabase, menjalankan migrasi, atau menambah dependensi tanpa izin saya.
 
-### W6 Mendaki dan paket luring (selesai 11 Oktober 2026, menunggu izin commit)
+### W6 Mendaki dan paket luring (selesai 11 Oktober 2026, di-commit 11 Oktober 2026)
 
 Rencana `docs/superpowers/plans/2026-10-07-memount-v3-w6-mendaki.md`, 13 tugas, ditambah dua sisipan. Kedua sisipan
 diputus koordinator:
@@ -239,7 +242,7 @@ Titik lanjut: menunggu evaluasi pemilik. Bila W7 dilanjutkan, pra-cek W7 memakai
 `docs/superpowers/plans/2026-10-08-memount-v3-w7-progres-profil.md` dan pra-tinjau Tugas 1 sampai 11 (74 temuan). Progres
 membaca `recorded_*` untuk total tanjakan dan jarak.
 
-### W5 Beranda (selesai 8 Oktober 2026, menunggu izin commit)
+### W5 Beranda (selesai 8 Oktober 2026, di-commit 11 Oktober 2026)
 
 Rencana `docs/superpowers/plans/2026-10-07-memount-v3-w5-beranda.md`, 9 tugas. Ledger dan seluruh ruling ada di
 `.superpowers/sdd/2026-10-07-memount-v3-w5-beranda/progress.md`, yaitu:
@@ -350,7 +353,7 @@ sesi koordinator (13 tugas), dipindah ke `docs/superpowers/plans/` saat W6 dimul
 ini memakai uji kering `alat6/uji_kering6.py --tanpa-w5` dan memutus konflik K1 sampai K13. Rencana W7 dan W8 sudah
 ditulis dan disimulasikan; rencana W9 sedang ditulis.
 
-### W4 Klaster Trip (selesai 7 Oktober 2026, menunggu izin commit)
+### W4 Klaster Trip (selesai 7 Oktober 2026, di-commit 11 Oktober 2026)
 
 Rencana `docs/superpowers/plans/2026-10-06-memount-v3-w4-trip.md`, 8 tugas. Ledger dan seluruh ruling ada di
 `.superpowers/sdd/2026-10-06-memount-v3-w4-trip/progress.md`, yaitu W4-C1 sampai W4-C7, W4-S1 sampai W4-S4, W4-1a sampai
@@ -491,7 +494,7 @@ Rencana itu dipindah ke `docs/superpowers/plans/` saat W5 dimulai, lalu dipra-ce
 gelombang akhir W4 mengubah `TripSteps`, `PermitService`, dan `PreDepartureCheck`. Rencana W6 juga sudah ditulis (13
 tugas).
 
-### W3 Klaster Jelajah (selesai 6 Oktober 2026, menunggu izin commit)
+### W3 Klaster Jelajah (selesai 6 Oktober 2026, di-commit 11 Oktober 2026)
 
 Rencana `docs/superpowers/plans/2026-09-27-memount-v3-w3-jelajah.md`, 12 tugas. Ledger dan seluruh ruling (W3-C0 sampai
 W3-C8, W3-1a sampai W3-10a, W3-S1 sampai W3-S6, W3-F1 sampai W3-F7, W3-G1 dan W3-G2) ada di
@@ -601,7 +604,7 @@ Karena itu kurasi status resmi W8 mendesak.
 Titik lanjut: W4 Klaster Trip. Rencana `docs/superpowers/plans/2026-10-06-memount-v3-w4-trip.md` (8 tugas, disimulasikan
 di salinan akhir W3 Tugas 9, 1.764 menjadi 1.811 test); pra-cek konflik terhadap pohon akhir W3 sebelum Tugas 1.
 
-### W2 Kerangka (selesai 28 September 2026, menunggu izin commit)
+### W2 Kerangka (selesai 28 September 2026, di-commit 11 Oktober 2026)
 
 Rencana `docs/superpowers/plans/2026-09-27-memount-v3-w2-kerangka.md`, 8 tugas. Rencana itu ditulis subagen dan
 disimulasikan di salinan W1 akhir. Setiap tugas ditinjau terpisah, sebagian dengan beberapa putaran perbaikan.
@@ -670,7 +673,7 @@ Sisa yang tercatat:
 
 Titik lanjut: W3 Klaster Jelajah. Rencananya sedang ditulis paralel di scratchpad (P-R3).
 
-### W1 Fondasi desain (selesai 27 September 2026, menunggu izin commit)
+### W1 Fondasi desain (selesai 27 September 2026, di-commit 11 Oktober 2026)
 
 Rencana `docs/superpowers/plans/2026-09-26-memount-v3-w1-fondasi-desain.md`, 12 tugas, masing-masing ditinjau terpisah.
 Sesudahnya ada tinjauan akhir lintas tugas, satu gelombang perbaikan, dan tinjauan ulang terlingkup. Ledger dan
