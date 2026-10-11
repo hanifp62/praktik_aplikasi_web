@@ -87,6 +87,7 @@ class RouteFitService
             warnings: $warnings,
             explanation: $this->explanations->build($trail, $factors, $warnings, $status),
             engineVersion: self::ENGINE_VERSION,
+            segmentRestrictions: $segmentRestrictions,
         );
     }
 
@@ -170,12 +171,7 @@ class RouteFitService
         // PRD §42: pembatasan pada satu segmen tidak menutup jalurnya, tetapi harus disebut
         // dengan nama segmennya agar pendaki tahu sampai mana jalur dapat ditempuh.
         foreach ($segmentRestrictions as $restriction) {
-            $warnings[] = rtrim(sprintf(
-                'Segmen %s berstatus %s.%s',
-                $restriction['segment'],
-                $restriction['status']->label(),
-                $restriction['reason'] ? ' '.$restriction['reason'].'.' : ''
-            ));
+            $warnings[] = $this->kalimatSegmen($restriction);
         }
 
         // Peringatan, bukan pengecualian: aturan booking berubah dan data kita bisa
@@ -193,6 +189,26 @@ class RouteFitService
         }
 
         return $warnings;
+    }
+
+    /**
+     * Satu kalimat pembatasan segmen (PRD §42): nama segmen, status resminya dalam kata
+     * (bukan nilai enum mentah, R-005), dan alasan bila ada. Satu-satunya pembentuk (W3-3c):
+     * `peringatan()` memanggilnya di loop yang sama untuk what_to_watch dan panel "Kenapa?"
+     * Jelajah, dan daftar sebab `TrailFitService` memanggilnya untuk satu kalimat alasan jalur
+     * yang turun dari Cocok di semua permukaan (ruling W5-FB): sebab turunnya label, bukan
+     * status atau izin.
+     *
+     * @param  array{segment: string, status: OfficialStatusValue, reason: ?string}  $restriction
+     */
+    public function kalimatSegmen(array $restriction): string
+    {
+        return rtrim(sprintf(
+            'Segmen %s berstatus %s.%s',
+            $restriction['segment'],
+            $restriction['status']->label(),
+            $restriction['reason'] ? ' '.$restriction['reason'].'.' : ''
+        ));
     }
 
     /**

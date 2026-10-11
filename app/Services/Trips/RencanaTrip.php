@@ -275,6 +275,11 @@ final class RencanaTrip
      * pernah ditulis "sedang dibuka" (R-007, ruling W4-FE). Kuota hanya disebut sebagai aturan
      * tercatat, tidak pernah sebagai sisa kuota (§43).
      *
+     * Kalimat penutup $penutup (PermitService::kalimatTautan()) dipilih MENURUT $dasar['tautan']
+     * yang sama dengan yang dirender (ruling W5-G1, R-007): klaim "menautkan" hanya benar ketika
+     * tautan itu sungguh ada, jadi jendela BELUM_DIBUKA (tautan selalu null) tidak pernah
+     * mendapat klaim itu.
+     *
      * @return array{keadaan: string, judul: string, keterangan: string, tautan: array{href: string, teks: string, label: string}|null, kuota: string}|null
      */
     private function izin(Trail $trail, ?Carbon $tanggal): ?array
@@ -314,9 +319,9 @@ final class RencanaTrip
 
         $tanggalBuka = $jendela['buka'] !== null ? PermitService::hari($jendela['buka']) : null;
         $tanggalTutup = $jendela['tutup'] !== null ? PermitService::hari($jendela['tutup']) : null;
-        $penutup = ' Memount menautkan sistem resmi dan tidak menjual izin.';
         // Tautan dari jendela yang sama dengan judulnya: "hari ini" dibaca sekali (W4-FK N4).
         $dasar = ['tautan' => PermitService::pemesananDariJendela($jendela, $aturan)['tautan'], 'kuota' => $kuota];
+        $penutup = ' '.PermitService::kalimatTautan($dasar['tautan'] !== null);
 
         return match ($jendela['state']) {
             PermitService::BOOKING_DITUTUP => [

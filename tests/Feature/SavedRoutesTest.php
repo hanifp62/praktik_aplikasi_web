@@ -90,7 +90,7 @@ class SavedRoutesTest extends TestCase
     {
         $user = User::factory()->create();
         $trail = $this->jalur(['name' => 'Jalur Wekas']);
-        $this->actingAs($user)->post(route('trails.timbang', $trail->id));
+        $this->actingAs($user)->post(route('trails.saved.store', $trail->id));
 
         $this->actingAs($user)->post(route('logout'));
         $this->assertGuest();

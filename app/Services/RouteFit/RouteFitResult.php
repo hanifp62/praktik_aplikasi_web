@@ -2,6 +2,7 @@
 
 namespace App\Services\RouteFit;
 
+use App\Enums\OfficialStatusValue;
 use App\Enums\RouteFitLabel;
 use App\Models\Trail;
 
@@ -12,10 +13,15 @@ use App\Models\Trail;
 readonly class RouteFitResult
 {
     /**
+     * $segmentRestrictions adalah pembatasan segmen yang dibaca RouteFitService::label(), supaya
+     * kalimat alasan menyebut sebab yang sama dengan label tanpa memuat ulang datanya (ruling
+     * W5-FB). Bawaannya kosong; satu-satunya tempat konstruksi, evaluate(), selalu mengisinya.
+     *
      * @param  array<int, FactorScore>  $factors
      * @param  array<int, string>  $failedRules
      * @param  array<int, string>  $warnings
      * @param  array<string, array<int, string>>  $explanation
+     * @param  array<int, array{segment: string, status: OfficialStatusValue, reason: ?string}>  $segmentRestrictions
      */
     public function __construct(
         public Trail $trail,
@@ -27,6 +33,7 @@ readonly class RouteFitResult
         public array $warnings,
         public array $explanation,
         public string $engineVersion,
+        public array $segmentRestrictions = [],
     ) {}
 
     /**

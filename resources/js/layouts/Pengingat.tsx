@@ -57,6 +57,11 @@ export function TombolPengingat() {
  * akibat konflik versi (sedangMemuatPenuh() dari Kerangka.tsx), jaring ini tidak menyetel
  * galat. Pesan "Sambungan ke server terputus" keliru untuk kasus itu; kerangka memuat tetap
  * tampil sampai halaman berganti.
+ *
+ * Diperbarui Ruling W5-G1 (R-007): kalimat "Memount menautkan sistem resmi dan tidak menjual
+ * izin." di bawah daftar Tenggat izin hanya ditulis bila paling sedikit satu butir daftar itu
+ * sungguh menampilkan tautan bookingUrl; selain itu kalimatnya "Memount tidak memesan atau
+ * menjual izin.", sama persis dengan KartuIzin.tsx.
  */
 export function LembarPengingat({ terbuka, onTutup, pemicu }: { terbuka: boolean; onTutup: () => void; pemicu: RefObject<HTMLElement | null> }) {
     const [keadaan, setKeadaan] = useState<Keadaan>({ jenis: 'memuat' });
@@ -119,6 +124,11 @@ export function LembarPengingat({ terbuka, onTutup, pemicu }: { terbuka: boolean
             setKeadaan({ jenis: 'memuat' });
         }
     }, [terbuka, muat]);
+
+    // Klaim "menautkan" di bawah daftar tenggat izin hanya benar ketika paling sedikit satu
+    // tautan sistem resmi di daftar itu sungguh tampil (ruling W5-G1, R-007: tidak mengklaim
+    // yang tidak ada).
+    const adaTautanIzin = keadaan.jenis === 'siap' && keadaan.daftar.tenggatIzin.some((t) => t.bookingUrl);
 
     return (
         <LembarBawah terbuka={terbuka} onTutup={onTutup} pemicu={pemicu} judul="Pengingat" keterangan="Pengingat surel terjadwal dan tenggat izin untuk trip Anda. Memount belum mengirim notifikasi ke ponsel.">
@@ -198,7 +208,10 @@ export function LembarPengingat({ terbuka, onTutup, pemicu }: { terbuka: boolean
                                         </li>
                                     ))}
                                 </ul>
-                                <p className="mt-2 text-kecil text-secondary">Memount menautkan sistem resmi dan tidak menjual izin.</p>
+                                {/* Klaim "menautkan" hanya benar ketika tautannya sungguh tampil di atas (ruling
+                                    W5-G1); tanpa tautan sama sekali, klaim yang tersisa adalah yang tidak pernah
+                                    menjual atau memesan sendiri (R-007: tidak mengklaim yang tidak ada). */}
+                                <p className="mt-2 text-kecil text-secondary">{adaTautanIzin ? 'Memount menautkan sistem resmi dan tidak menjual izin.' : 'Memount tidak memesan atau menjual izin.'}</p>
                             </section>
                         ) : null}
                     </div>

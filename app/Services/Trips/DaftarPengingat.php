@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Services\PermitService;
 use App\Support\Timezone;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Carbon;
 
 /**
  * Isi lembar Pengingat dari lonceng Beranda (spec v3 bagian 5.1; rencana induk W2 butir 5;
@@ -29,9 +28,7 @@ class DaftarPengingat
 
     private const FORMAT_WAKTU = 'l, d M Y H:i';
 
-    private const FORMAT_TANGGAL = 'l, d M Y';
-
-    public function __construct(private PermitService $izin) {}
+    public function __construct(private PermitService $izin, private TenggatIzin $tenggat) {}
 
     /**
      * @return array{
@@ -41,15 +38,14 @@ class DaftarPengingat
      */
     public function untuk(User $user): array
     {
-        $sekarang = Carbon::now();
-
         $trips = TripPlan::query()
             ->whereBelongsTo($user)
             ->whereIn('status', [TripStatus::PLANNED->value, TripStatus::READY_FOR_DEPARTURE->value])
             ->whereDate('planned_date', '>=', Timezone::earliestDateInIndonesia())
             ->with([
                 'trail.mountain',
-                'reminders' => fn ($query) => $query->menunggu()->where('dijadwalkan_untuk', '>', $sekarang)->orderBy('dijadwalkan_untuk'),
+                // Predikat yang sama dengan Tenggat terdekat Beranda (ruling W5-FE).
+                'reminders' => fn ($query) => $query->akanDatang()->orderBy('dijadwalkan_untuk'),
             ])
             ->orderBy('planned_date')
             ->orderBy('id')
@@ -94,56 +90,25 @@ class DaftarPengingat
 
     /**
      * Satu kalimat tentang jendela pemesanan izin trip ini, atau null bila tidak ada aturan
-     * izin yang tercatat. Aritmetika jendelanya tetap milik PermitService; di sini hanya
-     * tanggal yang ditulis. Batas yang tidak tercatat disebut belum tercatat, tidak ditebak.
+     * izin yang tercatat. Kalimat dan tanggal patokannya milik TenggatIzin, yang juga dibaca
+     * Tenggat terdekat Beranda (W5).
      *
      * @return array{urutan: int|null, tripId: int, trip: string, keadaan: string, kalimat: string, pengelola: string, bookingUrl: string|null, url: string}|null
      */
     private function tenggatIzin(TripPlan $trip, ?PermitRequirement $aturan, string $url): ?array
     {
-        if ($trip->trail === null || $aturan === null) {
+        $jendela = $this->tenggat->untuk($trip, $aturan);
+
+        if ($jendela === null || $aturan === null) {
             return null;
         }
-
-        $jendela = $this->izin->bookingWindowFor($trip->trail, $trip->planned_date, $aturan);
-
-        if ($jendela === null) {
-            return null;
-        }
-
-        $buka = $aturan->booking_opens_days_before;
-        $tutup = $aturan->booking_closes_days_before;
-
-        // Kalimat dan tanggal patokan urutan untuk "<awal> <tanggal> (H-<hari>).".
-        $tulis = function (string $awal, int $hari) use ($trip): array {
-            $tanggal = $trip->planned_date->copy()->subDays($hari);
-
-            return [sprintf('%s %s (H-%d).', $awal, $tanggal->translatedFormat(self::FORMAT_TANGGAL), $hari), $tanggal];
-        };
-
-        [$kalimat, $patokan] = match (true) {
-            $jendela['state'] === PermitService::BOOKING_BELUM_DIBUKA && $buka !== null => $tulis('Pemesanan izin dibuka', $buka),
-            $jendela['state'] === PermitService::BOOKING_DITUTUP && $tutup !== null => $tulis('Pemesanan izin sudah ditutup', $tutup),
-            // Tanggal tutup tercatat tetapi tanggal buka tidak: tidak ditulis seolah sudah dibuka
-            // (R-007, ruling W4-FE), hari terakhirnya tetap disebut.
-            $jendela['state'] === PermitService::BOOKING_BUKA_BELUM_TERCATAT && $tutup !== null => $tulis('Tanggal buka pemesanan izin belum tercatat; pemesanan ditutup', $tutup),
-            $tutup !== null => $tulis('Pemesanan izin ditutup', $tutup),
-            // Tanggal buka tercatat, sedang berjalan, hanya tutupnya yang belum tercatat:
-            // itu fakta yang diketahui, bukan tebakan.
-            $buka !== null => ['Pemesanan izin sedang dibuka. Tanggal penutupannya belum tercatat.', null],
-            // Tidak ada apa pun yang tercatat: mengklaim "sedang dibuka" di sini adalah
-            // klaim tanpa data, bukan sekadar tanggal yang belum tercatat (R-007, Ruling
-            // W2-6a #6). Sejak ruling W4-FE PermitService sendiri menandai jendela seperti ini
-            // BUKA_BELUM_TERCATAT, bukan TERBUKA.
-            default => ['Jendela pemesanan izin belum tercatat; periksa sistem resmi.', null],
-        };
 
         return [
-            'urutan' => $patokan?->getTimestamp(),
+            'urutan' => $jendela['tanggal']?->getTimestamp(),
             'tripId' => $trip->id,
             'trip' => $trip->name,
-            'keadaan' => $jendela['state'],
-            'kalimat' => $kalimat,
+            'keadaan' => $jendela['keadaan'],
+            'kalimat' => $jendela['kalimat'],
             'pengelola' => $aturan->authority,
             // Tautan sistem resmi (R-009: Memount menautkan, tidak menjual izin). Sudah ikut
             // $aturan yang dimuat requirementsForTrails, jadi tanpa kueri tambahan (Ruling

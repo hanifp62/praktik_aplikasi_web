@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Enums\ConsiderationOutcome;
+use App\Http\Controllers\Trails\ConsiderationController;
 use App\Models\Mountain;
 use App\Models\Trail;
 use App\Models\TrailConsideration;
 use App\Models\User;
 use App\Services\ConsiderationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -30,6 +32,17 @@ class ConsiderationTest extends TestCase
     private function jalur(): Trail
     {
         return Trail::factory()->for(Mountain::factory()->create())->published()->create();
+    }
+
+    /**
+     * Titipan W3 (ruling W3-F3): sakelar simpan lama tidak lagi punya pemanggil sejak tombol
+     * simpan memakai trails.saved.store dan trails.saved.remove, dan Beranda W5 tidak
+     * memakainya. Rute dan aksinya dihapus supaya tidak ada jalan tulis kedua ke simpanan.
+     */
+    public function test_the_old_save_toggle_route_is_gone(): void
+    {
+        $this->assertFalse(Route::has('trails.timbang'));
+        $this->assertFalse(method_exists(ConsiderationController::class, 'toggle'));
     }
 
     public function test_a_hiker_can_put_a_trail_aside_to_think_about(): void
@@ -211,12 +224,12 @@ class ConsiderationTest extends TestCase
         $this->assertSame([$ketiga->id, $kedua->id, $pertama->id], $urutan);
     }
 
-    public function test_timbang_refuses_an_unpublished_trail(): void
+    public function test_saving_refuses_an_unpublished_trail(): void
     {
         $user = User::factory()->create();
         $draft = Trail::factory()->for(Mountain::factory()->create())->unpublished()->create();
 
-        $this->actingAs($user)->post(route('trails.timbang', $draft->id))->assertNotFound();
+        $this->actingAs($user)->post(route('trails.saved.store', $draft->id))->assertNotFound();
 
         $this->assertDatabaseMissing('trail_considerations', ['user_id' => $user->id, 'trail_id' => $draft->id]);
     }
@@ -235,7 +248,7 @@ class ConsiderationTest extends TestCase
 
         $this->actingAs($user)
             ->from(route('trails.index'))
-            ->post(route('trails.timbang', $ketiga->id))
+            ->post(route('trails.saved.store', $ketiga->id))
             ->assertRedirect(route('trails.index'))
             ->assertSessionHas('timbangan-penuh', ConsiderationOutcome::DITOLAK->label().' (2 jalur). Hapus satu dulu sebelum menyimpan jalur lain.');
 
@@ -251,7 +264,7 @@ class ConsiderationTest extends TestCase
         $user = User::factory()->create();
         $trail = Trail::factory()->for(Mountain::factory()->create())->published()->create(['name' => 'Jalur Kaliurang']);
 
-        $this->actingAs($user)->from(route('trails.index'))->post(route('trails.timbang', $trail->id))->assertRedirect(route('trails.index'));
+        $this->actingAs($user)->from(route('trails.index'))->post(route('trails.saved.store', $trail->id))->assertRedirect(route('trails.index'));
 
         $this->assertDatabaseHas('trail_considerations', ['user_id' => $user->id, 'trail_id' => $trail->id]);
 
@@ -266,7 +279,7 @@ class ConsiderationTest extends TestCase
         $trail = Trail::factory()->for(Mountain::factory()->create())->published()->create(['name' => 'Jalur Kaliurang']);
         app(ConsiderationService::class)->toggle($user, $trail);
 
-        $this->actingAs($user)->from(route('trails.index'))->post(route('trails.timbang', $trail->id))->assertRedirect(route('trails.index'));
+        $this->actingAs($user)->from(route('trails.index'))->delete(route('trails.saved.remove', $trail->id))->assertRedirect(route('trails.index'));
 
         $this->assertDatabaseMissing('trail_considerations', ['user_id' => $user->id, 'trail_id' => $trail->id]);
 

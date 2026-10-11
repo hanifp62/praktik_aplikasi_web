@@ -74,7 +74,7 @@ class IndonesianInterfaceTest extends TestCase
 
         // Judul dirender server dari prop halaman; navigasinya dirender layout React di
         // klien, jadi labelnya diperiksa dari sumber layout.
-        $this->assertStringContainsString('Dasbor', $isi);
+        $this->assertStringContainsString('Beranda', $isi);
 
         $layout = collect(File::files(resource_path('js/layouts')))->map(fn ($f) => $f->getContents())->implode("\n");
         $this->assertStringContainsString('Keluar', $layout);

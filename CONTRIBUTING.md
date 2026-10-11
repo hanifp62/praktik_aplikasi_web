@@ -190,7 +190,7 @@ perintah; lanjutan pekerjaan lain di jendela yang sama bisa tanpa sengaja memaka
 sesudahnya dengan `Remove-Item Env:DB_CONNECTION, Env:DB_DATABASE, Env:DB_URL`, atau pakai jendela terpisah untuk
 pratinjau.
 
-Lalu buka `http://127.0.0.1:8100/_pratinjau/primitif.html`, `dasbor.html` (Beranda), `jelajah.html`, `trip.html`,
+Lalu buka `http://127.0.0.1:8100/_pratinjau/primitif.html`, `dasbor.html` (Beranda fase B2; fase lain di `dasbor-b0.html`, `dasbor-b1.html`, `dasbor-b3.html`, dan `dasbor-b4.html`), `jelajah.html`, `trip.html`,
 `mendaki.html`, `progres.html`, `detail-jalur.html` (halaman tugas tanpa bilah tab), `jelajah-mendaki.html` (strip
 pendakian aktif), atau `jelajah-kosong.html`.
 

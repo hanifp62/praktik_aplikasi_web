@@ -298,6 +298,21 @@ class PermitService
     }
 
     /**
+     * Kalimat penutup kotak izin tentang Memount menautkan atau tidak sistem resmi, menurut ada
+     * atau tidaknya tautan yang SUNGGUH tampil pada elemen yang sama (ruling W5-G1). Mengklaim
+     * tautan yang tidak ditampilkan melanggar R-007, jadi pemanggil wajib mengoper hasil tautan
+     * yang sama dengan yang dirender, bukan menilai ulang. Sumber tunggal untuk Beranda
+     * (TenggatTrip) dan Rencanakan (RencanaTrip); klien memakai kalimat yang sama persis
+     * (KartuIzin.tsx:54).
+     */
+    public static function kalimatTautan(bool $adaTautan): string
+    {
+        return $adaTautan
+            ? 'Memount menautkan sistem resmi dan tidak menjual izin.'
+            : 'Memount tidak memesan atau menjual izin.';
+    }
+
+    /**
      * Hari kalender pemesanan, cara tulis yang sama di semua halaman trip.
      */
     public static function hari(CarbonInterface $tanggal): string

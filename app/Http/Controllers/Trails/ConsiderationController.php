@@ -25,22 +25,6 @@ class ConsiderationController extends Controller
     /** Awalan kunci sesi penanda pemulihan; diikuti id jalur. */
     private const KUNCI_PEMULIHAN = 'simpanan-pulihkan.';
 
-    public function toggle(Request $request, int $trail, ConsiderationService $consideration): RedirectResponse
-    {
-        $jalur = Trail::published()->findOrFail($trail);
-
-        $hasil = $consideration->toggle($request->user(), $jalur);
-
-        if ($hasil === ConsiderationOutcome::DITOLAK) {
-            return back()->with(
-                'timbangan-penuh',
-                ConsiderationOutcome::DITOLAK->label().' ('.$consideration->batasSimpanan().' jalur). Hapus satu dulu sebelum menyimpan jalur lain.'
-            );
-        }
-
-        return back()->with('pengumuman', $jalur->name.' '.Str::lcfirst($hasil->label()).'.');
-    }
-
     /**
      * Menghapus dari simpanan, sumber yang sama dengan hitungan Simpanan dan halaman Banding.
      *
@@ -80,8 +64,8 @@ class ConsiderationController extends Controller
 
     /**
      * Simpan idempoten: tombol simpan kartu dan bar aksi, dan Urungkan sesudah "Hapus dari
-     * simpanan" yang mengirim kembali catatannya. Hanya jalur terbit, sama dengan toggle();
-     * simpanan yang penuh ditolak dengan pesan yang sama. Baris yang sudah ada (misalnya
+     * simpanan" yang mengirim kembali catatannya. Hanya jalur terbit; simpanan yang penuh
+     * ditolak dengan pesan yang dibaca TombolSimpan. Baris yang sudah ada (misalnya
      * dari tab atau perangkat lain) di-flash terpisah lewat simpanan-sudah-ada, supaya
      * klien tidak menawarkan Urungkan-sebagai-hapus untuk baris yang tidak dibuatnya
      * (tinjauan Tugas 4 temuan 2; ruling W3-4b). Payload itu menyebut id jalurnya, supaya

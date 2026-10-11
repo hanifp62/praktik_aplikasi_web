@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CompletionState;
 use App\Enums\ExperienceLevel;
 use App\Enums\PreparationCategory;
 use App\Enums\PreparationStatus;
@@ -10,8 +11,12 @@ use App\Enums\TripType;
 use App\Enums\UserRole;
 use App\Models\Checkpoint;
 use App\Models\DataSource;
+use App\Models\HikingHistory;
 use App\Models\Mountain;
+use App\Models\MountainFollow;
+use App\Models\PermitRequirement;
 use App\Models\Trail;
+use App\Models\TrailConditionReport;
 use App\Models\TrailConsideration;
 use App\Models\TripPlan;
 use App\Models\TripPreparationItem;
@@ -170,6 +175,63 @@ class PageQueryBudgetTest extends TestCase
         $this->assertSame($sedikit, $banyak, "Beban tumbuh: {$sedikit} query untuk 1 simpanan, {$banyak} untuk 22.");
     }
 
+    /**
+     * Beranda W5 dalam fase B2 dengan semua bagiannya: kartu trip, tenggat, kabar gunung yang
+     * diikuti, dan "Jalur lain untuk Anda". Bebannya tidak tumbuh bersama jumlah jalur terbit
+     * yang dinilai, jumlah trip pendakinya, maupun jumlah kabar.
+     */
+    public function test_the_home_does_not_grow_with_trails_trips_or_news(): void
+    {
+        $user = $this->pendakiBerprofil();
+        $gunung = Mountain::factory()->create();
+        $jalur = Trail::factory()->count(4)->for($gunung)->easy()->published()->create();
+        PermitRequirement::factory()->create(['mountain_id' => $gunung->id]);
+        MountainFollow::create(['user_id' => $user->id, 'mountain_id' => $gunung->id]);
+        TripPlan::factory()->for($user)->for($jalur->first())->create(['planned_date' => now()->addDays(10)->toDateString(), 'reminders_enabled' => true]);
+        TrailConditionReport::factory()->approved()->for($jalur->first())->create();
+
+        $this->actingAs($user);
+        $this->get('/dashboard')->assertOk();
+        $sedikit = $this->countQueries('/dashboard');
+
+        Trail::factory()->count(20)->for($gunung)->easy()->published()->create();
+        TripPlan::factory()->count(5)->for($user)->for($jalur->last())->create(['planned_date' => now()->addDays(40)->toDateString()]);
+        TrailConditionReport::factory()->count(5)->approved()->for($jalur->last())->create();
+
+        $banyak = $this->countQueries('/dashboard');
+
+        $this->assertSame($sedikit, $banyak, "Beban tumbuh: {$sedikit} query untuk 4 jalur, {$banyak} untuk 24 jalur.");
+    }
+
+    /**
+     * Tangga tanjakan (Tugas 6 W5) menghitung pendakian tuntas pendaki lewat satu kueri
+     * `groupBy`+`limit`, dan trip mendatang ber-tanjakan memanggil
+     * `ProgressLadderService::bandingkanDenganRiwayat()` (satu kueri `MAX`) -- keduanya harus
+     * tetap O(1) terhadap jumlah riwayat tuntas, sumbu yang tidak disentuh test Beranda di
+     * atas (yang menumbuhkan jalur, trip mendatang, dan kabar, tapi tidak pernah mengisi
+     * `hiking_history`) (ruling W5-6c / I3).
+     */
+    public function test_the_home_does_not_grow_with_the_number_of_completed_hikes(): void
+    {
+        $user = $this->pendakiBerprofil();
+        $gunungRencana = Mountain::factory()->create();
+        $jalurRencana = Trail::factory()->for($gunungRencana)->easy()->published()->create();
+        TripPlan::factory()->for($user)->for($jalurRencana)->create(['planned_date' => now()->addDays(10)->toDateString()]);
+
+        $jalurTuntas = $this->seedTrails(12);
+        $this->riwayatTuntas($user, $jalurTuntas->take(1));
+
+        $this->actingAs($user);
+        $this->get('/dashboard')->assertOk();
+        $sedikit = $this->countQueries('/dashboard');
+
+        $this->riwayatTuntas($user, $jalurTuntas->skip(1));
+
+        $banyak = $this->countQueries('/dashboard');
+
+        $this->assertSame($sedikit, $banyak, "Beban tumbuh: {$sedikit} query untuk 1 riwayat tuntas, {$banyak} untuk 12.");
+    }
+
     private function pendakiBerprofil(): User
     {
         $user = User::factory()->create();
@@ -179,6 +241,25 @@ class PageQueryBudgetTest extends TestCase
         ]);
 
         return $user;
+    }
+
+    /**
+     * @param  Collection<int, Trail>  $trails
+     */
+    private function riwayatTuntas(User $user, Collection $trails): void
+    {
+        foreach ($trails as $trail) {
+            $trip = TripPlan::factory()->for($user)->for($trail)->create(['status' => TripStatus::COMPLETED->value, 'completed_at' => now()->subDays(30)]);
+
+            HikingHistory::create([
+                'user_id' => $user->id,
+                'trip_plan_id' => $trip->id,
+                'trail_id' => $trail->id,
+                'trip_type' => $trip->trip_type->value,
+                'completion_state' => CompletionState::COMPLETED->value,
+                'completed_at' => now()->subDays(30),
+            ]);
+        }
     }
 
     private function trip(): TripPlan

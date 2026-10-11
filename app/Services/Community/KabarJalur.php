@@ -34,6 +34,11 @@ use Illuminate\Support\Collection;
  */
 class KabarJalur
 {
+    /** Perubahan status resmi dan laporan komunitas yang diringkas di Beranda. */
+    private const RINGKAS_RESMI = 2;
+
+    private const RINGKAS_LAPORAN = 1;
+
     public function __construct(
         private readonly TrailNewsService $kabar,
         private readonly WeatherService $cuaca,
@@ -64,6 +69,31 @@ class KabarJalur
                 ->map(fn (array $b) => $this->komunitas($b))
                 ->values()
                 ->all(),
+        ];
+    }
+
+    /**
+     * Ringkasan Kabar untuk Beranda (spec v3 bagian 6.1, prototype 01): perubahan status resmi
+     * terbaru dan laporan komunitas terbaru dari gunung yang diikuti, tetap terpisah menurut
+     * asalnya (R-010) dan diformat sama dengan halaman Kabar. Cuaca tidak ikut; ia tinggal di
+     * halaman Kabar. Null bila pendaki tidak mengikuti gunung apa pun.
+     *
+     * @return array{gunung: array<int, string>, resmi: array<int, array<string, mixed>>, komunitas: array<int, array<string, mixed>>}|null
+     */
+    public function ringkas(User $user): ?array
+    {
+        $gunung = $this->kabar->followedMountains($user);
+
+        if ($gunung->isEmpty()) {
+            return null;
+        }
+
+        $terbaru = $this->kabar->terbaru($user, self::RINGKAS_RESMI, self::RINGKAS_LAPORAN);
+
+        return [
+            'gunung' => $gunung->pluck('name', 'id')->all(),
+            'resmi' => $terbaru['resmi']->map(fn (array $b) => $this->resmi($b))->values()->all(),
+            'komunitas' => $terbaru['laporan']->map(fn (array $b) => $this->komunitas($b))->values()->all(),
         ];
     }
 

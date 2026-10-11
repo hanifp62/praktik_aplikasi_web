@@ -109,7 +109,7 @@ export function TabelBanding({ jalur, baris, beda, profil, hariLaporan, sorotBed
                         {kepala('Kecocokan dasar', beda.fit)}
                         {jalur.map((j) => (
                             <td key={j.id} className={sel}>
-                                {j.fit ? <FitLine fit={j.fit} trailId={j.id} /> : <LabelKecocokan nilai={null} label={kataBelumDinilai} />}
+                                {j.fit ? <FitLine fit={j.fit} trailId={j.id} nama={j.name} /> : <LabelKecocokan nilai={null} label={kataBelumDinilai} />}
                             </td>
                         ))}
                     </tr>

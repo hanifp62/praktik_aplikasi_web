@@ -54,22 +54,59 @@ class TrailNewsService
      */
     public function forUser(User $user, int $limit = 30): Collection
     {
-        $gunung = MountainFollow::where('user_id', $user->id)->pluck('mountain_id');
+        $cakupan = $this->cakupan($user);
 
-        if ($gunung->isEmpty()) {
+        if ($cakupan === null) {
             return collect();
         }
 
-        // Hanya jalur terbit (R-022). Draf dan jalur terarsip tidak punya halaman publik,
-        // dan status atau laporan tentangnya tidak boleh bocor lewat pintu paling ramai
-        // ini. Status yang diumumkan untuk gunungnya sendiri tetap sampai.
-        $jalur = Trail::query()->published()->whereIn('mountain_id', $gunung)->pluck('id');
+        [$gunung, $jalur] = $cakupan;
 
         return $this->status($gunung, $jalur, $limit)
             ->concat($this->laporan($jalur, $limit))
             ->sortByDesc('waktu')
             ->take($limit)
             ->values();
+    }
+
+    /**
+     * Kabar terbaru per jenis untuk ringkasan Beranda (spec v3 bagian 6.1, W5): paling banyak
+     * $resmi perubahan status dan $laporan laporan komunitas, masing-masing dari kuerinya
+     * sendiri, sehingga laporan tidak terdesak keluar oleh status yang lebih baru.
+     *
+     * @return array{resmi: Collection<int, array<string, mixed>>, laporan: Collection<int, array<string, mixed>>}
+     */
+    public function terbaru(User $user, int $resmi, int $laporan): array
+    {
+        $cakupan = $this->cakupan($user);
+
+        if ($cakupan === null) {
+            return ['resmi' => collect(), 'laporan' => collect()];
+        }
+
+        [$gunung, $jalur] = $cakupan;
+
+        return ['resmi' => $this->status($gunung, $jalur, $resmi), 'laporan' => $this->laporan($jalur, $laporan)];
+    }
+
+    /**
+     * Gunung yang diikuti dan jalur terbitnya, atau null bila tidak mengikuti apa pun.
+     *
+     * Hanya jalur terbit (R-022). Draf dan jalur terarsip tidak punya halaman publik, dan
+     * status atau laporan tentangnya tidak boleh bocor lewat pintu paling ramai ini. Status
+     * yang diumumkan untuk gunungnya sendiri tetap sampai.
+     *
+     * @return array{0: Collection<int, int>, 1: Collection<int, int>}|null
+     */
+    private function cakupan(User $user): ?array
+    {
+        $gunung = MountainFollow::where('user_id', $user->id)->pluck('mountain_id');
+
+        if ($gunung->isEmpty()) {
+            return null;
+        }
+
+        return [$gunung, Trail::query()->published()->whereIn('mountain_id', $gunung)->pluck('id')];
     }
 
     /**

@@ -59,9 +59,12 @@ export function Button({
         // ikut: "Checkpoint" yang berulang di setiap baris tabel perlu nama jalurnya.
         const nama = { 'aria-label': rest['aria-label'], 'aria-describedby': rest['aria-describedby'], title: rest.title };
 
+        // Situs lain dibuka di tab baru seperti setiap tautan resmi lain (TenggatTerdekat), tanpa
+        // window.opener, dan pembaca layar diberi tahu sebelum tabnya berpindah.
         return external ? (
-            <a href={href} className={semua} {...nama}>
+            <a href={href} target="_blank" rel="noopener noreferrer" className={semua} {...nama}>
                 {children}
+                <span className="sr-only"> (membuka tab baru)</span>
             </a>
         ) : (
             <Tautan href={href} className={semua} {...nama}>

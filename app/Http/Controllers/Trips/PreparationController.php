@@ -9,6 +9,7 @@ use App\Models\TripPlan;
 use App\Models\TripPreparationItem;
 use App\Services\PreparationService;
 use App\Services\Trips\HalamanPersiapan;
+use App\Services\Trips\TripReminderScheduler;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -52,8 +53,12 @@ class PreparationController extends Controller
      * putaran 3 #3). Toast dan Urungkan di klien memakai flash ini, dan tidak ditawarkan
      * bila statusnya tidak berubah (pola W3-4b). Hanya status yang diambil dari badan
      * permintaan; trip, kritis, label, dan kategori tidak pernah berubah di sini.
+     *
+     * Butir izin yang berubah menyelaraskan pengingat trip (ruling W5-FA, M4 tinjauan akhir W5):
+     * surel hari pemesanan izin dibuka hilang dari jadwal begitu izinnya diurus, dan kembali
+     * bila batal diurus.
      */
-    public function update(UpdatePreparationItemRequest $request, TripPlan $trip, int $item, PreparationService $preparation): RedirectResponse
+    public function update(UpdatePreparationItemRequest $request, TripPlan $trip, int $item, PreparationService $preparation, TripReminderScheduler $pengingat): RedirectResponse
     {
         // Dicari di dalam trip ini saja: butir milik trip lain menjawab 404, bukan
         // berubah karena id-nya ditebak (IDOR).
@@ -66,6 +71,10 @@ class PreparationController extends Controller
 
         $sebelum = $butir->status;
         $preparation->updateStatus($butir, $status);
+
+        if ($sebelum !== $status && PreparationService::butirIzin($butir)) {
+            $pengingat->sinkronkan($trip);
+        }
 
         return redirect()->route('trips.preparation', $trip)
             ->with('butir-diubah', [

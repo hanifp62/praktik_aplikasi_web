@@ -12,7 +12,7 @@ import type { Komunitas } from './types';
  * Pelapornya disebut: laporan bertanda tangan dinilai berbeda dari laporan anonim. Yang
  * dihargai kegunaan laporannya, bukan jumlahnya, dan pelapor tidak melihat tombolnya
  * pada laporannya sendiri. Foto tetap di dalam laporannya, bukan gambar utama halaman
- * (R-017).
+ * (R-017). Laporan dipisah garis, bukan dibingkai kartu di dalam kartu (titipan W3 ke W5).
  */
 export function LaporanKomunitas({ komunitas }: { komunitas: Komunitas }) {
     const [memproses, setMemproses] = useState<number | null>(null);
@@ -31,9 +31,9 @@ export function LaporanKomunitas({ komunitas }: { komunitas: Komunitas }) {
                 <LabelKomunitas />
             </p>
             {komunitas.available ? (
-                <ul className="space-y-3">
+                <ul className="divide-y divide-subtle">
                     {komunitas.reports.map((r) => (
-                        <li key={r.id} className="rounded-control border border-subtle px-3 py-2 text-sm">
+                        <li key={r.id} className="py-3 text-sm first:pt-0 last:pb-0">
                             <div className="flex flex-wrap gap-2">
                                 {r.tags.map((tag) => (
                                     <span key={tag} className="rounded-full bg-community-50 px-2.5 py-0.5 text-xs text-community-900">

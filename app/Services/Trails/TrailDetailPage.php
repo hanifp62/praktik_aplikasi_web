@@ -192,6 +192,13 @@ class TrailDetailPage
             fn (string $baris): bool => $baris !== $alasan
         ));
 
+        // Ruling W5-FG (M5 tinjauan akhir W5): jalur Cocok memakai why_it_fits[0] sebagai
+        // alasan, jadi "Mengapa sesuai" disaring dengan pola yang sama, juga sebelum dipotong.
+        $mengapaSesuai = array_values(array_filter(
+            $fit->explanation['why_it_fits'] ?? [],
+            fn (string $baris): bool => $baris !== $alasan
+        ));
+
         return [
             'label' => $fit->label?->value,
             'labelText' => RouteFitLabel::textFor($fit->label),
@@ -200,7 +207,7 @@ class TrailDetailPage
             'rencana' => $trip?->ringkasan(),
             'alasan' => $alasan,
             // Paling banyak tiga per daftar; seluruh faktornya di halaman penilaian kecocokan.
-            'mengapaSesuai' => $fit->eligible ? array_slice($fit->explanation['why_it_fits'] ?? [], 0, 3) : [],
+            'mengapaSesuai' => $fit->eligible ? array_slice($mengapaSesuai, 0, 3) : [],
             'perluDiperhatikan' => array_slice($perluDiperhatikan, 0, 3),
             'celahPersiapan' => array_slice($fit->explanation['preparation_gap'] ?? [], 0, 3),
             // Acuannya diri sendiri, bukan pendaki lain (R-015).

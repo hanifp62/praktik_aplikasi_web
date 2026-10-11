@@ -127,6 +127,19 @@ class ComparisonAsCostTest extends TestCase
     }
 
     /**
+     * Titipan W3 ke W5: "Kecocokan dasar" adalah kepala barisnya, jadi tidak diulang di setiap
+     * sel, dan "Kenapa?" menyebut nama jalurnya untuk pembaca layar.
+     */
+    public function test_the_fit_cell_does_not_repeat_its_row_and_names_its_trail(): void
+    {
+        $sel = File::get(resource_path('js/components/trails/FitLine.tsx'));
+
+        $this->assertStringNotContainsString("'Kecocokan dasar'", $sel);
+        $this->assertStringContainsString('<span className="sr-only"> {nama}</span>', $sel);
+        $this->assertStringContainsString('<FitLine fit={j.fit} trailId={j.id} nama={j.name} />', File::get(resource_path('js/components/trails/banding/TabelBanding.tsx')));
+    }
+
+    /**
      * Jalur berjarak nol tidak menjatuhkan halaman perbandingan.
      *
      * distance_km di-cast 'decimal:2' pada model Trail, sehingga nilai mentahnya adalah

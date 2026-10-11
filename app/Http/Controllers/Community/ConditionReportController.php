@@ -11,11 +11,13 @@ use App\Models\HikingHistory;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\TrailSegment;
+use App\Models\User;
 use App\Services\AnalyticsRecorder;
 use App\Support\ImageSanitizer;
 use App\Support\Timezone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -30,7 +32,8 @@ class ConditionReportController extends Controller
     public function create(Request $request): Response
     {
         $trailId = $request->integer('trail') ?: null;
-        $jalur = $trailId !== null ? Trail::with('segments')->find($trailId) : null;
+        $tripId = $request->integer('trip') ?: null;
+        $jalur = $trailId !== null ? Trail::with('segments', 'mountain')->find($trailId) : null;
 
         return Inertia::render('Community/ConditionReport', [
             'title' => 'Laporan Kondisi Jalur',
@@ -47,11 +50,37 @@ class ConditionReportController extends Controller
             'tags' => array_map(fn (ConditionTag $t) => ['value' => $t->value, 'label' => $t->label()], ConditionTag::cases()),
             'awal' => [
                 'trail_id' => $trailId,
-                'trip_plan_id' => $request->integer('trip') ?: null,
-                'hike_date' => now()->toDateString(),
+                'trip_plan_id' => $tripId,
+                'hike_date' => $this->tanggalPendakianBawaan($request->user(), $tripId, $jalur),
             ],
             'tanggalMaksimum' => Timezone::latestDateInIndonesia(),
         ]);
+    }
+
+    /**
+     * Tanggal pendakian bawaan formulir (ruling W5-FC, I3 tinjauan akhir W5). Kesegaran laporan
+     * diukur dari tanggal pendakian (§59), jadi pintu B4 Beranda, yang membawa trip yang baru
+     * selesai, membuka formulir pada tanggal selesai riwayat MILIK pendaki ini untuk trip itu,
+     * dalam zona gunung jalurnya, dijepit ke tanggal maksimum formulir. Tanpa riwayat milik
+     * sendiri, bawaannya tanggal hari ini di zona gunung jalur yang dipilih (WIB bila belum ada
+     * jalur), bukan tanggal UTC. Id trip pendaki lain diperlakukan seperti tidak ada: kueri
+     * riwayatnya disaring pengguna sesi, jadi tidak mengubah bawaan dan tidak membuka data apa
+     * pun (IDOR).
+     */
+    private function tanggalPendakianBawaan(?User $pengguna, ?int $tripId, ?Trail $jalur): string
+    {
+        $riwayat = $pengguna === null || $tripId === null ? null : HikingHistory::query()
+            ->where('user_id', $pengguna->id)
+            ->where('trip_plan_id', $tripId)
+            ->whereNotNull('completed_at')
+            ->with('trail.mountain')
+            ->first();
+
+        $tanggal = $riwayat?->trail !== null
+            ? $riwayat->completed_at->copy()->setTimezone(Timezone::forTrail($riwayat->trail))->toDateString()
+            : Carbon::now($jalur === null ? Timezone::DEFAULT : Timezone::forTrail($jalur))->toDateString();
+
+        return min($tanggal, Timezone::latestDateInIndonesia());
     }
 
     public function store(StoreConditionReportRequest $request, AnalyticsRecorder $analytics): RedirectResponse

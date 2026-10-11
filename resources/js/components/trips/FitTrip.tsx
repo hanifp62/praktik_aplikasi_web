@@ -3,9 +3,9 @@ import { kelas } from '@/lib/kelas';
 import type { FitRingkas } from './types';
 
 /**
- * Label kecocokan beserta alasannya, untuk halaman trip dan daftar trip. Berbeda dari
- * FitLine di Jelajah, alasannya selalu tampil: di sini pendaki sudah memilih jalurnya,
- * dan label tanpa alasan tidak pernah berdiri sendiri (§89).
+ * Label kecocokan beserta alasannya, untuk halaman trip dan daftar trip. Berbeda dari FitLine di
+ * sel Bandingkan, yang membuka alasannya lewat "Kenapa?", alasannya di sini selalu tampil: pendaki
+ * sudah memilih jalurnya, dan label tanpa alasan tidak pernah berdiri sendiri (§89).
  */
 export function FitTrip({ fit, className }: { fit: FitRingkas; className?: string }) {
     return (

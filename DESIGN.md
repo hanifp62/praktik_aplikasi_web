@@ -342,6 +342,18 @@ jaminan keselamatan." Hanya kartu utama indeks trip yang membawa tombol penuh; k
 Persiapan tampil sebagai teks di baris butirnya dan dibacakan lewat satu wilayah `role="alert"` halaman yang selalu
 terpasang, sesuai konvensi umpan balik di atas.
 
+**Beranda** (W5, spec v3 bagian 6.1, prototype 01). Server memilih satu dari lima fase (B0 profil belum diisi, B1
+tanpa trip mendatang, B2 trip mendatang, B3 sedang mendaki, B4 pendakian selesai yang belum dilaporkan), dan setiap
+fase membawa tepat satu aksi utama selebar kartu di ponsel. Kartu perjalanan B2 memakai garis profil jalur sebagai
+visual data selama foto berlisensi belum ada (DK-37), empat langkah sebagai bilah dengan centang sesudah namanya, dan
+persiapan kritis sebagai ruas per butir ditambah kalimat "N dari M". Tenggat terdekat memakai penanda kalender yang
+disembunyikan dari pembaca layar, dengan zona gunung disebut sekali di samping judulnya. Kabar memisah status resmi
+(garis padat merek hanya untuk sumber OFFICIAL) dari laporan komunitas (kartu bergaris putus-putus yang sama dengan
+halaman gunung). "Jalur lain untuk Anda" bergulir menyamping di ponsel dan pindah ke kolom samping 22rem mulai 1024 px
+bersama tangga tanjakan, yang menyebut jalur beserta gunungnya karena nama jalur tidak unik; tanpa isi samping,
+halaman tetap satu kolom. Daftar yang bergulir menyamping diberi
+`relative`, supaya teks sr-only di dalamnya tidak melebarkan halaman.
+
 **Fokus tidak pernah jatuh ke body.** Chip saringan yang dilepas menyerahkan fokus ke chip tetangga atau wadah grupnya;
 toast yang dipicu papan ketik mengambil fokus ke Urungkan, dan fokus kembali ke unsur sebelumnya atau ke `#konten`
 ketika toast hilang; sesudah Urungkan, pemanggil memfokus unsur yang dikembalikan lewat `useFokusSesudahRender`; pesan

@@ -13,7 +13,7 @@ Status resmi, prakiraan cuaca, dan laporan pendaki tampil terpisah menurut asaln
 ## Posisi di loop dan permukaan
 
 - **Loop (§7):** masukan untuk memilih, merencanakan, dan cek kesiapan; laporan dikirim sesudah mendaki.
-- **Lapisan Community (§145):** kondisi dan laporan di detail jalur; kabar gunung yang diikuti di Beranda (W5); halaman lengkap `/kabar` dibuka dari Beranda dan Jelajah, bukan dari tab; formulir laporan `/reports/create` dari ringkasan pendakian di Progres.
+- **Lapisan Community (§145):** kondisi dan laporan di detail jalur; kabar gunung yang diikuti di Beranda (W5: perubahan status resmi terbaru dan satu laporan komunitas terbaru, terpisah menurut asalnya, `App\Services\Dashboard\KabarBeranda`); halaman lengkap `/kabar` dibuka dari Beranda dan Jelajah, bukan dari tab; formulir laporan `/reports/create` dari ringkasan pendakian di Progres, dan dari kartu B4 Beranda (pendakian selesai paling lama tujuh hari yang belum dilaporkan). Tautan B4 membawa jalur dan trip, jadi laporannya ditautkan ke riwayat itu dan tanggal pendakian bawaannya tanggal selesai pendakian itu di zona gunungnya (ruling W5-FC).
 - **Moderasi:** antrean di konsol (spesifikasi 08).
 
 ## Kriteria penerimaan

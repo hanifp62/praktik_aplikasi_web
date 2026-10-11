@@ -160,6 +160,10 @@ class TripPermitWindowTest extends TestCase
      * Halaman Rencanakan (spec v3 bagian 6.8, W4 Tugas 3) memakai keadaan jendela yang sama,
      * tetapi menyebut tanggalnya untuk hari yang dipilih: kapan dibuka dan kapan ditutup,
      * siapa pengelolanya, dan bahwa Memount hanya menautkan sistem resmi.
+     *
+     * Ruling W5-G1 (R-007): klaim "menautkan" hanya ditulis ketika tautannya sungguh tampil.
+     * Keadaan BELUM_DIBUKA tidak pernah punya tautan (PermitService::pemesananDariJendela()),
+     * jadi kalimat penutupnya mengaku tidak memesan atau menjual izin, bukan "menautkan".
      */
     public function test_the_plan_page_names_the_booking_dates_for_the_chosen_day(): void
     {
@@ -186,7 +190,12 @@ class TripPermitWindowTest extends TestCase
         ], $izin('2026-10-10'));
 
         // M1 tinjauan akhir W4: jendela yang belum dibuka atau sudah tutup tidak mengajak memesan.
-        $this->assertSame(['belum', 'Pemesanan izin dibuka mulai Rab, 21 Okt', null], [$izin('2026-11-20')['keadaan'], $izin('2026-11-20')['judul'], $izin('2026-11-20')['tautan']]);
+        $belum = $izin('2026-11-20');
+        $this->assertSame(['belum', 'Pemesanan izin dibuka mulai Rab, 21 Okt', null], [$belum['keadaan'], $belum['judul'], $belum['tautan']]);
+        // Ruling W5-G1: tanpa tautan yang tampil (selalu null untuk keadaan ini), kalimat
+        // penutup tidak mengklaim "menautkan" walau aturan ini punya booking_url tercatat.
+        $this->assertStringNotContainsString('menautkan', $belum['keterangan']);
+        $this->assertStringContainsString('Memount tidak memesan atau menjual izin.', $belum['keterangan']);
         $this->assertSame(['tutup', 'Pemesanan izin sudah tutup, hari terakhirnya Rab, 9 Sep', null], [$izin('2026-09-12')['keadaan'], $izin('2026-09-12')['judul'], $izin('2026-09-12')['tautan']]);
 
         $tanpaTanggal = $izin('');

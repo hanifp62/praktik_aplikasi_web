@@ -2,16 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ExperienceLevel;
 use App\Enums\ModerationStatus;
 use App\Enums\OfficialStatusValue;
 use App\Enums\SourceType;
 use App\Enums\StatusScope;
+use App\Enums\TripStatus;
 use App\Models\DataSource;
 use App\Models\Mountain;
 use App\Models\MountainFollow;
 use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
+use App\Models\TripPlan;
 use App\Models\User;
 use App\Models\WeatherSnapshot;
 use App\Services\TrailNewsService;
@@ -457,5 +460,170 @@ class TrailNewsTest extends TestCase
             ->where('cuaca.1.gunung', 'Sumbing')
             ->has('cuaca.1.wilayah', 0)
             ->where('cuaca.1.pesan', 'Data cuaca tidak tersedia.'));
+    }
+
+    private function pendakiBerprofil(): User
+    {
+        $user = User::factory()->create();
+        $user->profile()->create(['experience_level' => ExperienceLevel::INTERMEDIATE->value, 'completed_at' => now()]);
+
+        return $user->fresh();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function kabarBeranda(User $user): ?array
+    {
+        return $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page')['props']['kabar'];
+    }
+
+    /**
+     * Ringkasan Beranda (W5) memakai kueri per jenis: laporan komunitas terbaru tetap ada
+     * walau status resmi yang lebih baru lebih banyak dari batasnya.
+     */
+    public function test_the_latest_per_kind_keeps_a_report_that_newer_statuses_would_push_out(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = User::factory()->create();
+        $this->ikuti($user, $gunung);
+        $this->laporan($trail, ModerationStatus::APPROVED);
+        $this->travel(1)->hours();
+
+        foreach (['Longsor di Pos 2.', 'Perbaikan jembatan.', 'Kebakaran lahan.'] as $alasan) {
+            $this->tutup($trail, $alasan);
+            $this->travel(1)->minutes();
+        }
+
+        $terbaru = app(TrailNewsService::class)->terbaru($user, 2, 1);
+
+        $this->assertSame(['Kebakaran lahan.', 'Perbaikan jembatan.'], $terbaru['resmi']->pluck('alasan')->all());
+        $this->assertCount(1, $terbaru['laporan']);
+        $this->assertSame([TrailNewsService::STATUS, TrailNewsService::STATUS], app(TrailNewsService::class)->forUser($user, 2)->pluck('jenis')->all());
+    }
+
+    /**
+     * Beranda meringkas kabar gunung yang diikuti dalam dua kelompok terpisah (R-010), dengan
+     * kalimat R-012 di samping status resmi dan tautan ke halaman Kabar. Laporan yang belum
+     * lolos moderasi tidak ikut.
+     */
+    public function test_the_home_summarises_followed_mountains_with_official_and_community_apart(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = $this->pendakiBerprofil();
+        $this->ikuti($user, $gunung);
+        $this->tutup($trail, 'Kebakaran lahan.');
+        $this->laporan($trail, ModerationStatus::APPROVED);
+        $this->laporan($trail, ModerationStatus::PENDING, 'Belum diperiksa.');
+
+        $kabar = $this->kabarBeranda($user);
+
+        $this->assertSame(['Kabar Merbabu yang Anda ikuti', true, null, null], [$kabar['judul'], $kabar['diikuti'], $kabar['mengikuti'], $kabar['ikuti']]);
+        $this->assertSame(['Jalur Merbabu', 'Tutup', 'Kebakaran lahan.'], [$kabar['resmi'][0]['judul'], $kabar['resmi'][0]['statusLabel'], $kabar['resmi'][0]['alasan']]);
+        $this->assertSame(['Jalur Merbabu', 'Jembatan Pos 3 putus.'], [$kabar['komunitas'][0]['jalur'], $kabar['komunitas'][0]['catatan']]);
+        $this->assertCount(1, $kabar['komunitas']);
+
+        $sumber = File::get(resource_path('js/components/beranda/KabarDiikuti.tsx'));
+        $this->assertStringContainsString('<KondisiPendaki laporan={kabar.komunitas} />', $sumber);
+        $this->assertStringContainsString('href={news.url()}', $sumber);
+    }
+
+    /**
+     * Ruling W5-FI (M7 tinjauan akhir W5, butir inventaris 3): Beranda meringkas paling banyak dua
+     * perubahan status resmi dan satu laporan komunitas, yang terbaru lebih dulu
+     * (KabarJalur::RINGKAS_RESMI dan RINGKAS_LAPORAN), walau datanya lebih banyak; sisanya di
+     * halaman Kabar.
+     */
+    public function test_the_home_keeps_the_two_newest_official_changes_and_the_newest_report(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = $this->pendakiBerprofil();
+        $this->ikuti($user, $gunung);
+
+        foreach (['Longsor di Pos 2.', 'Perbaikan jembatan.', 'Kebakaran lahan.'] as $alasan) {
+            $this->tutup($trail, $alasan);
+            $this->travel(1)->minutes();
+        }
+
+        foreach (['Licin setelah hujan.', 'Jembatan Pos 3 putus.'] as $catatan) {
+            $this->laporan($trail, ModerationStatus::APPROVED, $catatan);
+            $this->travel(1)->minutes();
+        }
+
+        $kabar = $this->kabarBeranda($user);
+
+        $this->assertSame(['Kebakaran lahan.', 'Perbaikan jembatan.'], array_column($kabar['resmi'], 'alasan'));
+        $this->assertSame(['Jembatan Pos 3 putus.'], array_column($kabar['komunitas'], 'catatan'));
+    }
+
+    public function test_the_home_names_several_followed_mountains(): void
+    {
+        [$merbabu] = $this->gunungBerjalur('Merbabu');
+        [$sumbing] = $this->gunungBerjalur('Sumbing');
+        $user = $this->pendakiBerprofil();
+        $this->ikuti($user, $merbabu);
+        $this->ikuti($user, $sumbing);
+
+        $kabar = $this->kabarBeranda($user);
+
+        $this->assertSame(['Kabar gunung yang Anda ikuti', 'Merbabu dan Sumbing'], [$kabar['judul'], $kabar['mengikuti']]);
+        $this->assertSame([[], []], [$kabar['resmi'], $kabar['komunitas']]);
+    }
+
+    /**
+     * Trip mendatang menuju gunung yang belum diikuti: Beranda menawarkan mengikutinya, dan
+     * sesudah diikuti tawarannya hilang dan kabarnya masuk.
+     */
+    public function test_the_home_offers_to_follow_the_trip_mountain(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $user = $this->pendakiBerprofil();
+        TripPlan::factory()->for($user)->for($trail)->create(['planned_date' => now()->addDays(10)->toDateString(), 'status' => TripStatus::PLANNED->value]);
+
+        $kabar = $this->kabarBeranda($user);
+
+        $this->assertFalse($kabar['diikuti']);
+        $this->assertSame(['gunung' => 'Merbabu', 'href' => route('mountains.follow', $gunung)], $kabar['ikuti']);
+
+        $this->actingAs($user)->from(route('dashboard'))->post($kabar['ikuti']['href'], ['ya' => true])->assertRedirect(route('dashboard'));
+
+        $sesudah = $this->kabarBeranda($user);
+        $this->assertSame([true, null], [$sesudah['diikuti'], $sesudah['ikuti']]);
+    }
+
+    /**
+     * Ruling W5-FH (M6 tinjauan akhir W5): tombol "Ikuti {gunung}" hilang begitu gunungnya
+     * diikuti. Sesudah berhasil, fokus pindah ke judul bagian kabar (tabIndex -1), tidak jatuh ke
+     * body (DESIGN.md), dan hasilnya diumumkan di wilayah status yang selalu terpasang, karena
+     * MountainFollowController tidak mengirim kabar apa pun (WCAG 4.1.3).
+     */
+    public function test_following_from_the_home_moves_focus_to_the_news_heading_and_announces_it(): void
+    {
+        $sumber = File::get(resource_path('js/components/beranda/KabarDiikuti.tsx'));
+
+        $this->assertStringContainsString('<h2 id="kabar-diikuti" ref={judul} tabIndex={-1}', $sumber);
+        $this->assertMatchesRegularExpression('/onSuccess: \(\) => \{\s*setKabarIkuti\(`Anda mengikuti \$\{gunung\}\.`\);\s*judul\.current\?\.focus\(\);\s*\}/', $sumber);
+        $this->assertStringContainsString('onClick={() => ikuti(tujuan.gunung, tujuan.href)}', $sumber);
+        // Wilayah status di luar cabang mana pun, jadi sudah terpasang sebelum kabarnya datang.
+        $this->assertMatchesRegularExpression('/<p role="status" className="sr-only">\s*\{kabarIkuti\}\s*<\/p>\s*<\/section>/', $sumber);
+    }
+
+    /**
+     * Sebelum profil terisi Beranda punya satu fokus, mengisi profil; selama pendakian berjalan,
+     * mode lapangan. Kabar tidak dikirim pada kedua fase itu.
+     */
+    public function test_the_home_leaves_news_out_before_a_profile_and_during_a_hike(): void
+    {
+        [$gunung, $trail] = $this->gunungBerjalur('Merbabu');
+        $tanpaProfil = User::factory()->create();
+        $this->ikuti($tanpaProfil, $gunung);
+
+        $this->assertNull($this->kabarBeranda($tanpaProfil));
+
+        $mendaki = $this->pendakiBerprofil();
+        $this->ikuti($mendaki, $gunung);
+        TripPlan::factory()->for($mendaki)->for($trail)->create(['planned_date' => now()->toDateString(), 'status' => TripStatus::IN_PROGRESS->value]);
+
+        $this->assertNull($this->kabarBeranda($mendaki));
     }
 }

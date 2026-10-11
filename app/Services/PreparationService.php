@@ -26,6 +26,18 @@ class PreparationService
     public function __construct(private readonly PermitService $permits) {}
 
     /**
+     * Butir izin di daftar persiapan trip sudah dikonfirmasi atau ditandai tidak berlaku.
+     * Butir itu dikenali lewat PERMIT_LABEL sampai kunci stabil butir sistem tersedia
+     * (titipan W8, ruling W4-C7b). Membutuhkan relasi preparationItems sudah dimuat.
+     */
+    public static function izinDiurus(TripPlan $trip): bool
+    {
+        return $trip->preparationItems->contains(fn (TripPreparationItem $butir) => $butir->preparation_item_id === null
+            && $butir->label === self::PERMIT_LABEL
+            && $butir->status !== PreparationStatus::NOT_CONFIRMED);
+    }
+
+    /**
      * Builds the trip checklist from the trail-specific template when one exists, otherwise
      * from the default template. Existing item statuses are preserved on regeneration.
      */

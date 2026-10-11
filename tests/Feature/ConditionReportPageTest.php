@@ -13,6 +13,7 @@ use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
@@ -142,6 +143,65 @@ class ConditionReportPageTest extends TestCase
 
         $this->kirim($saya, $trail, ['trip_plan_id' => $riwayatSaya->trip_plan_id]);
         $this->assertNotNull($riwayatSaya->fresh()->trail_condition_report_id);
+    }
+
+    /**
+     * Ruling W5-FC (IDOR): tanggal pendakian bawaan hanya dibaca dari riwayat MILIK pengirim. Id
+     * trip pendaki lain di tautan tidak mengubah bawaannya, dan tanggal pendakian pendaki lain
+     * tidak ikut terkirim ke halaman.
+     */
+    public function test_another_hikers_trip_never_sets_the_default_hike_date(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-25 03:00:00', 'UTC'));
+        $trail = Trail::factory()->published()->for(Mountain::factory()->create(['timezone' => 'Asia/Jakarta']))->create();
+        $riwayatOrangLain = $this->riwayat(User::factory()->create(), $trail);
+        $riwayatOrangLain->update(['completed_at' => Carbon::parse('2026-09-20 02:00:00', 'UTC')]);
+
+        $halaman = $this->actingAs(User::factory()->create())
+            ->get(route('reports.create', ['trail' => $trail->id, 'trip' => $riwayatOrangLain->trip_plan_id]))
+            ->assertOk();
+
+        $halaman->assertInertia(fn (AssertableInertia $page) => $page->where('awal.hike_date', '2026-09-25'));
+        $this->assertStringNotContainsString('2026-09-20', json_encode($halaman->viewData('page')['props']));
+    }
+
+    /**
+     * Ruling W5-FR (N4 tinjauan ulang): tanggal selesai riwayat dijepit ke tanggal maksimum
+     * formulir, batas yang sama dengan validasi StoreConditionReportRequest, jadi bawaannya tidak
+     * pernah tanggal yang akan ditolak formulirnya sendiri. Riwayat milik sendiri yang
+     * completed_at-nya sesudah tanggal WIT hari ini (data menyimpang) memberi tanggal maksimum.
+     */
+    public function test_a_hike_date_past_the_forms_maximum_is_clamped_to_it(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-25 03:00:00', 'UTC'));
+        $user = User::factory()->create();
+        $trail = Trail::factory()->published()->for(Mountain::factory()->create(['timezone' => 'Asia/Jakarta']))->create();
+        $riwayat = $this->riwayat($user, $trail);
+        $riwayat->update(['completed_at' => Carbon::parse('2026-09-27 02:00:00', 'UTC')]);
+
+        $this->actingAs($user)
+            ->get(route('reports.create', ['trail' => $trail->id, 'trip' => $riwayat->trip_plan_id]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('tanggalMaksimum', '2026-09-25')
+                ->where('awal.hike_date', '2026-09-25'));
+    }
+
+    /**
+     * Ruling W5-FC: tanpa riwayat milik sendiri, bawaannya tanggal hari ini di zona gunung jalur
+     * itu, bukan tanggal UTC. Jumat 25 September 01.30 WIB masih Kamis 24 September di UTC.
+     */
+    public function test_the_default_hike_date_is_today_in_the_mountains_zone_not_utc(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-24 18:30:00', 'UTC'));
+        $trail = Trail::factory()->published()->for(Mountain::factory()->create(['timezone' => 'Asia/Jakarta']))->create();
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('reports.create', ['trail' => $trail->id]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('awal.hike_date', '2026-09-25')
+                ->where('tanggalMaksimum', '2026-09-25'));
     }
 
     /**

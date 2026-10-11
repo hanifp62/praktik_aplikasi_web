@@ -193,6 +193,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Beranda (spec v3 bagian 6.1, DK-45)
+    |--------------------------------------------------------------------------
+    */
+    'beranda' => [
+        // Fase B4: pendakian yang selesai paling lama sekian hari lalu dan belum dilaporkan
+        // mengajak pendakinya berbagi laporan kondisi. Sesudahnya laporan itu kurang berguna
+        // bagi pendaki lain, karena kesegaran laporan diukur dari tanggal pendakian (§59).
+        'hari_ajakan_lapor' => 7,
+
+        // "Jalur lain untuk Anda": kandidat yang dinilai di memori per permintaan, seperti
+        // hiking.jelajah.batas_kandidat. Kueri tidak tumbuh bersama angka ini; waktu hitungnya ya.
+        'batas_kandidat' => 500,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Simpanan dan Banding Jalur (DK-05, DK-29)
     |--------------------------------------------------------------------------
     |

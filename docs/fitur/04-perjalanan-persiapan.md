@@ -15,7 +15,7 @@ Pendaki menetapkan tanggal, peserta, dan catatan untuk satu jalur, lalu dituntun
 - **Loop (§7):** Tujuan, lalu Rekomendasi, lalu rencana, Persiapan, dan Cek, sebelum Mendaki.
 - **Tab:** Trip. Rute `/goals/create`, `/trips`, `/trips/create`, `/trips/{trip}`, `/trips/{trip}/edit`, `/trips/{trip}/preparation`, `/trips/{trip}/readiness`.
 - **Langkah:** ruang kerja trip memakai empat langkah prototype (Jalur, Rencana, Persiapan, Cek); halaman Rencanakan, Persiapan, dan Cek membawa baris langkah yang sama.
-- **Beranda:** kartu perjalanan berikutnya dan tenggat (W5, DK-45).
+- **Beranda:** kartu perjalanan berikutnya dengan satu aksi utama, tenggat terdekat, dan aksi "Ingatkan saat dibuka" untuk jendela izin yang belum dibuka (W5, DK-45, GR-06).
 
 ## Kriteria penerimaan
 
@@ -48,7 +48,7 @@ Pendaki menetapkan tanggal, peserta, dan catatan untuk satu jalur, lalu dituntun
 | `preparation_templates`, `preparation_items` | templat per jalur: `category`, `label`, `description`, `is_critical`, `sort_order`, `applies_when` | `create_preparation_templates_table`, `create_preparation_items_table` |
 | `trip_preparation_items` | `category`, `label`, `is_critical`, `status`, `status_updated_at` | `create_trip_preparation_items_table` |
 | `readiness_checks` | `computed_state`, `route_fit_snapshot`, `preparation_state`, `official_status_snapshot`, `condition_snapshot` (laporan komunitas diminimalkan menjadi id, waktu masuk, tanggal pendakian, tanda kondisi, dan segmen saja, tanpa identitas pelapor, catatan, atau foto), `explanation`, `pre_departure_confirmed`, `computed_at`; snapshot terakhir menjadi pembanding "Sejak cek terakhir"; baris lama dibersihkan `memount:bersihkan-snapshot-kondisi` atas izin pemilik | `create_readiness_checks_table` |
-| `trip_reminders` | `jenis` (H-3, H-1), `dijadwalkan_untuk`, `sent_at`, `skipped_at`; dibaca kartu pengingat di ruang kerja dan halaman Persiapan, jadi kedua halaman itu bergantung pada tabel ini | `create_trip_reminders_table` (kemungkinan belum dijalankan di Supabase, INFERENCE, menunggu Q22; syarat deploy W4, GR-05) |
+| `trip_reminders` | `jenis` (H-3, H-1, dan IZIN untuk hari pemesanan izin dibuka, GR-06), `dijadwalkan_untuk`, `sent_at`, `skipped_at`; dibaca kartu pengingat di ruang kerja dan halaman Persiapan, jadi kedua halaman itu bergantung pada tabel ini | `create_trip_reminders_table` (kemungkinan belum dijalankan di Supabase, INFERENCE, menunggu Q22; syarat deploy W4, GR-05) |
 | `hiking_goals` | `target_date`, `region`, `trip_type`, `expected_duration_minutes`, `preferred_challenge`, `max_elevation_gain_m`, `notes` | `create_hiking_goals_table` |
 | `permit_requirements` | jendela pemesanan, kuota tercatat, dan tautan resmi | `create_permit_requirements_table` |
 | `scheduled_task_runs` | pemantauan `trips:kirim-pengingat` | `create_scheduled_task_runs_table` |

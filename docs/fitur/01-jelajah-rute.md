@@ -90,10 +90,10 @@ Catatan 23 September 2026: task 1 sampai 9 ditandai done oleh agen sebelumnya te
 | 3 | Buat kartu daftar jalur dengan metadata | `KartuJalur.tsx`, `KartuJalurResource` (turunan `TrailRowResource`) | Ada; `TrailRow.tsx` dihapus di gelombang perbaikan akhir W3 (W3-C8) |
 | 4 | Buat pencarian kata kunci dan filter jarak waktu kesulitan | `TrailSearch`, `SaringanJelajah.tsx` | Ada |
 | 5 | Dukung pencarian kalimat sederhana di frontend | `TrailSearch` (di server, bukan frontend) | Sebagian (F3) |
-| 6 | Tampilkan badge kecocokan pada kartu jalur | `FitLine.tsx` | Ada; label mengikuti R-004 (K3) |
-| 7 | Buat panel alasan Kenapa pada badge kecocokan | `FitLine.tsx` | Ada |
+| 6 | Tampilkan badge kecocokan pada kartu jalur | `KartuJalur.tsx` dengan `LabelKecocokan.tsx` | Ada; label mengikuti R-004 (K3); `FitLine.tsx` kini hanya di sel Bandingkan |
+| 7 | Buat panel alasan Kenapa pada badge kecocokan | `KartuJalur.tsx` (panel "Kenapa?" di kartu) | Ada |
 | 8 | Tampilkan ajakan lengkapi profil di badge | `resources/js/pages/Trails/Index.tsx` | Ada |
-| 9 | Buat tombol simpan rute pada kartu | `TombolSimpan.tsx`, rute `trails.saved.store` dan `trails.saved.remove` | Ada; versi sesi 22 September diganti `trail_considerations`, sakelar `trails.timbang` tidak lagi dipakai kartu (ditunda ke W5) |
+| 9 | Buat tombol simpan rute pada kartu | `TombolSimpan.tsx`, rute `trails.saved.store` dan `trails.saved.remove` | Ada; versi sesi 22 September diganti `trail_considerations`, sakelar `trails.timbang` dihapus di W5 karena tidak lagi punya pemanggil (ruling W3-F3) |
 | 10 | Bangun halaman daftar rute tersimpan | `resources/js/pages/Trails/Saved.tsx`, `SavedRoutesController` | Ada (dilanjutkan di spesifikasi 03) |
 | 11 | Tambahkan empty state dan saran ubah filter | `resources/js/pages/Trails/Index.tsx` | Ada |
 | 12 | Buat halaman detail jalur dengan ringkasan | Spesifikasi 02 | Ada |

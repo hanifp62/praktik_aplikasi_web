@@ -87,6 +87,7 @@ berikutnya berhenti begitu rencana tidak lagi `masihDirencanakan()`, yaitu sudah
 | Bobot faktor kompatibilitas | **Bukan di kode.** Tabel `recommendation_rules` lewat halaman admin, supaya kalibrasi terekam di jejak audit tiap run |
 | Radius kedatangan checkpoint | `config/hiking.php` → `hike_mode` |
 | Ambang kesegaran cuaca / laporan komunitas | `config/hiking.php` → `conditions` |
+| Lama ajakan melapor di Beranda dan batas kandidat "Jalur lain untuk Anda" | `config/hiking.php` → `beranda` (`hari_ajakan_lapor`, `batas_kandidat`) |
 | Sumber tile peta dan atribusinya | `config/hiking.php` → `map`, atau variabel `MAP_*` di `.env`; atribusi bawaan OpenTopoMap termasuk SRTM (`MapConfigTest`) |
 | Umur, jumlah, dan batas laju tautan bagikan perbandingan | `config/hiking.php` → `share_links` (`ttl_days`, `max_active_per_user`, `views_per_minute` per alamat IP); membuat dan mencabut memakai `rate_limits.personal_writes_per_minute` |
 | Jumlah kandidat yang dinilai Jelajah per kunjungan | `config/hiking.php` → `jelajah.batas_kandidat`; halaman menyebut bila hasilnya terpotong |
@@ -124,6 +125,8 @@ berikutnya berhenti begitu rencana tidak lagi `masihDirencanakan()`, yaitu sudah
 | `Trips\IndeksTrip`, `Trips\RencanaTrip`, `Trips\HalamanPersiapan`, `Trips\HalamanKesiapan` | Kelas halaman klaster Trip (W4): indeks berkelompok, rencanakan dengan muat ulang parsial kecocokan untuk rencana, persiapan dengan butir kritis dan butir yang menunggu BMKG, dan cek kesiapan dengan "Sejak cek terakhir"; kueri tetap, tanpa skor di props |
 | `Trips\KepalaTrip`, `Trips\TripSteps` | Kepala satu trip dan empat langkahnya (Jalur, Rencana, Persiapan, Cek) beserta aksi berikutnya untuk indeks. Predikat yang dipakai lebih dari satu halaman tinggal di model: `TripPlan::tujuanPenilaian()` (jenis dan tanggal trip untuk kecocokan), `TripPlan::tinjauanTercatat()` (relasi `latestConfirmedReadinessCheck`), `TripPlan::tanggalRencanaLewat()`, `Trail::terbit()` |
 | `Trips\PreDepartureCheck` | Tinjauan pra-berangkat: satu sumber alasan penolakan untuk halaman dan POST, dan pencatatan dalam transaksi yang mengunci baris trip |
+| `Dashboard\RingkasanDasbor`, `Dashboard\TenggatTrip`, `Dashboard\KabarBeranda`, `Dashboard\JalurUntukAnda`, `Dashboard\TanggaTanjakan` | Beranda berfase (W5): `RingkasanDasbor` memilih fase B0 sampai B4 sekali per permintaan (`KonteksBeranda`) dan menyusun kartu fase dengan satu aksi utama; kelas bagian lain membaca konteks yang sama. Setiap bagian prop malas, jadi muat ulang parsial lembar Pengingat tidak menghitung Beranda |
+| `Trips\TenggatIzin` | Judul, tanggal, dan kalimat jendela pemesanan izin satu trip, dipakai lembar Pengingat dan Tenggat terdekat Beranda |
 | `AuditLogService`, `AnalyticsRecorder` | Jejak audit dan funnel |
 | `Trails\HalamanJelajah`, `Trails\TrailDetailPage`, `Trails\PenilaianKecocokan`, `Trails\RouteComparisonTable`, `Mountains\HalamanGunung` | Kelas halaman (spec v3 bagian 9.2): satu kelas merakit props satu halaman React dari service domain, dengan anggaran kueri yang tidak tumbuh bersama jumlah data |
 | `Trails\TautanBagikan` | Tautan bagikan perbandingan (FR-23): token acak 192 bit yang hanya disimpan hash SHA-256-nya, masa berlaku, batas tautan aktif, dan cabut oleh pemiliknya |

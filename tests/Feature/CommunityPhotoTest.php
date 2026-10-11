@@ -119,6 +119,9 @@ class CommunityPhotoTest extends TestCase
         $this->assertStringContainsString("COMMUNITY: { label: 'Komunitas', ikon: 'user', nada: 'komunitas', garis: 'putus' }", file_get_contents(resource_path('js/components/trails/LabelSumber.tsx')));
         $this->assertStringContainsString("komunitas: { isi: 'bg-community-50 text-community-900'", file_get_contents(resource_path('js/components/ui/Lencana.tsx')));
         $this->assertStringNotContainsString('<img', file_get_contents(resource_path('js/pages/Trails/Show.tsx')));
+        // Titipan W3 ke W5: laporan di dalam kartu dipisah garis, bukan dibingkai kartu lagi.
+        $this->assertStringContainsString('<ul className="divide-y divide-subtle">', $kartu);
+        $this->assertStringNotContainsString('rounded-control border border-subtle px-3 py-2', $kartu);
     }
 
     /**

@@ -73,7 +73,7 @@ class OfficialStatusSafetySentenceTest extends TestCase
 
         // Pindaian harus benar-benar menemukan halaman status, termasuk yang dititipkan ke
         // pengecualian; kalau tidak, test ini lulus tanpa memeriksa apa pun.
-        foreach (['Trails/Index', 'Trails/Show', 'Trails/Compare', 'Trails/Fit', 'Mountains/Show', 'Community/TrailNews', 'Public/SharedComparison', 'Trips/Readiness', ...self::PENGECUALIAN] as $wajib) {
+        foreach (['Trails/Index', 'Trails/Show', 'Trails/Compare', 'Trails/Fit', 'Mountains/Show', 'Community/TrailNews', 'Public/SharedComparison', 'Trips/Readiness', 'Dashboard', ...self::PENGECUALIAN] as $wajib) {
             $this->assertContains($wajib, $halamanStatus, "{$wajib} tidak terdeteksi sebagai halaman status.");
         }
     }

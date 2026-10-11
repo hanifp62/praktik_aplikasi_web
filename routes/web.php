@@ -117,7 +117,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('recommendations/{run}/pilih', [RecommendationController::class, 'pilih'])->name('recommendations.pilih');
 
     Route::get('trails', TrailIndexController::class)->name('trails.index');
-    Route::post('trails/{trail}/timbang', [ConsiderationController::class, 'toggle'])->name('trails.timbang');
     Route::get('trails/saved', SavedRoutesController::class)->name('trails.saved');
     // Id dari rute dibatasi 18 digit, bukan sekadar angka: id yang melampaui bilangan bulat
     // PHP menjadi TypeError 500 di parameter `int`, bukan 404 (T8-M5 tinjauan akhir W3).

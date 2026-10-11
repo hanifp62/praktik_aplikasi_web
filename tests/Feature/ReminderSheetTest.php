@@ -406,6 +406,22 @@ class ReminderSheetTest extends TestCase
     }
 
     /**
+     * Ruling W5-G1 (R-007; temuan tangkapan W5 dasbor-390-light): kalimat "Memount menautkan
+     * sistem resmi dan tidak menjual izin." di bawah daftar Tenggat izin hanya benar ketika
+     * paling sedikit satu tautan di daftar itu sungguh tampil. Tanpa tautan sama sekali,
+     * kalimatnya mengaku tidak memesan atau menjual izin sama sekali, sama persis dengan
+     * KartuIzin.tsx:54.
+     */
+    public function test_the_permit_deadline_closing_sentence_depends_on_a_link_being_shown(): void
+    {
+        $lembar = File::get(resource_path('js/layouts/Pengingat.tsx'));
+
+        $this->assertStringContainsString("const adaTautanIzin = keadaan.jenis === 'siap' && keadaan.daftar.tenggatIzin.some((t) => t.bookingUrl);", $lembar);
+        $this->assertStringContainsString("{adaTautanIzin ? 'Memount menautkan sistem resmi dan tidak menjual izin.' : 'Memount tidak memesan atau menjual izin.'}", $lembar);
+        $this->assertStringNotContainsString('<p className="mt-2 text-kecil text-secondary">Memount menautkan sistem resmi dan tidak menjual izin.</p>', $lembar);
+    }
+
+    /**
      * Props bersama bergabung dengan props halaman, dan props halaman menang. Nama yang sama
      * di keduanya membuat kerangka membaca data halaman dengan bentuk yang salah; tabrakan
      * itu sempat terjadi ketika lembar ini dibangun (Trips/Show sudah punya prop `pengingat`).

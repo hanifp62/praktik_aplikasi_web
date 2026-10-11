@@ -4,7 +4,7 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 6 Oktober 2026 (bagian 0, W3 selesai). Bagian 1–10 berasal dari 21 September 2026
+Terakhir diperbarui: 7 Oktober 2026 (bagian 0, W4 selesai). Bagian 1–10 berasal dari 21 September 2026
 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
@@ -25,6 +25,147 @@ yang belum di-commit sampai permintaan izin akhir.
 > induk `docs/superpowers/plans/2026-09-26-memount-v3-induk.md`. Periksa keadaan nyata dulu: `git status`,
 > `php artisan test --compact --testsuite=Unit,Feature`, `npx tsc --noEmit`. Jangan commit, push, mengakses
 > Supabase, menjalankan migrasi, atau menambah dependensi tanpa izin saya.
+
+### W4 Klaster Trip (selesai 7 Oktober 2026, menunggu izin commit)
+
+Rencana `docs/superpowers/plans/2026-10-06-memount-v3-w4-trip.md`, 8 tugas. Ledger dan seluruh ruling ada di
+`.superpowers/sdd/2026-10-06-memount-v3-w4-trip/progress.md`, yaitu W4-C1 sampai W4-C7, W4-S1 sampai W4-S4, W4-1a sampai
+W4-6l, W4-Fpre, W4-FA sampai W4-FK, dan W4-G1.
+
+Setiap tugas ditinjau terpisah. Tugas 1 dan 3 butuh satu atau dua putaran perbaikan, sedangkan Tugas 4 (Persiapan) dan
+Tugas 6 (Cek kesiapan) masing-masing tiga putaran. Sesudah itu:
+- satu tinjauan akhir lintas tugas: 1 Critical, 4 Important, 8 Minor, dan 2 butir inventaris yang dinaikkan;
+- satu gelombang perbaikan: 118 butir A sampai J, 107 dikerjakan dan 11 ditunda dengan ruling;
+- satu tinjauan ulang;
+- satu putaran residu;
+- satu perbaikan Delivery Gate.
+
+Nilai di bawah terukur 7 Oktober 2026 pada pohon kerja akhir W4 (snapshot tree `9d531a7`).
+
+| Butir | Nilai | Bukti |
+|---|---|---|
+| Suite Unit dan Feature | 1.991 test, 1.989 lulus, 2 dilewati, 0 gagal (W3 akhir: 1.806) | `php artisan test --compact --testsuite=Unit,Feature` |
+| Suite bawaan | 2.026 test, 1.989 lulus, 37 dilewati (Spatial melewati dirinya tanpa `SPATIAL_TEST_DSN`) | `php artisan test --compact` |
+| TypeScript dan format | `npx tsc --noEmit` 0 galat; `vendor/bin/pint --dirty` lulus | gerbang akhir W4 |
+| Bundel | `app` JS 355.924 B (W3 akhir 355.731 B); `app` CSS 86.457 B; potongan Trip: Rencanakan 11.320 B, Cek kesiapan 12.091 B, Persiapan 9.812 B, ruang kerja 7.812 B, indeks 5.146 B | build 7 Oktober |
+| Pratinjau | 18 halaman (W3: 14) | suite `Pratinjau` 18/18 |
+| Anggaran kueri | Indeks, ruang kerja, Persiapan, dan Cek diuji tidak tumbuh bersama data (Cek 39 = 39 dan 43 = 43, arsip trip 13 = 13) | `TripIndexPageTest`, `TripWorkspaceTest`, `PageQueryBudgetTest`, `ReadinessDashboardTest`, tinjauan ulang akhir |
+| Tangkapan | 20 tangkapan (indeks, ruang kerja, Rencanakan, Persiapan, Cek; 390 dan 1440 px; terang dan gelap) dibandingkan dengan acuan 08 sampai 10; delapan tangkapan indeks dan ruang kerja dipotret ulang sesudah perbaikan gerbang | `docs/desain/tangkapan/w4/README.md` |
+| Lapisan dan reflow | Bar aksi Rencanakan 106 px di 360 x 740 dan 320 x 568; baris langkah 4 x 44 px satu baris di 320; `scrollWidth` sama dengan `clientWidth` di 320 untuk kelima halaman | README tangkapan W4 |
+| Papan ketik | Empat jalur lulus (Rencanakan 390, Persiapan 390, Cek 390, ruang kerja 1440). Fokus ke Urungkan belum dapat dibuktikan di pratinjau statis karena butuh server Laravel | README tangkapan W4 |
+| Delivery Gate | Salinan 4 PASS, Desain 4, Interaksi 3, Kebenaran 6; dua FAIL desain (dua tombol penuh di indeks dan ruang kerja) diperbaiki W4-G1; tidak ada FAIL tanpa putusan | `.superpowers/.../delivery-gate-w4.md` |
+
+Yang dibangun W4:
+- **Indeks trip** (`IndeksTrip`): kartu trip terdekat dengan fase dan satu aksi berikutnya, kelompok Berlangsung,
+  Mendatang, dan Selesai, serta "Lihat semua" berhalaman untuk trip selesai dan batal di luar lima terakhir.
+- **Ruang kerja:** empat langkah (`TripSteps`, `KepalaTrip`) dengan satu predikat "tinjauan tercatat" dan satu predikat
+  butir menunggu BMKG yang dipakai bersama halaman lain. Rencana belum dimulai yang tanggalnya lewat diberi penanda
+  "Tanggal rencana sudah lewat" dan aksi tunggal "Ubah rencana".
+- **Rencanakan** (`RencanaTrip`):
+  - kecocokan untuk rencana dihitung server lewat muat ulang parsial;
+  - jendela izin, termasuk "tanggal buka belum tercatat" bila separuh tercatat;
+  - kalimat terbit prakiraan BMKG;
+  - jam dalam zona gunung;
+  - peserta 1 sampai 12;
+  - flash "Rencana trip tersimpan."
+- **Persiapan** (`HalamanPersiapan`):
+  - centang optimis dengan Urungkan lewat antrean kiriman per halaman dan flash berkunci butir;
+  - navigasi ditahan sampai pilihan terakhir tersimpan;
+  - butir cuaca menunggu BMKG;
+  - saringan "Hanya yang belum dikonfirmasi";
+  - butir cuaca direset bila tanggal trip berubah;
+  - trip selesai atau batal tidak dapat dicentang.
+- **Cek kesiapan** (`HalamanKesiapan`):
+  - kata DK-48 beserta semua sebabnya;
+  - tiga hal yang diperiksa;
+  - "Sejak cek terakhir" per status;
+  - pesan hari keberangkatan;
+  - alasan penolakan tinjauan satu sumber untuk halaman dan POST;
+  - konfirmasi dalam transaksi dengan kunci;
+  - snapshot kondisi minimal tanpa identitas, catatan, atau foto pelapor.
+- **Batas laju** pada rute tulis trip, persiapan, dan kesiapan. Centang butir memakai batas sendiri, 120 per menit.
+- **Perintah pembersihan PII** `memount:bersihkan-snapshot-kondisi` untuk snapshot lama, diuji tetapi BELUM dijalankan
+  di basis data mana pun.
+
+Ruling koordinator atas konflik rencana (W4-C1 sampai W4-C7):
+- C1: peserta 1 sampai 12 sesuai spec bagian 6.8, dicatat GR-05.
+- C2: kesiapan menilai kecocokan untuk rencana.
+- C3: kosakata mesin di alasan Cek dipindah ke W9.
+- C4: "Siap berangkat" di luar permukaan W4 diputus W5 atau W6.
+- C5: pemilih jalur Rencanakan hanya dari simpanan.
+- C6: pengecualian R-012 `Trips/Readiness` dicabut.
+- C7b: label izin SIMAKSI butuh kunci stabil (W8).
+
+Perubahan penting dari tinjauan (selain isi rencana):
+- **C1 tinjauan akhir:** `TripPlan::tujuanPenilaian()` kini selalu memakai jenis dan tanggal trip di atas salinan tujuan
+  yang tidak disimpan. Sebelumnya ruang kerja, Cek, dan penilaian kecocokan bisa menilai rencana lain dari tujuan
+  terakhir pendaki, sehingga Tektok di jalur 30 jam dapat lolos tinjauan.
+- **Pendaki tanpa profil lengkap:** label kecocokan tidak dinilai (R-006, PRD §91), tetapi syarat dasar rencana tetap
+  dihitung.
+- **Tinjauan pra-keberangkatan:** tercatat dengan waktunya dan tidak ditawarkan ulang. Tinjauan juga ditolak untuk
+  rencana yang tanggalnya lewat.
+- **Indeks dan ruang kerja:** tidak lagi menunjuk Persiapan bila sisa butirnya hanya butir yang menunggu BMKG.
+- **Delivery Gate W4-G1:** tombol kepala indeks dan pemicu hapus menjadi sekunder, dan "Mulai pendakian" baru menjadi
+  aksi utama pada hari keberangkatan.
+
+OPEN ISSUE dan butir yang ditunda dengan putusan tertulis:
+- **Ke W5:**
+  - Beranda mewarisi `TripSteps::aksi()` dan predikat W4;
+  - urutan alasan kartu (W3-C7);
+  - kata "Siap berangkat" (W4-C4);
+  - konflik rencana W5 nomor 1 sampai 9 diputus saat pra-cek.
+- **Ke W6:**
+  - penjaga satu pendakian berlangsung dan indeks unik `hiking_sessions.trip_plan_id`;
+  - kata "Siap berangkat".
+- **Ke W7:**
+  - alasan pembatalan DK-50;
+  - catatan per butir persiapan dan perlengkapan pribadi.
+- **Ke W8:**
+  - kunci stabil label izin (W4-C7b);
+  - kalimat izin ruang kerja per keadaan jendela;
+  - kesegaran prakiraan dari konteks 72 jam;
+  - cache status 300 detik;
+  - kartu gunung api.
+- **Ke W9:**
+  - kosakata mesin di alasan (W4-C3);
+  - sapuan format jam;
+  - halaman galat 403, 404, 419, 429, dan 500 berbahasa Indonesia (W4-6j);
+  - pemecahan `Readiness.tsx` dan pakai ulang hasil `compute()`;
+  - dependensi `TripController`;
+  - saringan Persiapan di URL;
+  - peringatan isian belum tersimpan di Rencanakan;
+  - balapan dua GET pertama Persiapan;
+  - test pasangan kunci flash;
+  - kontras ruas kosong;
+  - tahun pada tanggal `'D, j M'`.
+- **PERLU KLARIFIKASI (R-024):** test PostgreSQL `PreDepartureConfirmLockTest` dan `ReadinessForecastDayTest` belum
+  pernah berjalan karena tidak ada PostgreSQL lokal. Keduanya dijalankan CI Spatial sesudah izin push.
+- **Menunggu izin:** klik kendali POST di peramban dan alur Urungkan butuh server lokal (Q1) atau Playwright (Q17).
+- **Batas yang diterima:** "Sejak cek terakhir" tidak mendeteksi pertukaran dua butir yang tidak menggeser hitungan,
+  karena snapshot menyimpan hitungan per status, bukan status per butir.
+
+Daftar izin akhir yang bertambah karena W4 (rincian di pelacak program, butir 15 sampai 26):
+- **Syarat deploy W4:**
+  - `migrate:status` Supabase mencakup `2026_09_25_000917` dan `2026_09_25_000918` (`trip_reminders` kini dibaca
+    Persiapan dan ruang kerja; Q22);
+  - CI Spatial lulus;
+  - pembersihan PII snapshot lama sebelum atau bersama deploy.
+- **W4 tidak menambah migrasi.**
+- **Keputusan pemilik yang tercatat:**
+  - kata DK-48, peserta 1 sampai 12, dan kecocokan untuk rencana pada kesiapan (GR-05);
+  - pendaki tanpa profil dan alternatif cap "Masih perlu persiapan";
+  - tinjauan ulang pra-keberangkatan;
+  - kedekatan "Masih perlu persiapan" dengan label Route Fit;
+  - "Lihat semua" trip selesai dan batal;
+  - tautan tujuan terakhir otomatis di Rencanakan;
+  - harness uji perilaku klien bersama Q17.
+- **Dependensi:** framer-motion 14 terpasang atas arahan pemilik, belum diimpor.
+
+Titik lanjut: W5 Beranda. Rencananya sudah ditulis dan disimulasikan, yaitu
+`scratchpad/rencana/2026-10-07-memount-v3-w5-beranda.md` milik sesi koordinator: 9 tugas, 1.921 menjadi 1.970 test.
+Rencana itu dipindah ke `docs/superpowers/plans/` saat W5 dimulai, lalu dipra-cek terhadap pohon akhir W4 ini, karena
+gelombang akhir W4 mengubah `TripSteps`, `PermitService`, dan `PreDepartureCheck`. Rencana W6 juga sudah ditulis (13
+tugas).
 
 ### W3 Klaster Jelajah (selesai 6 Oktober 2026, menunggu izin commit)
 

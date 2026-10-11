@@ -14,7 +14,6 @@ use App\Models\User;
 use App\Services\ReadinessService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -180,20 +179,23 @@ class StaleReadinessTest extends TestCase
                 ->where('utama.kesiapan.peringatan', true));
     }
 
+    /**
+     * Beranda W5 (spec v3 bagian 6.1) menulis vonis basi sebagai peringatan di kartu trip, dan
+     * langkah Cek tidak tampak selesai. Kalimatnya datang dari TripSteps lewat props, jadi yang
+     * diuji di sini props, bukan sumber halaman.
+     */
     public function test_the_dashboard_stops_presenting_a_superseded_verdict(): void
     {
         $trip = $this->tripYangDinilaiSiap();
 
         $this->majuSehariLaluTutup($trip);
 
-        // Dasbor kini React: server menandai vonisnya basi dan tidak mengirim labelnya.
         $this->actingAs($trip->user)->get(route('dashboard'))->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('trip.id', $trip->id)
-                ->where('trip.catatan.jenis', 'basi')
-                ->where('trip.catatan.label', null));
-
-        $this->assertStringContainsString('Status jalur berubah, perlu dinilai ulang', File::get(resource_path('js/pages/Dashboard.tsx')));
+                ->where('fase.kunci', 'B2')
+                ->where('fase.kartu.id', $trip->id)
+                ->where('fase.kartu.peringatan', 'Status jalur berubah, perlu dinilai ulang')
+                ->where('fase.kartu.langkah.3.keadaan', fn (string $keadaan) => $keadaan !== 'selesai'));
     }
 
     /**

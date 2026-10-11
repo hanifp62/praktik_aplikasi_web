@@ -2,11 +2,14 @@
 
 namespace Tests\Pratinjau;
 
+use App\Enums\CompletionState;
 use App\Enums\HikingSessionStatus;
 use App\Enums\PreparationStatus;
 use App\Enums\TripStatus;
 use App\Models\Checkpoint;
+use App\Models\HikingHistory;
 use App\Models\HikingSession;
+use App\Models\MountainFollow;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
@@ -14,6 +17,7 @@ use App\Services\ConsiderationService;
 use App\Services\PreparationService;
 use App\Services\ReadinessService;
 use App\Services\Trails\TautanBagikan;
+use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia;
 
@@ -25,6 +29,8 @@ use Inertia\Testing\AssertableInertia;
  * Diperluas W2 (ruling W2-R4): kelima akar tab dengan isinya sekarang (Dasbor adalah
  * Beranda), detail jalur sebagai halaman tugas yang menyembunyikan bilah tab, dan Jelajah
  * saat Budi sedang mendaki supaya strip pendakian aktif ikut terpotret.
+ *
+ * Diperluas W5: Beranda di kelima fasenya (B0 sampai B4, spec v3 bagian 6.1).
  */
 class HalamanPratinjauTest extends PratinjauTestCase
 {
@@ -43,11 +49,113 @@ class HalamanPratinjauTest extends PratinjauTestCase
         $this->tulisPratinjau('primitif', $this->get(self::ASAL.'/dev/primitif'), 'Dev/Primitif');
     }
 
+    /**
+     * Beranda fase B2 (acuan 01): trip camping Budi ke Gede via Cibodas lima belas hari lagi,
+     * daftar persiapannya dibangkitkan dengan tiga butir kritis pertama dikonfirmasi, dan Budi
+     * mengikuti Gunung Gede supaya kabarnya ikut terpotret.
+     */
     public function test_dasbor(): void
     {
-        $this->sebagaiBudi();
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+        $butir = app(PreparationService::class)->generateFor($trip);
+        $butir->where('is_critical', true)->take(3)->each(fn ($satu) => $satu->update(['status' => PreparationStatus::CONFIRMED->value]));
+        MountainFollow::create(['user_id' => $budi->id, 'mountain_id' => $trip->trail->mountain_id]);
 
-        $this->tulisPratinjau('dasbor', $this->get(self::ASAL.'/dashboard'), 'Dashboard');
+        $respons = $this->get(self::ASAL.'/dashboard');
+
+        // Ruling W5-2b (M6): fase diperiksa di sini, bukan hanya diasumsikan dari data
+        // contoh: pratinjau tidak lagi dapat memotret fase lain tanpa test yang merah.
+        $respons->assertInertia(fn (AssertableInertia $page) => $page->where('fase.kunci', 'B2'));
+
+        $this->tulisPratinjau('dasbor', $respons, 'Dashboard');
+    }
+
+    /**
+     * Beranda fase B0: akun baru yang belum mengisi profil pendaki.
+     */
+    public function test_dasbor_b0(): void
+    {
+        $this->seed(DemoSeeder::class);
+        $this->actingAs(User::factory()->create(['name' => 'Budi Setiawan']));
+
+        $respons = $this->get(self::ASAL.'/dashboard');
+
+        $respons->assertInertia(fn (AssertableInertia $page) => $page->where('fase.kunci', 'B0'));
+
+        $this->tulisPratinjau('dasbor-b0', $respons, 'Dashboard');
+    }
+
+    /**
+     * Beranda fase B1: tanggal trip Gede Budi sudah lewat tiga hari tanpa dimulai, jadi
+     * Beranda mengajak merencanakan dan menyebut rencana yang lewat itu (W4-1c).
+     */
+    public function test_dasbor_b1(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+        $trip->update(['planned_date' => now('Asia/Jakarta')->subDays(3)->toDateString(), 'end_date' => now('Asia/Jakarta')->subDays(2)->toDateString()]);
+
+        $respons = $this->get(self::ASAL.'/dashboard');
+
+        $respons->assertInertia(fn (AssertableInertia $page) => $page->where('fase.kunci', 'B1')->whereNot('fase.tripLewat', null));
+
+        $this->tulisPratinjau('dasbor-b1', $respons, 'Dashboard');
+    }
+
+    /**
+     * Beranda fase B3: Budi sedang mendaki Gede via Cibodas, sesinya menuju pos kedua.
+     */
+    public function test_dasbor_b3(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+        $trip->update(['status' => TripStatus::IN_PROGRESS->value]);
+
+        HikingSession::create([
+            'trip_plan_id' => $trip->id,
+            'user_id' => $budi->id,
+            'current_checkpoint_id' => Checkpoint::where('trail_id', $trip->trail_id)->where('sequence', 2)->value('id'),
+            'status' => HikingSessionStatus::ACTIVE->value,
+            'started_at' => now()->subMinutes(135),
+        ]);
+
+        $respons = $this->get(self::ASAL.'/dashboard');
+
+        $respons->assertInertia(fn (AssertableInertia $page) => $page->where('fase.kunci', 'B3'));
+
+        $this->tulisPratinjau('dasbor-b3', $respons, 'Dashboard');
+    }
+
+    /**
+     * Beranda fase B4: pendakian Gede Budi selesai dua hari lalu dan belum dilaporkan.
+     */
+    public function test_dasbor_b4(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
+        $selesai = now()->subDays(2);
+        $trip->update([
+            'planned_date' => $selesai->copy()->subDay()->toDateString(),
+            'end_date' => $selesai->toDateString(),
+            'status' => TripStatus::COMPLETED->value,
+            'completed_at' => $selesai,
+        ]);
+
+        HikingHistory::create([
+            'user_id' => $budi->id,
+            'trip_plan_id' => $trip->id,
+            'trail_id' => $trip->trail_id,
+            'trip_type' => $trip->trip_type->value,
+            'completion_state' => CompletionState::COMPLETED->value,
+            'completed_at' => $selesai,
+        ]);
+
+        $respons = $this->get(self::ASAL.'/dashboard');
+
+        $respons->assertInertia(fn (AssertableInertia $page) => $page->where('fase.kunci', 'B4'));
+
+        $this->tulisPratinjau('dasbor-b4', $respons, 'Dashboard');
     }
 
     public function test_jelajah(): void

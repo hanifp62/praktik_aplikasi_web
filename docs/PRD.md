@@ -24,7 +24,7 @@ Desain konsolidasi: `docs/superpowers/specs/2026-09-23-konsolidasi-dokumen-desig
 ## Cara membaca
 
 1. **Nomor § adalah ID permanen, bukan halaman.** Setiap bagian membawa ID-nya di judul. Urutan baca disusun untuk manusia yang membaca dari atas, sehingga boleh berbeda dari urutan nomor. Untuk mencari §N, buka Lampiran A.
-2. **Tidak ada ID yang dihapus atau dipakai ulang.** Bagian yang dipadatkan ke bagian lain tetap tercatat sebagai alias di Lampiran A, misalnya §137 dipadatkan ke §1. ID baru: bagian mulai §147 (kini terpakai sampai §161), fitur mulai FR-22 (terpakai sampai FR-27), aturan bisnis baru memakai nomor setelah BR-16 (belum ada), governance record berikutnya GR-05.
+2. **Tidak ada ID yang dihapus atau dipakai ulang.** Bagian yang dipadatkan ke bagian lain tetap tercatat sebagai alias di Lampiran A, misalnya §137 dipadatkan ke §1. ID baru: bagian mulai §147 (kini terpakai sampai §161), fitur mulai FR-22 (terpakai sampai FR-27), aturan bisnis baru memakai nomor setelah BR-16 (belum ada), governance record berikutnya GR-07.
 3. **Rujukan di kode tidak disentuh.** Karena ID tetap, ratusan rujukan `§N`, `BR-N`, dan `FR-N` di kode, test, dan dokumen tetap menunjuk isi yang sama. `tests/Feature/PrdReferenceIntegrityTest.php` menjaganya: setiap ID yang dirujuk harus punya heading atau alias di sini, indeks tidak boleh melompat, tidak ada ID yang dipakai dua kali, PRD hanya ada di `docs/PRD.md`, dan setiap berkas `.md` yang disebut dokumen hidup benar-benar ada.
 4. **Konvensi rujukan.** Di dokumen ini, "§N" selalu berarti ID PRD. Bagian dokumen lain ditulis "bagian N" beserta nama berkasnya, misalnya "HANDOVER.md bagian 3". Aturan R-001 sampai R-024 tidak disalin ke sini; PRD hanya merujuk pemiliknya (peta di bawah).
 5. **Istilah.** Teks untuk pengguna memakai pos (bukan checkpoint), jalur, kawasan, dan pengelola. Istilah domain di dokumen ini: Mountain, Trail, Route Fit. Nilai enum ditulis kapital, misalnya OPEN atau COCOK.
@@ -1074,7 +1074,7 @@ Tautan yang kedaluwarsa atau tidak valid menampilkan pesan yang jelas beserta ca
 
 ## §149 FR-24 Pengingat perjalanan
 
-Bagian baru (DK-07, GR-02). Pengguna dapat menyalakan atau mematikan pengingat untuk rencana perjalanannya. Pengingat terkirim otomatis beberapa hari sebelum dan sehari sebelum keberangkatan, memuat nama jalur, tanggal keberangkatan, dan ajakan memeriksa status resmi, cuaca, dan kesiapan. Pengingat tidak pernah menyatakan jalur atau pengguna aman (R-012). Pengguna dapat melihat pengingat yang akan datang beserta statusnya (menunggu atau terkirim).
+Bagian baru (DK-07, GR-02). Pengguna dapat menyalakan atau mematikan pengingat untuk rencana perjalanannya. Pengingat terkirim otomatis beberapa hari sebelum dan sehari sebelum keberangkatan, memuat nama jalur, tanggal keberangkatan, dan ajakan memeriksa status resmi, cuaca, dan kesiapan. Pengingat tidak pernah menyatakan jalur atau pengguna aman (R-012). Pengguna dapat melihat pengingat yang akan datang beserta statusnya (menunggu atau terkirim). Bila aturan izin jalurnya mencatat kapan pemesanan dibuka, pengingat yang sama juga mengirim satu surel pada hari itu, kecuali butir izin di persiapan sudah dikonfirmasi atau ditandai tidak berlaku; surel itu menautkan sistem resmi dan tidak menjual izin (GR-06).
 
 Kanal awal adalah email. Kanal lain memakai abstraksi yang sama dengan FR-26 (Laravel Notifications). Syarat operasional (K11): driver mail produksi (sekarang `log`) dan penjadwal yang benar-benar berjalan di produksi (Vercel Cron, §154). Rincian: [`docs/fitur/04-perjalanan-persiapan.md`](docs/fitur/04-perjalanan-persiapan.md).
 
@@ -2118,6 +2118,58 @@ itu. Syarat deploy W4: `migrate:status` Supabase mencakup `2026_09_25_000917_add
 - Alternatif menahan keadaan kesiapan di "Masih perlu persiapan" selama kecocokan untuk rencana belum dapat dinilai,
   alih-alih memakai label kecocokan dasar.
 - Kemungkinan menawarkan tinjauan pra-keberangkatan ulang untuk rencana yang sudah berubah sejak tinjauan pertama.
+
+### GR-06: Beranda berfase dan pengingat hari pemesanan izin dibuka (gelombang W5)
+
+**Requirement changed.**
+
+- FR-24 (§149) bertambah satu pengingat: bila aturan izin jalurnya mencatat kapan pemesanan dibuka
+  (`booking_opens_days_before`), pengingat trip yang menyala juga mengirim satu surel pada hari itu pukul 07.00 zona
+  gunungnya. Surel itu tidak dikirim bila butir izin di persiapan sudah dikonfirmasi atau ditandai tidak berlaku,
+  menautkan sistem resmi, dan tidak menjual izin. Surel hari buka hanya terkirim pada hari buka menurut aturan izin
+  yang berlaku saat itu. Bila hari buka jatuh pada pagi yang sama dengan H-3 atau H-1, kedua surel terkirim. Hari
+  buka yang sudah lewat tidak dijadwalkan dan tidak disebut terlewat. Sakelar dan persetujuannya tetap satu untuk
+  ketiga pengingat.
+- Beranda (§145) menjadi lima fase dengan satu aksi utama per fase (spec v3 bagian 6.1, DK-45): B0 profil belum
+  diisi, B1 tanpa trip mendatang, B2 trip mendatang, B3 pendakian berlangsung, dan B4 pendakian selesai paling lama
+  tujuh hari yang belum dilaporkan. Urutan kepentingannya B3, B2, B4, B0, lalu B1.
+- Satu kalimat alasan kecocokan (§89) untuk jalur berlabel Cocok kini alasan terkuatnya, kalimat pertama
+  `why_it_fits` dari `RecommendationExplanationService`; label lain tetap mendahulukan faktor lemah (ruling W3-C7,
+  diputuskan W5). Kartu "Jalur lain untuk Anda" tidak mengulang kalimat yang sudah dipakai kartu sebelumnya. Satu
+  kalimat alasan untuk jalur yang lolos syarat dasar tetapi tidak berlabel Cocok, di semua permukaan termasuk kartu
+  Perlu persiapan di Beranda, menyebut sebab turunnya label dari satu daftar sebab (faktor lemah, lalu pembatasan
+  segmen, lalu data yang belum tersedia), tidak pernah status resmi atau izin; bila daftar itu kosong karena label
+  datang dari pita skor semata, kalimatnya faktor kuat pertama.
+
+**Reason.** Spec v3 bagian 6.1 menetapkan aksi "Ingatkan saat dibuka" untuk jendela pemesanan yang belum dibuka;
+tanpa pengingat pada hari itu, aksinya hanya janji. Kalimat perhatian di kartu berlabel Cocok terbaca bertentangan
+dengan labelnya (W3-C7).
+
+**Impact.** Pendaki yang menyalakan pengingat dapat menerima satu surel tambahan per trip, juga pada pagi yang sama
+dengan surel H-3 atau H-1. Kartu Jelajah, rincian jalur, dan Beranda menulis alasan positif untuk jalur Cocok;
+faktor lemahnya tetap disebut di "Kenapa?" (`what_to_watch`). Untuk jalur Perlu persiapan tanpa faktor lemah, kartu
+Jelajah dan rincian jalur kini menulis kalimat yang sama dengan Beranda (pembatasan segmen atau data yang belum
+tersedia), bukan kalimat faktor kuat yang searah dengan Cocok. "Kenapa?" di kartu Jelajah tidak mengulang kalimat
+kartu: butir "Yang perlu diperhatikan" yang sama dengan kalimat alasan dilewati, dan butir sah berikutnya yang tampil,
+seperti di rincian jalur.
+
+**Affected modules.** Trip (pengingat), Beranda, dan pemilihan kalimat alasan Recommendation (mesinnya tidak berubah).
+Tidak ada perubahan pada Condition maupun Administration.
+
+**Security impact.** Tidak ada rute baru: "Ingatkan saat dibuka" memakai rute pengingat trip yang sudah ada (Policy
+pemilik, batas laju `personal_writes_per_minute`). Rute sakelar simpan lama `trails.timbang` dihapus karena tidak
+lagi punya pemanggil.
+
+**Data impact.** Tidak ada perubahan skema dan tidak ada migrasi: `trip_reminders.jenis` menerima nilai `IZIN`
+(kolom string 8). Trip yang pengingatnya sudah menyala sebelum rilis baru mendapat jadwal hari buka izin pada
+sinkronisasi berikutnya (ubah rencana atau sakelar pengingat); tidak ada pengisian mundur otomatis.
+
+**Scope impact.** Tidak ada fitur di luar spec v3 gelombang W5; batas MVP dan MVP+ tetap (§105, §106).
+
+**Keputusan terbuka untuk pemilik.**
+
+- Apakah pengingat hari pemesanan dibuka perlu sakelar sendiri, terpisah dari pengingat H-3 dan H-1.
+- Apakah trip lama yang pengingatnya sudah menyala perlu dijadwalkan ulang sekali saat rilis.
 
 ### Log keputusan
 
