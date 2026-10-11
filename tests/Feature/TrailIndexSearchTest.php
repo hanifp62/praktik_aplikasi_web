@@ -143,17 +143,28 @@ class TrailIndexSearchTest extends TestCase
      * TC-m3 tinjauan akhir: "Kembalikan tafsiran kalimat" lepas bersama aksinya, dan Urungkan
      * mengembalikan chip yang baru ada sesudah jawaban server. Fokus pindah ke chip itu di onSuccess
      * kunjungan, bukan pada render berikutnya (yang terjadi sebelum jawaban server, jadi chipnya
-     * belum ada), dan hanya bila fokus jatuh ke body atau #konten. Dari sumber, karena TSX tidak
-     * dijalankan di Node.
+     * belum ada). Dari sumber, karena TSX tidak dijalankan di Node.
+     *
+     * Diubah TM-1 (cek peramban TC-m3): chip yang dilepas menyerahkan fokus ke tetangganya atau ke
+     * wadah grup (Chip.tsx), dan toast mengembalikan fokus ke sana sesudah Urungkan, jadi penjaga
+     * yang hanya menerima body atau #konten tidak pernah memindah fokus di jalur papan ketik. Kini
+     * fokus di dalam grup chip instans itu juga boleh dipindah; fokus di luar grup tidak direbut.
      */
     public function test_restoring_reading_chips_moves_focus_to_a_restored_chip_after_the_visit(): void
     {
         $halaman = File::get(resource_path('js/pages/Trails/Index.tsx'));
         $tafsiran = File::get(resource_path('js/components/trails/jelajah/TafsiranKalimat.tsx'));
 
+        // TD-m1 tinjauan terlingkup: onSuccess harus sampai ke kunjungan Inertia; tanpa ini setiap
+        // pemindahan fokus sesudah jawaban server diam-diam hilang dan tsc tetap hijau.
+        $this->assertStringContainsString('const kunjungi = (kueri: Record<string, string | number>, onSuccess?: () => void) =>', $halaman);
+        $this->assertStringContainsString('router.get(trailsIndex.url({ query: kueri }), {}, { preserveState: true, preserveScroll: true, replace: true, onSuccess });', $halaman);
+        $this->assertStringContainsString('const terapkan = (d: DrafSaringan, semua = filter.tampilkanSemua, onSuccess?: () => void) => kunjungi(kueriDari(filter, d, tafsiranTeknis, semua), onSuccess);', $halaman);
         $this->assertSame(2, substr_count($halaman, 'onAbaikan={(abaikan, onSuccess) => kunjungi(kueriDari({ ...filter, abaikan }, drafDari(filter, filter.teknisRendah), false), onSuccess)}'));
         $this->assertStringContainsString('const fokusChip = (kunci: string | undefined) => () => {', $tafsiran);
-        $this->assertStringContainsString("if (kunci !== undefined && (aktif === null || aktif === document.body || aktif.id === 'konten')) {", $tafsiran);
+        $this->assertStringContainsString('const diGrup = aktif !== null && document.getElementById(idGrup)?.contains(aktif) === true;', $tafsiran);
+        $this->assertStringContainsString("if (kunci !== undefined && (aktif === null || aktif === document.body || aktif.id === 'konten' || diGrup)) {", $tafsiran);
+        $this->assertStringContainsString('<div id={idGrup} className="flex flex-wrap items-center gap-1">', $tafsiran);
         $this->assertStringContainsString('() => onAbaikan(sebelum, fokusChip(kunci)),', $tafsiran);
         $this->assertStringContainsString('onClick={() => onAbaikan([], fokusChip(tafsiran.dilepas[0]))}', $tafsiran);
         $this->assertStringNotContainsString('fokusSesudahRender(', $tafsiran, 'Fokus pada render berikutnya terjadi sebelum chip dikembalikan server.');
