@@ -24,15 +24,17 @@ class RepoHygieneTest extends TestCase
      * Entri root yang dilacak git atau akan ikut commit. Menambah entri berarti menambah
      * baris inventaris beserta alasannya. Upgrade tailwind 4 mencabut postcss.config.js dan
      * tailwind.config.js: konfigurasinya kini di resources/css/app.css dan vite.config.js.
+     * Deploy inspeksi tim (12 Oktober 2026) menambah Dockerfile, .dockerignore, docker/ (skrip start
+     * dan php.ini image), dan render.yaml (Blueprint Render); keempatnya diuji job CI `image`.
      */
     private const ENTRI_ROOT = [
-        '.agents', '.claude', '.editorconfig', '.env.example', '.gitattributes', '.github',
+        '.agents', '.claude', '.dockerignore', '.editorconfig', '.env.example', '.gitattributes', '.github',
         '.gitignore', '.ngodingpakeaiignore', '.npmrc', 'AGENTS.md', 'CLAUDE.md',
-        'CONTRIBUTING.md', 'DESIGN.md', 'HANDOVER.md', 'PRODUCT.md', 'README.md',
+        'CONTRIBUTING.md', 'DESIGN.md', 'Dockerfile', 'HANDOVER.md', 'PRODUCT.md', 'README.md',
         'SECURITY.md',
         'app', 'artisan', 'boost.json', 'bootstrap', 'composer.json', 'composer.lock',
-        'config', 'database', 'docker-compose.yml', 'docs', 'lang', 'package-lock.json', 'package.json',
-        'phpunit.xml', 'public', 'resources', 'routes',
+        'config', 'database', 'docker', 'docker-compose.yml', 'docs', 'lang', 'package-lock.json', 'package.json',
+        'phpunit.xml', 'public', 'render.yaml', 'resources', 'routes',
         'skills-lock.json', 'storage', 'tests', 'tsconfig.json',
         'vite.config.js',
     ];

@@ -91,6 +91,36 @@ class CiWorkflowsTest extends TestCase
         $this->assertStringContainsString('@127.0.0.1:', $bernama['Spatial tests (PostGIS)']['env']['SPATIAL_TEST_DSN']);
     }
 
+    /**
+     * Image produksi yang dipakai render.yaml dibangun dan dijalankan di setiap push. Start kontainer menjalankan
+     * seluruh migrasi terhadap PostGIS yang sama dengan job test, dan /up serta halaman masuk harus menjawab 200,
+     * jadi image yang tidak dapat di-deploy membuat CI merah sebelum Render mencobanya (autoDeployTrigger checksPass).
+     */
+    public function test_the_production_image_is_built_and_smoke_tested_against_postgis(): void
+    {
+        $alur = $this->alur('test.yml');
+        $pekerjaan = $alur['jobs']['image'];
+
+        $this->assertSame($alur['jobs']['test']['services']['postgis']['image'], $pekerjaan['services']['postgis']['image']);
+
+        $bernama = $this->langkahBernama($pekerjaan['steps']);
+
+        $this->assertSame('docker build --tag memount:ci .', $bernama['Build image']['run']);
+        $this->assertStringContainsString('--env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test', $bernama['Jalankan image']['run']);
+        $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1:10000/up', $bernama['Jalankan image']['run']);
+        $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1:10000/login', $bernama['Jalankan image']['run']);
+        $this->assertSame('always()', $bernama['Log kontainer']['if']);
+
+        $mulai = File::get(base_path('docker/start.sh'));
+        $this->assertStringContainsString('php artisan migrate --force --no-interaction', $mulai);
+        $this->assertStringContainsString('set -e', $mulai);
+
+        $render = Yaml::parseFile(base_path('render.yaml'))['services'][0];
+        $this->assertSame('./Dockerfile', $render['dockerfilePath']);
+        $this->assertSame('checksPass', $render['autoDeployTrigger'], 'Render hanya menerapkan commit yang sudah lulus CI.');
+        $this->assertSame('/up', $render['healthCheckPath']);
+    }
+
     public function test_the_security_workflow_audits_dependencies_and_scans_for_secrets(): void
     {
         $alur = $this->alur('security.yml');

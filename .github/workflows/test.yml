@@ -120,3 +120,50 @@ jobs:
       - name: Ringkas kegagalan test
         if: failure()
         run: python3 .github/scripts/junit_anotasi.py "$RUNNER_TEMP/unit-junit.xml" "$RUNNER_TEMP/feature-junit.xml" "$RUNNER_TEMP/spatial-junit.xml"
+
+  # Image produksi (Dockerfile, dipakai render.yaml) dibangun dan dijalankan terhadap PostGIS sungguhan, persis
+  # seperti di platform: start kontainer menjalankan seluruh migrasi, lalu /up dan halaman masuk harus menjawab 200.
+  # Mesin pengembangan tidak selalu punya Docker, jadi inilah bukti bahwa image dapat di-deploy.
+  image:
+    runs-on: ubuntu-latest
+
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: hiking
+          POSTGRES_PASSWORD: hiking
+          POSTGRES_DB: hiking_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hiking"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build image
+        run: docker build --tag memount:ci .
+
+      - name: Jalankan image
+        run: |
+          docker run --detach --name memount --network host \
+            --env PORT=10000 --env APP_ENV=production --env APP_DEBUG=false \
+            --env APP_KEY="base64:$(openssl rand -base64 32)" \
+            --env DB_CONNECTION=pgsql --env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test \
+            --env SESSION_DRIVER=database --env CACHE_STORE=database --env QUEUE_CONNECTION=sync \
+            --env LOG_CHANNEL=stderr --env TRUSTED_PROXIES='*' \
+            memount:ci
+          for percobaan in $(seq 1 90); do
+            curl --silent --fail --output /dev/null http://127.0.0.1:10000/up && break
+            sleep 2
+          done
+          curl --silent --fail --output /dev/null http://127.0.0.1:10000/up
+          curl --silent --fail --output /dev/null http://127.0.0.1:10000/login
+
+      - name: Log kontainer
+        if: always()
+        run: docker logs memount 2>&1 | tail -n 100

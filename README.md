@@ -19,6 +19,7 @@ dinyatakan "belum diketahui", tidak pernah ditebak.
 - [Stack](#stack)
 - [Menjalankan di komputer sendiri](#menjalankan-di-komputer-sendiri)
 - [Perintah harian](#perintah-harian)
+- [Deploy untuk inspeksi tim](#deploy-untuk-inspeksi-tim)
 - [Peta repo](#peta-repo)
 - [Peta dokumen](#peta-dokumen)
 - [Aturan yang tidak boleh dilanggar](#aturan-yang-tidak-boleh-dilanggar)
@@ -106,6 +107,25 @@ kandidat rilis dan belum memuat langkah deploy.
 sumber skema. Workflow ini dijalankan tangan dari tab Actions: ia selalu menampilkan status migrasi, dan baru
 menerapkannya bila "terapkan" dicentang. Rahasia `SUPABASE_DB_URL` (connection string Session pooler dari dashboard
 Supabase) diisi di Settings > Secrets and variables > Actions; kredensial tidak pernah ditulis di repo.
+
+## Deploy untuk inspeksi tim
+
+Situs inspeksi berjalan di Render paket Free (tanpa kartu kredit), region Singapura, dari `Dockerfile` repo ini, dengan
+Supabase sebagai basis data. `render.yaml` adalah Blueprint-nya: Render hanya menerapkan commit di `main` yang sudah
+lulus CI (`autoDeployTrigger: checksPass`), dan job `image` di `.github/workflows/test.yml` membangun serta menjalankan
+image yang sama terhadap PostGIS di setiap push. Start kontainer menjalankan `php artisan migrate --force`, jadi skema
+Supabase ikut diperbarui otomatis.
+
+1. Supabase: matikan Data API (aplikasi terhubung langsung ke Postgres), buat bucket privat untuk foto laporan, lalu
+   buat kunci S3 di halaman S3 configuration Storage.
+2. Render: masuk dengan akun GitHub, pilih New, lalu Blueprint, pilih repo ini, dan isi nilai rahasia yang diminta:
+   `APP_KEY` (hasil `php artisan key:generate --show`), `APP_URL` (alamat `onrender.com` layanan ini), `DB_URL`
+   (connection string Session pooler Supabase), serta `SUPABASE_STORAGE_ENDPOINT`, `SUPABASE_STORAGE_BUCKET`,
+   `SUPABASE_STORAGE_KEY`, dan `SUPABASE_STORAGE_SECRET`. `DEVICE_KEY_SECRET` dibangkitkan Render.
+3. Bagikan alamatnya. Anggota tim mendaftar sendiri; menaikkan peran ke moderator atau admin butuh persetujuan pemilik.
+
+Paket Free tidur sesudah 15 menit tanpa pengunjung dan bangun dalam sekitar satu menit; penjadwal (cuaca, pengingat)
+hanya berjalan selama layanan bangun. Nilai rahasia tidak pernah ditulis di repo.
 
 ## Peta repo
 
