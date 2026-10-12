@@ -67,7 +67,7 @@ kemiripan, penelusuran PDKI, uji pemahaman 5 sampai 8 pendaki, persetujuan pemil
 
 ### Palet dan token
 
-Token menyebut peran, nilainya tinggal di `resources/css/app.css`, dan `tailwind.config.js` memetakannya ke kelas
+Token menyebut peran, nilainya tinggal di `resources/css/app.css`, dan blok `@theme` di berkas yang sama memetakannya ke kelas
 bernama. Tidak ada warna mentah, `bg-white`, `text-black`, atau `dark:` di komponen (`InertiaLayoutTest`,
 `SemanticTokenTest`).
 

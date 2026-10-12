@@ -32,7 +32,7 @@ export function PemilihBanding({ pilihan, urutan }: PemilihBandingProps) {
 
     return (
         <details open={urutan.length === 0 ? true : undefined} className="rounded-lg border border-subtle bg-surface px-4">
-            <summary className="list-item min-h-11 cursor-pointer rounded-sm py-2 text-sm font-medium text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+            <summary className="list-item min-h-11 cursor-pointer rounded-xs py-2 text-sm font-medium text-primary focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                 Pilih jalur yang dibandingkan
             </summary>
 
@@ -46,7 +46,7 @@ export function PemilihBanding({ pilihan, urutan }: PemilihBandingProps) {
                                 disabled={penuh && !dipilih.includes(o.id)}
                                 onChange={() => ubah(o.id)}
                             />
-                            <span className="min-w-0 [overflow-wrap:anywhere]">
+                            <span className="min-w-0 wrap-anywhere">
                                 <span className="font-medium text-primary">{o.name}</span>
                                 {o.mountain ? <span className="text-secondary">, {o.mountain}</span> : null}
                                 {o.tersimpan ? null : <span className="block text-xs text-muted">Bukan simpanan Anda</span>}

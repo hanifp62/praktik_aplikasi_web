@@ -179,9 +179,9 @@ export function LembarBagikan({ terbuka, onTutup, pemicu, jalur, tautanAktif, ha
                     </section>
                 ) : null}
 
-                {/* Wilayah kabar selalu terpasang di dalam lembar; empty:!mt-0 menghapus jarak space-y
+                {/* Wilayah kabar selalu terpasang di dalam lembar; empty:mt-0! menghapus jarak space-y
                     saat kosong tanpa menyembunyikan wilayahnya. */}
-                <p id={idKabar} role="status" tabIndex={-1} className={kelas('rounded-kecil text-kecil text-primary empty:!mt-0', fokusTerlihat)}>
+                <p id={idKabar} role="status" tabIndex={-1} className={kelas('rounded-kecil text-kecil text-primary empty:mt-0!', fokusTerlihat)}>
                     {kabar}
                 </p>
             </div>

@@ -28,7 +28,7 @@ const bulat = (s: string) => s === '' || /^\d+$/.test(s);
  * Ukuran angka (ruling W6-6h): di bawah 400 px kolom grid hanya sekitar 112 px, dan pada 28 px
  * pasangan terikat seperti "↑1.650 m" lebih lebar dari kolomnya sehingga tetap terpatah. Di
  * bawah 400 px angka memakai text-judul-kartu (23 px), lalu text-judul mulai 400 px, pola yang
- * sama dengan AngkaNaik di halaman jalur. break-words tinggal sebagai jaring terakhir.
+ * sama dengan AngkaNaik di halaman jalur. wrap-break-word tinggal sebagai jaring terakhir.
  */
 export function AngkaPendakian({ angka }: { angka: AngkaRingkasan }) {
     const [terbuka, setTerbuka] = useState(false);
@@ -96,7 +96,7 @@ export function AngkaPendakian({ angka }: { angka: AngkaRingkasan }) {
                 {butir.map((b) => (
                     <div key={b.kunci} className="min-w-0">
                         <dt className="text-kecil opacity-90">{b.judul}</dt>
-                        <dd className={angka[b.kunci] === null ? 'mt-1 text-isi font-bold' : 'mt-1 break-words text-judul-kartu tabular-nums min-[400px]:text-judul'}>{angka[b.kunci] ?? 'Belum ada'}</dd>
+                        <dd className={angka[b.kunci] === null ? 'mt-1 text-isi font-bold' : 'mt-1 wrap-break-word text-judul-kartu tabular-nums min-[400px]:text-judul'}>{angka[b.kunci] ?? 'Belum ada'}</dd>
                     </div>
                 ))}
             </dl>
@@ -106,7 +106,7 @@ export function AngkaPendakian({ angka }: { angka: AngkaRingkasan }) {
                     ref={pemicu}
                     type="button"
                     onClick={() => setTerbuka(true)}
-                    className="inline-flex min-h-11 items-center rounded-tombol border border-current px-4 text-kecil font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+                    className="inline-flex min-h-11 items-center rounded-tombol border border-current px-4 text-kecil font-bold focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
                 >
                     Ubah angka
                 </button>

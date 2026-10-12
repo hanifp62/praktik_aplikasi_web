@@ -1,6 +1,284 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+| Tailwind 4, konfigurasi CSS-first. Pengganti tailwind.config.js dan postcss.config.js sejak
+| upgrade dependensi 12 Oktober 2026: plugin Vite @tailwindcss/vite membaca berkas ini, dan
+| awalan vendor diurus Lightning CSS di dalam plugin itu, bukan autoprefixer.
+*/
+@import 'tailwindcss' source(none);
+
+@plugin '@tailwindcss/forms';
+
+/*
+| Sumber yang dipindai ditulis sendiri, sama dengan `content` Tailwind 3, bukan deteksi
+| otomatis seluruh repo. Halaman React (resources/js) wajib ikut dipindai. Tanpa baris itu,
+| setiap kelas yang hanya dipakai di komponen .tsx tidak pernah dibuat, dan kegagalannya diam:
+| navigasi bawah kehilangan inset-x-0 dan melebar melewati layar, tanpa galat apa pun di build
+| maupun di peramban (ditemukan lewat pengukuran 25 Sep 2026).
+*/
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.{js,jsx,ts,tsx}';
+
+@theme {
+    /*
+     * Satu keluarga huruf, dihosting sendiri (spec v3 bagian 8.2, DK-38).
+     *
+     * Diukur sebelum diubah: 363 dari 426 pemakaian ukuran teks adalah text-sm
+     * atau text-xs, dan fontnya Figtree bawaan scaffolding. Satu huruf generik
+     * pada satu ukuran kecil membuat setiap layar terbaca seperti sel tabel,
+     * berapa pun kecerdasan yang ada di belakangnya.
+     *
+     * Plus Jakarta Sans dirancang Tokotype untuk identitas kota Jakarta.
+     * Dipilih bukan karena tampak mahal, melainkan karena ia huruf Indonesia
+     * untuk produk tentang gunung-gunung Indonesia; alasan itu bertahan ketika
+     * seleranya berubah, sedangkan "sedang populer" tidak. Sejak gelombang 1 v3
+     * ia juga membawa judul pada bobot 800: serif judul (Newsreader) dan Bunny
+     * Fonts dilepas, sehingga seluruh huruf datang dari asal aplikasi sendiri.
+     *
+     * Dua nama berikutnya adalah Roboto dan Arial yang metriknya disamakan di
+     * bawah, supaya tata letak tidak melompat ketika huruf tiba. Sisanya tumpukan
+     * sans bawaan Tailwind 3, ditulis utuh supaya urutannya tidak ikut berubah.
+     *
+     * Huruf mono memakai tumpukan sistem bawaan Tailwind, tanpa unduhan: font-mono
+     * hanya dipakai halaman Kesehatan admin untuk nama migrasi dan kunci tugas
+     * penjadwal. Karena itu --font-mono tidak ditulis di sini.
+     */
+    --font-sans: 'Plus Jakarta Sans', 'PJS Cadangan Roboto', 'PJS Cadangan Arial', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /*
+     * Skala tipe bernama (spec v3 bagian 8.2). Nama menyebut peran, bukan ukuran:
+     * text-judul untuk judul halaman, text-isi untuk badan teks. Lantainya 12 px
+     * (text-label); tidak ada teks informatif di bawahnya (TypeFloorTest).
+     */
+    --text-tampilan: 1.875rem;
+    --text-tampilan--line-height: 1.15;
+    --text-tampilan--letter-spacing: -0.025em;
+    --text-tampilan--font-weight: 800;
+    --text-judul: 1.75rem;
+    --text-judul--line-height: 1.2;
+    --text-judul--letter-spacing: -0.02em;
+    --text-judul--font-weight: 800;
+    --text-judul-kartu: 1.4375rem;
+    --text-judul-kartu--line-height: 1.25;
+    --text-judul-kartu--letter-spacing: -0.015em;
+    --text-judul-kartu--font-weight: 800;
+    --text-bagian: 1.125rem;
+    --text-bagian--line-height: 1.35;
+    --text-bagian--font-weight: 700;
+    --text-subjudul: 1.0625rem;
+    --text-subjudul--line-height: 1.4;
+    --text-subjudul--font-weight: 700;
+    --text-isi: 1rem;
+    --text-isi--line-height: 1.5;
+    --text-kecil: 0.875rem;
+    --text-kecil--line-height: 1.45;
+    --text-meta: 0.8125rem;
+    --text-meta--line-height: 1.4;
+    --text-label: 0.75rem;
+    --text-label--line-height: 1.35;
+}
+
+/*
+| Warna, bayangan, radius, dan gerak dibaca dari design token di bawah. Untuk mengubah palet
+| aplikasi, sunting token di sana, jangan menambah warna mentah di sini atau di view.
+|
+| `inline`, bukan @theme biasa: utilitas menulis rgb(var(--token)) langsung pada elemennya,
+| sama dengan Tailwind 3. @theme biasa menghitung --color-* sekali di :root, sehingga token
+| yang ditulis ulang di bawah :root, yaitu tema lapangan [data-tema-lapangan] (DK-49), tidak
+| lagi sampai ke bg-surface, text-primary, dan seterusnya di dalam mode lapangan. Inline juga
+| mencegah --radius-kartu dan kawan-kawan menunjuk dirinya sendiri, karena nama token radius
+| dan gerak sama dengan nama variabel tema Tailwind.
+*/
+@theme inline {
+    /* Batas kontrol interaktif, dipisahkan dari abu dekoratif karena WCAG 1.4.11 hanya
+       mengatur yang interaktif. Juga isian sakelar mati. */
+    --color-control: rgb(var(--control-border));
+
+    /* Lapisan semantik. Namanya menyebut peran, bukan warna: text-primary bukan
+       text-gray-900. View tidak lagi memilih abu sendiri-sendiri, dan mengubah rasa seluruh
+       aplikasi cukup menyentuh nilainya di token. */
+    --color-canvas: rgb(var(--canvas));
+    --color-surface: rgb(var(--surface));
+    --color-surface-sunken: rgb(var(--surface-sunken));
+    /* Permukaan kebalikan: toast urungkan. */
+    --color-surface-inverse: rgb(var(--surface-inverse));
+    --color-subtle: rgb(var(--border-subtle));
+    --color-primary: rgb(var(--text-primary));
+    --color-secondary: rgb(var(--text-secondary));
+    --color-muted: rgb(var(--text-muted));
+    --color-inverse: rgb(var(--text-inverse));
+
+    /* Teks di atas isian merek (tombol primer, langkah selesai): putih di tema terang,
+       gelap di tema gelap (spec v3 bagian 8.1). */
+    --color-on-brand: rgb(var(--on-brand));
+
+    /* Hijau sebagai latar depan (tautan, penekanan, garis grafik). Terpisah dari 700 yang
+       menjadi isian tombol, karena keduanya berpisah jalan di tema gelap; alasannya di token. */
+    --color-brand-ink: rgb(var(--brand-ink));
+    --color-brand-50: rgb(var(--brand-50));
+    --color-brand-100: rgb(var(--brand-100));
+    --color-brand-200: rgb(var(--brand-200));
+    --color-brand-300: rgb(var(--brand-300));
+    --color-brand-500: rgb(var(--brand-500));
+    --color-brand-600: rgb(var(--brand-600));
+    --color-brand-700: rgb(var(--brand-700));
+    --color-brand-800: rgb(var(--brand-800));
+    --color-brand-900: rgb(var(--brand-900));
+
+    --color-community-50: rgb(var(--community-50));
+    --color-community-500: rgb(var(--community-500));
+    --color-community-900: rgb(var(--community-900));
+
+    --color-warn-50: rgb(var(--warn-50));
+    --color-warn-100: rgb(var(--warn-100));
+    --color-warn-300: rgb(var(--warn-300));
+    --color-warn-600: rgb(var(--warn-600));
+    --color-warn-900: rgb(var(--warn-900));
+
+    --color-danger-50: rgb(var(--danger-50));
+    --color-danger-100: rgb(var(--danger-100));
+    --color-danger-300: rgb(var(--danger-300));
+    --color-danger-600: rgb(var(--danger-600));
+    --color-danger-700: rgb(var(--danger-700));
+    --color-danger-900: rgb(var(--danger-900));
+
+    /* Tiga label kecocokan publik (R-004) dan keadaan Belum dinilai (R-006): latar dan
+       teksnya dihitung berpasangan di ColourContrastTest. */
+    --color-fit-cocok: rgb(var(--fit-cocok));
+    --color-fit-cocok-teks: rgb(var(--fit-cocok-teks));
+    --color-fit-perlu: rgb(var(--fit-perlu));
+    --color-fit-perlu-teks: rgb(var(--fit-perlu-teks));
+    --color-fit-kurang: rgb(var(--fit-kurang));
+    --color-fit-kurang-teks: rgb(var(--fit-kurang-teks));
+    --color-fit-belum: rgb(var(--fit-belum));
+    --color-fit-belum-teks: rgb(var(--fit-belum-teks));
+
+    /* Status akses (DK-32): penanda non-teks, selalu bersama bentuk dan kata. */
+    --color-status-buka: rgb(var(--status-buka));
+    --color-status-dibatasi: rgb(var(--status-dibatasi));
+    --color-status-tutup: rgb(var(--status-tutup));
+    --color-status-belum: rgb(var(--status-belum));
+
+    /* Satu aksen: kuning pos. Tidak pernah membawa arti sendirian. teks adalah tinta nomor
+       pos DI ATAS aksen ini (bukan tinta badan teks biasa): dipaku gelap di semua tema
+       karena aksen kuningnya sendiri tidak berubah antar tema (token accent-pos-ink). */
+    --color-aksen-pos: rgb(var(--accent-pos));
+    --color-aksen-pos-teks: rgb(var(--accent-pos-ink));
+
+    --color-logo-mark: rgb(var(--logo-mark));
+    --color-logo-type: rgb(var(--logo-type));
+
+    /* Satu elevasi, untuk lapisan yang benar-benar melayang di atas halaman: bilah tab, bar
+       aksi, lembar bawah, dialog, toast, kartu pratinjau peta. Warnanya token bayangan (tinta
+       hangat), bukan hitam murni: bayangan hitam di atas kanvas hangat terbaca kelabu dan
+       bukan seperti bayangan. */
+    --shadow-overlay: 0 12px 32px -8px rgb(var(--bayangan) / 0.18);
+
+    /* Skala radius spec v3 bagian 8.4. rounded-lg adalah peran kartu di DESIGN.md, jadi ia
+       membaca token kartu dan 34 kartu yang ada ikut tanpa disunting. */
+    --radius-kecil: var(--radius-kecil);
+    --radius-control: var(--radius-control);
+    --radius-tombol: var(--radius-tombol);
+    --radius-lg: var(--radius-kartu);
+    --radius-kartu: var(--radius-kartu);
+    --radius-utama: var(--radius-utama);
+    --radius-lembar: var(--radius-lembar);
+    --radius-lencana: var(--radius-lencana);
+
+    /* Token gerak (DK-26): durasi dan kurva pegas yang dihitung. */
+    --transition-duration-sentuh: var(--dur-sentuh);
+    --transition-duration-cepat: var(--dur-cepat);
+    --transition-duration-sedang: var(--dur-sedang);
+    --transition-duration-lambat: var(--dur-lambat);
+    --ease-gerak: var(--ease-gerak);
+    --ease-pudar: var(--ease-pudar);
+    --ease-lentur: var(--ease-lentur);
+}
+
+/*
+| Kesetaraan dengan bawaan Tailwind 3 yang diubah Tailwind 4 (upgrade tailwind 4):
+| - warna batas bawaan kembali abu 200, bukan currentcolor, untuk elemen yang memakai
+|   `border` tanpa kelas warna;
+| - tombol dan [role=button] kembali bertanda kursor tangan, dan kontrol nonaktif kembali
+|   berkursor biasa; preflight Tailwind 4 membiarkan kursor tombol bawaan peramban;
+| - <dialog> kembali bermargin auto bawaan peramban. Preflight Tailwind 4 menolkan margin semua
+|   elemen, sehingga lembar bawah (Lembar) yang hanya menulis margin atas dan bawahnya menempel
+|   ke kiri layar lebar alih-alih di tengah.
+*/
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentcolor);
+    }
+
+    button,
+    [role='button'] {
+        cursor: pointer;
+    }
+
+    :disabled {
+        cursor: default;
+    }
+
+    dialog {
+        margin: auto;
+    }
+}
+
+/*
+| space-y-* dan divide-y dengan semantik Tailwind 3 (upgrade tailwind 4).
+|
+| Tailwind 4 memberi jarak lewat margin bawah setiap anak kecuali yang terakhir, dengan
+| spesifisitas nol. Di halaman ini itu mengubah tata letak di tiga pola yang ada di mana-mana:
+| <dialog> tertutup atau wilayah status kosong yang menjadi anak terakhir membuat anak terlihat
+| sebelumnya mendapat ruang sisa di bawahnya; wilayah status kosong bertanda empty:mt-0! tidak
+| lagi bebas jarak; dan margin anak sendiri tidak lagi dikalahkan jarak wadah. Tailwind 3 memberi
+| margin atas kepada setiap anak yang tidak [hidden] sesudah anak pertama, dan aturan itu
+| dipulihkan di sini persis, termasuk spesifisitasnya.
+|
+| Aturan Tailwind 4 untuk kelas yang sama tetap dibuat, jadi margin dan batasnya dikembalikan
+| lewat revert-layer ke nilai lapisan base. Selektor :where(wadah) > :not(template) sengaja
+| berspesifisitas satu elemen: cukup untuk mengalahkan aturan Tailwind 4 yang nol, dan kalah
+| dari kelas margin atau batas anak sendiri, sama dengan Tailwind 3.
+*/
+@utility space-y-* {
+    & > :not([hidden]) ~ :not([hidden]) {
+        margin-top: --spacing(--value(number));
+        margin-bottom: 0;
+    }
+
+    :where(&) > :not(template) {
+        margin-block-start: revert-layer;
+        margin-block-end: revert-layer;
+    }
+}
+
+@utility divide-y {
+    & > :not([hidden]) ~ :not([hidden]) {
+        border-top-width: 1px;
+        border-bottom-width: 0;
+    }
+
+    :where(&) > :not(template) {
+        border-top-width: revert-layer;
+        border-bottom-width: revert-layer;
+        border-top-style: revert-layer;
+        border-bottom-style: revert-layer;
+    }
+}
+
+@utility divide-subtle {
+    & > :not([hidden]) ~ :not([hidden]) {
+        border-color: rgb(var(--border-subtle));
+    }
+
+    :where(&) > :not(template) {
+        border-color: revert-layer;
+    }
+}
 
 /*
 | Huruf antarmuka dihosting sendiri (DK-38, spec v3 bagian 8.2).

@@ -6,7 +6,7 @@ export function Skeleton({ rows = 3, className }: { rows?: number; className?: s
         <div className={className}>
             <div aria-hidden="true" className="space-y-3">
                 {Array.from({ length: rows }, (_, i) => (
-                    <div key={i} data-skeleton-row className="h-4 animate-pulse rounded bg-surface-sunken" style={{ width: `${lebar[i % 3]}%` }} />
+                    <div key={i} data-skeleton-row className="h-4 animate-pulse rounded-sm bg-surface-sunken" style={{ width: `${lebar[i % 3]}%` }} />
                 ))}
             </div>
             <p aria-live="polite" className="sr-only">Memuat isi halaman.</p>

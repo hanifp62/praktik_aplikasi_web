@@ -22,7 +22,8 @@ class RepoHygieneTest extends TestCase
 
     /**
      * Entri root yang dilacak git atau akan ikut commit. Menambah entri berarti menambah
-     * baris inventaris beserta alasannya.
+     * baris inventaris beserta alasannya. Upgrade tailwind 4 mencabut postcss.config.js dan
+     * tailwind.config.js: konfigurasinya kini di resources/css/app.css dan vite.config.js.
      */
     private const ENTRI_ROOT = [
         '.agents', '.claude', '.editorconfig', '.env.example', '.gitattributes', '.github',
@@ -31,8 +32,8 @@ class RepoHygieneTest extends TestCase
         'SECURITY.md',
         'app', 'artisan', 'boost.json', 'bootstrap', 'composer.json', 'composer.lock',
         'config', 'database', 'docker-compose.yml', 'docs', 'lang', 'package-lock.json', 'package.json',
-        'phpunit.xml', 'postcss.config.js', 'public', 'resources', 'routes',
-        'skills-lock.json', 'storage', 'tailwind.config.js', 'tests', 'tsconfig.json',
+        'phpunit.xml', 'public', 'resources', 'routes',
+        'skills-lock.json', 'storage', 'tests', 'tsconfig.json',
         'vite.config.js',
     ];
 

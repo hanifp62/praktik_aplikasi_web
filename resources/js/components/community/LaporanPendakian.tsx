@@ -255,7 +255,7 @@ export function LaporanPendakian({ laporan }: { laporan: LaporanRingkasan }) {
                             <p id="laporan-foto-gps" className="mt-1 text-meta text-secondary">
                                 Lokasi GPS di dalam foto dihapus sebelum foto disimpan.
                             </p>
-                            <p role="status" className="mt-1 text-meta text-secondary empty:!mt-0">
+                            <p role="status" className="mt-1 text-meta text-secondary empty:mt-0!">
                                 {form.progress ? 'Mengunggah foto.' : ''}
                             </p>
                             <InputError id="laporan-foto-galat" messages={form.errors.photo} className="mt-2" />
@@ -269,7 +269,7 @@ export function LaporanPendakian({ laporan }: { laporan: LaporanRingkasan }) {
 
                     {/* Penolakan server (batas laju, laporan ganda) dibacakan lewat wilayah yang terpasang
                         sejak formulir tampil (DESIGN.md, umpan balik aksi). */}
-                    <p role="alert" className={galat.form ? 'rounded-kartu border border-danger-300 bg-danger-100 p-4 text-sm font-bold text-danger-900' : 'empty:!mt-0'}>
+                    <p role="alert" className={galat.form ? 'rounded-kartu border border-danger-300 bg-danger-100 p-4 text-sm font-bold text-danger-900' : 'empty:mt-0!'}>
                         {galat.form ?? ''}
                     </p>
 

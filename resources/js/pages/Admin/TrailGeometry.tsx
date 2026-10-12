@@ -169,7 +169,7 @@ export default function TrailGeometry() {
                                 onChange={(e) => unggah.setData('berkas', e.target.files?.[0] ?? null)}
                                 aria-invalid={unggah.errors.berkas ? true : undefined}
                                 aria-describedby={['berkas-hint', unggah.errors.berkas ? 'berkas-error' : null].filter(Boolean).join(' ')}
-                                className="mt-1 block min-h-11 w-full text-sm text-secondary file:mr-4 file:min-h-11 file:rounded-control file:border-0 file:bg-brand-700 file:px-4 file:py-2 file:text-sm file:font-medium file:text-on-brand hover:file:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                                className="mt-1 block min-h-11 w-full text-sm text-secondary file:mr-4 file:min-h-11 file:rounded-control file:border-0 file:bg-brand-700 file:px-4 file:py-2 file:text-sm file:font-medium file:text-on-brand hover:file:bg-brand-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                             />
                             <InputError id="berkas-error" messages={unggah.errors.berkas} className="mt-2" />
                             <p id="berkas-hint" className="mt-2 text-xs text-secondary">

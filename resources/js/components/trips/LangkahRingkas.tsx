@@ -30,7 +30,7 @@ export function LangkahRingkas({ kini, tautan = {} }: LangkahRingkasProps) {
                 {urutan.map((l) => {
                     const aktif = l.kunci === kini;
                     const href = aktif ? undefined : tautan[l.kunci];
-                    const dasar = 'flex min-h-11 items-center justify-center break-words border-b-2 px-1 text-center text-kecil';
+                    const dasar = 'flex min-h-11 items-center justify-center wrap-break-word border-b-2 px-1 text-center text-kecil';
 
                     return (
                         <li key={l.kunci} aria-current={aktif ? 'step' : undefined} className="min-w-0 flex-1">
@@ -41,7 +41,7 @@ export function LangkahRingkas({ kini, tautan = {} }: LangkahRingkasProps) {
                                     href={href}
                                     className={kelas(
                                         dasar,
-                                        'border-transparent font-semibold text-brand-ink underline underline-offset-4 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600',
+                                        'border-transparent font-semibold text-brand-ink underline underline-offset-4 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600',
                                     )}
                                 >
                                     {l.judul}

@@ -75,7 +75,7 @@ interface Props extends PropsBersama {
 }
 
 const tautanTeks =
-    'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
+    'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600';
 
 /** Tanggal Y-m-d ditambah sekian hari, dihitung di UTC supaya zona peramban tidak menggeser hari. */
 function tambahHari(tanggal: string, hari: number): string {
@@ -255,10 +255,10 @@ export default function Create() {
                                     <li key={j.href}>
                                         <Tautan
                                             href={j.href}
-                                            className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600"
+                                            className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 hover:bg-surface-sunken focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600"
                                         >
                                             <span className="min-w-0">
-                                                <span className="block break-words text-isi font-bold text-primary">{j.nama}</span>
+                                                <span className="block wrap-break-word text-isi font-bold text-primary">{j.nama}</span>
                                                 {j.gunung ? <span className="block text-kecil text-secondary">{j.gunung}</span> : null}
                                             </span>
                                             <Icon name="caret-right" size={20} className="text-muted" />
@@ -282,7 +282,7 @@ export default function Create() {
                         <section id="bagian-jalur" tabIndex={-1} aria-labelledby="jalur-rencana" aria-describedby={jalurPenjelas} className="rounded-utama border border-subtle bg-surface p-5">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <h2 id="jalur-rencana" className="break-words text-subjudul text-primary">
+                                    <h2 id="jalur-rencana" className="wrap-break-word text-subjudul text-primary">
                                         {jalur.nama}
                                     </h2>
                                     <p className="text-kecil text-secondary">{jalur.gunung}</p>
@@ -377,7 +377,7 @@ export default function Create() {
                             )}
                             {/* M9 tinjauan Tugas 3: jendela izin dan kalimat BMKG berubah sesudah muat ulang
                                 parsial, jadi keduanya di wilayah live yang selalu terpasang. */}
-                            <div aria-live="polite" aria-busy={memuat || undefined} className="space-y-4 empty:!mt-0">
+                            <div aria-live="polite" aria-busy={memuat || undefined} className="space-y-4 empty:mt-0!">
                                 {izin ? <KotakIzin izin={izin} /> : null}
                                 {jadwal ? <p className="text-kecil text-secondary">{jadwal.prakiraan}</p> : null}
                             </div>
@@ -454,7 +454,7 @@ export default function Create() {
                             ringkasan={
                                 // Nama jalur sudah di kartu atas; bar hanya membawa pilihan yang berubah,
                                 // supaya tetap satu baris ringkasan di 360 px.
-                                <p data-angka className="break-words">
+                                <p data-angka className="wrap-break-word">
                                     {jenisDipilih ? <span className="font-bold text-primary">{jenisDipilih.label}</span> : 'Pilih jenis trip'}
                                     {jadwal ? `, ${jadwal.ringkas} (${jadwal.lama})` : ', tanggal belum dipilih'}
                                 </p>

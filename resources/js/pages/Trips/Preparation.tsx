@@ -66,7 +66,7 @@ const kataStatus: Record<StatusButir, string> = {
 };
 
 const tautanTeks =
-    'mt-1 inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
+    'mt-1 inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600';
 
 /** Hitungan dari status yang tampil: "Tidak berlaku" tidak dihitung, sama dengan TripSteps::hitungPersiapan(). */
 function hitung(items: Butir[], statusKini: (item: Butir) => StatusButir): { dikonfirmasi: number; berlaku: number } {
@@ -435,7 +435,7 @@ export default function Preparation() {
                                                 key={item.id}
                                                 id={`butir-${item.id}`}
                                                 tabIndex={-1}
-                                                className="scroll-mt-24 px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600"
+                                                className="scroll-mt-24 px-4 py-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600"
                                             >
                                                 <div className="flex items-start gap-2">
                                                     <div className="min-w-0 flex-1">
@@ -443,7 +443,7 @@ export default function Preparation() {
                                                             // Catatan trip yang selesai atau batal: status sebagai kata, tanpa kotak.
                                                             <div className="min-h-11 py-2">
                                                                 <span className="flex flex-wrap items-center gap-2">
-                                                                    <span className="break-words text-isi font-semibold text-primary">{item.label}</span>
+                                                                    <span className="wrap-break-word text-isi font-semibold text-primary">{item.label}</span>
                                                                     {lencana}
                                                                 </span>
                                                                 <span className="mt-0.5 block text-kecil text-secondary">{keterangan}</span>
@@ -453,7 +453,7 @@ export default function Preparation() {
                                                                 <span aria-hidden="true" className="mt-0.5 size-7 shrink-0 rounded-kecil border-2 border-dashed border-control" />
                                                                 <span className="min-w-0">
                                                                     <span className="flex flex-wrap items-center gap-2">
-                                                                        <span className="break-words text-isi font-semibold text-primary">{item.label}</span>
+                                                                        <span className="wrap-break-word text-isi font-semibold text-primary">{item.label}</span>
                                                                         {lencana}
                                                                     </span>
                                                                     <span className="mt-0.5 block text-kecil text-secondary">{item.menunggu}</span>
@@ -478,7 +478,7 @@ export default function Preparation() {
                                                         <button
                                                             type="button"
                                                             onClick={(e) => setel(item, aktif === 'NOT_APPLICABLE' ? 'NOT_CONFIRMED' : 'NOT_APPLICABLE', e.detail === 0, e.currentTarget)}
-                                                            className="inline-flex min-h-11 shrink-0 items-center px-1 text-meta font-semibold text-secondary underline underline-offset-2 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                                                            className="inline-flex min-h-11 shrink-0 items-center px-1 text-meta font-semibold text-secondary underline underline-offset-2 hover:text-primary focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                                                         >
                                                             {aktif === 'NOT_APPLICABLE' ? 'Berlaku lagi' : 'Tidak berlaku'}
                                                             <span className="sr-only">: {item.label}</span>
@@ -510,7 +510,7 @@ export default function Preparation() {
                 {/* Satu wilayah status selalu terpasang tepat di bawah baris aksi (konvensi DESIGN.md;
                     M7 dan M-5): kabar aksi di halaman ini ("Perbarui daftar" dan sakelar pengingat
                     di atasnya) atau teks penahan navigasi. Kabar yang datang bersama perpindahan
-                    halaman ada di wilayah dekat kepala (W4-FK N1). empty:!mt-0 menghapus jaraknya
+                    halaman ada di wilayah dekat kepala (W4-FK N1). empty:mt-0! menghapus jaraknya
                     saat kosong tanpa menyembunyikan wilayahnya. */}
                 <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-3">
@@ -521,7 +521,7 @@ export default function Preparation() {
                             </Button>
                         ) : null}
                     </div>
-                    <p role="status" className="empty:!mt-0 text-kecil text-secondary">
+                    <p role="status" className="empty:mt-0! text-kecil text-secondary">
                         {menahanNavigasi ? 'Menyimpan pilihan terakhir, lalu pindah halaman.' : (flash.kabarAksi ?? '')}
                     </p>
                 </div>

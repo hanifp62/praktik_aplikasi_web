@@ -57,13 +57,13 @@ export function KartuJalur({ jalur, kataBelumDinilai, disorot = false, tampilkan
             </div>
 
             <h2 className="mt-1 text-subjudul text-primary">
-                <Tautan href={jalur.url} className="rounded-sm after:absolute after:inset-0 after:rounded-lg group-hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
+                <Tautan href={jalur.url} className="rounded-xs after:absolute after:inset-0 after:rounded-lg group-hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
                     {jalur.name}
                 </Tautan>
             </h2>
             <p className="mt-0.5 text-meta text-secondary">
                 {jalur.gunungUrl ? (
-                    <Tautan href={jalur.gunungUrl} className="relative z-10 underline decoration-subtle underline-offset-2 hover:decoration-current focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                    <Tautan href={jalur.gunungUrl} className="relative z-10 underline decoration-subtle underline-offset-2 hover:decoration-current focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                         {jalur.mountain}
                     </Tautan>
                 ) : (
@@ -143,7 +143,7 @@ export function KartuJalur({ jalur, kataBelumDinilai, disorot = false, tampilkan
                             </ul>
                         </div>
                     ) : null}
-                    <Tautan href={ruteKecocokan.url({ trail: jalur.slug })} className="inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                    <Tautan href={ruteKecocokan.url({ trail: jalur.slug })} className="inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                         Lihat penilaian lengkap
                     </Tautan>
                 </div>

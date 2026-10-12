@@ -33,12 +33,12 @@ export function LangkahTrip({ langkah }: { langkah: Langkah[] }) {
                                 <span className="text-isi font-bold text-primary">{l.judul}</span>
                                 <span className={kelas('text-meta', l.keadaan === 'berikutnya' ? 'font-bold text-brand-ink' : 'text-muted')}>{t.teks}</span>
                             </p>
-                            <p className={kelas('mt-0.5 break-words text-kecil', l.peringatan ? 'font-bold text-warn-900' : 'text-secondary')}>{l.keterangan}</p>
+                            <p className={kelas('mt-0.5 wrap-break-word text-kecil', l.peringatan ? 'font-bold text-warn-900' : 'text-secondary')}>{l.keterangan}</p>
                             {l.catatan ? <p className="mt-1 text-meta text-secondary">{l.catatan}</p> : null}
                             {l.tautan ? (
                                 <Tautan
                                     href={l.tautan.href}
-                                    className="mt-1 inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                                    className="mt-1 inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                                 >
                                     {l.tautan.teks}
                                 </Tautan>

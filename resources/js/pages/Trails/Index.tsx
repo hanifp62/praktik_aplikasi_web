@@ -266,7 +266,7 @@ export default function Index() {
                                 id={ID_RINGKASAN}
                                 tabIndex={-1}
                                 aria-live="polite"
-                                className={kelas('order-last min-w-0 basis-full rounded-kecil text-kecil text-secondary sm:order-none sm:flex-1 sm:basis-auto', fokusTerlihat)}
+                                className={kelas('order-last min-w-0 basis-full rounded-kecil text-kecil text-secondary sm:order-0 sm:flex-1 sm:basis-auto', fokusTerlihat)}
                             >
                                 <span data-angka="" className="font-bold text-primary">
                                     {kalimat.angka}
@@ -395,7 +395,7 @@ export default function Index() {
                                     sorot={sorot}
                                     onLihatDiDaftar={lihatDiDaftar}
                                     kataBelumDinilai={kataBelumDinilai}
-                                    className="h-[calc(100dvh-var(--nav-bawah,0px)-var(--pesan-jaringan,0px)-18rem)] min-h-[20rem] xl:h-[calc(100dvh-var(--kepala-atas)-var(--pesan-jaringan,0px)-var(--nav-bawah,0px)-6rem)]"
+                                    className="h-[calc(100dvh-var(--nav-bawah,0px)-var(--pesan-jaringan,0px)-18rem)] min-h-80 xl:h-[calc(100dvh-var(--kepala-atas)-var(--pesan-jaringan,0px)-var(--nav-bawah,0px)-6rem)]"
                                 />
                             ) : null}
                         </section>

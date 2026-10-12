@@ -826,8 +826,9 @@ class HikeSummaryTest extends TestCase
      */
     public function test_the_numbers_use_a_smaller_type_step_on_narrow_screens(): void
     {
+        // Upgrade tailwind 4: break-words bernama wrap-break-word, [overflow-wrap:anywhere] bernama wrap-anywhere; CSS-nya sama.
         $this->assertStringContainsString(
-            "'mt-1 break-words text-judul-kartu tabular-nums min-[400px]:text-judul'",
+            "'mt-1 wrap-break-word text-judul-kartu tabular-nums min-[400px]:text-judul'",
             File::get(resource_path('js/components/community/AngkaPendakian.tsx')),
         );
     }

@@ -114,7 +114,7 @@ export default function Trails() {
                 {kesehatan.saringanLabel ? (
                     <p className="mb-3 text-sm text-secondary">
                         Menampilkan jalur aktif dengan temuan: <span className="font-medium text-primary">{kesehatan.saringanLabel}</span>.{' '}
-                        <Tautan href={daftarJalur.url()} className="text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 rounded-sm">
+                        <Tautan href={daftarJalur.url()} className="text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 rounded-xs">
                             Tampilkan semua jalur
                         </Tautan>
                     </p>

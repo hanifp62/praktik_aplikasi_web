@@ -93,7 +93,7 @@ export function AppLayout({ bilahTab = true, children }: AppLayoutProps) {
                 <JudulHalaman />
                 <KepalaLebar item={tab} />
                 <PesanJaringan />
-                <main id="konten" tabIndex={-1} className="pt-[var(--pesan-jaringan,0px)] pb-[var(--nav-bawah)]">
+                <main id="konten" tabIndex={-1} className="pt-(--pesan-jaringan,0px) pb-(--nav-bawah)">
                     {children}
                 </main>
                 {props.pendakianAktif ? <StripPendakian pendakian={props.pendakianAktif} /> : null}

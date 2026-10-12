@@ -77,8 +77,8 @@ export default function AuditLogs() {
                                 <td className="p-4 text-xs text-secondary">
                                     {log.perubahan ? (
                                         <details>
-                                            <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">Lihat detail</summary>
-                                            <pre className="relative mt-2 max-w-md overflow-x-auto rounded bg-surface-sunken p-2">{log.perubahan}</pre>
+                                            <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">Lihat detail</summary>
+                                            <pre className="relative mt-2 max-w-md overflow-x-auto rounded-sm bg-surface-sunken p-2">{log.perubahan}</pre>
                                         </details>
                                     ) : (
                                         '-'

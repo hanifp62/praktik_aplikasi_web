@@ -20,7 +20,7 @@
         'ghost' => 'text-brand-ink underline underline-offset-2 hover:text-brand-900 focus-visible:ring-brand-600',
     ];
     $gaya = $semuaGaya[$variant] ?? $semuaGaya['primary'];
-    $kelas = 'inline-flex items-center justify-center gap-2 rounded-tombol min-h-11 text-center font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-[transform,background-color,border-color,color] duration-sentuh ease-gerak active:scale-[0.98] disabled:active:scale-100 '.$ukuran.' '.$gaya;
+    $kelas = 'inline-flex items-center justify-center gap-2 rounded-tombol min-h-11 text-center font-bold focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-[transform,background-color,border-color,color] duration-sentuh ease-gerak active:scale-[0.98] disabled:active:scale-100 '.$ukuran.' '.$gaya;
 @endphp
 
 @if ($href)

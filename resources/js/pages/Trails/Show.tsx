@@ -129,7 +129,7 @@ export default function Show() {
                 <PageHeader induk={{ href: trailsIndex.url(), label: 'Jelajah' }} title={trail.name} description={trail.description ?? undefined}>
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
                         <p className="text-kecil text-secondary">
-                            <Tautan href={trail.mountainUrl} className="font-bold text-brand-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                            <Tautan href={trail.mountainUrl} className="font-bold text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                                 {trail.mountain}
                             </Tautan>
                             {[trail.mdpl, trail.province].filter(Boolean).map((t) => `, ${t}`).join('')}
@@ -194,7 +194,7 @@ export default function Show() {
                             <LaporanKomunitas komunitas={komunitas} />
                             <Tautan
                                 href={reportsCreate.url({ query: { trail: trail.id } })}
-                                className="inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                                className="inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                             >
                                 Laporkan kondisi setelah mendaki
                             </Tautan>

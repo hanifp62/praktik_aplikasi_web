@@ -12,7 +12,7 @@ import { muatUlangMilikKerangka, sedangMemuatPenuh, useKerangka } from './Kerang
 
 type Keadaan = { jenis: 'memuat' } | { jenis: 'galat' } | { jenis: 'siap'; daftar: DaftarPengingat };
 
-const baris = 'flex min-h-11 flex-col justify-center gap-0.5 rounded-control px-2 py-2 hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600';
+const baris = 'flex min-h-11 flex-col justify-center gap-0.5 rounded-control px-2 py-2 hover:bg-surface-sunken focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600';
 
 /**
  * Lonceng Beranda (spec v3 bagian 5.1; DK-40): membuka daftar pengingat yang benar-benar
@@ -132,7 +132,7 @@ export function LembarPengingat({ terbuka, onTutup, pemicu }: { terbuka: boolean
 
     return (
         <LembarBawah terbuka={terbuka} onTutup={onTutup} pemicu={pemicu} judul="Pengingat" keterangan="Pengingat surel terjadwal dan tenggat izin untuk trip Anda. Memount belum mengirim notifikasi ke ponsel.">
-            <div ref={isi} tabIndex={-1} className="focus:outline-none">
+            <div ref={isi} tabIndex={-1} className="focus:outline-hidden">
                 {keadaan.jenis === 'memuat' ? (
                     <Skeleton rows={4} />
                 ) : keadaan.jenis === 'galat' ? (
@@ -199,7 +199,7 @@ export function LembarPengingat({ terbuka, onTutup, pemicu }: { terbuka: boolean
                                                     href={t.bookingUrl}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="ms-2 inline-flex min-h-11 items-center px-2 text-kecil text-brand-ink underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                                                    className="ms-2 inline-flex min-h-11 items-center px-2 text-kecil text-brand-ink underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                                                 >
                                                     Buka sistem pemesanan resmi
                                                     <span className="sr-only"> (membuka tab baru)</span>

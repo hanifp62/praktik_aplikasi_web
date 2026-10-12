@@ -64,7 +64,7 @@ export function PerizinanKartu({ izin }: { izin: Perizinan }) {
                     href={izin.bookingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 inline-flex min-h-11 items-center justify-center rounded-control border border-control bg-surface px-4 py-2 text-sm font-medium text-primary transition hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-muted focus-visible:ring-offset-2"
+                    className="mt-4 inline-flex min-h-11 items-center justify-center rounded-control border border-control bg-surface px-4 py-2 text-sm font-medium text-primary transition hover:bg-surface-sunken focus:outline-hidden focus-visible:ring-2 focus-visible:ring-muted focus-visible:ring-offset-2"
                 >
                     Buka sistem pemesanan resmi
                     <span className="sr-only"> (membuka tab baru)</span>

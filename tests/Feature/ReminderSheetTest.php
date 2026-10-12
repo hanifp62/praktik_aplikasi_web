@@ -284,7 +284,8 @@ class ReminderSheetTest extends TestCase
     {
         $lembar = File::get(resource_path('js/layouts/Pengingat.tsx'));
 
-        $this->assertStringContainsString('<div ref={isi} tabIndex={-1} className="focus:outline-none">', $lembar);
+        // Upgrade tailwind 4: outline-none Tailwind 3 (garis transparan, tetap tampil di forced-colors) bernama outline-hidden.
+        $this->assertStringContainsString('<div ref={isi} tabIndex={-1} className="focus:outline-hidden">', $lembar);
         $this->assertMatchesRegularExpression(
             "/onClick=\{\(\) => \{\s*muat\(\);\s*requestAnimationFrame\(\(\) => isi\.current\?\.focus\(\)\);\s*\}\}/",
             $lembar,

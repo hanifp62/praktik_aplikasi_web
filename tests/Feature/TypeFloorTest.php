@@ -67,11 +67,15 @@ class TypeFloorTest extends TestCase
         $this->assertSame([], $pelanggar, 'Ukuran sebaris di bawah 12 px: '.implode(', ', $pelanggar));
     }
 
+    /**
+     * Diubah upgrade tailwind 4: skala tipe bernama kini dibaca dari blok @theme app.css
+     * (--text-{nama}: ...rem), bukan dari fontSize di tailwind.config.js.
+     */
     public function test_the_named_type_scale_stops_at_the_floor(): void
     {
-        $this->assertSame(1, preg_match('/fontSize:\s*\{(.*?)\n\s*\},/s', File::get(base_path('tailwind.config.js')), $skala), 'Skala tipe bernama tidak ditemukan.');
+        $this->assertSame(1, preg_match('/@theme \{(.*?)\n\}/s', File::get(resource_path('css/app.css')), $skala), 'Skala tipe bernama tidak ditemukan.');
 
-        preg_match_all("/\['(\d*\.?\d+)rem'/", $skala[1], $ukuran);
+        preg_match_all('/--text-[a-z-]+:\s*(\d*\.?\d+)rem;/', $skala[1], $ukuran);
 
         $this->assertCount(9, $ukuran[1], 'Skala tipe bernama berisi sembilan tingkat.');
 

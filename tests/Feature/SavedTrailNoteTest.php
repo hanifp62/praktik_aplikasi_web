@@ -162,7 +162,8 @@ class SavedTrailNoteTest extends TestCase
     {
         $kartu = File::get(resource_path('js/components/trails/banding/KartuSimpanan.tsx'));
 
-        $this->assertMatchesRegularExpression('/<p className="[^"]*\[overflow-wrap:anywhere\][^"]*">\{jalur\.catatan\}<\/p>/', $kartu);
+        // Upgrade tailwind 4: break-words bernama wrap-break-word, [overflow-wrap:anywhere] bernama wrap-anywhere; CSS-nya sama.
+        $this->assertMatchesRegularExpression('/<p className="[^"]*\bwrap-anywhere\b[^"]*">\{jalur\.catatan\}<\/p>/', $kartu);
         $this->assertStringContainsString('grid grid-cols-[minmax(0,1fr)]', $kartu);
         $this->assertStringContainsString('<div className="min-w-0', $kartu);
     }

@@ -95,7 +95,7 @@ berikutnya berhenti begitu rencana tidak lagi `masihDirencanakan()`, yaitu sudah
 | Jumlah kandidat yang dinilai Jelajah per kunjungan | `config/hiking.php` → `jelajah.batas_kandidat`; halaman menyebut bila hasilnya terpotong |
 | Label kecocokan, status akses, kesegaran, dan label sumber di layar | `resources/js/components/trails/` (`LabelKecocokan`, `StatusAkses`, `Kesegaran`, `LabelSumber`); ringkasan status bersumber dari `app/Services/Trails/StatusJalurRingkas.php` |
 | Batas laju submit | `config/hiking.php` → `rate_limits` |
-| Warna, radius, huruf, gaya tombol | Token di `resources/css/app.css`, pemetaan kelas di `tailwind.config.js`, primitif React di `resources/js/components/ui/`, komponen Blade halaman publik di `resources/views/components/ui/` |
+| Warna, radius, huruf, gaya tombol | Token di `resources/css/app.css`, pemetaan kelas di blok `@theme` berkas yang sama, primitif React di `resources/js/components/ui/`, komponen Blade halaman publik di `resources/views/components/ui/` |
 | Tab navigasi, kerangka ponsel dan layar lebar, strip pendakian, lembar Pengingat | `resources/js/layouts/` (daftar tab `NavLinks.tsx`, kerangka `AppLayout.tsx`); kepala setiap halaman lewat `PageHeader` dengan `akar` atau `induk` |
 | Props bersama kerangka (hitungan Simpanan, pendakian aktif, daftar pengingat) | `app/Http/Middleware/HandleInertiaRequests.php`: `jumlahSimpanan` dan `pendakianAktif` masing-masing satu kueri terindeks; `daftarPengingat` (`Inertia::optional`) lima kueri tetap, hanya dimuat lewat muat ulang parsial saat lembar Pengingat dibuka. Nama prop baru tidak boleh sama dengan nama prop halaman |
 | Menambah faktor kompatibilitas baru | `App\Enums\CompatibilityFactor` + method baru di `CompatibilityScorer::score()` |
@@ -178,7 +178,7 @@ Artisan, Laravel Boost, konvensi Inertia, dan seluruh suite test.
 | `apps/backend/src` (config, controllers, middlewares, models, routes, services) | `config/`, `app/Http/Controllers`, `app/Http/Middleware`, `app/Models`, `routes/`, `app/Services`, `app/Policies` |
 | `apps/frontend/src` (components, core, features, views) | Komponen fitur di `resources/js/components`, inti di `resources/js/lib`, halaman di `resources/js/pages`; primitif desain di `resources/js/components/ui/`, komponen domain jalur di `resources/js/components/trails/` (W3) |
 | `packages/api-client` | Rute dan aksi bertipe Wayfinder, router Inertia |
-| `packages/ui-design-system` | Token `resources/css/app.css`, pemetaan `tailwind.config.js`, primitif `resources/js/components/ui/` (W1), dan pameran primitif `/dev/primitif` yang hanya terdaftar di `APP_ENV=local` (`routes/dev.php`) |
+| `packages/ui-design-system` | Token dan pemetaan `@theme` di `resources/css/app.css`, primitif `resources/js/components/ui/` (W1), dan pameran primitif `/dev/primitif` yang hanya terdaftar di `APP_ENV=local` (`routes/dev.php`) |
 | `packages/config` (ESLint, Prettier, TypeScript) | `tsconfig.json` dan Pint; ESLint dan Prettier menunggu izin (Q17) |
 | `database/` dengan migrasi, seeder, dan README | `database/migrations`, `database/seeders`, `database/factories`, `database/README.md`; dump SQL diabaikan git |
 | `tests/e2e` | Belum ada; Playwright menunggu izin (Q17) |

@@ -52,7 +52,7 @@ interface Props extends PropsBersama {
 }
 
 const tautanTeks =
-    'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
+    'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600';
 
 /**
  * Ruang kerja satu trip (spec v3 bagian 6.9): empat langkah prototype di kolom kiri mulai
@@ -201,7 +201,7 @@ export default function Show() {
 
                         {trip.catatan ? (
                             <Card title="Catatan">
-                                <p className="whitespace-pre-line break-words text-isi text-secondary">{trip.catatan}</p>
+                                <p className="whitespace-pre-line wrap-break-word text-isi text-secondary">{trip.catatan}</p>
                             </Card>
                         ) : null}
 

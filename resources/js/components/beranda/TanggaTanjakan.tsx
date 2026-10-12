@@ -35,11 +35,11 @@ export function TanggaTanjakan({ tangga }: { tangga: TanggaData }) {
                     {tangga.anakTangga.map((a) => (
                         <li key={`${a.id}-${a.rencana ? 'rencana' : 'tuntas'}`} className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)_auto] items-center gap-3">
                             <span className="min-w-0">
-                                <span className={kelas('break-words text-kecil', a.rencana ? 'font-bold text-primary' : 'text-secondary')}>
+                                <span className={kelas('wrap-break-word text-kecil', a.rencana ? 'font-bold text-primary' : 'text-secondary')}>
                                     {a.jalur}
                                     {a.rencana ? <span className="font-semibold text-secondary">, rencana</span> : null}
                                 </span>
-                                <span className="block break-words text-meta text-secondary"><span className="sr-only">, </span>{a.gunung}</span>
+                                <span className="block wrap-break-word text-meta text-secondary"><span className="sr-only">, </span>{a.gunung}</span>
                             </span>
                             <span aria-hidden="true" className="block h-2.5">
                                 <span

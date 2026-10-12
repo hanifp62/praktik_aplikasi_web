@@ -113,7 +113,7 @@ function Lapangan({ data, kunci, halamanLuring, simpanSesi, pengaturan }: { data
     });
 
     return (
-        <TataLetakPendakian kembali={daring ? data.urls.ruangKerja : null} berlangsung={data.trip.berlangsung} judul={<h1 className="break-words text-bagian text-primary">{data.trip.jalur}</h1>} keterangan={keterangan}>
+        <TataLetakPendakian kembali={daring ? data.urls.ruangKerja : null} berlangsung={data.trip.berlangsung} judul={<h1 className="wrap-break-word text-bagian text-primary">{data.trip.jalur}</h1>} keterangan={keterangan}>
             {kalimat ? (
                 <p className={kelas('mt-4 rounded-kartu bg-surface p-4 text-isi text-primary', daring ? 'border border-subtle' : 'border-[1.5px] border-dashed border-control')}>{kalimat}</p>
             ) : null}

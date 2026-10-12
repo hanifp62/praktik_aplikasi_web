@@ -43,7 +43,7 @@ export function StatusAkses({ nilai, label, cakupan, ukuran = 'kecil', className
         >
             <Bentuk nilai={nilai} />
             <span className="sr-only">Status resmi:</span>
-            <span className="min-w-0 break-words">
+            <span className="min-w-0 wrap-break-word">
                 {label ?? 'Belum diketahui'}
                 {cakupan ? <span className="font-semibold text-secondary"> (cakupan {cakupan.toLowerCase()})</span> : null}
             </span>

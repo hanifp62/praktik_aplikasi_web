@@ -22,7 +22,7 @@ export function DaftarPos({ pos, className }: { pos: PosJalur[]; className?: str
 
                 return (
                     <li key={p.id} className="relative flex gap-3 pb-4 last:pb-0">
-                        {i < pos.length - 1 ? <span aria-hidden="true" className="absolute left-[0.9375rem] top-8 h-[calc(100%-2rem)] w-0.5 bg-subtle" /> : null}
+                        {i < pos.length - 1 ? <span aria-hidden="true" className="absolute left-3.75 top-8 h-[calc(100%-2rem)] w-0.5 bg-subtle" /> : null}
                         <span
                             aria-hidden="true"
                             data-angka=""

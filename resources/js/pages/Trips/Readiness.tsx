@@ -117,7 +117,7 @@ const lencanaPrakiraan: Record<Prakiraan['keadaan'], string | null> = {
 };
 
 const tautanTeks =
-    'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
+    'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600';
 
 /** Satu dari tiga hal yang diperiksa: nomor dalam cincin pos dan isinya. */
 function HalDiperiksa({ nomor, judul, children }: { nomor: number; judul: string; children: ReactNode }) {
@@ -260,9 +260,9 @@ export default function Readiness() {
                                     {persiapan.butir.map((b) => (
                                         <li key={b.id} className="flex items-center gap-3 rounded-tombol bg-surface-sunken px-4 py-1">
                                             <span className="min-w-0 flex-1 py-2">
-                                                <span className="block break-words text-kecil font-bold text-primary">{b.label}</span>
+                                                <span className="block wrap-break-word text-kecil font-bold text-primary">{b.label}</span>
                                                 {b.menunggu ? <span className="mt-0.5 block text-meta text-secondary">{b.menunggu}</span> : null}
-                                                {b.keterangan ? <span className="mt-0.5 block break-words text-meta text-secondary">{b.keterangan}</span> : null}
+                                                {b.keterangan ? <span className="mt-0.5 block wrap-break-word text-meta text-secondary">{b.keterangan}</span> : null}
                                             </span>
                                             {b.aksi && b.aksi.luar ? (
                                                 <a href={b.aksi.href} target="_blank" rel="noopener noreferrer" className={kelas(tautanTeks, 'shrink-0 gap-1')}>
@@ -482,14 +482,14 @@ export default function Readiness() {
 
                     {/* I3: dua wilayah SELALU terpasang tepat di atas "Simpan hasil cek ini", supaya
                         umpan balik kedua aksi di atas tidak jatuh ke alert di puncak halaman yang
-                        luput dari preserveScroll dan tidak andal diumumkan pembaca layar. empty:!mt-0
+                        luput dari preserveScroll dan tidak andal diumumkan pembaca layar. empty:mt-0!
                         (n-1) menghapus margin space-y saat isinya kosong, tanpa menyembunyikan
                         wilayahnya -- disembunyikan lewat display akan membatalkan maksud "selalu
                         terpasang" di atas. */}
-                    <p role="status" className="empty:!mt-0 text-kecil text-secondary">
+                    <p role="status" className="empty:mt-0! text-kecil text-secondary">
                         {flash.status ?? ''}
                     </p>
-                    <p role="alert" className="empty:!mt-0 text-kecil font-bold text-warn-900">
+                    <p role="alert" className="empty:mt-0! text-kecil font-bold text-warn-900">
                         {penolakan ?? ''}
                     </p>
 

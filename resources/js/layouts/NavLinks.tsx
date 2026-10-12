@@ -51,7 +51,7 @@ export function itemTab(jalur: string): ItemTab[] {
 
 /** Baris menu akun: 44 px, cincin fokus di dalam karena barisnya selebar menu. */
 export const tombolMenu =
-    'flex min-h-11 w-full items-center rounded-control px-3 py-2 text-start text-kecil font-semibold text-primary hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600';
+    'flex min-h-11 w-full items-center rounded-control px-3 py-2 text-start text-kecil font-semibold text-primary hover:bg-surface-sunken focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600';
 
 export function TautanMenu({ href, children }: { href: string; children: ReactNode }) {
     return (

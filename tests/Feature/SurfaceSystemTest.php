@@ -77,7 +77,8 @@ class SurfaceSystemTest extends TestCase
 
         $this->assertMatchesRegularExpression('/<h1 className="[^"]*\btext-(?:judul|tampilan)\b/', $isi);
         $this->assertStringNotContainsString('text-2xl', $isi);
-        $this->assertMatchesRegularExpression("/judul: \['1\.75rem', \{[^}]*fontWeight: '800'/", File::get(base_path('tailwind.config.js')));
+        // Diubah upgrade tailwind 4: skala tipe kini di blok @theme app.css, bukan tailwind.config.js.
+        $this->assertMatchesRegularExpression('/--text-judul:\s*1\.75rem;.*?--text-judul--font-weight:\s*800;/s', File::get(resource_path('css/app.css')));
     }
 
     /**

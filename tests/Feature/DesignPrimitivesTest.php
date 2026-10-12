@@ -66,7 +66,8 @@ class DesignPrimitivesTest extends TestCase
     {
         $gaya = $this->sumber('components/ui/gaya.ts');
 
-        $this->assertStringContainsString("fokusTerlihat = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2'", $gaya);
+        // Upgrade tailwind 4: outline-none Tailwind 3 (garis transparan, tetap tampil di forced-colors) bernama outline-hidden.
+        $this->assertStringContainsString("fokusTerlihat = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2'", $gaya);
         $this->assertStringContainsString('active:scale-[0.98]', $gaya);
         $this->assertStringContainsString('group-active:scale-[0.98]', $gaya);
         $this->assertSame(2, substr_count($gaya, 'duration-sentuh ease-gerak'), 'Tekan memakai token durasi dan kurva gerak.');
@@ -286,7 +287,8 @@ class DesignPrimitivesTest extends TestCase
         $this->assertStringContainsString('<fieldset className={className} aria-describedby={penjelas}>', $segmen);
         $this->assertStringContainsString('<legend className="sr-only">{label}</legend>', $segmen);
         $this->assertStringContainsString('type="radio" name={nama} value={p.nilai} checked={nilai === p.nilai}', $segmen);
-        $this->assertStringContainsString('has-[:checked]:border-control has-[:checked]:bg-surface has-[:checked]:font-bold', $segmen);
+        // Upgrade tailwind 4: has-[:checked] ditulis dalam bentuk bakunya, has-checked; selektornya sama.
+        $this->assertStringContainsString('has-checked:border-control has-checked:bg-surface has-checked:font-bold', $segmen);
         $this->assertStringNotContainsString('role="tab', $segmen);
     }
 
@@ -336,7 +338,8 @@ class DesignPrimitivesTest extends TestCase
         $this->assertStringContainsString('aria-checked={nyala}', $sakelar);
         $this->assertStringContainsString('aria-labelledby={`${id}-judul`}', $sakelar);
         $this->assertStringContainsString("nyala ? 'border-brand-700 bg-brand-700' : 'border-control bg-control'", $sakelar);
-        $this->assertStringContainsString("nyala ? 'translate-x-[1.375rem]' : 'translate-x-0.5'", $sakelar);
+        // Upgrade tailwind 4: translate-x-[1.375rem] ditulis sebagai skala spasi, translate-x-5.5 (1,375rem).
+        $this->assertStringContainsString("nyala ? 'translate-x-5.5' : 'translate-x-0.5'", $sakelar);
     }
 
     /**
@@ -421,9 +424,10 @@ class DesignPrimitivesTest extends TestCase
     {
         $lembar = $this->tanpaKomentarJs($this->sumber('components/ui/Lembar.tsx'));
 
-        $this->assertStringContainsString('className="lembar !mb-0 !mt-auto ', $lembar);
-        $this->assertStringContainsString(' sm:!mb-auto ', $lembar);
-        $this->assertStringContainsString('className="dialog-tengah !m-auto ', $lembar);
+        // Upgrade tailwind 4: penanda penting kini akhiran (mb-0!), bukan awalan (!mb-0); niatnya sama.
+        $this->assertStringContainsString('className="lembar mb-0! mt-auto! ', $lembar);
+        $this->assertStringContainsString(' sm:mb-auto! ', $lembar);
+        $this->assertStringContainsString('className="dialog-tengah m-auto! ', $lembar);
         $this->assertDoesNotMatchRegularExpression('/[\s"](mt-auto|mb-0|sm:mb-auto|m-auto)[\s"]/', $lembar, 'Margin letak tanpa penanda penting dapat dikalahkan space-y pemanggil.');
     }
 

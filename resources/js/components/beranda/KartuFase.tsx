@@ -7,7 +7,7 @@ import { KartuPerjalanan } from './KartuPerjalanan';
 import type { KartuFaseData } from './types';
 
 const tautanTeks =
-    'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
+    'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600';
 
 /**
  * Kartu fase Beranda (spec v3 bagian 6.1): satu kartu per fase, masing-masing dengan tepat satu
@@ -57,7 +57,7 @@ export function KartuFase({ kartu }: { kartu: KartuFaseData }) {
         case 'lapor':
             return (
                 <KartuPendek judul={kartu.nama}>
-                    <p className="mt-1 break-words text-kecil text-secondary">
+                    <p className="mt-1 wrap-break-word text-kecil text-secondary">
                         {kartu.jalur}
                         {kartu.gunung ? `, ${kartu.gunung}` : null}
                     </p>
@@ -88,7 +88,7 @@ function KartuPendek({ judul, menonjol = false, children }: { judul: string; men
 
     return (
         <section aria-labelledby={idJudul} className={kelas('rounded-utama border p-5 sm:p-6', menonjol ? 'border-brand-300 bg-brand-50' : 'border-subtle bg-surface')}>
-            <h2 id={idJudul} className="break-words text-judul-kartu text-primary">
+            <h2 id={idJudul} className="wrap-break-word text-judul-kartu text-primary">
                 {judul}
             </h2>
             {children}

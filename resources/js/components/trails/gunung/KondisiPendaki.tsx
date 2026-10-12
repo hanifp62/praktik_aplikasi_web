@@ -15,7 +15,7 @@ export function KondisiPendaki({ laporan }: { laporan: LaporanGunung[] }) {
                 <li key={l.id} className="rounded-lg border-[1.5px] border-dashed border-community-500 bg-community-50 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                         <LabelKomunitas />
-                        <span className="break-words text-meta font-bold text-community-900">{l.jalur}</span>
+                        <span className="wrap-break-word text-meta font-bold text-community-900">{l.jalur}</span>
                         <Lencana nada="netral">{l.kesegaran}</Lencana>
                     </div>
                     {l.tags.length > 0 ? (
@@ -29,7 +29,7 @@ export function KondisiPendaki({ laporan }: { laporan: LaporanGunung[] }) {
                             ))}
                         </ul>
                     ) : null}
-                    {l.catatan ? <p className="mt-2 break-words text-kecil text-primary">{l.catatan}</p> : null}
+                    {l.catatan ? <p className="mt-2 wrap-break-word text-kecil text-primary">{l.catatan}</p> : null}
                     <p className="mt-2 text-meta text-community-900">
                         Dilaporkan {l.dilaporkan}, dari pendakian {l.tanggalPendakian}, lolos moderasi.
                     </p>

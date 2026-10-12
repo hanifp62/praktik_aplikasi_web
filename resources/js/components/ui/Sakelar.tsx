@@ -40,7 +40,7 @@ export function Sakelar({ judul, keterangan, nyala, onUbah, disabled = false, cl
                 aria-describedby={keterangan ? `${id}-keterangan` : undefined}
                 disabled={disabled}
                 onClick={() => onUbah(!nyala)}
-                className="group inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-full focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="group inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-full focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
             >
                 <span
                     aria-hidden="true"
@@ -50,7 +50,7 @@ export function Sakelar({ judul, keterangan, nyala, onUbah, disabled = false, cl
                         nyala ? 'border-brand-700 bg-brand-700' : 'border-control bg-control',
                     )}
                 >
-                    <span className={kelas('inline-block size-5 rounded-full border border-subtle bg-surface transition-transform duration-sentuh ease-gerak', nyala ? 'translate-x-[1.375rem]' : 'translate-x-0.5')} />
+                    <span className={kelas('inline-block size-5 rounded-full border border-subtle bg-surface transition-transform duration-sentuh ease-gerak', nyala ? 'translate-x-5.5' : 'translate-x-0.5')} />
                 </span>
             </button>
         </div>

@@ -608,7 +608,8 @@ class OfflineShellTest extends TestCase
         $this->assertStringContainsString('kalimatPembatasan(', $daftar);
         $this->assertStringContainsString('kalimatAreaTerbatas(', $daftar);
 
-        $this->assertStringContainsString('min-w-0 [overflow-wrap:anywhere]', $daftar);
+        // Upgrade tailwind 4: break-words bernama wrap-break-word, [overflow-wrap:anywhere] bernama wrap-anywhere; CSS-nya sama.
+        $this->assertStringContainsString('min-w-0 wrap-anywhere', $daftar);
         $this->assertStringContainsString("timeZoneName: 'short'", $daftar);
         $this->assertStringContainsString('aria-label={`Buka mode lapangan: ${labelPaket(p.rekaman.manifest.trip)}`}', $daftar);
         $this->assertStringContainsString('urutDaftarPaket(paket)', $daftar);

@@ -83,12 +83,12 @@
                 Bingkainya hanya tampil bila ada isi. <p>, bukan <div> (DesignSystemTest).
             --}}
             <p id="luring-kabar" role="status" aria-atomic="true" class="mt-6 text-base text-primary empty:mt-0"></p>
-            <p id="luring-galat" role="alert" tabindex="-1" class="mt-4 rounded-control border border-danger-300 bg-danger-50 p-3 text-sm text-danger-900 empty:mt-0 empty:border-0 empty:p-0 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"></p>
+            <p id="luring-galat" role="alert" tabindex="-1" class="mt-4 rounded-control border border-danger-300 bg-danger-50 p-3 text-sm text-danger-900 empty:mt-0 empty:border-0 empty:p-0 focus:outline-hidden focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"></p>
             <div id="paket-luring"></div>
 
             <div class="mt-8">
                 <button type="button" onclick="location.reload()"
-                    class="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-700 px-4 py-2 text-sm font-medium text-on-brand transition hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
+                    class="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-700 px-4 py-2 text-sm font-medium text-on-brand transition hover:bg-brand-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
                     Coba muat ulang
                 </button>
             </div>

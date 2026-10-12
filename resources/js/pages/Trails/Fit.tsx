@@ -51,7 +51,7 @@ export default function Fit() {
                 <PageHeader induk={{ href: jalur.url, label: jalur.nama }} title="Penilaian kecocokan">
                     <p className="mt-1 text-kecil text-secondary">
                         {jalur.nama},{' '}
-                        <Tautan href={jalur.gunungUrl} className="font-bold text-brand-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                        <Tautan href={jalur.gunungUrl} className="font-bold text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                             {jalur.gunung}
                         </Tautan>
                     </p>

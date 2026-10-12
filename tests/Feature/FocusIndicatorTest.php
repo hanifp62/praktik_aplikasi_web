@@ -16,6 +16,10 @@ use Tests\TestCase;
  * navigasi, yaitu komponen yang muncul di setiap halaman. Disapu, bukan didaftar per
  * berkas, karena daftar per berkas persis yang membuat dua pelanggaran kontras lolos
  * sebelumnya.
+ *
+ * Diubah upgrade tailwind 4: outline-none Tailwind 3 bernama outline-hidden di Tailwind 4, dan
+ * outline-none Tailwind 4 menghapus outline sepenuhnya. Keduanya disapu; tanpa itu sapuan ini
+ * lulus kosong karena tidak ada lagi focus:outline-none di view.
  */
 class FocusIndicatorTest extends TestCase
 {
@@ -25,9 +29,9 @@ class FocusIndicatorTest extends TestCase
 
         foreach (File::allFiles(resource_path('views')) as $berkas) {
             $isi = $berkas->getContents();
-            $posisi = 0;
+            preg_match_all('/focus:outline-(?:none|hidden)/', $isi, $cocok, PREG_OFFSET_CAPTURE);
 
-            while (($posisi = strpos($isi, 'focus:outline-none', $posisi)) !== false) {
+            foreach ($cocok[0] as [, $posisi]) {
                 // Penggantinya boleh berada sebelum maupun sesudah dalam daftar kelas
                 // yang sama, dan daftar itu kerap dipecah beberapa baris.
                 $konteks = substr($isi, max(0, $posisi - 400), 800);
@@ -35,8 +39,6 @@ class FocusIndicatorTest extends TestCase
                 if (! preg_match('/focus-visible:ring|focus:ring|focus-visible:outline|outline-offset/', $konteks)) {
                     $pelanggar[] = $berkas->getRelativePathname();
                 }
-
-                $posisi += 18;
             }
         }
 

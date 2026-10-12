@@ -400,7 +400,7 @@ export function PintuPaket({ tripId }: { tripId: number }) {
             {keadaan.tahap === 'kosong' ? <p className="text-kecil text-secondary">{ISI}</p> : null}
 
             {keadaan.tahap === 'pratinjau' && keadaan.manifest.atribusi.length > 0 ? (
-                <ul className="space-y-1 text-kecil text-secondary [overflow-wrap:anywhere]">
+                <ul className="space-y-1 text-kecil text-secondary wrap-anywhere">
                     {keadaan.manifest.atribusi.map((baris, i) => (
                         <li key={`${i}-${baris}`}>{baris}</li>
                     ))}

@@ -31,11 +31,11 @@ export function KartuIzin({ izin }: { izin: IzinGunung }) {
                 {butir.map(([label, nilai]) => (
                     <div key={label} className="contents">
                         <dt className="text-secondary">{label}</dt>
-                        <dd className="break-words font-bold text-primary">{nilai}</dd>
+                        <dd className="wrap-break-word font-bold text-primary">{nilai}</dd>
                     </div>
                 ))}
             </dl>
-            {izin.catatan ? <p className="mt-3 break-words text-kecil text-secondary">{izin.catatan}</p> : null}
+            {izin.catatan ? <p className="mt-3 wrap-break-word text-kecil text-secondary">{izin.catatan}</p> : null}
             {izin.bookingUrl ? (
                 <a
                     href={izin.bookingUrl}
@@ -54,7 +54,7 @@ export function KartuIzin({ izin }: { izin: IzinGunung }) {
             <p className="mt-3 text-meta text-secondary">{izin.bookingUrl ? 'Memount menautkan sistem resmi dan tidak menjual izin.' : 'Memount tidak memesan atau menjual izin.'}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
                 <LabelSumber jenis={izin.sumber.jenis} />
-                <span className="break-words text-meta text-muted">Sumber: {izin.sumber.nama ?? 'belum tercatat'}</span>
+                <span className="wrap-break-word text-meta text-muted">Sumber: {izin.sumber.nama ?? 'belum tercatat'}</span>
             </div>
             <Kesegaran waktu={izin.diverifikasi} awalan="Aturan diverifikasi" className="mt-1" />
         </div>

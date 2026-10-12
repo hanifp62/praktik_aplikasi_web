@@ -90,7 +90,7 @@ export function KeselamatanTrip({ keselamatan }: { keselamatan: KeselamatanHalam
                 <fieldset>
                     <legend className="text-isi font-bold text-primary">Perkiraan kembali ({keselamatan.zona})</legend>
                     <div className="mt-2 flex flex-wrap gap-3">
-                        <div className="min-w-[10rem] flex-1">
+                        <div className="min-w-40 flex-1">
                             <Label htmlFor="kembali-tanggal">Tanggal</Label>
                             <TextInput
                                 id="kembali-tanggal"
@@ -103,7 +103,7 @@ export function KeselamatanTrip({ keselamatan }: { keselamatan: KeselamatanHalam
                             />
                             <InputError id="kembali-tanggal-galat" messages={form.errors.kembali_tanggal} className="mt-2" />
                         </div>
-                        <div className="min-w-[8rem] flex-1">
+                        <div className="min-w-32 flex-1">
                             <Label htmlFor="kembali-jam">Jam</Label>
                             <TextInput
                                 id="kembali-jam"
@@ -149,7 +149,7 @@ export function KeselamatanTrip({ keselamatan }: { keselamatan: KeselamatanHalam
                 {keselamatan.pesan ? (
                     <>
                         <p className="text-kecil font-bold text-secondary">Pesan yang akan dikirim</p>
-                        <p className="mt-2 whitespace-pre-line break-words rounded-control bg-surface-sunken p-4 text-kecil text-primary">{keselamatan.pesan}</p>
+                        <p className="mt-2 whitespace-pre-line wrap-break-word rounded-control bg-surface-sunken p-4 text-kecil text-primary">{keselamatan.pesan}</p>
                         <div className="mt-4 flex flex-wrap items-start gap-3">
                             <Button href={`https://wa.me/?text=${encodeURIComponent(keselamatan.pesan)}`} external>
                                 Kirim lewat WhatsApp

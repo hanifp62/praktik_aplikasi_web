@@ -27,7 +27,7 @@ export function KotakCentang({ label, keterangan, lencana, penjelas, id, classNa
             <Checkbox id={idKotak} aria-describedby={dijelaskan} disabled={disabled} className="mt-0.5" {...rest} />
             <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2">
-                    <span className="min-w-0 break-words text-isi font-semibold text-primary">{label}</span>
+                    <span className="min-w-0 wrap-break-word text-isi font-semibold text-primary">{label}</span>
                     {lencana}
                 </span>
                 {keterangan ? (

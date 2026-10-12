@@ -38,7 +38,7 @@ export function AdminNav() {
                                 href={href}
                                 aria-current={aktif ? 'page' : undefined}
                                 className={kelas(
-                                    'inline-flex min-h-11 items-center gap-1.5 border-b-2 px-1 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 rounded-sm',
+                                    'inline-flex min-h-11 items-center gap-1.5 border-b-2 px-1 text-sm font-medium focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 rounded-xs',
                                     aktif ? 'border-brand-600 text-primary' : 'border-transparent text-muted hover:border-control hover:text-secondary',
                                 )}
                             >

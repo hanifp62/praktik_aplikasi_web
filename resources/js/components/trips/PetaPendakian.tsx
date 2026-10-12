@@ -96,6 +96,11 @@ export function PetaPendakian({ id, label, garis, pos, tercapai, dilaluiM, posis
                 );
                 el.textContent = String(c.urutan);
                 el.title = `${c.urutan}. ${c.nama}`;
+                // MapLibre 6 tidak lagi memberi elemen penanda buatan nama dan peran (MapLibre 4
+                // memberi semua penanda "Penanda peta"); peran gambar sama dengan penanda bawaan
+                // MapLibre 6 tanpa popup.
+                el.setAttribute('role', 'img');
+                el.setAttribute('aria-label', el.title);
 
                 return new maplibregl.Marker({ element: el }).setLngLat([c.lng as number, c.lat as number]).addTo(map);
             });
@@ -111,6 +116,8 @@ export function PetaPendakian({ id, label, garis, pos, tercapai, dilaluiM, posis
                 const el = document.createElement('div');
                 el.className = 'size-5 rounded-full border-4 border-surface bg-primary shadow-overlay';
                 el.title = 'Posisi Anda';
+                el.setAttribute('role', 'img');
+                el.setAttribute('aria-label', el.title);
                 tandaPosisi.current = new maplibregl.Marker({ element: el }).setLngLat([s.lng, s.lat]).addTo(map);
             }
         }

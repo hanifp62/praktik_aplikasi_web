@@ -38,14 +38,14 @@ export function KontrolSegmen<T extends string>({ nama, label, pilihan, nilai, o
                         key={p.nilai}
                         className={kelas(
                             'flex min-h-11 min-w-11 flex-1 cursor-pointer flex-col items-center justify-center rounded-control border border-transparent px-3 py-1.5 text-center text-kecil font-semibold text-secondary',
-                            'has-[:checked]:border-control has-[:checked]:bg-surface has-[:checked]:font-bold has-[:checked]:text-primary',
+                            'has-checked:border-control has-checked:bg-surface has-checked:font-bold has-checked:text-primary',
                             fokusDiDalam,
                         )}
                     >
                         <input type="radio" name={nama} value={p.nilai} checked={nilai === p.nilai} onChange={() => onUbah(p.nilai)} className="sr-only" />
                         <span className="inline-flex max-w-full items-center gap-1.5">
                             {p.ikon ? <Icon name={p.ikon} size={20} /> : null}
-                            <span className="min-w-0 break-words">{p.label}</span>
+                            <span className="min-w-0 wrap-break-word">{p.label}</span>
                         </span>
                         {p.keterangan ? <span className="text-meta font-medium text-muted">{p.keterangan}</span> : null}
                     </label>

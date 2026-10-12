@@ -44,11 +44,21 @@ class TypographySystemTest extends TestCase
     /** Anggaran huruf untuk teks Latin: 100 KB (rencana induk W1, butir 2). */
     private const ANGGARAN_BITA = 102400;
 
+    /**
+     * Isi blok @theme dan @theme inline di app.css, konfigurasi Tailwind 4 CSS-first. Diubah
+     * upgrade tailwind 4: dulu isi tailwind.config.js.
+     */
     private function tailwind(): string
     {
         static $isi = null;
 
-        return $isi ??= File::get(base_path('tailwind.config.js'));
+        if ($isi === null) {
+            preg_match_all('/@theme(?: inline)? \{(.*?)\n\}/s', $this->css(), $blok);
+            $this->assertCount(2, $blok[1], 'Blok @theme dan @theme inline tidak ditemukan.');
+            $isi = implode("\n", $blok[1]);
+        }
+
+        return $isi;
     }
 
     private function css(): string
@@ -59,14 +69,15 @@ class TypographySystemTest extends TestCase
     }
 
     /**
-     * Isi blok fontFamily di tailwind.config.js, tanpa komentar di atasnya: komentar yang
-     * menjelaskan mengapa sebuah huruf ditinggalkan justru layak disimpan.
+     * Deklarasi --font-* di blok @theme, tanpa komentar di atasnya: komentar yang menjelaskan
+     * mengapa sebuah huruf ditinggalkan justru layak disimpan. Diubah upgrade tailwind 4: dulu
+     * blok fontFamily di tailwind.config.js.
      */
     private function blokFontFamily(): string
     {
-        $this->assertSame(1, preg_match('/fontFamily:\s*\{(.*?)\n\s*\},/s', $this->tailwind(), $blok), 'Blok fontFamily tidak ditemukan.');
+        $this->assertGreaterThan(0, preg_match_all('/^\s*--font-[a-z-]+:[^;]*;/m', $this->tailwind(), $deklarasi), 'Deklarasi --font-* tidak ditemukan.');
 
-        return $blok[1];
+        return implode("\n", $deklarasi[0]);
     }
 
     /**
@@ -83,7 +94,7 @@ class TypographySystemTest extends TestCase
         // Diperiksa pada deklarasinya, bukan pada seluruh berkas: komentar yang
         // menjelaskan mengapa huruf lamanya ditinggalkan justru layak disimpan, dan
         // versi pertama test ini menolaknya.
-        $this->assertDoesNotMatchRegularExpression('/sans:\s*\[[^\]]*Figtree/i', $this->tailwind());
+        $this->assertDoesNotMatchRegularExpression('/--font-sans:[^;]*Figtree/i', $this->tailwind());
     }
 
     /**
@@ -125,14 +136,17 @@ class TypographySystemTest extends TestCase
      * judul memakai Plus Jakarta Sans bobot 800, angka memakai tabular-nums pada keluarga
      * yang sama, dan huruf mono tetap tumpukan sistem tanpa unduhan. Newsreader dan Geist
      * hanya hidup di bundel prototype, bukan di aplikasi.
+     *
+     * Diubah upgrade tailwind 4: "mono tetap tumpukan sistem" kini berarti --font-mono tidak
+     * ditulis di @theme, sehingga bawaan Tailwind (tumpukan sistem) yang berlaku.
      */
     public function test_one_family_carries_headings_and_measurements(): void
     {
         $keluarga = $this->blokFontFamily();
 
-        $this->assertDoesNotMatchRegularExpression('/\bserif:\s*\[/', $keluarga, 'Keluarga serif judul sudah dilepas (DK-38).');
+        $this->assertDoesNotMatchRegularExpression('/--font-serif\s*:/', $keluarga, 'Keluarga serif judul sudah dilepas (DK-38).');
         $this->assertDoesNotMatchRegularExpression('/Newsreader|Geist/', $keluarga);
-        $this->assertMatchesRegularExpression('/mono:\s*defaultTheme\.fontFamily\.mono/', $keluarga, 'Huruf mono tetap tumpukan sistem.');
+        $this->assertDoesNotMatchRegularExpression('/--font-mono\s*:/', $keluarga, 'Huruf mono tetap tumpukan sistem.');
 
         $pemakaiSerif = [];
 
@@ -290,8 +304,9 @@ class TypographySystemTest extends TestCase
             }
         }
 
+        // Diubah upgrade tailwind 4: tumpukan sans kini ditulis utuh di @theme app.css.
         $this->assertStringContainsString(
-            "sans: ['Plus Jakarta Sans', 'PJS Cadangan Roboto', 'PJS Cadangan Arial', ...defaultTheme.fontFamily.sans]",
+            "--font-sans: 'Plus Jakarta Sans', 'PJS Cadangan Roboto', 'PJS Cadangan Arial', ui-sans-serif, system-ui, sans-serif,",
             $this->tailwind()
         );
     }
@@ -308,21 +323,33 @@ class TypographySystemTest extends TestCase
 
     /**
      * Skala tipe spec v3 bagian 8.2: nama menyebut peran, nilainya dari prototype.
+     *
+     * Diubah upgrade tailwind 4: nilai yang sama, kini sebagai variabel --text-* di @theme
+     * app.css (ukuran, --line-height, --letter-spacing, --font-weight), bukan tuple fontSize.
      */
     public function test_the_type_scale_follows_the_spec(): void
     {
         foreach ([
-            "tampilan: ['1.875rem', { lineHeight: '1.15', letterSpacing: '-0.025em', fontWeight: '800' }]",
-            "judul: ['1.75rem', { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '800' }]",
-            "'judul-kartu': ['1.4375rem', { lineHeight: '1.25', letterSpacing: '-0.015em', fontWeight: '800' }]",
-            "bagian: ['1.125rem', { lineHeight: '1.35', fontWeight: '700' }]",
-            "subjudul: ['1.0625rem', { lineHeight: '1.4', fontWeight: '700' }]",
-            "isi: ['1rem', { lineHeight: '1.5' }]",
-            "kecil: ['0.875rem', { lineHeight: '1.45' }]",
-            "meta: ['0.8125rem', { lineHeight: '1.4' }]",
-            "label: ['0.75rem', { lineHeight: '1.35' }]",
-        ] as $baris) {
-            $this->assertStringContainsString($baris, $this->tailwind());
+            'tampilan' => ['1.875rem', '1.15', '-0.025em', '800'],
+            'judul' => ['1.75rem', '1.2', '-0.02em', '800'],
+            'judul-kartu' => ['1.4375rem', '1.25', '-0.015em', '800'],
+            'bagian' => ['1.125rem', '1.35', null, '700'],
+            'subjudul' => ['1.0625rem', '1.4', null, '700'],
+            'isi' => ['1rem', '1.5', null, null],
+            'kecil' => ['0.875rem', '1.45', null, null],
+            'meta' => ['0.8125rem', '1.4', null, null],
+            'label' => ['0.75rem', '1.35', null, null],
+        ] as $nama => [$ukuran, $tinggi, $jarak, $bobot]) {
+            $this->assertStringContainsString("--text-{$nama}: {$ukuran};", $this->tailwind());
+            $this->assertStringContainsString("--text-{$nama}--line-height: {$tinggi};", $this->tailwind());
+
+            foreach (['letter-spacing' => $jarak, 'font-weight' => $bobot] as $sifat => $nilai) {
+                if ($nilai === null) {
+                    $this->assertStringNotContainsString("--text-{$nama}--{$sifat}:", $this->tailwind(), "{$nama} tidak membawa {$sifat}.");
+                } else {
+                    $this->assertStringContainsString("--text-{$nama}--{$sifat}: {$nilai};", $this->tailwind());
+                }
+            }
         }
     }
 }

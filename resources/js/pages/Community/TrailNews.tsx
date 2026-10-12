@@ -22,7 +22,7 @@ interface Props extends PropsBersama {
 }
 
 const tautanBagian =
-    'inline-flex min-h-11 items-center rounded-control border border-subtle bg-surface px-3 text-sm text-secondary hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
+    'inline-flex min-h-11 items-center rounded-control border border-subtle bg-surface px-3 text-sm text-secondary hover:bg-surface-sunken focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600';
 
 const kosong = 'mt-3 rounded-lg border border-subtle bg-surface p-4 text-sm text-secondary';
 
@@ -180,7 +180,7 @@ function ButirLaporan({ butir }: { butir: ButirKomunitas }) {
             {butir.foto ? (
                 <a
                     href={photo.url(butir.id)}
-                    className="mt-3 inline-block rounded-control focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    className="mt-3 inline-block rounded-control focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                 >
                     <img src={photo.url(butir.id)} alt={`Foto dari laporan kondisi ${butir.judul}`} loading="lazy" className="h-24 w-32 rounded-control border border-subtle object-cover" />
                 </a>

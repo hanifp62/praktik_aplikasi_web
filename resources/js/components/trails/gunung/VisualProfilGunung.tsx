@@ -28,7 +28,7 @@ export function VisualProfilGunung({ profil }: { profil: ProfilGunung }) {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {profil.garis.map((g) => (
                     <div key={g.id} className="min-w-0">
-                        <p className="break-words text-meta font-bold text-primary">{g.nama}</p>
+                        <p className="wrap-break-word text-meta font-bold text-primary">{g.nama}</p>
                         <svg viewBox={`0 0 ${LEBAR} ${TINGGI}`} preserveAspectRatio="none" aria-hidden="true" className="mt-1 h-14 w-full">
                             <polygon points={bidang(g.titik)} className="fill-brand-100" />
                             <polyline points={jalurGaris(g.titik)} fill="none" strokeWidth="2" strokeLinejoin="round" className="stroke-brand-ink" vectorEffect="non-scaling-stroke" />

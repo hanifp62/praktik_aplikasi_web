@@ -54,7 +54,7 @@ interface Props extends PropsBersama {
     potong: { terpotong: boolean; kalimat: string; url: string };
 }
 
-const tautanTeks = 'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
+const tautanTeks = 'inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600';
 
 /**
  * Pintu tab Mendaki (spec v3 bagian 6.12; rencana induk W6 butir 1): pratinjau hari-H trip
@@ -81,7 +81,7 @@ export default function TrackIndex() {
                 ) : (
                     <section aria-labelledby="judul-hari-h" className="rounded-utama border border-subtle bg-surface p-5">
                         <h2 id="judul-hari-h" className="text-judul-kartu text-primary">
-                            <Tautan href={hariH.urls.ruangKerja} className="underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 [overflow-wrap:anywhere]">
+                            <Tautan href={hariH.urls.ruangKerja} className="underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 wrap-anywhere">
                                 {hariH.nama}
                             </Tautan>
                         </h2>
@@ -132,8 +132,8 @@ export default function TrackIndex() {
                         <ul className="space-y-3">
                             {lain.map((trip) => (
                                 <li key={trip.id} className="rounded-kartu border border-subtle bg-surface p-4">
-                                    <Tautan href={trip.urls.ruangKerja} className="inline-flex min-h-11 items-center text-subjudul text-primary underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
-                                        <span className="min-w-0 [overflow-wrap:anywhere]">{trip.nama}</span>
+                                    <Tautan href={trip.urls.ruangKerja} className="inline-flex min-h-11 items-center text-subjudul text-primary underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
+                                        <span className="min-w-0 wrap-anywhere">{trip.nama}</span>
                                     </Tautan>
                                     <p className="text-kecil text-secondary">{trip.jalur}, {trip.gunung}</p>
                                     <p className="flex flex-wrap items-center gap-2 text-kecil text-secondary">

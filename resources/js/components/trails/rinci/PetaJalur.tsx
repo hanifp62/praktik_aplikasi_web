@@ -8,9 +8,16 @@ import type { AksenPos, PetaJalurData } from './types';
 /**
  * Penanda pos bernomor, disusun lewat textContent. Pos berkemah dan tujuan membawa aksen
  * kuning (DESIGN.md, satu aksen), selalu bersama nomornya dan nama pos di keterangan penanda.
+ *
+ * Nama dan perannya ditulis sendiri: MapLibre 6 hanya memberi aria-label dan peran kepada penanda
+ * bawaannya, bukan kepada elemen buatan seperti ini (MapLibre 4 memberi semua penanda "Penanda
+ * peta"). Penanda ini membuka keterangan lewat Enter, jadi perannya tombol, sama dengan penanda
+ * bawaan MapLibre 6 yang berpopup, dan namanya label pos yang juga ditulis di keterangannya.
  */
-function elemenPos(urutan: number, aksen: AksenPos): HTMLElement {
+function elemenPos(urutan: number, aksen: AksenPos, label: string): HTMLElement {
     const el = document.createElement('span');
+    el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', label);
     el.className = aksen
         ? 'flex size-7 items-center justify-center rounded-full border-2 border-primary bg-aksen-pos text-meta font-bold text-aksen-pos-teks shadow-overlay'
         : 'flex size-7 items-center justify-center rounded-full border-2 border-brand-ink bg-surface text-meta font-bold text-brand-ink shadow-overlay';
@@ -82,7 +89,7 @@ export function PetaJalur({ id, data, label, cadangan = 'Keterangan jalur dan da
 
             for (const p of penanda) {
                 if (p.urutan !== undefined) {
-                    new maplibregl.Marker({ element: elemenPos(p.urutan, p.aksen ?? null) })
+                    new maplibregl.Marker({ element: elemenPos(p.urutan, p.aksen ?? null, p.label) })
                         .setLngLat([p.lng, p.lat])
                         .setPopup(new maplibregl.Popup({ offset: 18 }).setText(p.label))
                         .addTo(peta);

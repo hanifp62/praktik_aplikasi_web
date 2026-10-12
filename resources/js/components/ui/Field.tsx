@@ -69,7 +69,9 @@ export function FormField({ name, label, hint, error, className, ...rest }: Form
 /**
  * Kotak centang v3: 28 px, sudut kontrol kecil 10 px, garis 2 px berkontras 3:1, dan isian
  * brand-700 ketika tercentang. Tanda centangnya digelapkan di tema gelap (app.css).
+ * Batasnya transparan ketika tercentang: di Tailwind 4 kelas border-control (lapisan utilities)
+ * mengalahkan batas transparan @tailwindcss/forms (lapisan base), jadi ditulis sendiri.
  */
 export function Checkbox({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-    return <input type="checkbox" className={kelas('size-7 shrink-0 rounded-kecil border-2 border-control text-brand-700 focus:ring-brand-600', className)} {...rest} />;
+    return <input type="checkbox" className={kelas('size-7 shrink-0 rounded-kecil border-2 border-control text-brand-700 checked:border-transparent focus:ring-brand-600', className)} {...rest} />;
 }

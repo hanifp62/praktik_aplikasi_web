@@ -38,7 +38,7 @@ export function KepalaTrip({ kepala }: { kepala: KepalaTripData }) {
             {kepala.ubah ? (
                 <Tautan
                     href={kepala.ubah}
-                    className="inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    className="inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                 >
                     Ubah rencana
                 </Tautan>

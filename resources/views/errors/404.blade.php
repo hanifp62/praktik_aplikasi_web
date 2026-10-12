@@ -8,6 +8,6 @@
 @endsection
 
 @section('tindakan')
-    <a href="{{ url('/') }}" class="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-700 px-4 py-2 text-sm font-medium text-on-brand transition hover:bg-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Kembali ke halaman utama</a>
-    <a href="{{ url('/trails') }}" class="inline-flex min-h-11 items-center justify-center rounded-control border border-control bg-surface px-4 py-2 text-sm font-medium text-primary transition hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-muted focus-visible:ring-offset-2">Telusuri jalur</a>
+    <a href="{{ url('/') }}" class="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-700 px-4 py-2 text-sm font-medium text-on-brand transition hover:bg-brand-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">Kembali ke halaman utama</a>
+    <a href="{{ url('/trails') }}" class="inline-flex min-h-11 items-center justify-center rounded-control border border-control bg-surface px-4 py-2 text-sm font-medium text-primary transition hover:bg-surface-sunken focus:outline-hidden focus-visible:ring-2 focus-visible:ring-muted focus-visible:ring-offset-2">Telusuri jalur</a>
 @endsection

@@ -88,7 +88,7 @@ export function KartuDarurat({ darurat, data, posisi, lokasi, tercapai }: KartuD
                                         {darurat.pengelola.kontak}
                                     </a>
                                 ) : (
-                                    <span className="break-words font-bold">{darurat.pengelola.kontak}</span>
+                                    <span className="wrap-break-word font-bold">{darurat.pengelola.kontak}</span>
                                 )}
                             </>
                         ) : (

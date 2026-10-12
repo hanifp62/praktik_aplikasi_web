@@ -147,7 +147,7 @@ export default function Show() {
                 </section>
 
                 <footer className="border-t border-subtle pt-4 text-meta text-muted">
-                    <p className="break-words">
+                    <p className="wrap-break-word">
                         Data gunung: {provenans.sumber ? `${provenans.sumber.nama ?? 'sumber tanpa nama'}${provenans.sumber.label ? ` (${provenans.sumber.label.toLowerCase()})` : ''}` : 'sumber belum tercatat'}
                         {provenans.diverifikasi ? `, diverifikasi ${provenans.diverifikasi}` : null}.
                     </p>

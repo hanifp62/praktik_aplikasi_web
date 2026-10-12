@@ -1,10 +1,10 @@
 /*
  * MapLibre dimuat saat dibutuhkan, bukan di setiap halaman.
  *
- * Pustakanya 787 kB sementara satu-satunya halaman yang menggambar peta adalah mode
- * pendakian. Memuatnya di halaman masuk, dasbor, dan daftar jalur berarti menagih
- * ratusan kilobita kepada pengguna yang tidak akan melihat peta sama sekali, padahal
- * PRD §88 menempatkan ponsel sebagai platform utama.
+ * Pustakanya sekitar 1,6 MB (MapLibre 6: modul 1,1 MB dan pekerja 0,5 MB) sementara satu-satunya
+ * halaman yang menggambar peta adalah mode pendakian. Memuatnya di halaman masuk, dasbor, dan
+ * daftar jalur berarti menagih ratusan kilobita kepada pengguna yang tidak akan melihat peta
+ * sama sekali, padahal PRD §88 menempatkan ponsel sebagai platform utama.
  *
  * Tetap di-bundle lewat Vite, bukan dari CDN: mode pendakian dipakai di lapangan tempat
  * sinyal tipis, dan bergantung pada host pihak ketiga persis pada saat itu adalah
@@ -100,14 +100,23 @@ window.temaGelapAktif = () => {
 
 let pemuatan = null;
 
+/*
+ * MapLibre 6 hanya ESM tanpa ekspor default, jadi yang dipakai namespace modulnya. Pengurai
+ * tile-nya berjalan di web worker dari berkas build sendiri: `?worker&url` membuat Vite
+ * membundel maplibre-gl-worker.mjs dan memberi URL-nya, dan setWorkerUrl dipanggil sebelum peta
+ * pertama dibuat (panduan instalasi MapLibre 6 untuk Vite). Tanpanya MapLibre mencari pekerja
+ * di sebelah potongan bundel, tempat berkas itu tidak ada.
+ */
 window.muatPeta = () => {
     pemuatan ??= Promise.all([
         import('maplibre-gl'),
         import('maplibre-gl/dist/maplibre-gl.css'),
-    ]).then(([modul]) => {
-        window.maplibregl = modul.default;
+        import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'),
+    ]).then(([modul, , pekerja]) => {
+        modul.setWorkerUrl(pekerja.default);
+        window.maplibregl = modul;
 
-        return modul.default;
+        return modul;
     });
 
     return pemuatan;

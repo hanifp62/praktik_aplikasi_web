@@ -36,12 +36,12 @@ export function KartuTrip({ kartu, utama = false }: { kartu: BarisTrip; utama?: 
                 {kartu.keadaan ? <Lencana>{kartu.keadaan}</Lencana> : null}
             </p>
 
-            <Judul className={kelas('mt-2 break-words text-primary', utama ? 'text-judul-kartu' : 'text-subjudul')}>
-                <Tautan href={kartu.url} className="inline-flex min-h-11 items-center rounded-sm underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+            <Judul className={kelas('mt-2 wrap-break-word text-primary', utama ? 'text-judul-kartu' : 'text-subjudul')}>
+                <Tautan href={kartu.url} className="inline-flex min-h-11 items-center rounded-xs underline-offset-2 hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                     {kartu.nama}
                 </Tautan>
             </Judul>
-            <p className="mt-1 break-words text-kecil text-secondary">
+            <p className="mt-1 wrap-break-word text-kecil text-secondary">
                 {kartu.jalur}, {kartu.gunung}
             </p>
             <p data-angka className="mt-0.5 text-kecil text-secondary">
@@ -67,7 +67,7 @@ export function KartuTrip({ kartu, utama = false }: { kartu: BarisTrip; utama?: 
                 ) : (
                     <Tautan
                         href={kartu.aksi.href}
-                        className="mt-2 inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                        className="mt-2 inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                     >
                         {kartu.aksi.label}
                     </Tautan>

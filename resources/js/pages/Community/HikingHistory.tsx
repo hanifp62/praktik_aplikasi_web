@@ -65,7 +65,7 @@ export default function HikingHistory() {
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div className="min-w-0">
                                             <h2 className="text-base font-semibold text-primary">
-                                                <Tautan href={summary.url(e.tripId)} className="rounded-control py-1 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                                                <Tautan href={summary.url(e.tripId)} className="rounded-control py-1 hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                                                     {e.jalur}
                                                 </Tautan>
                                             </h2>
@@ -78,7 +78,7 @@ export default function HikingHistory() {
                                             </p>
                                         </div>
                                         {/* Hitungan butir dari server, bukan persen (ruling AF-4, R-005, R-007). */}
-                                        <p className="text-sm text-secondary sm:max-w-[14rem] sm:text-right">{e.persiapan}</p>
+                                        <p className="text-sm text-secondary sm:max-w-56 sm:text-right">{e.persiapan}</p>
                                     </div>
 
                                     {e.catatan ? <p className="mt-3 text-sm text-secondary">{e.catatan}</p> : null}

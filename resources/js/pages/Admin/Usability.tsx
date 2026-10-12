@@ -155,7 +155,7 @@ export default function Usability() {
                                     <tr key={t.kode} className="border-b border-subtle">
                                         <td className="py-2 pr-3">
                                             <span className="font-medium text-primary">{t.kode}</span> <span className="text-secondary">{t.judul}</span>
-                                            {t.inti ? <span className="ml-1 rounded bg-brand-100 px-1.5 py-0.5 text-xs font-medium text-brand-900">inti</span> : null}
+                                            {t.inti ? <span className="ml-1 rounded-sm bg-brand-100 px-1.5 py-0.5 text-xs font-medium text-brand-900">inti</span> : null}
                                         </td>
                                         <td className="py-2 pr-3 text-secondary">{t.diamati}</td>
                                         <td className="py-2 pr-3 text-secondary">{t.gagal}</td>

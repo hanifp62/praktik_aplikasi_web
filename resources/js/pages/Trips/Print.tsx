@@ -258,7 +258,7 @@ export default function Print() {
                         <h3 id="cetak-pesan" className="text-bagian">
                             Pesan untuk kontak
                         </h3>
-                        <p className="mt-2 whitespace-pre-line break-words text-kecil">{pesan}</p>
+                        <p className="mt-2 whitespace-pre-line wrap-break-word text-kecil">{pesan}</p>
                     </section>
                 ) : null}
 

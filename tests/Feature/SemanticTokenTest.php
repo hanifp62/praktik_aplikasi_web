@@ -48,9 +48,14 @@ class SemanticTokenTest extends TestCase
         );
     }
 
+    /**
+     * Diubah upgrade tailwind 4: pemetaannya kini di blok @theme inline app.css, bukan
+     * token('...') di tailwind.config.js. Inline supaya utilitas menulis rgb(var(--token)) pada
+     * elemennya, sehingga token tema lapangan yang ditulis ulang di bawah :root tetap sampai.
+     */
     public function test_tailwind_exposes_every_semantic_token(): void
     {
-        $config = File::get(base_path('tailwind.config.js'));
+        $config = $this->temaInline();
 
         foreach ([
             'text-primary', 'text-secondary', 'text-muted', 'text-inverse',
@@ -60,7 +65,7 @@ class SemanticTokenTest extends TestCase
             'fit-kurang', 'fit-kurang-teks', 'fit-belum', 'fit-belum-teks',
             'status-buka', 'status-dibatasi', 'status-tutup', 'status-belum', 'accent-pos',
         ] as $nama) {
-            $this->assertStringContainsString("token('{$nama}')", $config, "Tailwind belum memetakan {$nama}.");
+            $this->assertStringContainsString("rgb(var(--{$nama}));", $config, "Tailwind belum memetakan {$nama}.");
         }
 
         $this->assertStringContainsString('rgb(var(--bayangan) / 0.18)', $config, 'shadow-overlay harus membaca token bayangan.');
@@ -70,11 +75,13 @@ class SemanticTokenTest extends TestCase
      * Skala radius spec v3 bagian 8.4. rounded-lg dipetakan ke token kartu karena peran
      * rounded-lg di DESIGN.md adalah kartu dan panel; kartu yang ada langsung mendapat
      * radius prototype tanpa disunting satu per satu.
+     *
+     * Diubah upgrade tailwind 4: pemetaan rounded-* kini dibaca dari blok @theme inline app.css.
      */
     public function test_the_radius_scale_follows_the_spec(): void
     {
         $css = File::get(resource_path('css/app.css'));
-        $config = File::get(base_path('tailwind.config.js'));
+        $config = $this->temaInline();
 
         foreach ([
             'kecil' => '0.625rem',
@@ -86,10 +93,20 @@ class SemanticTokenTest extends TestCase
             'lencana' => '0.375rem',
         ] as $nama => $nilai) {
             $this->assertMatchesRegularExpression('/--radius-'.$nama.':\s*'.preg_quote($nilai, '/').';/', $css, "Radius {$nama} bukan {$nilai}.");
-            $this->assertMatchesRegularExpression('/\b'.$nama.":\s*'var\(--radius-".$nama."\)'/", $config, "Tailwind belum memetakan rounded-{$nama}.");
+            $this->assertMatchesRegularExpression('/--radius-'.$nama.':\s*var\(--radius-'.$nama.'\);/', $config, "Tailwind belum memetakan rounded-{$nama}.");
         }
 
-        $this->assertMatchesRegularExpression("/\blg:\s*'var\(--radius-kartu\)'/", $config, 'rounded-lg adalah peran kartu.');
+        $this->assertMatchesRegularExpression('/--radius-lg:\s*var\(--radius-kartu\);/', $config, 'rounded-lg adalah peran kartu.');
+    }
+
+    /**
+     * Isi blok @theme inline di app.css: pemetaan token ke utilitas Tailwind 4.
+     */
+    private function temaInline(): string
+    {
+        $this->assertSame(1, preg_match('/@theme inline \{(.*?)\n\}/s', File::get(resource_path('css/app.css')), $blok), 'Blok @theme inline tidak ditemukan.');
+
+        return $blok[1];
     }
 
     /**

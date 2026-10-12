@@ -52,7 +52,7 @@ export function CocokkahUntukSaya({ kecocokan, idJudul }: { kecocokan: Kecocokan
                     <Daftar judul="Yang perlu diperhatikan" butir={kecocokan.perluDiperhatikan} ikon="warning" warna="text-fit-perlu-teks" />
                     <Daftar judul="Celah persiapan" butir={kecocokan.celahPersiapan} ikon="backpack" warna="text-secondary" />
                     {kecocokan.tangga ? <p className="text-meta text-muted">{kecocokan.tangga}</p> : null}
-                    <Tautan href={kecocokan.penilaianUrl} className="inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                    <Tautan href={kecocokan.penilaianUrl} className="inline-flex min-h-11 items-center text-kecil font-bold text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                         Lihat ketujuh faktor penilaian
                     </Tautan>
                     <p className="text-meta text-muted">Dinilai dengan aturan tertulis, bukan AI, dan tanpa skor angka. Ini dukungan keputusan, bukan jaminan keselamatan.</p>

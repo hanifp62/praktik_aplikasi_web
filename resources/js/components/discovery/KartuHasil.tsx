@@ -33,7 +33,7 @@ export function KartuHasil({ hasil, dibandingkan, onBandingkan, onPilih, memilih
                         {/* Jalur yang ditarik setelah run dibuat tetap tercatat, tetapi
                             tautannya dicabut: halaman jalur terarsip menjawab 404. */}
                         {hasil.url ? (
-                            <Tautan href={hasil.url} className="rounded-sm py-1 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                            <Tautan href={hasil.url} className="rounded-xs py-1 hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                                 {hasil.name}
                             </Tautan>
                         ) : (

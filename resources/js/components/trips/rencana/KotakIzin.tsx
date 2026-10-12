@@ -29,7 +29,7 @@ export function KotakIzin({ izin, className }: { izin: IzinRencana; className?: 
                 {tutup ? <Icon name="warning" size={20} className="mt-0.5 text-warn-900" /> : null}
                 <div className="min-w-0">
                     <p className={kelas('text-isi font-bold', tutup ? 'text-warn-900' : 'text-primary')}>{izin.judul}</p>
-                    <p className="mt-1 break-words text-kecil text-secondary">{izin.keterangan}</p>
+                    <p className="mt-1 wrap-break-word text-kecil text-secondary">{izin.keterangan}</p>
                     {izin.tautan ? (
                         <a
                             href={izin.tautan.href}

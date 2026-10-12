@@ -20,7 +20,7 @@ export function SumberHalaman({ sumber }: { sumber: BarisSumber[] }) {
                         <dd className="flex flex-wrap items-center gap-2 text-kecil text-secondary">
                             <LabelSumber jenis={s.jenis} />
                             {s.url ? (
-                                <a href={s.url} target="_blank" rel="noopener noreferrer" className="py-1 text-brand-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                                <a href={s.url} target="_blank" rel="noopener noreferrer" className="py-1 text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                                     {s.isi}
                                     <span className="sr-only"> (membuka tab baru)</span>
                                 </a>

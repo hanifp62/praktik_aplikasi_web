@@ -51,7 +51,7 @@ export function ThemePicker({ compact = false, className }: { compact?: boolean;
                                 value={v}
                                 checked={nilai === v}
                                 onChange={() => setNilai(v)}
-                                className="h-5 w-5 border-control text-brand-700 focus:ring-brand-600"
+                                className="h-5 w-5 border-control text-brand-700 checked:border-transparent focus:ring-brand-600"
                             />
                             <span>{label}</span>
                         </label>

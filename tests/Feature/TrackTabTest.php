@@ -669,11 +669,13 @@ class TrackTabTest extends TestCase
     {
         $komponen = File::get(resource_path('js/pages/Track/Index.tsx'));
 
-        $this->assertStringContainsString('<span className="min-w-0 [overflow-wrap:anywhere]">{trip.nama}</span>', $komponen);
+        // Upgrade tailwind 4: break-words bernama wrap-break-word, [overflow-wrap:anywhere] bernama wrap-anywhere; CSS-nya sama.
+        $this->assertStringContainsString('<span className="min-w-0 wrap-anywhere">{trip.nama}</span>', $komponen);
         $this->assertStringContainsString('<Tautan href={hariH.urls.ruangKerja}', $komponen);
-        preg_match_all('/\[overflow-wrap:anywhere\]/', $komponen, $kemunculan);
+        preg_match_all('/\bwrap-anywhere\b/', $komponen, $kemunculan);
         $this->assertGreaterThanOrEqual(2, count($kemunculan[0]), 'Judul hari-H dan baris trip lain wajib keduanya memakai overflow-wrap:anywhere.');
         $this->assertStringNotContainsString('break-words', $komponen, 'Kelas break-words dibuang karena tidak berefek (N-4).');
+        $this->assertStringNotContainsString('wrap-break-word', $komponen, 'Nama Tailwind 4 untuk break-words juga tidak kembali (N-4).');
     }
 
     /**

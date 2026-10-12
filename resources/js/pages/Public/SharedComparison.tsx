@@ -79,7 +79,7 @@ export default function SharedComparison() {
                                                 Keterangan
                                             </th>
                                             {props.jalur.map((j) => (
-                                                <th key={j.id} scope="col" className="min-w-[10rem] px-3 py-3 text-left align-top">
+                                                <th key={j.id} scope="col" className="min-w-40 px-3 py-3 text-left align-top">
                                                     <span className="block text-subjudul text-primary">{j.nama}</span>
                                                     <span className="block text-meta font-normal text-secondary">{[j.gunung, j.provinsi].filter(Boolean).join(', ')}</span>
                                                 </th>

@@ -173,7 +173,7 @@ export default function ProfileSetup() {
 
                         <form id="formulir-profil" onSubmit={simpan} noValidate className="space-y-6 rounded-lg bg-surface p-6">
                             {langkah === 1 ? (
-                                <fieldset ref={bagian} tabIndex={-1} className="space-y-4 focus:outline-none">
+                                <fieldset ref={bagian} tabIndex={-1} className="space-y-4 focus:outline-hidden">
                                     <legend className="text-base font-medium text-primary">Tingkat pengalaman</legend>
 
                                     <SelectField
@@ -204,7 +204,7 @@ export default function ProfileSetup() {
                                     />
                                 </fieldset>
                             ) : langkah === 2 ? (
-                                <fieldset ref={bagian} tabIndex={-1} className="space-y-4 focus:outline-none">
+                                <fieldset ref={bagian} tabIndex={-1} className="space-y-4 focus:outline-hidden">
                                     <legend className="text-base font-medium text-primary">Rekam jejak pendakian</legend>
                                     <p className="text-sm text-secondary">
                                         Riwayat pendakian menjadi konteks tambahan. Menyelesaikan satu jalur sulit tidak otomatis menaikkan tingkat pengalaman Anda.
@@ -259,7 +259,7 @@ export default function ProfileSetup() {
                                     </div>
                                 </fieldset>
                             ) : (
-                                <fieldset ref={bagian} tabIndex={-1} className="space-y-4 focus:outline-none">
+                                <fieldset ref={bagian} tabIndex={-1} className="space-y-4 focus:outline-hidden">
                                     <legend className="text-base font-medium text-primary">Preferensi perjalanan</legend>
 
                                     <SelectField

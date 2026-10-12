@@ -270,7 +270,8 @@ class TripCancellationReasonTest extends TestCase
         $this->assertStringNotContainsString("from '@/components/ui/KontrolSegmen'", $formulir, 'Hasil pendakian masih memakai kontrol segmen tiga kolom (M-2).');
         $this->assertStringContainsString('flex flex-col gap-1', $formulir);
         $this->assertStringContainsString('type="radio"', $formulir);
-        $this->assertStringContainsString('min-w-0 break-words', $formulir);
+        // Upgrade tailwind 4: break-words bernama wrap-break-word, [overflow-wrap:anywhere] bernama wrap-anywhere; CSS-nya sama.
+        $this->assertStringContainsString('min-w-0 wrap-break-word', $formulir);
     }
 
     /**

@@ -18,7 +18,7 @@ export function Lockup({ href, size = 'md', className }: LockupProps) {
 
     const [tanda, huruf, jarak] =
         size === 'lg'
-            ? ['h-12 w-12', 'text-2xl tracking-[0.05em]', 'gap-3']
+            ? ['h-12 w-12', 'text-2xl tracking-wider', 'gap-3']
             : ['h-8 w-8', 'text-[1.0625rem] tracking-[0.06em]', 'gap-2.5'];
 
     const isi = (
@@ -34,7 +34,7 @@ export function Lockup({ href, size = 'md', className }: LockupProps) {
         return (
             <Tautan
                 href={href}
-                className={`${dasar} rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2`}
+                className={`${dasar} rounded-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2`}
             >
                 {isi}
             </Tautan>

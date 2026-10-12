@@ -54,7 +54,7 @@ export function MenuAkun() {
                 <Avatar nama={pengguna.name} ukuran={44} />
                 <span className="sr-only">Menu akun {pengguna.name}</span>
             </button>
-            <div ref={menu} id="menu-akun" popover="auto" className="inset-auto right-6 top-[4.5rem] m-0 w-72 rounded-kartu border border-subtle bg-surface p-2 text-primary shadow-overlay">
+            <div ref={menu} id="menu-akun" popover="auto" className="inset-auto right-6 top-18 m-0 w-72 rounded-kartu border border-subtle bg-surface p-2 text-primary shadow-overlay">
                 <div className="flex flex-col">
                     <p className="px-3 pb-2 pt-1">
                         <span className="block font-bold">{pengguna.name}</span>

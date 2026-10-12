@@ -461,7 +461,8 @@ class TripPlanFitReloadTest extends TestCase
         $langkah = File::get(resource_path('js/components/trips/LangkahRingkas.tsx'));
 
         foreach ([
-            '<div aria-live="polite" aria-busy={memuat || undefined} className="space-y-4 empty:!mt-0">',
+            // Upgrade tailwind 4: penanda penting kini akhiran (empty:mt-0!); niatnya sama.
+            '<div aria-live="polite" aria-busy={memuat || undefined} className="space-y-4 empty:mt-0!">',
             'fokusGalat(galat, [',
             "['trail_id', 'bagian-jalur'],",
             '<section id="bagian-jalur" tabIndex={-1}',

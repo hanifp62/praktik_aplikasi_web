@@ -35,7 +35,7 @@ export function IsianKataSandi({ id, label, hint, error, labelTersembunyi = fals
                     type="button"
                     onClick={() => setTerlihat((v) => !v)}
                     aria-controls={id}
-                    className="mt-1 inline-flex min-h-11 shrink-0 items-center rounded-control border border-control bg-surface px-3 text-sm font-medium text-primary transition hover:bg-surface-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+                    className="mt-1 inline-flex min-h-11 shrink-0 items-center rounded-control border border-control bg-surface px-3 text-sm font-medium text-primary transition hover:bg-surface-sunken focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
                 >
                     {terlihat ? 'Sembunyikan' : 'Tampilkan'}
                     <span className="sr-only"> kata sandi</span>

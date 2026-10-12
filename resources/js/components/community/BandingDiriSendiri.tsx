@@ -54,13 +54,13 @@ export function BandingDiriSendiri({ tangga, banding, pencapaian, tingkat }: Ban
                                             style={{ height: `${Math.max(6, Math.round((b.m / puncak) * 112))}px` }}
                                         />
                                     </span>
-                                    <span className={kelas('mt-1.5 break-words text-meta', b.ini ? 'font-bold text-primary' : 'text-secondary')}>
+                                    <span className={kelas('mt-1.5 wrap-break-word text-meta', b.ini ? 'font-bold text-primary' : 'text-secondary')}>
                                         {b.nama}
                                         {b.ini ? <span className="sr-only">, pendakian ini</span> : null}
                                     </span>
                                     {/* Nama gunung mendisambiguasi jalur bernama sama (ruling W6-6a), sama seperti
                                         TanggaTanjakan Beranda; pemisah tekstual sr-only, bukan hanya baris baru visual. */}
-                                    <span className="block break-words text-meta text-secondary">
+                                    <span className="block wrap-break-word text-meta text-secondary">
                                         <span className="sr-only">, </span>
                                         {b.gunung}
                                     </span>

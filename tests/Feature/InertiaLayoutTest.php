@@ -65,11 +65,17 @@ class InertiaLayoutTest extends TestCase
         }
     }
 
+    /**
+     * Regresi 25 September 2026: konfigurasi Tailwind hanya memindai Blade, sehingga kelas yang
+     * hanya dipakai di komponen React tidak pernah dibuat. Diubah upgrade tailwind 4: sumber
+     * kini ditulis sebagai @source di app.css, dan deteksi otomatis dimatikan (source(none)),
+     * jadi baris @source resources/js itulah satu-satunya yang memindai komponen React.
+     */
     public function test_tailwind_scans_the_react_sources(): void
     {
-        $config = File::get(base_path('tailwind.config.js'));
+        $config = File::get(resource_path('css/app.css'));
 
-        $this->assertStringContainsString("'./resources/js/**/*.{js,jsx,ts,tsx}'", $config);
+        $this->assertStringContainsString("@source '../js/**/*.{js,jsx,ts,tsx}';", $config);
     }
 
     /**
@@ -113,7 +119,8 @@ class InertiaLayoutTest extends TestCase
 
         $this->assertStringNotContainsString('<nav', $layout, 'AppLayout tidak lagi menggambar bilah atas atau navigasinya sendiri.');
         $this->assertDoesNotMatchRegularExpression('/sm:/', $layout);
-        $this->assertStringContainsString('<header data-kepala-lebar="" className="sticky top-0 z-30 hidden h-[4.25rem] items-center gap-6 border-b border-subtle bg-surface px-6 lg:flex">', $kepala);
+        // Upgrade tailwind 4: h-[4.25rem] ditulis sebagai skala spasi, h-17 (4,25rem = 68 px).
+        $this->assertStringContainsString('<header data-kepala-lebar="" className="sticky top-0 z-30 hidden h-17 items-center gap-6 border-b border-subtle bg-surface px-6 lg:flex">', $kepala);
         $this->assertStringContainsString("px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] lg:hidden')", $bilah);
         $this->assertStringNotContainsString('sm:hidden', $bilah);
         $this->assertStringContainsString("data-bilah-tab={mengambang ? '' : undefined}", $bilah);
@@ -166,7 +173,8 @@ class InertiaLayoutTest extends TestCase
         $this->assertMatchesRegularExpression('/:root:not\(:has\(nav\[data-bilah-tab\]\)\) \{\s*--bilah-tab: env\(safe-area-inset-bottom, 0px\);\s*\}/', $css, 'Bilah tab dinolkan hanya ketika benar-benar tidak ada di halaman.');
         $this->assertMatchesRegularExpression('/@media \(min-width: 1024px\) \{\s*:root \{\s*--kepala-atas: 4\.25rem;\s*\}\s*:root:not\(:has\(\[data-kepala-lebar\]\)\) \{\s*--kepala-atas: 0px;\s*\}\s*:root:has\(nav\[data-bilah-tab\]\) \{\s*--bilah-tab: env\(safe-area-inset-bottom, 0px\);\s*\}/', $css, 'Mulai 1024 px tinggi header harus jadi bawaan, dinolkan hanya ketika header tidak ada (cermin W2-2b).');
         $this->assertStringNotContainsString(':root:has([data-kepala-lebar])', $css, 'Tinggi header tidak boleh hanya dipasang lewat :has(), yang gugur di peramban tanpa dukungannya.');
-        $this->assertStringContainsString('<main id="konten" tabIndex={-1} className="pt-[var(--pesan-jaringan,0px)] pb-[var(--nav-bawah)]">', File::get(resource_path('js/layouts/AppLayout.tsx')), 'main harus mencadangkan ruang atas setinggi pesan jaringan (ruling W2-5a).');
+        // Upgrade tailwind 4: pt-[var(--x)] ditulis dalam bentuk singkat variabel, pt-(--x); nilainya sama.
+        $this->assertStringContainsString('<main id="konten" tabIndex={-1} className="pt-(--pesan-jaringan,0px) pb-(--nav-bawah)">', File::get(resource_path('js/layouts/AppLayout.tsx')), 'main harus mencadangkan ruang atas setinggi pesan jaringan (ruling W2-5a).');
     }
 
     /**

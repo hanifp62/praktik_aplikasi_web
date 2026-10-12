@@ -48,7 +48,7 @@ function NavigasiSegmen({ item }: { item: ReadonlyArray<ItemTab> }) {
  */
 export function KepalaLebar({ item }: { item: ReadonlyArray<ItemTab> }) {
     return (
-        <header data-kepala-lebar="" className="sticky top-0 z-30 hidden h-[4.25rem] items-center gap-6 border-b border-subtle bg-surface px-6 lg:flex">
+        <header data-kepala-lebar="" className="sticky top-0 z-30 hidden h-17 items-center gap-6 border-b border-subtle bg-surface px-6 lg:flex">
             <div className="flex flex-1 items-center">
                 <Lockup href={dashboard.url()} />
             </div>

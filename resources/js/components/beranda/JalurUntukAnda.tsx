@@ -46,23 +46,23 @@ export function JalurUntukAnda({ data }: { data: JalurLainData }) {
                     <p className="mt-1 text-kecil text-secondary">Kecocokan dasar dengan profil Anda, selalu dengan alasannya.</p>
                     <ul className="relative -mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
                         {data.jalur.map((j) => (
-                            <li key={j.id} className="w-[17rem] shrink-0 snap-start lg:w-auto">
+                            <li key={j.id} className="w-68 shrink-0 snap-start lg:w-auto">
                                 <article aria-labelledby={`jalur-lain-${j.id}`} className="h-full rounded-lg border border-subtle bg-surface p-4">
                                     {j.fit ? <LabelKecocokan nilai={j.fit.label} label={j.fit.labelText} /> : null}
-                                    <h3 id={`jalur-lain-${j.id}`} className="mt-2 break-words text-isi font-bold text-primary">
-                                        <Tautan href={j.url} className={kelas('rounded-sm underline-offset-2 hover:underline', fokusTerlihat)}>
+                                    <h3 id={`jalur-lain-${j.id}`} className="mt-2 wrap-break-word text-isi font-bold text-primary">
+                                        <Tautan href={j.url} className={kelas('rounded-xs underline-offset-2 hover:underline', fokusTerlihat)}>
                                             {j.name}
                                         </Tautan>
                                     </h3>
                                     {j.mountain ? (
-                                        <p className="break-words text-meta text-secondary">
+                                        <p className="wrap-break-word text-meta text-secondary">
                                             {j.mountain}
                                             {j.province ? `, ${j.province}` : null}
                                         </p>
                                     ) : null}
                                     <AngkaRingkas jalur={j} className="mt-2 text-secondary" />
                                     {j.garis ? <GarisProfil titik={j.garis} label={j.fit?.label ?? null} className="mt-2" /> : null}
-                                    {j.fit ? <p className="mt-2 break-words text-kecil text-primary">{j.fit.alasan}</p> : null}
+                                    {j.fit ? <p className="mt-2 wrap-break-word text-kecil text-primary">{j.fit.alasan}</p> : null}
                                 </article>
                             </li>
                         ))}

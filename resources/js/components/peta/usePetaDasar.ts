@@ -66,8 +66,8 @@ interface OpsiPetaDasar {
  * Dasar bersama setiap peta MapLibre. Komponen peta hanya menambahkan isinya lewat
  * saatSiap; yang lain dipegang di sini, sekali:
  *
- * - MapLibre dimuat malas lewat window.muatPeta (dasar.js), jadi 787 kB hanya ditagih
- *   di halaman yang menggambar peta.
+ * - MapLibre dimuat malas lewat window.muatPeta (dasar.js), jadi sekitar 1,6 MB (modul dan
+ *   pekerja MapLibre 6) hanya ditagih di halaman yang menggambar peta.
  * - Basemap dibangun dari props bersama `peta` (config/hiking.php), tidak ditulis di
  *   komponen, sehingga sumber tile dan atribusinya satu.
  * - Basemap topografi diredupkan di tema gelap, tidak dihitamkan (DK-18, M1): kontur

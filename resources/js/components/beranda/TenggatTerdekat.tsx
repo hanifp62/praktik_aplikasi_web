@@ -46,11 +46,11 @@ export function TenggatTerdekat({ tenggat }: { tenggat: TenggatBeranda }) {
                         </span>
                         <div className="min-w-0">
                             {b.kapan ? <p className="sr-only">{b.kapan.lengkap}</p> : null}
-                            <p className={kelas('flex items-start gap-1.5 break-words text-isi font-bold', b.peringatan ? 'text-warn-900' : 'text-primary')}>
+                            <p className={kelas('flex items-start gap-1.5 wrap-break-word text-isi font-bold', b.peringatan ? 'text-warn-900' : 'text-primary')}>
                                 {b.peringatan ? <Icon name="warning" size={20} className="mt-0.5 shrink-0" /> : null}
                                 <span className="min-w-0">{b.judul}</span>
                             </p>
-                            <p className="mt-0.5 break-words text-kecil text-secondary">{b.keterangan}</p>
+                            <p className="mt-0.5 wrap-break-word text-kecil text-secondary">{b.keterangan}</p>
                             {b.tautan ? (
                                 <a
                                     href={b.tautan.href}

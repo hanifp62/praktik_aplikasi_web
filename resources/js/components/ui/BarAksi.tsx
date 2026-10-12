@@ -9,7 +9,7 @@ interface BarAksiProps {
     /**
      * Isi mengisi lebar penuh baki mulai 640 px, bukan menumpuk rapat di kiri dengan sisa
      * baki kosong (T7-M6, temuan tangkapan W3 butir 8, ruling W3-G1 butir f). Satu anak
-     * tanpa flex-grow tidak melebar sendiri walau induknya `.chrome` sudah selebar kartu;
+     * tanpa grow tidak melebar sendiri walau induknya `.chrome` sudah selebar kartu;
      * baki banding Simpanan (satu ringkasan sebaris) butuh itu, kelompok tombol Fit.tsx dan
      * bar aksi rincian jalur tidak. Bawaannya false, supaya kedua konsumen itu tidak diam-diam
      * berubah.

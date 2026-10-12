@@ -69,7 +69,7 @@ const kepalaBaris = 'sticky left-0 z-20 bg-surface p-4 text-left align-top font-
  * ini tidak pernah menulis ke simpanan.
  */
 export function TabelBanding({ jalur, baris, beda, profil, hariLaporan, sorotBeda, kataBelumDinilai }: TabelBandingProps) {
-    const barisSorot = (berbeda: boolean | null) => kelas('border-b border-subtle', sorotBeda && berbeda === true && 'bg-surface-sunken [&>*]:font-bold');
+    const barisSorot = (berbeda: boolean | null) => kelas('border-b border-subtle', sorotBeda && berbeda === true && 'bg-surface-sunken *:font-bold');
 
     const kepala = (label: string, berbeda: boolean | null): ReactNode => (
         <th scope="row" className={kelas(kepalaBaris, sorotBeda && berbeda === true && 'border-l-4 border-l-brand-ink bg-surface-sunken')}>
@@ -91,7 +91,7 @@ export function TabelBanding({ jalur, baris, beda, profil, hariLaporan, sorotBed
                             <th key={j.id} scope="col" className={kelas(sel, 'min-w-44')}>
                                 <Tautan
                                     href={j.url}
-                                    className="block rounded-sm py-1 text-subjudul text-primary underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                                    className="block rounded-xs py-1 text-subjudul text-primary underline-offset-2 hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                                 >
                                     {j.name}
                                 </Tautan>

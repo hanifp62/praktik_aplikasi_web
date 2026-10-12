@@ -65,7 +65,7 @@ export default function HikerProgress() {
                     <>
                         {gunung.length > 0 ? (
                             <figure>
-                                <PetaGaris id="peta-progres" markers={gunung} label="Peta gunung yang sudah Anda daki" height="h-72 sm:h-[26rem]" />
+                                <PetaGaris id="peta-progres" markers={gunung} label="Peta gunung yang sudah Anda daki" height="h-72 sm:h-104" />
                                 <figcaption className="mt-3 text-sm text-secondary">
                                     {keteranganPeta}
                                     {gunungTanpaKoordinat ? <span className="text-muted"> {gunungTanpaKoordinat}</span> : null}

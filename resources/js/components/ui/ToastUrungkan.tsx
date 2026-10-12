@@ -209,11 +209,11 @@ function Toast({ toast, onTutup, durasiMs }: { toast: DataToast; onTutup: () => 
                     toast.onUrungkan();
                     onTutup();
                 }}
-                className="min-h-11 shrink-0 rounded-control px-3 text-kecil font-bold underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inverse"
+                className="min-h-11 shrink-0 rounded-control px-3 text-kecil font-bold underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inverse"
             >
                 Urungkan
             </button>
-            <button type="button" onClick={onTutup} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-inverse">
+            <button type="button" onClick={onTutup} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inverse">
                 <Icon name="x" size={20} />
                 <span className="sr-only">Tutup pemberitahuan</span>
             </button>

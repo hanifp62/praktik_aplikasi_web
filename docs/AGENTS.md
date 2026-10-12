@@ -153,7 +153,7 @@ Urutan wewenang ketika saran skill bertentangan (DK-57):
 | `design-taste-frontend` | Setiap pekerjaan antarmuka: perombakan layar yang ada dengan audit lebih dulu, halaman publik (halaman depan, halaman jalur publik), dan pemeriksaan pra-kirim anti-generik | Menurut cakupannya sendiri bukan untuk dasbor, tabel data, dan alur bertahap; di layar itu yang diambil hanya pemeriksaannya. Rekomendasi pustakanya (Motion, GSAP, Tailwind v4) tidak dipakai (DK-24, R-020); resep huruf, warna, dan geraknya kalah oleh `DESIGN.md` |
 | `emil-design-eng` | Detail poles dan keputusan gerak | Gerak dial 2 dan daftar tertutup spec v3 bagian 8.6; `prefers-reduced-motion` dihormati |
 | `apple-design` | Gestur, pegas, lembar bawah, material | Kaca paling banyak dua elemen per layar, tidak di atas peta, kartu, status resmi, atau laporan komunitas |
-| `tailwindcss-development` | Setiap kelas Tailwind 3.4 | Tanpa `dark:` dan warna palet mentah; token dari `resources/css/app.css` |
+| `tailwindcss-development` | Setiap kelas Tailwind 4.3 | Tanpa `dark:` dan warna palet mentah; token dari `resources/css/app.css` |
 | `laravel-best-practices` | Setiap perubahan PHP: controller, model, migrasi, request, policy | Konvensi berkas tetangga; API sesuai versi terpasang |
 | `testing-best-practices` | Sebelum menulis atau meninjau test | Suite SQLite bukan bukti PostgreSQL (R-024) |
 

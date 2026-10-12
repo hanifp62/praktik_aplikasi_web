@@ -31,9 +31,9 @@ dinyatakan "belum diketahui", tidak pernah ditebak.
 |---|---|
 | Server | Laravel 13.31, PHP 8.5 |
 | Antarmuka | React 19.3 lewat Inertia 3 (satu aplikasi, tanpa API terpisah), TypeScript 5.9 |
-| Gaya | Tailwind CSS 3.4 dengan token warna CSS variable, tema terang dan gelap |
+| Gaya | Tailwind CSS 4.3 (konfigurasi CSS-first di `resources/css/app.css`, plugin Vite) dengan token warna CSS variable, tema terang dan gelap |
 | Rute bertipe | Laravel Wayfinder (dibangkitkan saat build, tidak dilacak git) |
-| Peta | MapLibre GL 4.7, dimuat hanya di halaman yang menggambar peta |
+| Peta | MapLibre GL 6.14, dimuat hanya di halaman yang menggambar peta |
 | Basis data | PostgreSQL + PostGIS (produksi di Supabase); test berjalan di SQLite in-memory |
 | Luring | PWA dengan service worker; jejak pendakian direkam di IndexedDB perangkat |
 | Build | Vite 8 |

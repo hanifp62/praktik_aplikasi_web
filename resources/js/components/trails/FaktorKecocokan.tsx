@@ -77,18 +77,18 @@ export function FaktorKecocokan({ faktor, className, tampilkanKata = true }: { f
                 f.jalurIni !== undefined && f.anda !== undefined ? (
                     <li key={f.kunci ?? f.label}>
                         <details className="group">
-                            <summary className="flex min-h-11 cursor-pointer list-none items-start gap-2 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 [&::-webkit-details-marker]:hidden">
+                            <summary className="flex min-h-11 cursor-pointer list-none items-start gap-2 py-3 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 [&::-webkit-details-marker]:hidden">
                                 <Kepala f={f} tampilkanKata={tampilkanKata} />
                                 <Icon name="caret-down" size={20} className="mt-1 shrink-0 text-muted transition-transform duration-cepat ease-gerak group-open:rotate-180" />
                             </summary>
                             <dl className="mb-3 grid grid-cols-2 gap-2 pl-10">
                                 <div className="rounded-control bg-surface-sunken p-3">
                                     <dt className="text-meta text-secondary">Jalur ini</dt>
-                                    <dd className="mt-0.5 break-words text-kecil font-bold text-primary">{f.jalurIni}</dd>
+                                    <dd className="mt-0.5 wrap-break-word text-kecil font-bold text-primary">{f.jalurIni}</dd>
                                 </div>
                                 <div className="rounded-control bg-surface-sunken p-3">
                                     <dt className="text-meta text-secondary">Anda</dt>
-                                    <dd className="mt-0.5 break-words text-kecil font-bold text-primary">{f.anda}</dd>
+                                    <dd className="mt-0.5 wrap-break-word text-kecil font-bold text-primary">{f.anda}</dd>
                                 </div>
                             </dl>
                         </details>

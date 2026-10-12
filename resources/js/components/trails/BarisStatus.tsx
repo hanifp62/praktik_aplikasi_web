@@ -22,7 +22,7 @@ export function BarisStatus({ status, className }: { status: StatusRingkas; clas
     return (
         <span className={kelas('flex flex-wrap items-center gap-x-2 gap-y-1', className)}>
             <StatusAkses nilai={status.status} label={status.label} cakupan={status.cakupan === 'Gunung' ? status.cakupan : null} />
-            {asal ? <span className="break-words text-meta text-muted">{asal}</span> : null}
+            {asal ? <span className="wrap-break-word text-meta text-muted">{asal}</span> : null}
             {status.status === null ? <span className="text-meta text-muted">Tidak dianggap buka</span> : null}
             {status.kesegaran && status.kesegaran !== 'Terkini' ? <Lencana nada={nadaKesegaran(status.kesegaran)}>{status.kesegaran}</Lencana> : null}
         </span>

@@ -150,7 +150,7 @@ class MapComponentTest extends TestCase
     }
 
     /**
-     * MapLibre (787 kB) dimuat malas lewat window.muatPeta. Impor statis di mana pun
+     * MapLibre (sekitar 1,6 MB sejak MapLibre 6) dimuat malas lewat window.muatPeta. Impor statis di mana pun
      * mengembalikan beban itu ke setiap halaman. Impor tipe tidak ikut terbundel.
      */
     public function test_maplibre_is_still_loaded_lazily(): void
@@ -164,6 +164,38 @@ class MapComponentTest extends TestCase
 
         $this->assertStringContainsString("import('maplibre-gl')", File::get(resource_path('js/dasar.js')));
         $this->assertMatchesRegularExpression('/window\s*[.]muatPeta[(][)]/', File::get(resource_path('js/components/peta/usePetaDasar.ts')));
+    }
+
+    /**
+     * MapLibre 6 hanya ESM tanpa ekspor default dan menjalankan pengurai tile-nya di web worker
+     * berkas sendiri (upgrade maplibre 6). Pemuat memakai namespace modul, bukan `.default` yang
+     * kini undefined, dan memasang URL pekerja hasil bundel Vite sebelum peta pertama dibuat;
+     * tanpanya MapLibre mencari pekerja di sebelah potongan bundel dan peta tidak tergambar.
+     */
+    public function test_the_loader_wires_the_maplibre_6_worker(): void
+    {
+        $dasar = File::get(resource_path('js/dasar.js'));
+
+        $this->assertStringContainsString("import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url')", $dasar);
+        $this->assertStringContainsString('modul.setWorkerUrl(pekerja.default);', $dasar);
+        $this->assertStringNotContainsString('modul.default', $dasar);
+    }
+
+    /**
+     * MapLibre 6 memberi aria-label dan peran hanya kepada penanda bawaannya (upgrade maplibre 6;
+     * MapLibre 4 memberi semua penanda "Penanda peta"). Penanda pos buatan karena itu menamai
+     * dirinya sendiri dengan label posnya: tombol bila membuka keterangan, gambar bila tidak.
+     */
+    public function test_custom_markers_name_themselves(): void
+    {
+        $jalur = File::get(resource_path('js/components/trails/rinci/PetaJalur.tsx'));
+        $pendakian = File::get(resource_path('js/components/trips/PetaPendakian.tsx'));
+
+        $this->assertStringContainsString("el.setAttribute('role', 'button');", $jalur);
+        $this->assertStringContainsString("el.setAttribute('aria-label', label);", $jalur);
+        $this->assertStringContainsString('elemenPos(p.urutan, p.aksen ?? null, p.label)', $jalur);
+        $this->assertSame(2, substr_count($pendakian, "el.setAttribute('role', 'img');"));
+        $this->assertSame(2, substr_count($pendakian, "el.setAttribute('aria-label', el.title);"));
     }
 
     /**

@@ -446,12 +446,13 @@ class MountainPageTest extends TestCase
     public function test_free_text_from_the_database_wraps(): void
     {
         $berkas = [
-            'js/components/trails/gunung/KartuStatusGunung.tsx' => ['break-words text-meta text-muted'],
-            'js/components/trails/gunung/KartuIzin.tsx' => ['break-words text-meta text-muted', 'break-words text-kecil text-secondary'],
-            'js/components/trails/gunung/DaftarJalurGunung.tsx' => ['break-words text-meta text-secondary'],
-            'js/components/trails/gunung/KondisiPendaki.tsx' => ['break-words text-meta font-bold text-community-900'],
-            'js/components/trails/BarisStatus.tsx' => ['break-words text-meta text-muted'],
-            'js/pages/Mountains/Show.tsx' => ['<p className="break-words">'],
+            // Upgrade tailwind 4: break-words bernama wrap-break-word; CSS-nya sama (overflow-wrap: break-word).
+            'js/components/trails/gunung/KartuStatusGunung.tsx' => ['wrap-break-word text-meta text-muted'],
+            'js/components/trails/gunung/KartuIzin.tsx' => ['wrap-break-word text-meta text-muted', 'wrap-break-word text-kecil text-secondary'],
+            'js/components/trails/gunung/DaftarJalurGunung.tsx' => ['wrap-break-word text-meta text-secondary'],
+            'js/components/trails/gunung/KondisiPendaki.tsx' => ['wrap-break-word text-meta font-bold text-community-900'],
+            'js/components/trails/BarisStatus.tsx' => ['wrap-break-word text-meta text-muted'],
+            'js/pages/Mountains/Show.tsx' => ['<p className="wrap-break-word">'],
         ];
 
         foreach ($berkas as $jalur => $potongan) {

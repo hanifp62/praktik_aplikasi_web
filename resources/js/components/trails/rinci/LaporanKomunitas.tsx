@@ -68,7 +68,7 @@ export function LaporanKomunitas({ komunitas }: { komunitas: Komunitas }) {
                                 Dilaporkan <span className="font-medium text-secondary">{r.pelapor}</span> {r.dilaporkan} berdasarkan pendakian{' '}
                                 {r.tanggalPendakian}
                                 {r.segmen ? <> &middot; segmen {r.segmen}</> : null}
-                                <span className="ml-1 rounded bg-surface-sunken px-1.5 py-0.5">{r.kesegaran}</span>
+                                <span className="ml-1 rounded-sm bg-surface-sunken px-1.5 py-0.5">{r.kesegaran}</span>
                             </p>
                         </li>
                     ))}

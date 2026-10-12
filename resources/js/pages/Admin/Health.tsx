@@ -60,7 +60,7 @@ const warnaKeadaan: Record<Keadaan, string> = {
     BELUM_PERNAH: 'bg-danger-100 text-danger-900',
 };
 
-const tautanKecil = 'inline-flex min-h-11 items-center rounded-sm text-sm text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
+const tautanKecil = 'inline-flex min-h-11 items-center rounded-xs text-sm text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600';
 
 /**
  * Kesehatan tugas terjadwal (§98) dan kesehatan data jalur. Keduanya kegagalan yang
@@ -141,7 +141,7 @@ export default function Health() {
                                         <p className="text-sm">
                                             <span className="font-medium text-primary">{j.nama}</span>
                                             {j.gunung ? <span className="text-secondary"> &middot; {j.gunung}</span> : null}
-                                            {j.terbit ? <span className="ml-2 rounded bg-warn-100 px-1.5 py-0.5 text-xs font-medium text-warn-900">Sudah tayang</span> : null}
+                                            {j.terbit ? <span className="ml-2 rounded-sm bg-warn-100 px-1.5 py-0.5 text-xs font-medium text-warn-900">Sudah tayang</span> : null}
                                         </p>
                                         <ul className="mt-1 list-disc ps-5 text-sm text-secondary">
                                             {j.kekurangan.map((k) => (
@@ -158,7 +158,7 @@ export default function Health() {
                             <p className="mt-3 text-sm text-secondary">
                                 {data.sisa > 0 ? `Dan ${data.sisa} jalur lainnya. ` : null}
                                 Sumber data dan karakteristik jalur dilengkapi di{' '}
-                                <Tautan href={trails.url()} className="text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">Kelola Jalur</Tautan>.
+                                <Tautan href={trails.url()} className="text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">Kelola Jalur</Tautan>.
                             </p>
                         </>
                     ) : (
@@ -203,8 +203,8 @@ export default function Health() {
                                     // Penyebab paling sering, dan perbaikannya satu baris.
                                     <p className="mt-3 text-sm text-secondary">
                                         Kalau aplikasi baru dipasang, pastikan scheduler dijalankan:{' '}
-                                        <code className="rounded bg-surface-sunken px-1.5 py-0.5 text-xs">php artisan schedule:work</code> saat pengembangan, atau satu entri cron per menit yang memanggil{' '}
-                                        <code className="rounded bg-surface-sunken px-1.5 py-0.5 text-xs">schedule:run</code> di server.
+                                        <code className="rounded-sm bg-surface-sunken px-1.5 py-0.5 text-xs">php artisan schedule:work</code> saat pengembangan, atau satu entri cron per menit yang memanggil{' '}
+                                        <code className="rounded-sm bg-surface-sunken px-1.5 py-0.5 text-xs">schedule:run</code> di server.
                                     </p>
                                 ) : null}
 

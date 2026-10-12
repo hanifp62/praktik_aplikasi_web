@@ -348,7 +348,7 @@ export default function Primitif() {
                         <ul className="max-w-md divide-y divide-subtle rounded-lg border border-subtle bg-surface">
                             {simpanan.map((nama) => (
                                 <li key={nama} className="flex items-center justify-between gap-3 py-1 pl-4 pr-1">
-                                    <span className="min-w-0 break-words text-isi text-primary">{nama}</span>
+                                    <span className="min-w-0 wrap-break-word text-isi text-primary">{nama}</span>
                                     <TombolIkon id={idSimpanan(nama)} ikon="x" label={`Hapus ${nama} dari simpanan`} varian="polos" onClick={(e) => hapusSimpanan(nama, e.detail === 0)} />
                                 </li>
                             ))}

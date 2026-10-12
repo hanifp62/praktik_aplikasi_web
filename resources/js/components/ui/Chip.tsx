@@ -3,7 +3,7 @@ import { kelas } from '@/lib/kelas';
 import { fokusKelompok, umpanTekanKelompok } from './gaya';
 import { Icon } from './Icon';
 
-const pembungkus = 'group inline-flex min-h-11 min-w-11 max-w-full items-center justify-center rounded-full focus:outline-none';
+const pembungkus = 'group inline-flex min-h-11 min-w-11 max-w-full items-center justify-center rounded-full focus:outline-hidden';
 const bentuk = 'inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border px-3.5 py-1 text-left text-kecil';
 
 interface ChipPilihanProps {
@@ -30,7 +30,7 @@ export function ChipPilihan({ dipilih, onUbah, className, children }: ChipPiliha
                 )}
             >
                 {dipilih ? <Icon name="check" size={16} /> : null}
-                <span className="min-w-0 break-words">{children}</span>
+                <span className="min-w-0 wrap-break-word">{children}</span>
             </span>
         </button>
     );
@@ -96,7 +96,7 @@ export function ChipLepas({ onLepas, id, className, children }: ChipLepasProps) 
         >
             <span className={kelas(bentuk, fokusKelompok, umpanTekanKelompok, 'border-brand-700 bg-brand-100 font-bold text-brand-900')}>
                 <span className="sr-only">Lepas saringan </span>
-                <span className="min-w-0 break-words">{children}</span>
+                <span className="min-w-0 wrap-break-word">{children}</span>
                 <Icon name="x" size={16} />
             </span>
         </button>

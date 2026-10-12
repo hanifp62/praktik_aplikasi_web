@@ -12,13 +12,13 @@ namespace App\Support;
  *   ikon; app.css ditambah W6 supaya halaman luring tergambar walau stylesheet-nya belum pernah
  *   tersimpan lewat kunjungan lain (tinjauan m-5).
  * - daftarPaket(): shell paket, hanya selama paket lapangan dibuka (hiking.field_pack.enabled):
- *   entri shell luring beserta graf impornya, MapLibre js dan css, dan perekam jejak. Daftar ini
- *   tidak ikut pemasangan. Service worker menyimpannya saat pendaki mengunduh paket (pesan
- *   simpan-shell-paket dari Tugas 10), lalu setiap versi berikutnya membawanya lagi saat dipasang
- *   bila penanda shell paket ada di cache shell versi lain. Dengan begitu pemasangan service
- *   worker tidak lagi menagih sekitar 0,4 MB gzip (MapLibre, graf shell, dan huruf) kepada
- *   pengunjung yang tidak pernah mengunduh paket, termasuk tamu di halaman masuk (prinsip
- *   resources/js/dasar.js:1-12).
+ *   entri shell luring beserta graf impornya, MapLibre js, css, dan pekerjanya, dan perekam
+ *   jejak. Daftar ini tidak ikut pemasangan. Service worker menyimpannya saat pendaki mengunduh
+ *   paket (pesan simpan-shell-paket dari Tugas 10), lalu setiap versi berikutnya membawanya lagi
+ *   saat dipasang bila penanda shell paket ada di cache shell versi lain. Dengan begitu
+ *   pemasangan service worker tidak lagi menagih sekitar 0,6 MB gzip (MapLibre 6 beserta
+ *   pekerjanya, graf shell, dan huruf; 0,4 MB pada MapLibre 4) kepada pengunjung yang tidak
+ *   pernah mengunduh paket, termasuk tamu di halaman masuk (prinsip resources/js/dasar.js:1-12).
  *
  * Huruf ada di daftar HURUF tersendiri: service worker menyimpannya satu per satu bersama shell
  * paket, sehingga huruf yang gagal diambil tidak menggagalkan addAll yang semua-atau-tidak
@@ -36,10 +36,16 @@ final class AsetLuring
      * utuh: bila node_modules bertaut simbolik atau junction, Rolldown menulis kunci dan `src`
      * absolut (tinjauan m-3). CSS-nya disebut sendiri karena tidak pernah terjangkau
      * dynamicImports (laporan Tugas 9 kekhawatiran 1).
+     *
+     * MapLibre 6 hanya ESM (`maplibre-gl.mjs`) dan menjalankan pengurai tile-nya di web worker
+     * berkas sendiri. resources/js/dasar.js mengimpornya lewat `?worker&url`, jadi manifest memuat
+     * potongan kecil yang hanya berisi URL pekerja, dan berkas pekerjanya sendiri tercatat di
+     * `assets` potongan itu. Tanpa keduanya peta mode lapangan tidak tergambar saat luring.
      */
     public const MAPLIBRE = [
-        'node_modules/maplibre-gl/dist/maplibre-gl.js',
+        'node_modules/maplibre-gl/dist/maplibre-gl.mjs',
         'node_modules/maplibre-gl/dist/maplibre-gl.css',
+        'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url',
     ];
 
     public const HURUF = [
@@ -68,8 +74,10 @@ final class AsetLuring
      * Shell paket: kosong selama paket mati atau bila manifest build belum memuat entri shell.
      * Selain itu impor statis transitif entri shell; impor dinamis yang diikuti hanya milik entri
      * shell dan potongan bukan-entri (misalnya runtime bersama `dist-*.js`, yang memuat MapLibre
-     * dan perekam jejak secara malas); ditambah kunci MapLibre js dan css dan perekam jejak yang
-     * disebut sendiri bila ada di manifest. Impor dinamis entri lain tidak pernah diikuti: bila
+     * dan perekam jejak secara malas); ditambah kunci MapLibre (js, css, dan URL pekerja) dan
+     * perekam jejak yang disebut sendiri bila ada di manifest. Berkas di `assets` setiap potongan
+     * yang dikunjungi ikut, karena potongan itu merujuknya lewat URL, bukan impor: berkas pekerja
+     * MapLibre 6 hanya tercatat di sana. Impor dinamis entri lain tidak pernah diikuti: bila
      * build menaruh runtime bersama di entri app, berkas entri itu ikut, tetapi seluruh halaman
      * yang dimuat malasnya tidak (pra-tinjau PT9-15, ruling W6-9g).
      *
@@ -99,6 +107,10 @@ final class AsetLuring
 
             foreach ($entri['css'] ?? [] as $css) {
                 $berkas[] = '/build/'.$css;
+            }
+
+            foreach ($entri['assets'] ?? [] as $aset) {
+                $berkas[] = '/build/'.$aset;
             }
 
             array_push($antre, ...($entri['imports'] ?? []));

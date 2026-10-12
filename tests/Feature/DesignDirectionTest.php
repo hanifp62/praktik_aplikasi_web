@@ -91,13 +91,58 @@ class DesignDirectionTest extends TestCase
 
     /**
      * Nilai radius kontrol tinggal di token, bukan disebar sebagai angka.
+     *
+     * Diubah upgrade tailwind 4: pemetaannya kini di blok @theme app.css, bukan tailwind.config.js.
      */
     public function test_the_control_radius_comes_from_the_token(): void
     {
         $this->assertMatchesRegularExpression(
-            '/control:\s*.var\(--radius-control\)/',
-            File::get(base_path('tailwind.config.js'))
+            '/@theme inline \{[^}]*--radius-control:\s*var\(--radius-control\);/s',
+            File::get(resource_path('css/app.css'))
         );
+    }
+
+    /**
+     * Tailwind 4 mengubah bawaan Tailwind 3 yang diandalkan tampilan ini (upgrade tailwind 4), dan
+     * app.css mengembalikannya:
+     * - warna batas tanpa kelas warna kini currentcolor; dikembalikan ke abu 200;
+     * - preflight tidak lagi memberi tombol kursor tangan; tombol tetap bertanda dapat diklik dan
+     *   kontrol nonaktif tidak;
+     * - preflight menolkan margin <dialog>; lembar bawah kembali di tengah layar lebar;
+     * - space-y dan divide-y kini memakai margin dan batas bawah anak selain yang terakhir;
+     *   semantik Tailwind 3 (margin dan batas atas anak sesudah yang pertama) dipulihkan, karena
+     *   <dialog> tertutup dan wilayah status kosong di ujung wadah menambah ruang sisa;
+     * - batas transparan kotak centang tercentang dari @tailwindcss/forms kini kalah dari kelas
+     *   border-control; ditulis sendiri di Checkbox.
+     */
+    public function test_tailwind_4_keeps_the_tailwind_3_defaults_the_interface_relies_on(): void
+    {
+        $css = File::get(resource_path('css/app.css'));
+
+        $this->assertStringContainsString('border-color: var(--color-gray-200, currentcolor);', $css);
+        $this->assertMatchesRegularExpression("/button,\s*\[role='button'\]\s*\{\s*cursor: pointer;\s*\}/", $css);
+        $this->assertMatchesRegularExpression('/:disabled\s*\{\s*cursor: default;\s*\}/', $css);
+        $this->assertMatchesRegularExpression('/
+    dialog \{\s*margin: auto;\s*\}/', $css);
+        $this->assertMatchesRegularExpression('/@utility space-y-\* \{\s*& > :not\(\[hidden\]\) ~ :not\(\[hidden\]\) \{\s*margin-top: --spacing\(--value\(number\)\);\s*margin-bottom: 0;\s*\}\s*:where\(&\) > :not\(template\) \{\s*margin-block-start: revert-layer;\s*margin-block-end: revert-layer;\s*\}/', $css);
+        $this->assertMatchesRegularExpression('/@utility divide-y \{\s*& > :not\(\[hidden\]\) ~ :not\(\[hidden\]\) \{\s*border-top-width: 1px;\s*border-bottom-width: 0;\s*\}\s*:where\(&\) > :not\(template\) \{\s*border-top-width: revert-layer;\s*border-bottom-width: revert-layer;/', $css);
+        $this->assertMatchesRegularExpression('/@utility divide-subtle \{\s*& > :not\(\[hidden\]\) ~ :not\(\[hidden\]\) \{\s*border-color: rgb\(var\(--border-subtle\)\);\s*\}\s*:where\(&\) > :not\(template\) \{\s*border-color: revert-layer;/', $css);
+
+        // Setiap kotak centang dan tombol radio bergaris border-control menulis batas transparannya
+        // sendiri saat tercentang (Field, ThemePicker, Admin/Permits).
+        $tanpa = [];
+
+        foreach (File::allFiles(resource_path('js')) as $berkas) {
+            preg_match_all('/[^\x27\x22]*\bborder-control text-brand-(?:700|ink)\b[^\x27\x22]*/', $berkas->getContents(), $kelas);
+
+            foreach ($kelas[0] as $daftar) {
+                if (! str_contains($daftar, 'checked:border-transparent')) {
+                    $tanpa[] = $berkas->getRelativePathname();
+                }
+            }
+        }
+
+        $this->assertSame([], $tanpa, 'Kontrol tercentang tanpa batas transparan: '.implode(', ', $tanpa));
     }
 
     /**
@@ -110,6 +155,9 @@ class DesignDirectionTest extends TestCase
      * audit di docs/ adalah catatan bertanggal tentang apa yang terjadi pada hari itu,
      * dan menulis ulang catatan supaya terlihat lebih rapi adalah menyunting rekaman,
      * bukan memperbaiki tulisan.
+     *
+     * Diubah upgrade tailwind 4: tailwind.config.js dihapus; konfigurasinya kini di app.css, yang
+     * sudah ikut lewat resources/.
      */
     public function test_no_em_dash_survives_in_the_code_or_the_direction(): void
     {
@@ -119,8 +167,7 @@ class DesignDirectionTest extends TestCase
             ->merge(File::allFiles(app_path()))
             ->merge(File::allFiles(base_path('tests')))
             ->filter(fn ($b) => in_array($b->getExtension(), ['php', 'css', 'js', 'ts', 'tsx'], true))
-            ->push(new \SplFileInfo(base_path('DESIGN.md')))
-            ->push(new \SplFileInfo(base_path('tailwind.config.js')));
+            ->push(new \SplFileInfo(base_path('DESIGN.md')));
 
         foreach ($berkas as $satu) {
             if (str_contains(File::get($satu->getPathname()), "\u{2014}")) {

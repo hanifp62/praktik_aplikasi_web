@@ -76,7 +76,7 @@ export default function Awaiting() {
                                 href={badan.website}
                                 rel="noopener noreferrer"
                                 target="_blank"
-                                className="text-brand-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                                className="text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                             >
                                 {badan.website}
                             </a>

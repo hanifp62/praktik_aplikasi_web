@@ -16,7 +16,7 @@ interface RingkasanKesehatanProps {
     perluDitinjau: number;
 }
 
-const baris = 'flex min-h-11 items-center justify-between gap-4 rounded-sm py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
+const baris = 'flex min-h-11 items-center justify-between gap-4 rounded-xs py-2 text-sm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600';
 
 /**
  * Apa yang perlu diurus lebih dulu, diurutkan dari yang paling mendesak. Setiap temuan

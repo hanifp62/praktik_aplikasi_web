@@ -46,7 +46,7 @@ export function BilahTab({ item, label = 'Navigasi utama', mengambang = true }: 
                             )}
                         >
                             <Icon name={t.ikon} size={22} isi={t.aktif} />
-                            <span className="max-w-full break-words">{t.label}</span>
+                            <span className="max-w-full wrap-break-word">{t.label}</span>
                         </Tautan>
                     </li>
                 ))}

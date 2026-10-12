@@ -65,7 +65,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /**
  * Satu-satunya definisi tombol aplikasi: min-h-11 di kelas dasar untuk target sentuh
- * (PRD §87), focus-visible:ring untuk fokus terlihat, dan varian yang rasionya sudah
+ * (PRD §87), focus-visible:ring-3 untuk fokus terlihat, dan varian yang rasionya sudah
  * dihitung ColourContrastTest. brand-700 sebagai isian dengan teks on-brand, bukan
  * brand-600 yang gagal AA.
  *
@@ -98,7 +98,7 @@ export function Button({
 
     const semua = kelas(
         'inline-flex items-center justify-center gap-2 rounded-tombol min-h-11 text-center font-bold',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         umpanTekan,
         ukuran,
         gaya[variant],

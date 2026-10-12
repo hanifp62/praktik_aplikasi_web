@@ -201,7 +201,7 @@ export function PesanJaringan() {
                         ) : null}
                     </Alert>
                 )}
-                <TombolIkon ikon="x" label="Tutup pesan" varian="polos" className="absolute end-1 top-1" onClick={tutup} />
+                <TombolIkon ikon="x" label="Tutup pesan" varian="polos" className="absolute inset-e-1 top-1" onClick={tutup} />
             </div>
         </div>
     );

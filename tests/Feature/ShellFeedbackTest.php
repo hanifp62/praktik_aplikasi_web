@@ -330,7 +330,8 @@ class ShellFeedbackTest extends TestCase
             $pesan,
             'Fokus harus pindah ke #konten sebelum pesan, beserta tombol yang difokus, dilepas.',
         );
-        $this->assertStringContainsString('<TombolIkon ikon="x" label="Tutup pesan" varian="polos" className="absolute end-1 top-1" onClick={tutup} />', $pesan);
+        // Upgrade tailwind 4: end-1 ditulis dalam bentuk barunya, inset-e-1 (inset-inline-end: 0,25rem).
+        $this->assertStringContainsString('<TombolIkon ikon="x" label="Tutup pesan" varian="polos" className="absolute inset-e-1 top-1" onClick={tutup} />', $pesan);
         $this->assertSame(2, substr_count($pesan, 'setTampil(false)'), 'Hanya tutup() dan start kunjungan baru yang menyembunyikan pesan.');
     }
 
@@ -468,7 +469,8 @@ class ShellFeedbackTest extends TestCase
         $this->assertStringContainsString("akar.style.setProperty('--pesan-jaringan',", $pesan);
         $this->assertStringContainsString("akar.style.removeProperty('--pesan-jaringan');", $pesan);
         $this->assertStringContainsString('scroll-padding-top: calc(var(--kepala-atas) + var(--pesan-jaringan, 0px) + 0.5rem);', $css);
-        $this->assertStringContainsString('<main id="konten" tabIndex={-1} className="pt-[var(--pesan-jaringan,0px)] pb-[var(--nav-bawah)]">', $layout);
+        // Upgrade tailwind 4: pt-[var(--x)] ditulis dalam bentuk singkat variabel, pt-(--x); nilainya sama.
+        $this->assertStringContainsString('<main id="konten" tabIndex={-1} className="pt-(--pesan-jaringan,0px) pb-(--nav-bawah)">', $layout);
     }
 
     /**

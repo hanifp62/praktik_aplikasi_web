@@ -73,7 +73,7 @@ export function StripPendakian({ pendakian }: { pendakian: PendakianAktif }) {
                 <Icon name="person-simple-hike" size={22} />
                 <span className="min-w-0 flex-1">
                     <span className="sr-only">Pendakian berlangsung: </span>
-                    <span className="block break-words text-kecil font-bold">{pendakian.jalur}</span>
+                    <span className="block wrap-break-word text-kecil font-bold">{pendakian.jalur}</span>
                     <span className="block text-meta">{keterangan}</span>
                 </span>
                 <span className="shrink-0 text-kecil font-bold">Buka</span>

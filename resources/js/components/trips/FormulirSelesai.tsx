@@ -223,7 +223,7 @@ export function FormulirSelesai({ tripId, url, hasil, alasan, id, tahan, pantauT
                             key={h.value}
                             className={kelas(
                                 'flex min-h-11 cursor-pointer items-center rounded-control border border-transparent px-3 py-2 text-isi font-semibold text-secondary',
-                                'has-[:checked]:border-control has-[:checked]:bg-surface has-[:checked]:font-bold has-[:checked]:text-primary',
+                                'has-checked:border-control has-checked:bg-surface has-checked:font-bold has-checked:text-primary',
                                 fokusDiDalam,
                             )}
                         >
@@ -235,7 +235,7 @@ export function FormulirSelesai({ tripId, url, hasil, alasan, id, tahan, pantauT
                                 onChange={() => form.setData('completion_state', h.value)}
                                 className="sr-only"
                             />
-                            <span className="min-w-0 break-words">{h.label}</span>
+                            <span className="min-w-0 wrap-break-word">{h.label}</span>
                         </label>
                     ))}
                 </div>

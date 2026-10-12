@@ -47,7 +47,7 @@ export function Lencana({ nada: n = 'netral', bentuk = 'kotak', garis = 'tanpa',
             )}
         >
             {ikon ? <Icon name={ikon} size={16} /> : null}
-            <span className="min-w-0 break-words">{children}</span>
+            <span className="min-w-0 wrap-break-word">{children}</span>
         </span>
     );
 }

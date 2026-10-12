@@ -24,7 +24,7 @@ function Petak({ judul, nilai, keterangan }: { judul: string; nilai: string | nu
     return (
         <div className="min-w-0 flex-1 rounded-kartu border border-subtle bg-surface p-3">
             <dt className="text-kecil text-secondary">{judul}</dt>
-            <dd className={nilai === null ? 'mt-1 text-isi font-bold text-primary' : 'mt-1 break-words text-judul-kartu tabular-nums text-primary'}>{nilai ?? 'Belum ada'}</dd>
+            <dd className={nilai === null ? 'mt-1 text-isi font-bold text-primary' : 'mt-1 wrap-break-word text-judul-kartu tabular-nums text-primary'}>{nilai ?? 'Belum ada'}</dd>
             <dd className="mt-1 text-meta text-secondary">{keterangan}</dd>
         </div>
     );
@@ -113,7 +113,7 @@ export function ModeLapangan({ data, mode, selesai, pengaturan = null }: { data:
                 </h2>
                 {tujuan ? (
                     <>
-                        <p key={mode.tercapai} className={kelas('mt-1 break-words text-tampilan text-primary', mode.pengumuman.startsWith('Tiba') ? 'denyut-tiba' : null)}>
+                        <p key={mode.tercapai} className={kelas('mt-1 wrap-break-word text-tampilan text-primary', mode.pengumuman.startsWith('Tiba') ? 'denyut-tiba' : null)}>
                             {tujuan.nama}
                         </p>
                         <p className="text-kecil text-secondary">{tujuan.jenis}</p>
@@ -260,7 +260,7 @@ export function ModeLapangan({ data, mode, selesai, pengaturan = null }: { data:
                     <p className="text-isi text-community-900">
                         <span className="font-bold">Segmen ini dilaporkan: {laporan.kondisi.toLowerCase()}.</span> Laporan komunitas, {laporan.waktu}.
                     </p>
-                    {laporan.catatan ? <p className="mt-1 break-words text-kecil text-community-900">{laporan.catatan}</p> : null}
+                    {laporan.catatan ? <p className="mt-1 wrap-break-word text-kecil text-community-900">{laporan.catatan}</p> : null}
                 </section>
             ) : null}
 
@@ -293,7 +293,7 @@ export function ModeLapangan({ data, mode, selesai, pengaturan = null }: { data:
                     <summary className={kelas('flex min-h-12 cursor-pointer items-center px-4 text-isi font-bold text-primary', fokusTerlihat)}>Semua pos ({data.pos.length})</summary>
                     <ol className="space-y-1 px-4 pb-4">
                         {data.pos.map((p) => (
-                            <li key={p.id} aria-current={p.urutan === tujuan?.urutan ? 'step' : undefined} className="break-words text-isi text-primary">
+                            <li key={p.id} aria-current={p.urutan === tujuan?.urutan ? 'step' : undefined} className="wrap-break-word text-isi text-primary">
                                 <span className="tabular-nums">{p.urutan}.</span> {p.nama}
                                 <span className="text-kecil text-secondary">
                                     {' '}

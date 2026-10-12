@@ -158,7 +158,8 @@ class CheckpointJourneyTest extends TestCase
     {
         $komponen = file_get_contents(resource_path('js/components/trails/rinci/DaftarPos.tsx'));
 
-        $this->assertStringContainsString('<span aria-hidden="true" className="absolute left-[0.9375rem]', $komponen);
+        // Upgrade tailwind 4: left-[0.9375rem] ditulis sebagai skala spasi, left-3.75 (0,9375rem).
+        $this->assertStringContainsString('<span aria-hidden="true" className="absolute left-3.75', $komponen);
         $this->assertStringContainsString('<span className="sr-only">Pos {p.urutan}: </span>', $komponen);
     }
 

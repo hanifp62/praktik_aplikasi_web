@@ -71,7 +71,7 @@ function TerakhirDiketahui({ jenis, judul, label, turun = false, children }: { j
             </div>
             <p className={kelas('mt-1 flex items-center gap-2 text-isi font-bold', turun ? 'text-warn-900' : 'text-primary')}>
                 <Icon name="clock" size={20} />
-                <span className="min-w-0 [overflow-wrap:anywhere]">{judul}</span>
+                <span className="min-w-0 wrap-anywhere">{judul}</span>
             </p>
             <div className={kelas('mt-1 space-y-1 text-kecil', turun ? 'text-warn-900' : 'text-secondary')}>{children}</div>
         </div>
@@ -91,11 +91,11 @@ function RencanaDanAturan({ rencana }: { rencana: RencanaPaket }) {
                         <dt className="font-bold">Mulai</dt>
                         <dd>{r.jamMulai ?? 'Belum diisi'}</dd>
                         <dt className="font-bold">Perkiraan kembali</dt>
-                        <dd className="[overflow-wrap:anywhere]">{r.kembali ?? 'Belum diisi'}</dd>
+                        <dd className="wrap-anywhere">{r.kembali ?? 'Belum diisi'}</dd>
                         {r.registrasi ? (
                             <>
                                 <dt className="font-bold">Registrasi</dt>
-                                <dd className="[overflow-wrap:anywhere]">{r.registrasi}</dd>
+                                <dd className="wrap-anywhere">{r.registrasi}</dd>
                             </>
                         ) : null}
                     </dl>
@@ -120,7 +120,7 @@ function RencanaDanAturan({ rencana }: { rencana: RencanaPaket }) {
                     {persiapan.butir.length > 0 ? (
                         <ul className="mt-1 space-y-1">
                             {persiapan.butir.map((b, i) => (
-                                <li key={`${i}-${b.nama}`} className="[overflow-wrap:anywhere]">
+                                <li key={`${i}-${b.nama}`} className="wrap-anywhere">
                                     {b.nama}
                                     {b.kritis ? ' (kritis)' : ''}: {b.keadaan}
                                 </li>
@@ -195,9 +195,9 @@ export function DaftarPaket({ paket, sekarangMs, onBuka, galat = null }: DaftarP
 
                     return (
                         <li key={kunciPaket(p)} className="rounded-kartu border border-subtle bg-surface p-4">
-                            <h3 className="min-w-0 [overflow-wrap:anywhere] text-subjudul text-primary">{trip.nama}</h3>
-                            <p className="min-w-0 [overflow-wrap:anywhere] text-kecil text-secondary">{[trip.jalur, trip.gunung].filter(Boolean).join(', ')}</p>
-                            <p className="text-kecil text-secondary [overflow-wrap:anywhere]">{p.rencana.rencana.tanggal}</p>
+                            <h3 className="min-w-0 wrap-anywhere text-subjudul text-primary">{trip.nama}</h3>
+                            <p className="min-w-0 wrap-anywhere text-kecil text-secondary">{[trip.jalur, trip.gunung].filter(Boolean).join(', ')}</p>
+                            <p className="text-kecil text-secondary wrap-anywhere">{p.rencana.rencana.tanggal}</p>
                             {p.berakhir ? <p className="mt-2 text-isi font-bold text-primary">{kalimatBerakhir(p.berakhir.jenis, waktuBerakhir(p.berakhir.waktu))}</p> : null}
                             {p.rekaman.manifest.dataContoh ? (
                                 <Lencana nada="netral" garis="putus" className="mt-2">
@@ -263,7 +263,7 @@ export function DaftarPaket({ paket, sekarangMs, onBuka, galat = null }: DaftarP
                                         wilayahGalat.current.delete(kunciPaket(p));
                                     }
                                 }}
-                                className="mt-3 rounded-control border border-danger-300 bg-danger-50 p-3 text-kecil text-danger-900 empty:mt-0 empty:border-0 empty:p-0 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
+                                className="mt-3 rounded-control border border-danger-300 bg-danger-50 p-3 text-kecil text-danger-900 empty:mt-0 empty:border-0 empty:p-0 focus:outline-hidden focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
                             >
                                 {galatIni}
                             </p>

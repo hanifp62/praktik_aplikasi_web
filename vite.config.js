@@ -3,6 +3,7 @@ import laravel from 'laravel-vite-plugin';
 import inertia from '@inertiajs/vite';
 import react from '@vitejs/plugin-react';
 import { wayfinder } from '@laravel/vite-plugin-wayfinder';
+import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 
 /*
@@ -20,6 +21,9 @@ export default defineConfig({
         inertia(),
         react(),
         wayfinder(),
+        // Tailwind 4 lewat plugin Vite, tanpa PostCSS dan autoprefixer: awalan vendor diurus
+        // Lightning CSS di dalam plugin ini. Sumber yang dipindai dan token ada di app.css.
+        tailwindcss(),
     ],
     resolve: {
         alias: {

@@ -53,7 +53,7 @@ export default function Dashboard() {
                                     </p>
                                     <Tautan
                                         href={fase.tripLewat.url}
-                                        className="inline-flex min-h-11 items-center font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                                        className="inline-flex min-h-11 items-center font-bold text-brand-ink underline underline-offset-2 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                                     >
                                         Ubah tanggal atau batalkan
                                     </Tautan>

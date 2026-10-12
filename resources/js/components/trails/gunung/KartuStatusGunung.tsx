@@ -50,7 +50,7 @@ export function KartuStatusGunung({ status }: { status: StatusRingkas }) {
             </p>
             <p className="mt-2 text-kecil text-secondary">Status resmi menjelaskan ketentuan pengelola, bukan jaminan keselamatan.</p>
             {status.sumber ? (
-                <p className="mt-2 break-words text-meta text-muted">
+                <p className="mt-2 wrap-break-word text-meta text-muted">
                     Sumber: {status.sumber.nama ?? 'belum tercatat'}
                     {status.cakupan ? `, cakupan ${status.cakupan.toLowerCase()}` : null}.
                 </p>

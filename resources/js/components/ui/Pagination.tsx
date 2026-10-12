@@ -20,7 +20,7 @@ export function Pagination({ links }: { links: TautanHalaman[] }) {
                         preserveScroll
                         aria-current={l.active ? 'page' : undefined}
                         className={kelas(
-                            'inline-flex min-h-11 min-w-11 items-center justify-center rounded-control border px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600',
+                            'inline-flex min-h-11 min-w-11 items-center justify-center rounded-control border px-3 text-sm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600',
                             l.active ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-subtle bg-surface text-secondary hover:bg-surface-sunken',
                         )}
                     >

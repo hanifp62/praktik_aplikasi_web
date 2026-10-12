@@ -41,12 +41,12 @@ export function KartuPerjalanan({ kartu }: { kartu: KartuPerjalananData }) {
                 ) : null}
             </p>
 
-            <h2 id={`perjalanan-${kartu.id}`} className="mt-2 break-words text-judul-kartu text-primary">
-                <Tautan href={kartu.url} className="rounded-sm underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+            <h2 id={`perjalanan-${kartu.id}`} className="mt-2 wrap-break-word text-judul-kartu text-primary">
+                <Tautan href={kartu.url} className="rounded-xs underline-offset-2 hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                     {kartu.nama}
                 </Tautan>
             </h2>
-            <p className="mt-1 break-words text-kecil text-secondary">
+            <p className="mt-1 wrap-break-word text-kecil text-secondary">
                 {kartu.jalur}, {kartu.gunung}
             </p>
             <p data-angka className="mt-0.5 flex flex-wrap gap-x-3 text-kecil text-secondary">
@@ -94,7 +94,7 @@ export function KartuPerjalanan({ kartu }: { kartu: KartuPerjalananData }) {
                             ))}
                         </div>
                         {persiapan.belum.length > 0 ? (
-                            <p className="mt-2 break-words text-kecil text-primary">
+                            <p className="mt-2 wrap-break-word text-kecil text-primary">
                                 Belum dikonfirmasi: {persiapan.belum.join(', ')}
                                 {persiapan.sisa > 0 ? `, dan ${persiapan.sisa} lainnya` : null}.
                             </p>

@@ -322,26 +322,33 @@ class ProgressiveWebAppTest extends TestCase
      * hanya muncul sekali. FACT Chrome 154: cache.addAll dengan permintaan ganda ditolak
      * InvalidStateError dan tidak menyimpan apa pun, jadi daftar ganda membuat setiap pesan dibalas
      * { ok: false } dan setiap pembawaan gagal.
+     *
+     * Diubah upgrade maplibre 6: manifest buatan memakai bentuk build MapLibre 6. Berkasnya kini
+     * `maplibre-gl.mjs`, dan dasar.js mengimpor pekerjanya lewat `?worker&url`, sehingga ada
+     * potongan URL pekerja yang berkas pekerjanya hanya tercatat di `assets`. Potongan itu juga
+     * hanya terjangkau dari impor dinamis entri app, jadi ia masuk karena disebut sendiri, dan
+     * berkas pekerjanya masuk karena `assets` potongan yang dikunjungi ikut.
      */
     public function test_the_pack_shell_list_follows_only_the_shell_graph(): void
     {
         $akar = 'E:/salinan/node_modules/maplibre-gl/dist/';
         $manifest = [
             'resources/css/app.css' => ['file' => 'assets/app.css', 'src' => 'resources/css/app.css', 'isEntry' => true],
-            'resources/js/app.tsx' => ['file' => 'assets/app.js', 'src' => 'resources/js/app.tsx', 'isEntry' => true, 'imports' => ['_dist.js'], 'dynamicImports' => ['resources/js/pages/Dashboard.tsx', 'resources/js/pages/Trips/Hike.tsx', $akar.'maplibre-gl.js', 'resources/js/jejak.js']],
+            'resources/js/app.tsx' => ['file' => 'assets/app.js', 'src' => 'resources/js/app.tsx', 'isEntry' => true, 'imports' => ['_dist.js'], 'dynamicImports' => ['resources/js/pages/Dashboard.tsx', 'resources/js/pages/Trips/Hike.tsx', $akar.'maplibre-gl.mjs', $akar.'maplibre-gl-worker.mjs?worker&url', 'resources/js/jejak.js']],
             AsetLuring::ENTRI_SHELL => ['file' => 'assets/shell.js', 'src' => AsetLuring::ENTRI_SHELL, 'isEntry' => true, 'imports' => ['_dist.js'], 'dynamicImports' => ['resources/js/pages/Trips/Hike.tsx'], 'css' => ['assets/shell.css']],
             '_dist.js' => ['file' => 'assets/dist.js', 'dynamicImports' => ['resources/js/luring/cadangan.ts']],
             'resources/js/pages/Trips/Hike.tsx' => ['file' => 'assets/Hike.js', 'src' => 'resources/js/pages/Trips/Hike.tsx', 'isDynamicEntry' => true, 'imports' => ['resources/js/app.tsx', '_WadahPeta.js']],
             '_WadahPeta.js' => ['file' => 'assets/WadahPeta.js'],
             'resources/js/pages/Dashboard.tsx' => ['file' => 'assets/Dashboard.js', 'src' => 'resources/js/pages/Dashboard.tsx', 'isDynamicEntry' => true],
             'resources/js/luring/cadangan.ts' => ['file' => 'assets/cadangan.js', 'src' => 'resources/js/luring/cadangan.ts', 'isDynamicEntry' => true],
-            $akar.'maplibre-gl.js' => ['file' => 'assets/maplibre-gl.js', 'src' => $akar.'maplibre-gl.js', 'isDynamicEntry' => true, 'imports' => ['_dist.js']],
+            $akar.'maplibre-gl.mjs' => ['file' => 'assets/maplibre-gl.js', 'src' => $akar.'maplibre-gl.mjs', 'isDynamicEntry' => true, 'imports' => ['_dist.js']],
+            $akar.'maplibre-gl-worker.mjs?worker&url' => ['file' => 'assets/maplibre-gl-worker-url.js', 'src' => $akar.'maplibre-gl-worker.mjs?worker&url', 'isDynamicEntry' => true, 'assets' => ['assets/maplibre-gl-worker.js']],
             $akar.'maplibre-gl.css' => ['file' => 'assets/maplibre-gl.css', 'src' => $akar.'maplibre-gl.css'],
             'resources/js/jejak.js' => ['file' => 'assets/jejak.js', 'src' => 'resources/js/jejak.js', 'isDynamicEntry' => true],
         ];
 
         $this->assertEqualsCanonicalizing(
-            array_map(fn (string $berkas) => '/build/assets/'.$berkas, ['shell.js', 'shell.css', 'dist.js', 'Hike.js', 'app.js', 'WadahPeta.js', 'maplibre-gl.js', 'maplibre-gl.css', 'jejak.js', 'cadangan.js']),
+            array_map(fn (string $berkas) => '/build/assets/'.$berkas, ['shell.js', 'shell.css', 'dist.js', 'Hike.js', 'app.js', 'WadahPeta.js', 'maplibre-gl.js', 'maplibre-gl.css', 'maplibre-gl-worker-url.js', 'maplibre-gl-worker.js', 'jejak.js', 'cadangan.js']),
             AsetLuring::daftarPaket($manifest, true)
         );
         $this->assertSame([], AsetLuring::daftarPaket($manifest, false));
@@ -624,19 +631,33 @@ class ProgressiveWebAppTest extends TestCase
     }
 
     /**
-     * Berkas MapLibre js dan css di build, dicari lewat `src` (tinjauan m-3), masing-masing tepat satu.
+     * Berkas MapLibre di build, dicari lewat `src` (tinjauan m-3), masing-masing tepat satu: js,
+     * css, dan potongan URL pekerja, ditambah berkas pekerja yang tercatat di `assets` potongan itu.
+     *
+     * Diubah upgrade maplibre 6: berkasnya kini `maplibre-gl.mjs`, dan pengurai tile berjalan di
+     * pekerja berkas sendiri, yang wajib ikut shell paket supaya peta tergambar saat luring.
      *
      * @param  array<string, array<string, mixed>>  $manifest
      * @return list<string>
      */
     private function berkasMapLibre(array $manifest): array
     {
-        return array_map(function (string $akhiran) use ($manifest): string {
+        $berkas = [];
+
+        foreach (['node_modules/maplibre-gl/dist/maplibre-gl.mjs', 'node_modules/maplibre-gl/dist/maplibre-gl.css', 'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'] as $akhiran) {
             $cocok = array_values(array_filter($manifest, fn (array $entri) => str_ends_with(str_replace('\\', '/', $entri['src'] ?? ''), $akhiran)));
             $this->assertCount(1, $cocok, "{$akhiran} tidak ditemukan tepat sekali di manifest build.");
 
-            return '/build/'.$cocok[0]['file'];
-        }, ['node_modules/maplibre-gl/dist/maplibre-gl.js', 'node_modules/maplibre-gl/dist/maplibre-gl.css']);
+            $berkas[] = '/build/'.$cocok[0]['file'];
+
+            foreach ($cocok[0]['assets'] ?? [] as $aset) {
+                $berkas[] = '/build/'.$aset;
+            }
+        }
+
+        $this->assertCount(4, $berkas, 'Berkas pekerja MapLibre tidak tercatat di assets potongan URL-nya.');
+
+        return $berkas;
     }
 
     /**

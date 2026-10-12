@@ -535,7 +535,8 @@ class PreparationUndoTest extends TestCase
     public function test_the_status_region_is_always_mounted_beside_the_actions(): void
     {
         $halaman = File::get(resource_path('js/pages/Trips/Preparation.tsx'));
-        $wilayahAksi = "<p role=\"status\" className=\"empty:!mt-0 text-kecil text-secondary\">\n                        {menahanNavigasi ? 'Menyimpan pilihan terakhir, lalu pindah halaman.' : (flash.kabarAksi ?? '')}";
+        // Upgrade tailwind 4: penanda penting kini akhiran (empty:mt-0!), bukan awalan (empty:!mt-0); niatnya sama.
+        $wilayahAksi = "<p role=\"status\" className=\"empty:mt-0! text-kecil text-secondary\">\n                        {menahanNavigasi ? 'Menyimpan pilihan terakhir, lalu pindah halaman.' : (flash.kabarAksi ?? '')}";
 
         $this->assertStringContainsString($wilayahAksi, $halaman);
         $this->assertStringNotContainsString('{flash.status ? <Alert', $halaman);

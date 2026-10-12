@@ -174,7 +174,7 @@ export function KartuSimpanan({ jalur, batasCatatan, pilihan, onPilih, kataBelum
                             <Icon name="lock-simple" size={16} />
                             Catatan pribadi, hanya Anda
                         </p>
-                        <p className="mt-1 whitespace-pre-line text-kecil text-primary [overflow-wrap:anywhere]">{jalur.catatan}</p>
+                        <p className="mt-1 whitespace-pre-line text-kecil text-primary wrap-anywhere">{jalur.catatan}</p>
                     </div>
                 ) : null}
 
@@ -185,7 +185,7 @@ export function KartuSimpanan({ jalur, batasCatatan, pilihan, onPilih, kataBelum
                             <span className="sr-only"> untuk {jalur.name}</span>
                         </Button>
                     )}
-                    <Tautan href={jalur.url} className="inline-flex min-h-11 items-center px-2 text-kecil font-bold text-brand-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+                    <Tautan href={jalur.url} className="inline-flex min-h-11 items-center px-2 text-kecil font-bold text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                         Lihat rincian<span className="sr-only"> {jalur.name}</span>
                     </Tautan>
                     <TombolSimpan jalur={{ id: jalur.id, name: jalur.name, ditimbang: true, adaCatatan: jalur.catatan !== null }} tampilkanToast={tampilkanToast} bentuk="hapus" />

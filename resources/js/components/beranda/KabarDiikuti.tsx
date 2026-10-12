@@ -77,13 +77,13 @@ export function KabarDiikuti({ kabar }: { kabar: KabarBerandaData }) {
                                     >
                                         <div className="flex flex-wrap items-center gap-2">
                                             <LabelSumber jenis={b.jenisSumber} />
-                                            <span className="break-words text-meta text-secondary">{b.sumber}</span>
+                                            <span className="wrap-break-word text-meta text-secondary">{b.sumber}</span>
                                         </div>
                                         <p className="mt-2 flex flex-wrap items-center gap-x-2">
                                             <StatusAkses nilai={b.status} label={b.statusLabel} cakupan={b.cakupan} />
-                                            <span className="break-words text-kecil text-primary">{b.judul}</span>
+                                            <span className="wrap-break-word text-kecil text-primary">{b.judul}</span>
                                         </p>
-                                        {b.alasan ? <p className="mt-1 break-words text-kecil text-secondary">{b.alasan}</p> : null}
+                                        {b.alasan ? <p className="mt-1 wrap-break-word text-kecil text-secondary">{b.alasan}</p> : null}
                                         <p className="mt-2 text-meta text-muted">
                                             Dicatat <time dateTime={b.waktuIso}>{b.waktu}</time>
                                         </p>

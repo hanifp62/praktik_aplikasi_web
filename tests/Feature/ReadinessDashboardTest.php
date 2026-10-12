@@ -357,7 +357,8 @@ class ReadinessDashboardTest extends TestCase
 
         // Putaran perbaikan 2 (n-1): empty:!mt-0 ditambahkan supaya wilayah kosong tidak
         // menyumbang margin space-y, tanpa menyembunyikan wilayahnya (masih role="status").
-        $this->assertStringContainsString('<p role="status" className="empty:!mt-0 text-kecil text-secondary">', $halaman);
+        // Upgrade tailwind 4: penanda penting kini akhiran (empty:mt-0!), bukan awalan (empty:!mt-0); niatnya sama.
+        $this->assertStringContainsString('<p role="status" className="empty:mt-0! text-kecil text-secondary">', $halaman);
         $this->assertStringContainsString("{flash.status ?? ''}", $halaman);
         $this->assertStringContainsString('<p role="alert"', $halaman);
         $this->assertStringContainsString("{penolakan ?? ''}", $halaman);

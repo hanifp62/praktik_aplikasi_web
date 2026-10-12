@@ -197,7 +197,7 @@ export default function Permits() {
                                         value="mountain"
                                         checked={form.data.scope === 'mountain'}
                                         onChange={() => form.setData('scope', 'mountain')}
-                                        className="border-control text-brand-ink focus:ring-brand-600"
+                                        className="border-control text-brand-ink checked:border-transparent focus:ring-brand-600"
                                     />
                                     Seluruh gunung
                                 </label>
@@ -209,7 +209,7 @@ export default function Permits() {
                                         value="trail"
                                         checked={form.data.scope === 'trail'}
                                         onChange={() => form.setData('scope', 'trail')}
-                                        className="border-control text-brand-ink focus:ring-brand-600"
+                                        className="border-control text-brand-ink checked:border-transparent focus:ring-brand-600"
                                     />
                                     Satu jalur tertentu
                                 </label>
