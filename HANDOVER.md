@@ -46,6 +46,10 @@ Actions, dan upgrade maplibre-gl 6 serta tailwindcss 4 untuk menutup semua advis
 | `c02d32f`, `b762cda` | Kegagalan ketiga suite diterbitkan sebagai anotasi publik dari JUnit di `RUNNER_TEMP`; pagar `DB_*` hanya untuk workflow yang menjalankan test |
 | `501ad0e`, `e524c27` | Migrasi penutupan PostgREST portabel di PostgreSQL biasa; CI meniru peran `anon` dan `authenticated` Supabase; tabel milik ekstensi bukan tabel aplikasi; test hitungan kueri pos diperbaiki |
 | `8f9adf1` | maplibre-gl 6.14.0 dan tailwindcss 4.3.3 lewat `@tailwindcss/vite`; npm audit 8 menjadi 0 |
+| `b9fd945` | Blok HANDOVER ini dan versi Tailwind di matriks skill |
+| `25fbf61` | Tinjauan independen upgrade: select dan textarea putih di tema gelap (C-1), gerak tekan 120 ms (I-1), breakpoint px (I-2); penjaga test bermutasi |
+| `670f504` | Temuan minor tinjauan (komentar basi, TypeFloorTest, FocusIndicatorTest menyapu React) dan skill `tailwindcss-development` untuk Tailwind 4 |
+| `cd4dbf3` | PRD GR-08 untuk upgrade yang disetujui pemilik; DESIGN.md, register lisensi, ARCHITECTURE.md, AGENTS.md diselaraskan |
 
 - **Bukti.**
   - CI hijau penuh untuk pertama kalinya: Test run 38217749993 dan Security run 38217750034 pada `8f9adf1`.
@@ -55,6 +59,13 @@ Actions, dan upgrade maplibre-gl 6 serta tailwindcss 4 untuk menutup semua advis
   - Unit dan Feature: 2.633 test, 2.631 lulus, 2 dilewati, 18.287 asersi.
   - Upgrade: 96 dari 104 tangkapan identik piksel, 8 sisanya teks waktu, dan console error 0. Laporannya ada di
     `.superpowers/sdd/2026-10-07-memount-v3-w6-mendaki/upgrade-dep-report.md`.
+  - Tangkapan itu tidak cukup. Peninjau independen menemukan 1 Critical dan 5 Important yang lolos darinya (C-1, I-1,
+    I-2 di antaranya); semuanya tertutup menurut tinjauan ulang, dan verifikasi peramban V1 sampai V4 lulus: kontras
+    kontrol gelap 14,13:1, scale bertransisi 1 ke 0,98 dalam 160 ms, kepala lebar tetap di huruf 24 px, dan peta mode
+    lapangan tergambar luring dengan pekerja dari service worker. Laporannya `verifikasi-peramban-report.md` di folder
+    SDD yang sama. Agen verifikasi mengaku dua penyimpangan protokol di cerminnya sendiri (satu `tinker` dan membaca
+    dua baris flag `.env` cermin yang dibangkitkan dari `.env.example`); tidak ada rahasia yang terbaca.
+  - CI terakhir sebelum push `main`: Test run 38222967967 dan Security run 38222967981 pada `cd4dbf3`, hijau.
 - **Dokumen untuk pemilik.**
   - Deck presentasi 15 slide dari tangkapan nyata: https://claude.ai/artifact/UkTXKFUYWFenojPfxcBb35.
   - Introspeksi dan rencana produksi lima fase bergerbang: https://claude.ai/code/artifact/90d5de1d-447f-45a8-af92-255d2f68d4de.
@@ -76,8 +87,8 @@ Actions, dan upgrade maplibre-gl 6 serta tailwindcss 4 untuk menutup semua advis
   - uji kegunaan 5 pendaki dan SUS belum dijalankan;
   - halaman peta kini memuat sekitar 225 kB gzip lebih banyak (MapLibre 6), dan paket lapangan naik dari 0,4 menjadi
     0,6 MB gzip;
-  - Tailwind 4 dan MapLibre 6 menuntut Safari 16.4+, Chrome 111+, Firefox 128+, dan WebGL2. Dukungan Firefox 125
-    sampai 127 yang disebut DESIGN.md perlu ditinjau ulang.
+  - lantai peramban Tailwind 4 dan MapLibre 6 (Safari 16.4+, Chrome 111+, Firefox 128+, WebGL2) kini dicatat di PRD
+    GR-08 §88 dan DESIGN.md; penerimaannya, juga pencabutan `blob:` dari CSP `worker-src`, keputusan pemilik di GR-08.
 
 ### W6 Mendaki dan paket luring (selesai 11 Oktober 2026, di-commit 11 Oktober 2026)
 
