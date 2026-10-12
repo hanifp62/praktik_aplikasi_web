@@ -38,6 +38,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // setelah kunjungan Inertia, dan isinya hanya nilai dari daftar putih, jadi tidak
         // dienkripsi. Nilainya tetap diwhitelist di ThemePreference dan DisplayPreference.
         $middleware->encryptCookies(except: [ThemePreference::COOKIE, DisplayPreference::COOKIE_EFEK, DisplayPreference::COOKIE_GERAK]);
+
+        // Di belakang proxy platform (Render) TLS diakhiri di tepi: tanpa ini setiap permintaan terbaca http dan
+        // semua pengguna ber-IP sama, sehingga cookie aman dan batas laju per IP salah. Kosong di lokal dan test,
+        // jadi header X-Forwarded-* tidak dipercaya. Isi '*' hanya di platform yang tidak dapat diakses tanpa
+        // melewati proxy-nya.
+        $middleware->trustProxies(at: env('TRUSTED_PROXIES') ?: null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
