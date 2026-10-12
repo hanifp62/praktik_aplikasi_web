@@ -24,8 +24,9 @@ class RepoHygieneTest extends TestCase
      * Entri root yang dilacak git atau akan ikut commit. Menambah entri berarti menambah
      * baris inventaris beserta alasannya. Upgrade tailwind 4 mencabut postcss.config.js dan
      * tailwind.config.js: konfigurasinya kini di resources/css/app.css dan vite.config.js.
-     * Deploy inspeksi tim (12 Oktober 2026) menambah Dockerfile, .dockerignore, docker/ (skrip start
-     * dan php.ini image), dan render.yaml (Blueprint Render); keempatnya diuji job CI `image`.
+     * Deploy inspeksi tim (12 Oktober 2026) menambah Dockerfile, .dockerignore, dan docker/ (skrip start
+     * dan php.ini image), diuji job CI `image`. render.yaml (Blueprint Render) dicabut 13 Oktober 2026
+     * karena Render meminta kartu; penggantinya vercel.json (DK-12), dijaga VercelConfigTest.
      */
     private const ENTRI_ROOT = [
         '.agents', '.claude', '.dockerignore', '.editorconfig', '.env.example', '.gitattributes', '.github',
@@ -34,9 +35,9 @@ class RepoHygieneTest extends TestCase
         'SECURITY.md',
         'app', 'artisan', 'boost.json', 'bootstrap', 'composer.json', 'composer.lock',
         'config', 'database', 'docker', 'docker-compose.yml', 'docs', 'lang', 'package-lock.json', 'package.json',
-        'phpunit.xml', 'public', 'render.yaml', 'resources', 'routes',
+        'phpunit.xml', 'public', 'resources', 'routes',
         'skills-lock.json', 'storage', 'tests', 'tsconfig.json',
-        'vite.config.js',
+        'vercel.json', 'vite.config.js',
     ];
 
     /**

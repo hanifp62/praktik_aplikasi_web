@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Vercel Cron mengirim nilai ini sebagai header "Authorization: Bearer <CRON_SECRET>" (DK-12). Kosong berarti
+    // rute /api/cron menolak semua panggilan; nilainya hanya ada di pengaturan platform, tidak pernah di repo.
+    'cron' => [
+        'secret' => env('CRON_SECRET'),
+    ],
+
 ];

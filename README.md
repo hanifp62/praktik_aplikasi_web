@@ -110,22 +110,100 @@ Supabase) diisi di Settings > Secrets and variables > Actions; kredensial tidak 
 
 ## Deploy untuk inspeksi tim
 
-Situs inspeksi berjalan di Render paket Free (tanpa kartu kredit), region Singapura, dari `Dockerfile` repo ini, dengan
-Supabase sebagai basis data. `render.yaml` adalah Blueprint-nya: Render hanya menerapkan commit di `main` yang sudah
-lulus CI (`autoDeployTrigger: checksPass`), dan job `image` di `.github/workflows/test.yml` membangun serta menjalankan
-image yang sama terhadap PostGIS di setiap push. Start kontainer menjalankan `php artisan migrate --force`, jadi skema
-Supabase ikut diperbarui otomatis.
+Situs inspeksi berjalan di Vercel paket Hobby (gratis, tanpa kartu), region Singapura (`sin1`, sama dengan Supabase),
+dari `Dockerfile` repo ini sebagai *container-backed Vercel Function* (DK-12, PRD §154), dengan Supabase sebagai basis
+data. `vercel.json` mengatur layanan, region, cabang yang di-deploy, dan jadwal Vercel Cron, dan dijaga
+`VercelConfigTest`. Hanya `main` yang di-deploy otomatis; cabang lain tidak membuat preview. Job `image` di
+`.github/workflows/test.yml` membangun dan menjalankan image yang sama terhadap PostGIS di setiap push.
 
-1. Supabase: matikan Data API (aplikasi terhubung langsung ke Postgres), buat bucket privat untuk foto laporan, lalu
-   buat kunci S3 di halaman S3 configuration Storage.
-2. Render: masuk dengan akun GitHub, pilih New, lalu Blueprint, pilih repo ini, dan isi nilai rahasia yang diminta:
-   `APP_KEY` (hasil `php artisan key:generate --show`), `APP_URL` (alamat `onrender.com` layanan ini), `DB_URL`
-   (connection string Session pooler Supabase), serta `SUPABASE_STORAGE_ENDPOINT`, `SUPABASE_STORAGE_BUCKET`,
-   `SUPABASE_STORAGE_KEY`, dan `SUPABASE_STORAGE_SECRET`. `DEVICE_KEY_SECRET` dibangkitkan Render.
-3. Bagikan alamatnya. Anggota tim mendaftar sendiri; menaikkan peran ke moderator atau admin butuh persetujuan pemilik.
+Yang berbeda dari server biasa:
 
-Paket Free tidur sesudah 15 menit tanpa pengunjung dan bangun dalam sekitar satu menit; penjadwal (cuaca, pengingat)
-hanya berjalan selama layanan bangun. Nilai rahasia tidak pernah ditulis di repo.
+- **Vercel tidak menunggu CI.** Setiap push ke `main` langsung di-deploy, jadi `main` hanya menerima commit yang CI-nya
+  sudah hijau di cabang kerja (fast-forward, SHA yang sama). Bila deploy bermasalah, kembalikan lewat Instant Rollback
+  di dashboard Vercel; Hobby hanya dapat kembali ke deploy sebelumnya. Sesudah rollback, push berikutnya tidak tayang
+  sampai Undo Rollback ditekan atau deploy perbaikannya dipromosikan.
+- **Migrasi tidak berjalan saat kontainer mulai**, karena panduan Vercel melarangnya. Skema Supabase diperbarui lewat
+  `.github/workflows/migrate-supabase.yml` (tab Actions, "Migrasi Supabase"): pratinjau tanpa centang, lalu centang
+  "terapkan". Untuk commit yang membawa migrasi, jalankan workflow itu dari cabang kerjanya **sebelum** commit itu
+  dibawa ke `main`. Urutan ini aman selama migrasinya aditif (tabel baru, atau kolom baru yang nullable atau
+  berbawaan), sesuai kebijakan migrasi di `database/README.md`, karena kode lama tidak terganggu olehnya. Migrasi yang
+  menghapus, mengganti nama, atau mengubah kolom butuh izin pemilik dan rencana dua tahap.
+- **Tidak ada `schedule:work`.** Vercel Cron memanggil `/api/cron/{tugas}` dengan rahasia `CRON_SECRET`. Paket Hobby
+  hanya mengizinkan cron harian dan boleh memicunya kapan saja dalam jam yang dijadwalkan. Pengingat perjalanan dipicu
+  pada jam jatuh temponya (07.00 WIT, WITA, dan WIB) ditambah susulan pukul 09.00 WIB, dan
+  `PENJADWAL_HANYA_HARIAN=true` membuat halaman Kesehatan Sistem menilainya dengan jarak antar-jalan itu.
+- **Foto laporan disimpan di Supabase Storage**, karena berkas di dalam kontainer hilang saat instans dibuang.
+- **Batas Vercel Hobby:**
+  - permintaan dan respons paling besar 4,5 MB. Formulir laporan menolak foto di atas 4 MB sebelum mengirim; berkas
+    GPX admin di atas sekitar 4,4 MB ditolak Vercel sebelum sampai ke aplikasi, dan peramban menampilkan pesan
+    "Berkas terlalu besar";
+  - fungsi berhenti sesudah 300 detik;
+  - instans tidur sesudah lima menit tanpa trafik, sehingga pembukaan pertama sesudahnya lebih lambat;
+  - kuota bulanan 4 jam CPU aktif dan 360 GB-jam memori. Bila terlampaui, Vercel menghentikan layanan sampai 30 hari,
+    jadi jangan memasang pemantau uptime yang memanggil situs terus-menerus;
+  - log runtime hanya disimpan satu jam, jadi riwayat tugas terjadwal dibaca di halaman Kesehatan Sistem;
+  - Vercel Services masih Beta.
+
+Langkah pemilik, sekali saja:
+
+1. **Supabase.** Di Storage, buat bucket privat untuk foto laporan, lalu buat kunci S3 di Storage > S3 Configuration
+   dan catat Endpoint, Access key ID, dan Secret access key. Disarankan juga mematikan Data API, karena aplikasi
+   terhubung langsung ke Postgres.
+2. **GitHub.** Isi rahasia `SUPABASE_DB_URL` (connection string Session pooler dari tombol Connect di Supabase) di
+   Settings > Secrets and variables > Actions, lalu jalankan workflow "Migrasi Supabase": pratinjau dulu, lalu terapkan.
+   Lakukan sebelum langkah 3, karena kode di `main` membutuhkan skema terbaru.
+3. **Vercel.** Masuk dengan akun GitHub (paket Hobby), pilih Add New > Project, impor repo ini, dan biarkan pengaturan
+   build bawaan karena `vercel.json` yang mengaturnya. Di Environment Variables, pilih environment **Production** saja,
+   tempel blok di bawah sekaligus, lalu isi nilai yang kosong. `APP_KEY` dibuat dengan
+   `php -r "echo 'base64:'.base64_encode(random_bytes(32)), PHP_EOL;"`, sedangkan `DEVICE_KEY_SECRET` dan
+   `CRON_SECRET` masing-masing dengan `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. Nilai rahasia hanya diisi
+   di dashboard, tidak pernah ditulis di repo.
+
+   ```
+   APP_NAME=Memount
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_DEMO=false
+   APP_URL=https://<nama-proyek>.vercel.app
+   APP_KEY=
+   DB_CONNECTION=pgsql
+   DB_URL=
+   SESSION_DRIVER=database
+   SESSION_SECURE_COOKIE=true
+   CACHE_STORE=database
+   QUEUE_CONNECTION=sync
+   MAIL_MAILER=log
+   BROADCAST_CONNECTION=null
+   LOG_CHANNEL=stderr
+   LOG_LEVEL=info
+   TRUSTED_PROXIES=*
+   FILESYSTEM_DISK=local
+   REPORT_PHOTOS_DISK=supabase
+   SUPABASE_STORAGE_ENDPOINT=
+   SUPABASE_STORAGE_REGION=ap-southeast-1
+   SUPABASE_STORAGE_BUCKET=
+   SUPABASE_STORAGE_KEY=
+   SUPABASE_STORAGE_SECRET=
+   DEVICE_KEY_SECRET=
+   CRON_SECRET=
+   PENJADWAL_HANYA_HARIAN=true
+   FIELD_PACK_ENABLED=true
+   FIELD_SAFETY_ENABLED=true
+   ```
+
+4. **Periksa sebelum membagikan** (PRD §154, K27):
+   1. `https://<nama-proyek>.vercel.app/up` menjawab, juga dari peramban yang tidak masuk ke akun Vercel.
+   2. Settings > Functions menunjukkan region Singapore, dan Settings > Cron Jobs menampilkan tujuh jadwal.
+   3. Daftar akun baru, isi profil awal, lalu kirim satu formulir. Ini membuktikan sesi, token CSRF, dan header Inertia
+      bertahan melewati Vercel.
+   4. Kirim laporan kondisi dengan foto dari ponsel. Riwayat tidak boleh menampilkan peringatan foto, dan objek barunya
+      harus muncul di folder `condition-reports` bucket foto (Storage di dashboard Supabase). Riwayat sendiri tidak
+      menampilkan foto: laporan baru menunggu moderasi, dan fotonya baru tampil di rincian jalur sesudah disetujui.
+      Bila muncul "Foto tidak dapat disimpan", periksa nilai `SUPABASE_STORAGE_*` dan log runtime.
+   5. Di Settings > Cron Jobs, tekan Run pada `data-freshness-check`, lalu pastikan lognya menjawab 200; bila 401,
+      periksa `CRON_SECRET`. Halaman Kesehatan Sistem (admin) ikut mencatat jalannya.
+5. **Bagikan alamatnya.** Anggota tim mendaftar sendiri; menaikkan peran ke moderator atau admin butuh persetujuan
+   pemilik.
 
 ## Peta repo
 

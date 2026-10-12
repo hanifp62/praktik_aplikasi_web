@@ -334,6 +334,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Penjadwal di Vercel Hobby (DK-12, PRD §154)
+    |--------------------------------------------------------------------------
+    |
+    | Vercel Hobby hanya mengizinkan cron yang berjalan sekali sehari per jadwal. Di sana
+    | vercel.json menjalankan pengingat pada jam jatuh temponya (local_hour di zona WIT, WITA,
+    | dan WIB) ditambah satu susulan di hari yang sama, bukan setiap jam seperti
+    | routes/console.php. true membuat halaman kesehatan menilai tugas pengingat dengan jarak
+    | antar-jalan itu, bukan menyalakan TERLAMBAT palsu.
+    |
+    */
+    'penjadwal' => [
+        'hanya_harian' => (bool) env('PENJADWAL_HANYA_HARIAN', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Target Pribadi (Progres: Target)
     |--------------------------------------------------------------------------
     */

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CheckpointController;
+use App\Http\Controllers\CronController;
 use App\Http\Controllers\MountainController;
 use App\Http\Controllers\TrailController;
 use Illuminate\Support\Facades\Route;
@@ -18,3 +19,10 @@ Route::middleware('throttle:60,1')->name('api.')->group(function () {
 
     Route::get('/checkpoints', [CheckpointController::class, 'index'])->name('checkpoints.index');
 });
+
+/*
+ * Pemicu tugas terjadwal untuk Vercel Cron (DK-12, PRD §154 K24): di Vercel tidak ada proses schedule:work,
+ * jadi vercel.json memanggil rute ini dengan header Authorization: Bearer CRON_SECRET. Rahasianya diperiksa
+ * CronController sebelum apa pun; batas lajunya kecil karena pemanggil sahnya hanya beberapa kali sehari.
+ */
+Route::get('/cron/{tugas}', CronController::class)->middleware('throttle:10,1')->name('api.cron');

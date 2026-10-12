@@ -3,7 +3,8 @@ name: Migrasi Supabase
 # Basis data utama (Supabase) mengikuti migrasi di repo ini: database/migrations adalah satu-satunya sumber skema.
 # Dijalankan tangan dari tab Actions. Tanpa centang "terapkan", workflow hanya menampilkan status migrasi (pratinjau).
 # Rahasia SUPABASE_DB_URL berisi connection string Session pooler (IPv4) dari dashboard Supabase, dan tidak pernah
-# ditulis di repo (CLAUDE.md R-019). Semua migrasi aditif; rollback tidak dijalankan dari sini.
+# ditulis di repo (CLAUDE.md R-019). Migrasi baru bersifat aditif menurut kebijakan database/README.md (menghapus
+# atau mengubah struktur butuh izin pemilik); rollback tidak dijalankan dari sini.
 
 on:
   workflow_dispatch:

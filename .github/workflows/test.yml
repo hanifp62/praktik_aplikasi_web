@@ -121,9 +121,11 @@ jobs:
         if: failure()
         run: python3 .github/scripts/junit_anotasi.py "$RUNNER_TEMP/unit-junit.xml" "$RUNNER_TEMP/feature-junit.xml" "$RUNNER_TEMP/spatial-junit.xml"
 
-  # Image produksi (Dockerfile, dipakai render.yaml) dibangun dan dijalankan terhadap PostGIS sungguhan, persis
-  # seperti di platform: start kontainer menjalankan seluruh migrasi, lalu /up dan halaman masuk harus menjawab 200.
-  # Mesin pengembangan tidak selalu punya Docker, jadi inilah bukti bahwa image dapat di-deploy.
+  # Image produksi (Dockerfile, dipakai vercel.json) dibangun dan dijalankan terhadap PostGIS sungguhan, dengan urutan
+  # yang sama seperti di platform: migrasi berjalan sebagai langkah tersendiri (di produksi lewat workflow Migrasi
+  # Supabase, tidak pernah saat kontainer mulai), lalu /up dan halaman masuk harus menjawab 200, dan rute Vercel Cron
+  # menolak panggilan tanpa rahasia tetapi menjalankan tugasnya dengan rahasia. Mesin pengembangan tidak selalu punya
+  # Docker, jadi inilah bukti bahwa image dapat di-deploy.
   image:
     runs-on: ubuntu-latest
 
@@ -148,21 +150,43 @@ jobs:
       - name: Build image
         run: docker build --tag memount:ci .
 
+      # Nilai acak sekali pakai untuk kontainer uji ini, disamarkan dari log publik.
+      - name: Siapkan variabel image
+        run: |
+          kunci="base64:$(openssl rand -base64 32)"
+          rahasia="$(openssl rand -hex 24)"
+          echo "::add-mask::$kunci"
+          echo "::add-mask::$rahasia"
+          {
+            echo "APP_KEY=$kunci"
+            echo "CRON_SECRET=$rahasia"
+          } >> "$GITHUB_ENV"
+
+      - name: Migrasi
+        run: |
+          docker run --rm --network host \
+            --env APP_ENV=production --env APP_KEY \
+            --env DB_CONNECTION=pgsql --env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test \
+            memount:ci php artisan migrate --force --no-interaction
+
       - name: Jalankan image
         run: |
+          # Tanpa PORT: image melayani port 80 sebagai www-data, persis seperti di Vercel.
           docker run --detach --name memount --network host \
-            --env PORT=10000 --env APP_ENV=production --env APP_DEBUG=false \
-            --env APP_KEY="base64:$(openssl rand -base64 32)" \
+            --env APP_ENV=production --env APP_DEBUG=false --env APP_KEY --env CRON_SECRET \
             --env DB_CONNECTION=pgsql --env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test \
             --env SESSION_DRIVER=database --env CACHE_STORE=database --env QUEUE_CONNECTION=sync \
             --env LOG_CHANNEL=stderr --env TRUSTED_PROXIES='*' \
             memount:ci
           for percobaan in $(seq 1 90); do
-            curl --silent --fail --output /dev/null http://127.0.0.1:10000/up && break
+            curl --silent --fail --output /dev/null http://127.0.0.1/up && break
             sleep 2
           done
-          curl --silent --fail --output /dev/null http://127.0.0.1:10000/up
-          curl --silent --fail --output /dev/null http://127.0.0.1:10000/login
+          curl --silent --fail --output /dev/null http://127.0.0.1/up
+          curl --silent --fail --output /dev/null http://127.0.0.1/login
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1/api/cron/data-freshness-check)" = 401
+          curl --silent --fail --output /dev/null --header "Authorization: Bearer $CRON_SECRET" http://127.0.0.1/api/cron/data-freshness-check
+          test "$(docker inspect --format '{{.Config.User}}' memount)" = www-data
 
       - name: Log kontainer
         if: always()

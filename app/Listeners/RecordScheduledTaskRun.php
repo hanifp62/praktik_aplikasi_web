@@ -19,41 +19,20 @@ class RecordScheduledTaskRun
 {
     public function handleFinished(ScheduledTaskFinished $event): void
     {
-        // exitCode bukan nol berarti perintahnya berjalan tetapi mengaku gagal. Tanpa
-        // pemeriksaan ini, tugas yang gagal setiap hari akan tercatat sehat setiap hari.
-        $this->record(
-            $event->task,
-            ($event->task->exitCode ?? 0) === 0 ? ScheduledTaskRun::SUCCESS : ScheduledTaskRun::FAILED,
-            (int) round($event->runtime * 1000),
-            ($event->task->exitCode ?? 0) === 0 ? null : 'Keluar dengan kode '.$event->task->exitCode.'.'
-        );
+        $kunci = $this->taskKey($event->task);
+
+        if ($kunci !== null) {
+            ScheduledTaskRun::catatKeluar($kunci, $event->task->exitCode ?? 0, (int) round($event->runtime * 1000));
+        }
     }
 
     public function handleFailed(ScheduledTaskFailed $event): void
     {
-        $this->record(
-            $event->task,
-            ScheduledTaskRun::FAILED,
-            null,
-            mb_substr($event->exception->getMessage(), 0, 500)
-        );
-    }
+        $kunci = $this->taskKey($event->task);
 
-    private function record(ScheduledEvent $task, string $status, ?int $runtimeMs, ?string $summary): void
-    {
-        $kunci = $this->taskKey($task);
-
-        if ($kunci === null) {
-            return;
+        if ($kunci !== null) {
+            ScheduledTaskRun::catatGalat($kunci, $event->exception);
         }
-
-        ScheduledTaskRun::create([
-            'task' => $kunci,
-            'status' => $status,
-            'runtime_ms' => $runtimeMs,
-            'summary' => $summary,
-            'ran_at' => now(),
-        ]);
     }
 
     /**

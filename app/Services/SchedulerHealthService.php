@@ -62,6 +62,36 @@ class SchedulerHealthService
     ];
 
     /**
+     * Harapan tugas pengingat di Vercel Hobby (config hiking.penjadwal.hanya_harian).
+     *
+     * vercel.json menjalankannya pada tiga jam jatuh temponya, 22.00, 23.00, dan 00.00 UTC, ditambah susulan
+     * pukul 02.00 UTC yang masih jatuh pada tanggal yang sama di ketiga zona, dan Vercel boleh memicunya kapan
+     * saja dalam jam itu. Jarak terpanjang antar-jalan 20 jam (02.00 sampai 22.00 UTC) ditambah satu jam
+     * pergeseran menjadi 21 jam; dua jam cadangan di atasnya membuat jalan yang lambat tidak menyalakan TERLAMBAT,
+     * jadi toleransinya 23 jam. VercelConfigTest menjaga agar toleransi ini tidak lebih sempit dari 21 jam.
+     */
+    private const PENGINGAT_HARIAN = [
+        'jadwal' => 'Empat kali sehari: pukul 07.00 WIT, WITA, dan WIB, lalu susulan pukul 09.00 WIB',
+        'toleransi_jam' => 23,
+    ];
+
+    /**
+     * Tugas terjadwal beserta harapan jadwal yang berlaku di lingkungan ini.
+     *
+     * @return array<string, array{judul: string, jadwal: string, toleransi_jam: int}>
+     */
+    public function tugas(): array
+    {
+        $tugas = self::TUGAS;
+
+        if (config('hiking.penjadwal.hanya_harian')) {
+            $tugas['trips:kirim-pengingat'] = [...$tugas['trips:kirim-pengingat'], ...self::PENGINGAT_HARIAN];
+        }
+
+        return $tugas;
+    }
+
+    /**
      * Keadaan setiap tugas terjadwal.
      *
      * @return array<int, array<string, mixed>>
@@ -70,7 +100,7 @@ class SchedulerHealthService
     {
         $laporan = [];
 
-        foreach (self::TUGAS as $kunci => $tugas) {
+        foreach ($this->tugas() as $kunci => $tugas) {
             $terakhir = ScheduledTaskRun::query()->where('task', $kunci)->latest('ran_at')->first();
             $berhasilTerakhir = $terakhir?->isSuccess()
                 ? $terakhir

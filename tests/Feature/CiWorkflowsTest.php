@@ -92,9 +92,13 @@ class CiWorkflowsTest extends TestCase
     }
 
     /**
-     * Image produksi yang dipakai render.yaml dibangun dan dijalankan di setiap push. Start kontainer menjalankan
-     * seluruh migrasi terhadap PostGIS yang sama dengan job test, dan /up serta halaman masuk harus menjawab 200,
-     * jadi image yang tidak dapat di-deploy membuat CI merah sebelum Render mencobanya (autoDeployTrigger checksPass).
+     * Image produksi yang dipakai vercel.json dibangun dan dijalankan di setiap push, dengan urutan platform: migrasi
+     * sebagai langkah tersendiri terhadap PostGIS yang sama dengan job test, lalu image melayani port 80 sebagai
+     * www-data seperti di Vercel, /up dan halaman masuk menjawab 200, dan rute Vercel Cron menolak panggilan tanpa
+     * rahasia tetapi menjalankan tugas dengan rahasianya. Vercel men-deploy setiap push ke main tanpa menunggu CI, jadi
+     * job ini menahan image yang rusak di cabang kerja, sebelum commit yang sama dibawa ke main. Start kontainer tidak
+     * menjalankan migrasi maupun schedule:work: panduan Vercel melarang migrasi saat start, dan instans tidur sesudah
+     * lima menit sepi.
      */
     public function test_the_production_image_is_built_and_smoke_tested_against_postgis(): void
     {
@@ -104,21 +108,37 @@ class CiWorkflowsTest extends TestCase
         $this->assertSame($alur['jobs']['test']['services']['postgis']['image'], $pekerjaan['services']['postgis']['image']);
 
         $bernama = $this->langkahBernama($pekerjaan['steps']);
+        $urutan = array_keys($bernama);
+        $jalankan = $bernama['Jalankan image']['run'];
 
         $this->assertSame('docker build --tag memount:ci .', $bernama['Build image']['run']);
-        $this->assertStringContainsString('--env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test', $bernama['Jalankan image']['run']);
-        $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1:10000/up', $bernama['Jalankan image']['run']);
-        $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1:10000/login', $bernama['Jalankan image']['run']);
+        $this->assertStringContainsString('::add-mask::', $bernama['Siapkan variabel image']['run']);
+        $this->assertStringContainsString('memount:ci php artisan migrate --force --no-interaction', $bernama['Migrasi']['run']);
+        $this->assertLessThan(array_search('Jalankan image', $urutan, true), array_search('Migrasi', $urutan, true), 'Migrasi harus selesai sebelum aplikasi melayani.');
+        $this->assertStringContainsString('--env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test', $bernama['Migrasi']['run']);
+        $this->assertStringContainsString('--env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test', $jalankan);
+        $this->assertStringNotContainsString('--env PORT=', $jalankan, 'Image diuji di port 80, port yang dipakai Vercel.');
+        $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1/up', $jalankan);
+        $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1/login', $jalankan);
+        $this->assertStringContainsString('/api/cron/data-freshness-check)" = 401', $jalankan);
+        $this->assertStringContainsString('--header "Authorization: Bearer $CRON_SECRET" http://127.0.0.1/api/cron/data-freshness-check', $jalankan);
+        $this->assertStringContainsString('test "$(docker inspect --format \'{{.Config.User}}\' memount)" = www-data', $jalankan);
         $this->assertSame('always()', $bernama['Log kontainer']['if']);
 
-        $mulai = File::get(base_path('docker/start.sh'));
-        $this->assertStringContainsString('php artisan migrate --force --no-interaction', $mulai);
+        // Baris komentar dibuang: komentarnya justru menjelaskan mengapa migrasi dan schedule:work tidak ada di sini.
+        $mulai = implode("\n", array_filter(
+            explode("\n", File::get(base_path('docker/start.sh'))),
+            fn (string $baris): bool => ! str_starts_with(ltrim($baris), '#'),
+        ));
         $this->assertStringContainsString('set -e', $mulai);
+        $this->assertStringContainsString('php artisan optimize --no-interaction', $mulai);
+        $this->assertStringContainsString('--listen ":${PORT:-80}"', $mulai);
+        $this->assertStringNotContainsString('migrate', $mulai, 'Panduan Vercel melarang migrasi saat kontainer mulai.');
+        $this->assertStringNotContainsString('schedule:', $mulai, 'Di Vercel tugas terjadwal dipicu Vercel Cron, bukan proses latar.');
 
-        $render = Yaml::parseFile(base_path('render.yaml'))['services'][0];
-        $this->assertSame('./Dockerfile', $render['dockerfilePath']);
-        $this->assertSame('checksPass', $render['autoDeployTrigger'], 'Render hanya menerapkan commit yang sudah lulus CI.');
-        $this->assertSame('/up', $render['healthCheckPath']);
+        $dockerfile = File::get(base_path('Dockerfile'));
+        $this->assertMatchesRegularExpression('/^USER www-data$/m', $dockerfile, 'Kontainer tidak boleh berjalan sebagai root.');
+        $this->assertMatchesRegularExpression('/^ENV PORT=80$/m', $dockerfile, 'Vercel mengirim trafik ke port 80.');
     }
 
     public function test_the_security_workflow_audits_dependencies_and_scans_for_secrets(): void

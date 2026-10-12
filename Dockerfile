@@ -1,9 +1,10 @@
 # syntax=docker/dockerfile:1
 
-# Image produksi Memount untuk platform kontainer (Render, render.yaml). FrankenPHP 1.x dengan PHP 8.5, sama dengan
-# target runtime proyek (CLAUDE.md R-020). Dua tahap: tahap build memasang dependensi Composer dan Node lalu membangun
-# aset Vite. Build Vite memanggil `php artisan wayfinder:generate`, jadi PHP dan Node harus ada di tahap yang sama.
-# Tahap akhir hanya membawa kode, vendor, dan public/build, tanpa Node dan tanpa node_modules. Diuji job CI `image`.
+# Image produksi Memount untuk Vercel (container-backed Vercel Function, DK-12, PRD §154; dirujuk vercel.json).
+# FrankenPHP 1.x dengan PHP 8.5, sama dengan target runtime proyek (CLAUDE.md R-020). Dua tahap: tahap build memasang
+# dependensi Composer dan Node lalu membangun aset Vite. Build Vite memanggil `php artisan wayfinder:generate`, jadi PHP
+# dan Node harus ada di tahap yang sama. Tahap akhir hanya membawa kode, vendor, dan public/build, tanpa Node dan tanpa
+# node_modules. Diuji job CI `image`.
 
 FROM dunglas/frankenphp:1-php8.5-alpine AS build
 
@@ -53,7 +54,12 @@ RUN chmod +x docker/start.sh \
 
 USER www-data
 
-ENV PORT=10000
-EXPOSE 10000
+# Vercel mengirim trafik ke port 80 kecuali PORT diatur di pengaturan proyek (Vercel KB "Running Docker on Vercel").
+# Image dasar FrankenPHP memberi binarinya kapabilitas cap_net_bind_service, jadi www-data dapat membuka port 80 tanpa
+# root, sama dengan contoh resmi Laravel di Vercel. Sebagai www-data, kode aplikasi dan public/ tidak dapat ditulisi;
+# storage/ dan bootstrap/cache/ tetap dapat ditulisi karena dibutuhkan `optimize` saat start dan view terkompilasi.
+# Job CI `image` menjalankan image ini di port 80.
+ENV PORT=80
+EXPOSE 80
 
 CMD ["docker/start.sh"]

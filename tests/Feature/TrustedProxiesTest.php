@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
- * Proxy tepercaya diatur lewat TRUSTED_PROXIES (deploy Render, render.yaml). Tanpa nilai, header X-Forwarded-*
+ * Proxy tepercaya diatur lewat TRUSTED_PROXIES (deploy Vercel, vercel.json). Tanpa nilai, header X-Forwarded-*
  * diabaikan, jadi di lokal dan test tidak ada klien yang dapat memalsukan skema atau IP-nya. Dengan '*', skema https
  * dan IP pengguna dari proxy platform dipakai, supaya cookie aman dan batas laju per IP benar.
  */

@@ -160,6 +160,31 @@ class SchedulerHealthTest extends TestCase
         $this->assertStringContainsString('07.00', SchedulerHealthService::TUGAS['data:freshness-check']['jadwal']);
     }
 
+    /**
+     * Vercel Hobby (hiking.penjadwal.hanya_harian): pengingat berjalan pada jam jatuh temponya ditambah satu
+     * susulan. Jalan 21 jam lalu masih wajar di sana, padahal di server dengan scheduler tiap jam itu terlambat;
+     * lewat 23 jam tetap terlambat di keduanya.
+     */
+    public function test_on_daily_only_cron_the_reminder_task_is_judged_by_its_daily_runs(): void
+    {
+        $this->catat('trips:kirim-pengingat', ScheduledTaskRun::SUCCESS, Carbon::parse('2026-10-13 00:40:00'));
+        Carbon::setTestNow('2026-10-13 21:40:00');
+
+        $this->assertSame(SchedulerHealthService::TERLAMBAT, $this->baris('trips:kirim-pengingat')['keadaan']);
+
+        config(['hiking.penjadwal.hanya_harian' => true]);
+
+        $baris = $this->baris('trips:kirim-pengingat');
+        $this->assertSame(SchedulerHealthService::SEHAT, $baris['keadaan']);
+        $this->assertSame(23, $baris['toleransi_jam']);
+        $this->assertStringContainsString('07.00', $baris['jadwal']);
+        $this->assertStringNotContainsString('07:00', $baris['jadwal']);
+
+        Carbon::setTestNow('2026-10-14 02:00:00');
+
+        $this->assertSame(SchedulerHealthService::TERLAMBAT, $this->baris('trips:kirim-pengingat')['keadaan']);
+    }
+
     public function test_the_listener_records_a_finished_task(): void
     {
         $task = app(Schedule::class)->command('weather:refresh');

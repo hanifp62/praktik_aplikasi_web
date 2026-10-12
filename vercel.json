@@ -1,0 +1,29 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["sin1"],
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true
+    }
+  },
+  "services": {
+    "app": {
+      "root": ".",
+      "entrypoint": "Dockerfile",
+      "runtime": "container"
+    }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": { "service": "app" } }
+  ],
+  "crons": [
+    { "path": "/api/cron/weather-refresh", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/weather-refresh", "schedule": "0 18 * * *" },
+    { "path": "/api/cron/data-freshness-check", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/trips-kirim-pengingat", "schedule": "0 22 * * *" },
+    { "path": "/api/cron/trips-kirim-pengingat", "schedule": "0 23 * * *" },
+    { "path": "/api/cron/trips-kirim-pengingat", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/trips-kirim-pengingat", "schedule": "0 2 * * *" }
+  ]
+}
