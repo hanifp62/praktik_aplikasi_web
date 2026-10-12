@@ -36,8 +36,9 @@ class StoreConditionReportRequest extends FormRequest
             'condition_tags' => ['required', 'array', 'min:1'],
             'condition_tags.*' => [Rule::enum(ConditionTag::class)],
             'note' => ['nullable', 'string', 'max:1000'],
-            // PRD §81: MIME, ekstensi, dan ukuran dibatasi bersama.
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            // PRD §81: MIME, ekstensi, dan ukuran dibatasi bersama. Formulir memeriksa batas yang sama
+            // sebelum mengirim, karena di Vercel permintaan di atas 4,5 MB tidak pernah sampai ke sini.
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:'.config('hiking.uploads.report_photo_max_kb')],
             // Hanya dipakai untuk menautkan laporan ke riwayat MILIK pengirim; trip orang
             // lain tidak tersentuh karena pembaruannya disaring user_id.
             'trip_plan_id' => ['nullable', 'integer'],

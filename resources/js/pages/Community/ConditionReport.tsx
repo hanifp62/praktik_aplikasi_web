@@ -1,5 +1,5 @@
 import { router, useForm, usePage } from '@inertiajs/react';
-import type { FormEvent, ReactNode } from 'react';
+import type { ChangeEvent, FormEvent, ReactNode } from 'react';
 import type { Opsi } from '@/components/community/types';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +17,14 @@ interface Props extends PropsBersama {
     awal: { trail_id: number | null; trip_plan_id: number | null; hike_date: string };
     tanggalMaksimum: string;
 }
+
+/*
+ * Batas yang sama dengan aturan server (hiking.uploads.report_photo_max_kb, dijaga ConditionReportPageTest). Di
+ * Vercel, permintaan di atas 4,5 MB ditolak platform sebelum sampai ke server, jadi foto yang lebih besar ditolak di
+ * sini, sebelum dikirim, dengan pesan di dekat kontrolnya.
+ */
+const BATAS_FOTO_BYTE = 4096 * 1024;
+const PESAN_FOTO_BESAR = 'Ukuran foto lebih dari 4 MB. Pilih foto yang lebih kecil, atau kirim laporan tanpa foto.';
 
 interface Isian {
     trail_id: string;
@@ -61,9 +69,38 @@ export default function ConditionReport() {
     const ubahKondisi = (nilai: string, dipilih: boolean) =>
         form.setData('condition_tags', dipilih ? [...form.data.condition_tags, nilai] : form.data.condition_tags.filter((t) => t !== nilai));
 
+    const pilihFoto = (e: ChangeEvent<HTMLInputElement>) => {
+        const foto = e.target.files?.[0] ?? null;
+
+        if (foto !== null && foto.size > BATAS_FOTO_BYTE) {
+            e.target.value = '';
+            form.setData('photo', null);
+            form.setError('photo', PESAN_FOTO_BESAR);
+
+            return;
+        }
+
+        form.clearErrors('photo');
+        form.setData('photo', foto);
+    };
+
     const kirim = (e: FormEvent) => {
         e.preventDefault();
-        form.post(store.url(), { forceFormData: true, preserveScroll: true });
+        form.post(store.url(), {
+            forceFormData: true,
+            preserveScroll: true,
+            // Cadangan bila platform tetap menolak ukuran permintaan: galatnya tampil di dekat kontrol foto,
+            // bukan halaman galat platform di dalam dialog.
+            onHttpException: (respons) => {
+                if (respons.status !== 413) {
+                    return;
+                }
+
+                form.setError('photo', PESAN_FOTO_BESAR);
+
+                return false;
+            },
+        });
     };
 
     return (
@@ -159,7 +196,8 @@ export default function ConditionReport() {
                             id="photo"
                             type="file"
                             accept="image/jpeg,image/png,image/webp"
-                            onChange={(e) => form.setData('photo', e.target.files?.[0] ?? null)}
+                            onChange={pilihFoto}
+                            aria-invalid={form.errors.photo ? true : undefined}
                             aria-describedby={form.errors.photo ? 'photo-error' : undefined}
                             className="mt-1 block w-full text-sm text-secondary file:mr-3 file:min-h-11 file:rounded-control file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-ink"
                         />
@@ -168,7 +206,11 @@ export default function ConditionReport() {
                                 Mengunggah foto... {form.progress.percentage}%
                             </p>
                         ) : null}
-                        <InputError id="photo-error" messages={form.errors.photo} className="mt-2" />
+                        {/* Wilayah yang selalu terpasang: galat ukuran muncul tanpa kiriman, sesudah dialog
+                            berkas ditutup dan inputnya dikosongkan, jadi harus diumumkan ke pembaca layar. */}
+                        <div aria-live="polite">
+                            <InputError id="photo-error" messages={form.errors.photo} className="mt-2" />
+                        </div>
                     </div>
 
                     <p className="rounded-control bg-surface-sunken px-4 py-3 text-sm text-secondary">Laporan akan melalui moderasi sebelum ditampilkan kepada pengguna lain.</p>

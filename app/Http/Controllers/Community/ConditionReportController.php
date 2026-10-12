@@ -20,8 +20,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -107,19 +107,26 @@ class ConditionReportController extends Controller
         RateLimiter::hit($kunci, 3600);
 
         $pathFoto = null;
-        $fotoGagal = false;
+        $alasanFotoGagal = null;
 
         if ($request->hasFile('photo')) {
-            // Nama berkas acak menjauhkan nama dari pengguna dari path penyimpanan.
+            $foto = $request->file('photo');
             $disk = config('filesystems.report_photos_disk');
-            $pathFoto = $request->file('photo')->store('condition-reports', $disk);
 
-            // EXIF foto ponsel membawa koordinat GPS pendaki (PRD §82). Foto yang gagal
-            // dibersihkan dibuang, tetapi laporannya tetap tersimpan.
-            if (! ImageSanitizer::trySanitize(Storage::disk($disk)->path($pathFoto), (int) config('hiking.uploads.report_photo_max_dimension'))) {
-                Storage::disk($disk)->delete($pathFoto);
-                $pathFoto = null;
-                $fotoGagal = true;
+            // EXIF foto ponsel membawa koordinat GPS pendaki (PRD §82). Berkas sementara unggahan
+            // dibersihkan lebih dulu, baru disimpan: foto aslinya tidak pernah menyentuh penyimpanan,
+            // dan disk S3 (Supabase Storage di produksi) tidak punya path lokal untuk dibersihkan
+            // sesudahnya. Nama berkas acak menjauhkan nama dari pengguna dari path penyimpanan. Foto
+            // yang gagal dibersihkan atau gagal disimpan dibuang, tetapi laporannya tetap tersimpan.
+            if (! ImageSanitizer::trySanitize((string) $foto->getRealPath(), (int) config('hiking.uploads.report_photo_max_dimension'))) {
+                $alasanFotoGagal = 'Foto tidak dapat diproses dan tidak disertakan. Laporan tetap tersimpan.';
+            } elseif (($tersimpan = $foto->store('condition-reports', $disk)) === false) {
+                // Disk supabase tidak melempar maupun melaporkan galat tulis, jadi kunci, bucket, atau endpoint
+                // S3 yang salah hanya terlihat dari baris log ini. Tanpa data pribadi: cukup nama disknya.
+                Log::warning('Foto laporan gagal disimpan; periksa pengaturan disk penyimpanan foto.', ['disk' => $disk]);
+                $alasanFotoGagal = 'Foto tidak dapat disimpan dan tidak disertakan. Laporan tetap tersimpan.';
+            } else {
+                $pathFoto = $tersimpan;
             }
         }
 
@@ -148,8 +155,8 @@ class ConditionReportController extends Controller
         // Kunci terpisah dari 'status'. Versi Livewire menulis keduanya ke 'status'
         // berturut-turut, sehingga kabar foto yang dibuang tertimpa dan tidak pernah
         // terbaca pengirimnya.
-        return $fotoGagal
-            ? $respons->with('foto-tidak-disertakan', 'Foto tidak dapat diproses dan tidak disertakan. Laporan tetap tersimpan.')
+        return $alasanFotoGagal !== null
+            ? $respons->with('foto-tidak-disertakan', $alasanFotoGagal)
             : $respons;
     }
 

@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Support\ImageSanitizer;
 use RuntimeException;
+use Tests\Concerns\GambarBerExif;
 use Tests\TestCase;
 
 /**
@@ -15,6 +16,8 @@ use Tests\TestCase;
  */
 class ImageSanitizerTest extends TestCase
 {
+    use GambarBerExif;
+
     /**
      * @var array<int, string>
      */
@@ -108,7 +111,6 @@ class ImageSanitizerTest extends TestCase
 
         $path = tempnam(sys_get_temp_dir(), 'uji').'.jpg';
         imagejpeg($image, $path);
-        imagedestroy($image);
 
         $this->temporaryFiles[] = $path;
 
@@ -116,34 +118,15 @@ class ImageSanitizerTest extends TestCase
     }
 
     /**
-     * Menyisipkan segmen APP1/Exif minimal berisi tag Make ke dalam JPEG.
+     * JPEG ber-EXIF dari GambarBerExif, ditulis ke berkas karena pembersih bekerja pada path.
      */
     private function jpegWithExif(): string
     {
-        $path = $this->jpeg(400, 300);
-        $jpeg = file_get_contents($path);
+        $path = tempnam(sys_get_temp_dir(), 'uji').'.jpg';
+        file_put_contents($path, $this->jpegBerExif());
 
-        $exif = $this->exifSegment();
-
-        // Segmen APP1 disisipkan tepat setelah penanda SOI (dua bita pertama).
-        file_put_contents($path, substr($jpeg, 0, 2).$exif.substr($jpeg, 2));
+        $this->temporaryFiles[] = $path;
 
         return $path;
-    }
-
-    private function exifSegment(): string
-    {
-        $make = "Pendaki\0";
-
-        // IFD0 dengan satu entri: Make (0x010F), ASCII, panjang string, offset data.
-        $ifd = pack('v', 1)
-            .pack('vvVV', 0x010F, 2, strlen($make), 8 + 2 + 12 + 4)
-            .pack('V', 0)
-            .$make;
-
-        $tiff = "II\x2a\x00".pack('V', 8).$ifd;
-        $payload = "Exif\0\0".$tiff;
-
-        return "\xFF\xE1".pack('n', strlen($payload) + 2).$payload;
     }
 }

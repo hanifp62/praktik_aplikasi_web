@@ -11,13 +11,18 @@ use App\Models\TrailConditionReport;
 use App\Models\TrailSegment;
 use App\Models\TripPlan;
 use App\Models\User;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia;
+use League\Flysystem\Filesystem;
+use League\Flysystem\Local\LocalFilesystemAdapter;
+use Tests\Concerns\GambarBerExif;
 use Tests\TestCase;
 
 /**
@@ -26,6 +31,7 @@ use Tests\TestCase;
  */
 class ConditionReportPageTest extends TestCase
 {
+    use GambarBerExif;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -242,6 +248,125 @@ class ConditionReportPageTest extends TestCase
         $this->actingAs($user)->get(route('history'))->assertInertia(fn (AssertableInertia $page) => $page
             ->where('peringatanFoto', 'Foto tidak dapat diproses dan tidak disertakan. Laporan tetap tersimpan.')
             ->where('flash.status', 'Laporan terkirim dan menunggu moderasi sebelum tampil untuk pengguna lain.'));
+    }
+
+    /**
+     * Regresi deploy Vercel (13 Oktober 2026). Di produksi foto disimpan ke Supabase Storage, disk S3 yang
+     * path()-nya hanya kunci objek, bukan berkas lokal. Alur lama menyimpan foto asli lebih dulu lalu
+     * membersihkannya lewat path() disk, sehingga di S3 setiap foto dibuang dan foto asli berkoordinat sempat
+     * tersimpan. Disk tiruan di sini berperilaku seperti S3: fotonya tetap harus tersimpan, dan yang tersimpan
+     * sudah bersih dari EXIF sejak pertama ditulis.
+     */
+    public function test_a_photo_is_cleaned_before_it_reaches_a_disk_without_local_paths(): void
+    {
+        $akar = storage_path('framework/testing/disks/s3-tiruan');
+
+        Storage::extend('seperti-s3', function ($app, array $konfigurasi): FilesystemAdapter {
+            $adapter = new LocalFilesystemAdapter($konfigurasi['root']);
+
+            return new class(new Filesystem($adapter, $konfigurasi), $adapter, $konfigurasi) extends FilesystemAdapter
+            {
+                public function path($path)
+                {
+                    return $path;
+                }
+            };
+        });
+
+        config([
+            'filesystems.disks.s3-tiruan' => ['driver' => 'seperti-s3', 'root' => $akar],
+            'filesystems.report_photos_disk' => 's3-tiruan',
+        ]);
+
+        try {
+            $this->kirim(User::factory()->create(), Trail::factory()->create(), [
+                'photo' => UploadedFile::fake()->createWithContent('IMG_0001.jpg', $this->jpegBerExif()),
+            ])->assertRedirect(route('history'))->assertSessionMissing('foto-tidak-disertakan');
+
+            $path = TrailConditionReport::sole()->photo_path;
+            $this->assertNotNull($path, 'Foto dibuang padahal dapat dibersihkan.');
+
+            $isi = Storage::disk('s3-tiruan')->get($path);
+            $this->assertNotFalse(getimagesizefromstring($isi), 'Yang tersimpan bukan gambar.');
+            $this->assertStringNotContainsString("Exif\0\0", $isi, 'Foto tersimpan masih membawa segmen EXIF.');
+            $this->assertStringNotContainsString(self::MERK_EXIF_UJI, $isi, 'Foto tersimpan masih membawa tag EXIF.');
+        } finally {
+            File::deleteDirectory($akar);
+        }
+    }
+
+    /**
+     * Disk supabase tidak melempar maupun melaporkan galat tulis, jadi kunci atau bucket S3 yang salah membuat
+     * store() mengembalikan false tanpa jejak. Fotonya dibuang dengan kalimat yang menyebut penyimpanan, laporannya
+     * tetap tersimpan, dan kegagalannya tercatat di log tanpa data pribadi supaya pemilik dapat mendiagnosisnya.
+     */
+    public function test_a_photo_that_cannot_be_stored_is_dropped_logged_and_the_sender_is_told(): void
+    {
+        Storage::extend('gagal-tulis', function ($app, array $konfigurasi): FilesystemAdapter {
+            $adapter = new LocalFilesystemAdapter($konfigurasi['root']);
+
+            return new class(new Filesystem($adapter, $konfigurasi), $adapter, $konfigurasi) extends FilesystemAdapter
+            {
+                public function putFileAs($path, $file, $name = null, $options = [])
+                {
+                    return false;
+                }
+            };
+        });
+
+        config([
+            'filesystems.disks.gagal-tulis' => ['driver' => 'gagal-tulis', 'root' => storage_path('framework/testing/disks/gagal-tulis')],
+            'filesystems.report_photos_disk' => 'gagal-tulis',
+        ]);
+        Log::spy();
+
+        $this->kirim(User::factory()->create(), Trail::factory()->create(), [
+            'photo' => UploadedFile::fake()->createWithContent('IMG_0002.jpg', $this->jpegBerExif()),
+        ])->assertRedirect(route('history'))
+            ->assertSessionHas('foto-tidak-disertakan', 'Foto tidak dapat disimpan dan tidak disertakan. Laporan tetap tersimpan.');
+
+        $this->assertNull(TrailConditionReport::sole()->photo_path);
+        Log::shouldHaveReceived('warning')->once()->withArgs(
+            fn (string $pesan, array $konteks): bool => str_contains($pesan, 'gagal disimpan') && $konteks === ['disk' => 'gagal-tulis']
+        );
+    }
+
+    /**
+     * Batas ukuran foto hanya punya satu sumber di server, dan aturan validasinya membacanya dari sana.
+     */
+    public function test_the_photo_size_rule_reads_the_configured_limit(): void
+    {
+        config(['hiking.uploads.report_photo_max_kb' => 10]);
+
+        $this->kirim(User::factory()->create(), Trail::factory()->create(), [
+            'photo' => UploadedFile::fake()->image('besar.jpg', 640, 480)->size(20),
+        ])->assertSessionHasErrors('photo');
+
+        $this->assertSame(0, TrailConditionReport::count());
+    }
+
+    /**
+     * Di Vercel, permintaan di atas 4,5 MB ditolak platform sebelum sampai ke server, jadi formulir memeriksa
+     * ukuran foto sebelum mengirim, dengan batas yang sama dengan server, dan menangani 413 di dekat kontrolnya.
+     */
+    public function test_the_form_checks_the_photo_size_with_the_server_limit_before_sending(): void
+    {
+        $sumber = File::get(resource_path('js/pages/Community/ConditionReport.tsx'));
+
+        $this->assertSame(1, preg_match('/const BATAS_FOTO_BYTE = (\d+) \* 1024;/', $sumber, $cocok));
+        $this->assertSame((int) config('hiking.uploads.report_photo_max_kb'), (int) $cocok[1], 'Batas foto di formulir berbeda dari server.');
+        $this->assertStringContainsString('onChange={pilihFoto}', $sumber);
+        $this->assertStringContainsString('if (foto !== null && foto.size > BATAS_FOTO_BYTE) {', $sumber, 'Foto di atas batas harus ditolak sebelum dikirim.');
+        $this->assertMatchesRegularExpression(
+            "/respons\\.status !== 413\\) \\{\\s*return;\\s*\\}\\s*form\\.setError\\('photo', PESAN_FOTO_BESAR\\);\\s*return false;/",
+            $sumber,
+            'Penangan 413 formulir harus menghentikan dialog galat platform.',
+        );
+        $this->assertStringContainsString('aria-invalid={form.errors.photo ? true : undefined}', $sumber);
+        $this->assertMatchesRegularExpression('/<div aria-live="polite">\s*<InputError id="photo-error"/', $sumber, 'Galat foto harus diumumkan ke pembaca layar.');
+
+        $aplikasi = File::get(resource_path('js/app.tsx'));
+        $this->assertMatchesRegularExpression('/status === 413\) \{\s*event\.preventDefault\(\);/', $aplikasi, 'Penangan 413 global harus menghentikan dialog galat platform.');
     }
 
     /**

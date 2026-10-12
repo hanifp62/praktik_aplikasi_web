@@ -39,15 +39,9 @@ class ImageSanitizer
             throw new RuntimeException('Gambar tidak dapat didekode.');
         }
 
-        try {
-            $image = self::constrain($image, $maxDimension);
-
-            self::write($image, $absolutePath, $info[2]);
-        } finally {
-            if ($image instanceof \GdImage) {
-                imagedestroy($image);
-            }
-        }
+        // Objek GdImage dibebaskan sendiri saat lepas cakupan; imagedestroy() tidak berefek sejak PHP 8.0
+        // dan deprecated di PHP 8.5, runtime proyek ini.
+        self::write(self::constrain($image, $maxDimension), $absolutePath, $info[2]);
     }
 
     /**
@@ -77,13 +71,7 @@ class ImageSanitizer
 
         $scaled = imagescale($image, (int) round($width * $maxDimension / $longest));
 
-        if ($scaled === false) {
-            return $image;
-        }
-
-        imagedestroy($image);
-
-        return $scaled;
+        return $scaled === false ? $image : $scaled;
     }
 
     private static function write(\GdImage $image, string $path, int $type): void
