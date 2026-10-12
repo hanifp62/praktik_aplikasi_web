@@ -88,10 +88,10 @@ jobs:
       # menjalankan Feature, dan 104 test Unit tidak pernah dieksekusi CI sama sekali.
       # Dipisah juga membuat kegagalan tiap suite terbaca sendiri-sendiri.
       - name: Unit tests
-        run: php artisan test --testsuite=Unit
+        run: php artisan test --testsuite=Unit --log-junit unit-junit.xml
 
       - name: Feature tests
-        run: php artisan test --testsuite=Feature
+        run: php artisan test --testsuite=Feature --log-junit feature-junit.xml
 
       # --fail-on-skipped (ruling W6-FI): DSN di bawah selalu diisi, jadi test Spatial yang
       # dilewati berarti suite tidak benar-benar berjalan. CI tidak boleh hijau tanpa bukti
@@ -102,8 +102,8 @@ jobs:
         run: php artisan test --testsuite=Spatial --fail-on-skipped --log-junit spatial-junit.xml
 
       # Log job hanya terbaca admin repo; anotasi terbaca publik lewat API check-runs. Penyebab
-      # kegagalan suite PostgreSQL diterbitkan sebagai anotasi supaya dapat diperiksa tanpa
-      # kredensial (R-024).
-      - name: Ringkas kegagalan Spatial
+      # kegagalan ketiga suite diterbitkan sebagai anotasi supaya dapat diperiksa tanpa hak
+      # admin. Laporan suite yang tidak sempat berjalan dilewati skrip.
+      - name: Ringkas kegagalan test
         if: failure()
-        run: python3 .github/scripts/junit_anotasi.py spatial-junit.xml
+        run: python3 .github/scripts/junit_anotasi.py unit-junit.xml feature-junit.xml spatial-junit.xml

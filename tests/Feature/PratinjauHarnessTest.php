@@ -224,7 +224,9 @@ class PratinjauHarnessTest extends TestCase
      * Laravel membaca $_SERVER lebih dulu, dan $_SERVER tetap membawa nilai shell (bukti di
      * laporan perbaikan akhir W1). Karena itu setiap variabel juga ditulis lewat <server>.
      * SpatialTestCase memasang koneksi pgsql-nya sendiri lewat config dari SPATIAL_TEST_DSN,
-     * dan workflow CI tidak menyetel DB_* sama sekali, jadi keduanya tidak terdampak.
+     * dan workflow yang menjalankan test tidak menyetel DB_* sama sekali, jadi keduanya tidak
+     * terdampak. Workflow tanpa PHPUnit berada di luar pagar ini: migrate-supabase.yml
+     * memakai DB_* untuk mengarahkan artisan migrate ke Supabase.
      *
      * Nilai config dibandingkan sebagai boolean supaya kegagalan tidak pernah mencetak nilai
      * yang berasal dari .env.
@@ -267,9 +269,20 @@ class PratinjauHarnessTest extends TestCase
         $this->assertTrue(config('database.connections.pgsql.username') === 'tidak_ada', 'Pengguna pgsql test masih dari .env.');
         $this->assertTrue(blank(config('database.connections.pgsql.password')), 'Sandi pgsql test masih dari .env.');
 
+        $diperiksa = [];
+
         foreach (File::glob(base_path('.github/workflows/*.yml')) as $alur) {
-            $this->assertDoesNotMatchRegularExpression('/^\s+DB_[A-Z_]+\s*:/m', File::get($alur), basename($alur).' menyetel DB_*, yang akan ditimpa pagar ini.');
+            $isi = File::get($alur);
+
+            if (! preg_match('#php artisan test|vendor/bin/phpunit#', $isi)) {
+                continue;
+            }
+
+            $diperiksa[] = basename($alur);
+            $this->assertDoesNotMatchRegularExpression('/^\s+DB_[A-Z_]+\s*:/m', $isi, basename($alur).' menjalankan test dan menyetel DB_*, yang akan ditimpa pagar ini.');
         }
+
+        $this->assertContains('test.yml', $diperiksa, 'Pemeriksaan DB_* tidak lagi menjangkau workflow test.');
     }
 
     /**
