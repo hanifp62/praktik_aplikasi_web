@@ -24,7 +24,7 @@ Desain konsolidasi: `docs/superpowers/specs/2026-09-23-konsolidasi-dokumen-desig
 ## Cara membaca
 
 1. **Nomor § adalah ID permanen, bukan halaman.** Setiap bagian membawa ID-nya di judul. Urutan baca disusun untuk manusia yang membaca dari atas, sehingga boleh berbeda dari urutan nomor. Untuk mencari §N, buka Lampiran A.
-2. **Tidak ada ID yang dihapus atau dipakai ulang.** Bagian yang dipadatkan ke bagian lain tetap tercatat sebagai alias di Lampiran A, misalnya §137 dipadatkan ke §1. ID baru: bagian mulai §147 (kini terpakai sampai §161), fitur mulai FR-22 (terpakai sampai FR-27), aturan bisnis baru memakai nomor setelah BR-16 (belum ada), governance record berikutnya GR-08.
+2. **Tidak ada ID yang dihapus atau dipakai ulang.** Bagian yang dipadatkan ke bagian lain tetap tercatat sebagai alias di Lampiran A, misalnya §137 dipadatkan ke §1. ID baru: bagian mulai §147 (kini terpakai sampai §161), fitur mulai FR-22 (terpakai sampai FR-27), aturan bisnis baru memakai nomor setelah BR-16 (belum ada), governance record berikutnya GR-09.
 3. **Rujukan di kode tidak disentuh.** Karena ID tetap, ratusan rujukan `§N`, `BR-N`, dan `FR-N` di kode, test, dan dokumen tetap menunjuk isi yang sama. `tests/Feature/PrdReferenceIntegrityTest.php` menjaganya: setiap ID yang dirujuk harus punya heading atau alias di sini, indeks tidak boleh melompat, tidak ada ID yang dipakai dua kali, PRD hanya ada di `docs/PRD.md`, dan setiap berkas `.md` yang disebut dokumen hidup benar-benar ada.
 4. **Konvensi rujukan.** Di dokumen ini, "§N" selalu berarti ID PRD. Bagian dokumen lain ditulis "bagian N" beserta nama berkasnya, misalnya "HANDOVER.md bagian 3". Aturan R-001 sampai R-024 tidak disalin ke sini; PRD hanya merujuk pemiliknya (peta di bawah).
 5. **Istilah.** Teks untuk pengguna memakai pos (bukan checkpoint), jalur, kawasan, dan pengelola. Istilah domain di dokumen ini: Mountain, Trail, Route Fit. Nilai enum ditulis kapital, misalnya OPEN atau COCOK.
@@ -65,7 +65,7 @@ Setiap jenis isi punya satu pemilik. Bila dua berkas berbeda, pemiliknya yang be
 
 Diamandemen: header PRD v2.0 menulis Laravel 13.32.0, sedangkan yang terpasang 13.31.0 (diskrepansi D-A). PRD mencatat versi yang terpasang; upgrade atau downgrade adalah keputusan pemilik (R-020). Frontend kini React lewat Inertia atas keputusan pemilik 24 September 2026 (jalur C).
 
-FACT, diperiksa 25 September 2026 dengan `php -v`, `composer -V`, `php artisan --version`, `composer show --direct`, dan versi paket di `node_modules`:
+FACT, diperiksa 25 September 2026 dengan `php -v`, `composer -V`, `php artisan --version`, `composer show --direct`, dan versi paket di `node_modules`; baris Gaya dan Peta diperbarui 12 Oktober 2026 (GR-08):
 
 | Lapisan | Yang terpasang | Catatan |
 |---|---|---|
@@ -73,9 +73,9 @@ FACT, diperiksa 25 September 2026 dengan `php -v`, `composer -V`, `php artisan -
 | Kerangka | Laravel Framework 13.31.0 | Membutuhkan PHP 8.3 ke atas; dukungan keamanan sampai Q1 2028 ([Laravel 13](https://laravel.com/docs/13.x/releases)) |
 | Presentasi | React 19.3.0, `inertiajs/inertia-laravel` 3.3.4, `@inertiajs/react` 3.7.1, TypeScript 5.9.3, Vite 8.3.0, `laravel/wayfinder` 0.1.21 | Laravel memegang routing, otorisasi, dan data; React memegang interaksi. SSR mati sampai diputuskan (`config/inertia.php`) |
 | Presentasi lama | Livewire 3.8.9, Volt 1.11.2, Breeze 2.4.2 | Masih terpasang selama pensiun; melepas paketnya butuh izin pemilik |
-| Gaya | Tailwind CSS 3.4.19 | Token warna di `resources/css/app.css` satu-satunya sumber palet |
+| Gaya | Tailwind CSS 4.3.3 lewat `@tailwindcss/vite` | Token warna di `resources/css/app.css` satu-satunya sumber palet; konfigurasi CSS-first di berkas yang sama |
 | Data | PostgreSQL di Supabase dengan PostGIS; Supabase Storage lewat disk `supabase` (S3) | Skema kanonis adalah migrasi di `database/migrations/` (51 berkas) |
-| Peta | MapLibre GL 4.7.1; basemap OpenTopoMap lewat `MAP_TILE_URL` | Kebijakan peta §55 |
+| Peta | MapLibre GL 6.14.0, butuh WebGL2; basemap OpenTopoMap lewat `MAP_TILE_URL` | Kebijakan peta §55 |
 | Sumber luar | BMKG (prakiraan cuaca); status resmi dari pengelola kawasan dan badan resmi, dicatat kurator | Tidak ada API status resmi yang dapat dipanggil saat ini |
 | Test | PHPUnit 12.5.35 (suite Unit, Feature, Spatial); Pint 1.32.0 | Suite Spatial butuh PostgreSQL (`SPATIAL_TEST_DSN`) |
 | Target deploy | Vercel (DK-12) | Rincian §154 |
@@ -1214,7 +1214,7 @@ Target **WCAG 2.2 AA** sebagai syarat, bukan cita-cita. Minimum: HTML semantik; 
 
 ## §88 Mobile-first dan adaptasi perangkat
 
-Ponsel adalah platform utama, termasuk perangkat kelas bawah di jaringan lambat; desktop sekunder. Perencanaan boleh terjadi di desktop, tetapi informasi lapangan lebih mungkin dipakai di ponsel. Halaman tidak boleh meluber mendatar pada lebar 400 px dan harus dapat reflow sampai 320 CSS px (WCAG 1.4.10).
+Ponsel adalah platform utama, termasuk perangkat kelas bawah di jaringan lambat; desktop sekunder. Perencanaan boleh terjadi di desktop, tetapi informasi lapangan lebih mungkin dipakai di ponsel. Halaman tidak boleh meluber mendatar pada lebar 400 px dan harus dapat reflow sampai 320 CSS px (WCAG 1.4.10). Lantai peramban sejak GR-08: Chrome 111, Safari 16.4, dan Firefox 128 untuk gaya, serta WebGL2 untuk peta; di peramban lebih lama tata letak responsif dapat tidak berlaku, dan tanpa WebGL2 peta menulis kalimat gagal yang jujur (§94).
 
 **Amandemen DK-19** (GR-03): orientasi manifest `any` (WCAG 1.3.4; temuan F12 selesai); CSS `@container` murni di `app.css` untuk komponen terbatas, tanpa plugin; `min-h-dvh` pada layout; safe area untuk bilah aksi mode pendakian; latar token pada `html` dan `body`. Tata letak: satu kolom di ponsel; dua panel di tablet dan desktop bila isinya membutuhkan (§145).
 
@@ -1227,7 +1227,7 @@ Bagian baru (GR-03; DK-17, DK-18).
 - Token warna didefinisikan ulang di bawah `prefers-color-scheme` dan `data-theme` dalam dua blok identik yang dijaga test. Token gelap bermula dari token yang ada; token baru hanya bila uji layar nyata menuntutnya, dengan persetujuan dan pasangan test kontras.
 - Kontras diuji di kedua tema (§87). `theme-color` memakai warna permukaan. Peta diredupkan di tema gelap (§55).
 - Perubahan tema berlaku tanpa muat ulang (temuan T13 spec v2 selesai, dijaga `ThemePreferenceTest`).
-- Tetap Tailwind 3.4.19 (DK-24). Menutup keputusan "mode gelap belum diputuskan" di `DESIGN.md`.
+- Gaya memakai Tailwind CSS 4.3 sejak 12 Oktober 2026 (GR-08; semula tetap Tailwind 3.4.19 menurut DK-24). Menutup keputusan "mode gelap belum diputuskan" di `DESIGN.md`.
 
 ## §158 Bahasa dan wilayah
 
@@ -1250,7 +1250,7 @@ Bagian baru (GR-03; DK-20, DK-21, DK-23).
 | Rekomendasi gagal | Fallback: jelajah dan saring manual |
 | Cuaca gagal | Tampilkan data terakhir beserta waktunya (§47) |
 | Status gagal | Tampilkan UNKNOWN, bukan OPEN |
-| Peta gagal (misalnya WebGL tidak ada) | Kalimat gagal yang jujur; daftar tetap berfungsi |
+| Peta gagal (misalnya WebGL2 tidak ada, wajib sejak MapLibre 6) | Kalimat gagal yang jujur; daftar tetap berfungsi |
 | JavaScript belum berjalan | Judul dan meta dirender server; halaman pertama tetap bermakna |
 
 Kegagalan sumber luar tidak memblokir alur inti: BMKG yang tidak dapat dihubungi dilaporkan apa adanya, tetapi tidak menahan pengguna dari langkah berikutnya. Halaman galat 500 dan 503 mengarahkan pendaki yang akan berangkat untuk memastikan status langsung ke pengelola.
@@ -1265,7 +1265,7 @@ Target engineering MVP: konten pertama cepat; query basis data teroptimasi; quer
 LCP < 2,5 s · INP < 200 ms · CLS < 0,1 · API kritis p95 ≤ 1 s
 ```
 
-Semuanya target engineering, bukan SLA publik. INP menggantikan FID sejak Maret 2024. Pustaka peta (MapLibre) hanya dimuat ketika peta benar-benar digambar.
+Semuanya target engineering, bukan SLA publik. INP menggantikan FID sejak Maret 2024. Pustaka peta (MapLibre) hanya dimuat ketika peta benar-benar digambar. Sejak MapLibre 6 (GR-08) pustaka itu sekitar 434 kB gzip (modul dan pekerja), naik sekitar 226 kB, dan shell paket lapangan luring naik dari 0,4 menjadi 0,6 MB gzip.
 
 ## §97 Cache
 
@@ -2241,6 +2241,47 @@ lokasi langsung.
 - Tautan badan pengelola ke jalur, supaya BASECAMP dapat menjadi kontak darurat jalurnya sendiri; sampai itu BASECAMP dikecualikan dari kontak darurat kartu, cetak, dan pesan rencana (W6-7a, butir izin akhir 44).
 - Header `Cache-Control: immutable` untuk `/build/assets/*` supaya pembawaan shell paket per deploy tidak mengunduh ulang (butir izin akhir 49).
 
+### GR-08: Tailwind CSS 4 dan MapLibre GL 6 untuk menutup advisori keamanan (12 Oktober 2026)
+
+**Requirement changed.**
+
+- §135 baris Gaya dan Peta: Tailwind CSS 3.4.19 menjadi 4.3.3 lewat `@tailwindcss/vite`, dengan konfigurasi CSS-first di
+  `resources/css/app.css` (tanpa `tailwind.config.js`, `postcss.config.js`, dan autoprefixer); MapLibre GL 4.7.1 menjadi
+  6.14.0.
+- DK-24 ("`@tailwindcss/vite` dicabut; Tailwind v4 ditunda") serta DK-17 dan §157 ("tetap Tailwind 3.4.19") diamandemen.
+- §88: lantai peramban Chrome 111, Safari 16.4, Firefox 128, dan WebGL2 untuk peta.
+- §94: peta gagal bila WebGL2 tidak ada. §96: ukuran pustaka peta dan shell paket luring.
+
+**Reason.** `npm audit` mencatat 8 advisori, sehingga gerbang keamanan CI (`security.yml`) merah: maplibre-gl 4.7.1
+tercakup advisori critical GHSA-jrc7-96c5-q579 (fungsi rentannya, `DOM.sanitize`, tidak ada di 4.7.1, tetapi rentang
+versinya tercakup dan tidak ada rilis 4.x yang menutupnya), ditambah rantai tailwindcss 3 (braces, chokidar, fast-glob,
+micromatch, postcss-nested, postcss-selector-parser). Pemilik menyetujui upgrade pada 12 Oktober 2026: "upgrade dan
+perbaiki itu semua saya ingin benar" fix" (R-020: versi tidak diubah diam-diam).
+
+**Impact.** Tampilan dipertahankan: 104 pasang tangkapan sebelum dan sesudah (18 keadaan, 390 dan 1440 px, tema terang
+dan gelap), 96 identik piksel dan 8 hanya beda teks waktu, console error 0. Tinjauan independen lalu menemukan regresi
+yang lolos dari tangkapan itu dan ketiganya ditutup dengan test bermutasi: select dan textarea putih di tema gelap,
+gerak tekan 120 ms yang hilang, dan breakpoint saat huruf peramban diperbesar. Perilaku Tailwind 3 yang menjadi bagian
+tampilan dipulihkan di `app.css` (space-y, divide-y, margin dialog, kursor tombol, warna batas bawaan, breakpoint px).
+`hover:` kini hanya aktif di perangkat yang punya hover; 72 pemakaiannya hanya warna atau garis bawah, dan perubahan ini
+diterima karena menghapus hover yang menempel sesudah diketuk di layar sentuh. Penanda pos peta membawa nama
+aksesibelnya sendiri, karena MapLibre 6 tidak lagi menamai penanda khusus.
+
+**Affected modules.** Seluruh antarmuka (kelas Tailwind), komponen peta (Jelajah, rincian jalur, mode lapangan,
+Progres), dan paket lapangan luring (pekerja MapLibre masuk daftar aset shell paket).
+
+**Security impact.** `npm audit` 0 temuan untuk dependensi produksi dan dev; `composer audit` bersih. CSP `worker-src`
+masih memuat `blob:` peninggalan MapLibre 4; build produksi MapLibre 6 tidak lagi membutuhkannya.
+
+**Data impact.** Tidak ada perubahan skema, migrasi, atau data.
+
+**Scope impact.** Tidak ada fitur baru; batas MVP tidak berubah.
+
+**Keputusan terbuka untuk pemilik.**
+
+- Lantai peramban baru di §88: Firefox 125 sampai 127 dan Safari di bawah 16.4 kini di bawah lantai.
+- Pencabutan `blob:` dari CSP `worker-src` sesudah uji peramban mode lapangan luring.
+
 ### Log keputusan
 
 | ID | Keputusan | Oleh | Tanggal | Di PRD |
@@ -2261,14 +2302,14 @@ lokasi langsung.
 | DK-14 | Kontrak merek: tiga kata kerja dan satu fondasi, proposisi, tagline, suara "Anda", perbaikan "layak berangkat" | Pemilik (D2) | 23 Sep 2026 | §156 |
 | DK-15 | Branded house: Route Fit fitur bermerek; nama publik dipilih lewat uji kegunaan | Pemilik (D3) | 23 Sep 2026 | §156 |
 | DK-16 | Logo konsep A "Jalur Berpos" dan gerbang sebelum aset final | Pemilik (D4) | 23 Sep 2026 | §156 |
-| DK-17 | Mode gelap: token CSS, tema dirender server dari cookie `tema`, bawaan "Ikuti sistem", tetap Tailwind 3.4.19 | Pemilik (D5) | 23 Sep 2026 | §157 |
+| DK-17 | Mode gelap: token CSS, tema dirender server dari cookie `tema`, bawaan "Ikuti sistem", tetap Tailwind 3.4.19; diamandemen GR-08: Tailwind 4.3.3 | Pemilik (D5) | 23 Sep 2026 | §157, GR-08 |
 | DK-18 | Peta di tema gelap diredupkan; peta gelap tanpa kontur hanya atas permintaan; PMTiles masa depan; penyedia cadangan terbuka | Pemilik (D6) | 23 Sep 2026 | §55 |
 | DK-19 | Adaptasi perangkat: orientasi `any`, `@container`, `min-h-dvh`, safe area, latar token | Pemilik (D7) | 23 Sep 2026 | §88 |
 | DK-20 | Bahasa Indonesia utama dan sumber kebenaran; Inggris tambahan pertama; fallback `id`; komitmen bahasa diubah lewat GR-03 | Pemilik (D8) | 23 Sep 2026 | §156, §158 |
 | DK-21 | URL multibahasa `/en/`; migrasi `/pendakian` bersamaan dengan peluncuran `/en/` | Pemilik (D9) | 23 Sep 2026 | §145.2, §158 |
 | DK-22 | Program data gunung nasional: Tier A terkurasi, sumber per field, dua keluarga status, lisensi, input admin, empat fase | Pemilik (D10) | 23 Sep 2026 | §41, §56, §58, §108 sampai §110, §159 |
 | DK-23 | Skema bertahap dengan izin per migrasi | Pemilik (D11) | 23 Sep 2026 | §64, §158, §159 |
-| DK-24 | Nol dependensi runtime baru di fase 1; `@tailwindcss/vite` dicabut; Tailwind v4 ditunda; `laravel-lang/lang` dihindari | Pemilik (D12) | 23 Sep 2026 | §75, §135 |
+| DK-24 | Nol dependensi runtime baru di fase 1; `@tailwindcss/vite` dicabut; Tailwind v4 ditunda; `laravel-lang/lang` dihindari; diamandemen GR-08 (12 Okt 2026): Tailwind 4.3.3 lewat `@tailwindcss/vite` dan MapLibre GL 6.14.0 untuk menutup advisori keamanan | Pemilik (D12) | 23 Sep 2026 | §75, §135, GR-08 |
 | DK-25 | Arsitektur informasi v2: lima tab Home, Explore, Trips, Track, Progress ditambah Profile; Community lintas-halaman | Pemilik | 25 Sep 2026 | §145, GR-02 |
 | DK-26 | Dial desain diturunkan ulang dari riset: aplikasi boleh hidup selama geraknya menjelaskan; mode Mendaki tetap tenang dan kontras | Pemilik (arah); agen (turunan) | 25 Sep 2026 | `DESIGN.md` |
 | DK-27 | Rencana konsolidasi 23 September dieksekusi dengan pembaruan: merek Memount, frontend React, IA v2 (GR-02), visi, misi, ekspektasi, dan kesepakatan bersama di Bagian I dan VIII | Pemilik | 25 Sep 2026 | Dokumen ini, §160, §161 |

@@ -389,7 +389,7 @@ Lima tab Beranda, Jelajah, Trip, Mendaki, Progres (DK-25), dari satu daftar (`it
 - **Mulai 1024 px** (DK-33) header 68 px menempel di atas: lockup, navigasi segmen lima tab di tengah (ikon 20 px, label
   14 px), lalu lencana Data contoh, Simpanan dengan hitungannya, dan menu avatar (popover asli: Profil; Moderasi dan
   Admin sesuai peran; Keluar). Di ponsel, Moderasi, Admin, dan Keluar tinggal di kartu Akun halaman Profil. Popover menu
-  akun sengaja tanpa cadangan untuk peramban lawas (ruling W2-2c): didukung Chrome 114+, Safari 17+, Firefox 125+, dan
+  akun sengaja tanpa cadangan untuk peramban lawas (ruling W2-2c): didukung Chrome 114+, Safari 17+, Firefox 128+ (lantai Tailwind 4 untuk seluruh aplikasi, PRD GR-08), dan
   peramban desktop 2023 ke bawah melihat menunya meluap statis di header.
 - **Strip pendakian aktif**: selama trip berlangsung, strip isian merek di atas bilah tab membawa pendaki kembali ke
   mode lapangan dengan satu ketukan; mode lapangan sendiri tidak memasangnya.
