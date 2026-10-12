@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memount · Wireframe (boxes)</title>
+<style>
+:root{--bg:#f2f2f0;--card:#fff;--ink:#222;--mut:#777;--ln:#9a9a95;--fill:#d9d9d5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161616;--card:#222;--ink:#eee;--mut:#999;--ln:#666;--fill:#3a3a3a}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:12px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;padding:20px 16px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 22px;max-width:700px}
+h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:26px 0 10px;padding-bottom:5px;border-bottom:1.5px solid var(--ln)}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.fr{width:200px}.lb{font-weight:700;font-size:11px;margin:0 0 5px}
+.ph{border:2px solid var(--ink);border-radius:18px;background:var(--card);padding:12px 10px;display:flex;flex-direction:column;gap:8px;min-height:380px}
+.ph.dk{background:#2a2a2a;--card:#3a3a3a;--ln:#888;--fill:#555;--ink:#eee}
+.bx{border:1.5px solid var(--ln);border-radius:5px;min-height:30px}
+.fl{background:var(--fill);border-color:var(--fill)}.dkb{background:var(--ink);border-color:var(--ink)}
+.x{background:linear-gradient(to top right,transparent calc(50% - .7px),var(--ln) 50%,transparent calc(50% + .7px)),linear-gradient(to bottom right,transparent calc(50% - .7px),var(--ln) 50%,transparent calc(50% + .7px));background-color:var(--card)}
+.ln{height:7px;border-radius:4px;background:var(--fill)}
+.hd{height:14px;border-radius:4px;background:var(--ink);width:62%}
+.ct{padding:8px;display:flex;flex-direction:column;gap:5px}
+.sp{display:flex;gap:6px;flex-wrap:wrap}.sp>*{flex:1}
+.pill{height:20px;min-width:34px;border:1.5px solid var(--ln);border-radius:12px;flex:0 0 auto}
+.rw{display:flex;align-items:center;gap:7px;padding:0 8px;height:32px}
+.rw i{width:11px;height:11px;border:1.5px solid var(--ln);flex:0 0 auto}.rw .ln{flex:1}
+.nv{margin-top:auto;display:flex;justify-content:space-around;border-top:1.5px solid var(--ln);padding-top:8px}.nv i{width:18px;height:18px;border:1.5px solid var(--ln);border-radius:4px}.nv i.on{background:var(--ink);border-color:var(--ink)}
+.tab{display:flex;height:26px;border:1.5px solid var(--ln);border-radius:6px;overflow:hidden}.tab i{flex:1;border-left:1.5px solid var(--ln)}.tab i:first-child{background:var(--ink);border:0}
+</style></head><body>
+<h1>MEMOUNT · Wireframe (boxes)</h1>
+<p class="sub">Wireframe level paling rendah: hanya kotak dan garis, tanpa teks isi. Kotak ber-X = gambar/peta/grafik, kotak penuh gelap = tombol utama, kotak kosong = input/kartu/tombol sekunder.</p>
+<div id="app"></div>
+<script>
+const rep=(n,f)=>Array.from({length:n},(_,i)=>f(i)).join('');
+const N=v=>v.split('|').length;
+const R={
+h:()=>'<div class="hd"></div>',
+t:()=>'<div><div class="ln" style="width:92%"></div><div class="ln" style="width:60%;margin-top:4px"></div></div>',
+e:()=>'<div class="ln" style="width:38%;background:var(--ln)"></div>',
+p:()=>'<div class="bx dkb" style="height:34px"></div>',
+s:()=>'<div class="bx" style="height:34px"></div>',
+f:()=>'<div class="bx" style="height:32px"></div>',
+o:()=>'',
+i:()=>'<div class="bx x" style="height:80px"></div>',
+m:v=>`<div class="bx x" style="height:${Math.max(50,+(v.split('@')[1]||60))}px"></div>`,
+k:v=>`<div class="bx ct"><div class="ln" style="width:55%;background:var(--ln)"></div>${rep(Math.min(N(v)-1,2)||1,i=>`<div class="ln" style="width:${85-i*25}%"></div>`)}</div>`,
+l:v=>`<div class="bx" style="padding:3px 0">${rep(N(v),()=>'<div class="rw" style="height:28px"><div class="ln"></div></div>')}</div>`,
+c:v=>`<div class="sp">${rep(N(v),i=>`<div class="pill" style="${i==0?'background:var(--ink);border-color:var(--ink)':''}"></div>`)}</div>`,
+r:v=>rep(N(v),()=>'<div class="bx rw" style="height:36px"><i style="border-radius:50%"></i><div class="ln" style="max-width:70%"></div></div>'),
+x:v=>rep(N(v),()=>'<div class="bx rw" style="height:36px"><i></i><div class="ln" style="max-width:70%"></div></div>'),
+g:v=>`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${rep(N(v),()=>'<div class="bx" style="height:38px"></div>')}</div>`,
+w:v=>`<div class="tab">${rep(N(v),()=>'<i></i>')}</div>`,
+ro:v=>`<div class="sp">${rep(N(v),()=>'<div class="bx" style="height:34px"></div>')}</div>`,
+tg:v=>rep(N(v),()=>'<div class="bx rw" style="height:30px"><div class="ln"></div><i style="width:26px;border-radius:8px"></i></div>'),
+b:v=>`<div class="bx ct">${v.split('|').map(x=>`<div class="ln" style="width:${+x.split('/')[1]}%;height:9px;background:var(--ln)"></div>`).join('')}</div>`,
+lg:()=>'<div style="display:flex;flex-direction:column;align-items:center;gap:7px;margin:14px 0"><div class="bx" style="width:44px;height:44px;border-radius:11px;border-color:var(--ink)"></div><div class="hd" style="width:46%"></div></div>',
+n:v=>`<div class="nv">${rep(5,i=>`<i class="${i==v?'on':''}"></i>`)}</div>`,
+hd:()=>'<div style="display:flex;justify-content:space-between"><div class="hd" style="width:38%"></div><div class="ln" style="width:30%"></div></div>'
+};
+const S=[
+['Opening, Login & Sign In',[
+['A1 · Opening','',['lg:']],
+['A2 · Login (landing)','',['lg:','t:Personalize your trail','h:Jalur mana yang paling menantang yang pernah Anda selesaikan?','ro:Sign In|Login','o:Sign In → A3 · Login → A4']],
+['A3 · Sign In (daftar akun)','',['lg:','h:Buat akun baru','f:Nama lengkap','f:Email','f:Kata sandi','f:Konfirmasi kata sandi','p:Sign In','t:Sudah punya akun? Login','o:Sign In → Profil pendaki 00']],
+['A4 · Login (form)','',['lg:','h:Selamat datang kembali','f:Email','f:Kata sandi','t:Lupa kata sandi?','p:Login','t:— atau —','s:Lanjutkan dengan Google','t:Belum punya akun? Sign In','o:Login → Profil pendaki 00']]]],
+['00 · Profil pendaki (onboarding 3 langkah)',[
+['00-1 · Langkah 1 dari 3','semua level',['w:1|2|3','i:Foto gunung + logo','e:KENALI PENGALAMAN ANDA','h:Seberapa jauh pengalaman mendaki Anda?','r:Pemula|Menengah|Berpengalaman|Ahli','p:Lanjut','o:Pilihan menentukan layar langkah 2']],
+['00-2a · Langkah 2','jika Pemula',['w:1|2|3','e:PENGALAMAN PERTAMA ANDA','h:Sudah pernah mendaki sebelumnya?','r:Belum pernah|Sudah pernah','e:JALUR TERJAUH YANG PERNAH DIDAKI','l:Bukit Sikunir · 1 j|Telomoyo · 1–2 j|Andong · 2 j','k:Durasi naik terlama|[ − ]  2 j  [ + ]  (maks. 4 j)','p:Lanjut','o:“Belum pernah” → daftar & durasi diganti kartu rekomendasi awal (maks. 3 j, landai, ramai)']],
+['00-2b · Langkah 2','jika Menengah / Berpengalaman / Ahli',['w:1|2|3','e:PENDAKIAN TERBERAT ANDA','h:Jalur paling menantang yang pernah Anda selesaikan?','f:🔍 Nama gunung atau jalur','l:Andong via Sawit|Batur via Toya Bungkah|Prau via Patak Banteng','k:Durasi naik terlama|[ − ]  5 j  [ + ]  (maks. 14 j)','p:Lanjut']],
+['00-3 · Langkah 3 dari 3','semua level',['w:1|2|3','e:RENCANA ANDA','h:Pendakian seperti apa yang ingin Anda lakukan?','e:JENIS TRIP','x:Tektok|Camping 2 hari|Lebih dari 2 hari','e:WILAYAH','c:Jawa Barat|Jawa Tengah|Jawa Timur|Bali & NT|Sumatra|Sulawesi','t:Catatan: isian = masukan, bukan sertifikasi','p:Lihat jalur yang sesuai','o:→ 01 Beranda']]]],
+['Navigasi utama · Beranda, Jelajah, Gunung, Jalur',[
+['01 · Beranda','',['hd:25 Sep 2026 · DATA CONTOH','h:Selamat sore, Budi.','i:Foto ilustrasi','k:PERJALANAN BERIKUTNYA · CAMPING 2 HARI|Gede via Cibodas · 10–11 Okt · 3 peserta|H-15','c:Jalur ✓|Rencana ✓|Persiapan 5/8|Cek kesiapan','p:Lanjutkan persiapan','e:TENGGAT TERDEKAT','l:Izin ditutup (H-3) · Buka sistem resmi|Prakiraan BMKG 10 Okt terbit','e:KABAR GEDE YANG ANDA IKUTI','l:RESMI · Balai Besar TNGGP|Jalur Cibodas & G. Putri dibatasi|Selabintana, perbaikan jembatan','e:JALUR LAIN UNTUK ANDA','k:Kartu jalur rekomendasi','e:TANGGA TANJAKAN ANDA','b:Andong 380/22|Batur 600/36|Prau 700/42|Gede 1.660/100','n:0']],
+['02 · Jelajah (Daftar)','',['h:Jelajah   [Simpanan]','f:🔍 Cari gunung, jalur, atau kalimat','t:Kalimat Anda dibaca sebagai:','c:Wilayah: Bogor|Tuntutan teknis: rendah|Saring','t:Kembalikan tafsiran kalimat','w:Daftar|Peta','k:Gede via Cibodas|Jarak · Tanjakan · Naik|[Kenapa?] Mengapa sesuai / perlu diperhatikan|Lihat penilaian lengkap','k:Jalur belum dinilai|Belum bisa dinilai · status resmi tidak diketahui|[Tampilkan juga]','k:Keadaan kosong: Tidak ada jalur dengan saringan ini','s:Lihat detail jalur','n:1']],
+['02b · Jelajah (Peta) + Saring','',['h:Jelajah','w:Daftar|Peta','m:Peta ilustrasi · basemap topo@150','k:Kartu jalur terpilih|Lihat detail jalur','e:SHEET: SARING JALUR','r:Kecocokan dasar','c:Tektok|Camping|Multi-hari','p:Terapkan','n:1']],
+['03 · Halaman gunung','',['i:Foto ilustrasi','h:Gunung Gede','t:Cianjur, Sukabumi, Bogor · Jawa Barat','g:Puncak/2.958 mdpl|Ikuti/tombol','e:STATUS SAAT INI','l:RESMI · Akses: Buka (18 Sep)|RESMI · PVMBG: Level I Normal','e:PILIH JALUR','k:Via Cibodas|9,7 km · ↑1.650 m · 7–8 j|Perlu persiapan','k:Via Gunung Putri|7,2 km · ↑1.720 m · 6–7 j','k:Via Selabintana|11,8 km · ↑1.900 m|Kurang cocok','e:IZIN PENDAKIAN','s:Buka sistem pemesanan resmi','e:KONDISI DARI PENDAKI   [Per jalur]','l:Laporan komunitas','n:1']],
+['04 · Detail jalur','',['m:Peta jalur · pos 1–6   [Peta penuh]@80','t:GUNUNG GEDE · 2.958 MDPL','h:Gede via Cibodas','g:Jarak/9,7 km|Tanjakan/↑1.650|Turunan/↓40|Naik/7–8 j','e:APA TANTANGANNYA?','l:Fisik: Tinggi|Teknis: Rendah|Navigasi|Medan|Lingkungan','e:COCOKKAH UNTUK SAYA?','k:Perlu persiapan|Mengapa sesuai · Perlu diperhatikan · Celah persiapan|Lihat ketujuh faktor penilaian','m:Profil elevasi@50','e:POS DI JALUR INI','l:Pos 1|Pos 2 … Pos 6','e:KONDISI SEKARANG','l:Laporan pendaki [Terima kasih]|Laporkan kondisi setelah mendaki','e:YANG PERLU DISIAPKAN','l:Daftar perlengkapan','p:Rencanakan trip','o:Lihat 7 faktor → 05 · Rencanakan → 08','n:1']],
+['05 · Route Fit: kenapa?','',['h:Penilaian kecocokan','t:Gede via Cibodas · Perlu persiapan','e:DINILAI DARI','k:Profil Anda   [Ubah]|Pemula · 3 pendakian · tanjakan tertinggi 700 m','k:Rencana trip   [Ubah]|Camping 2 hari · 10–11 Okt · 3 orang','e:LAPIS 1','l:Syarat dasar: terpenuhi ✓|Status resmi tidak Ditutup|Data kritis lengkap|Lama sesuai jenis trip','e:LAPIS 2 & 3 · TUJUH FAKTOR','l:Faktor | Jalur ini | Anda | ● sesuai|Faktor … ▲ perlu perhatian|Faktor … ? belum diketahui','e:KENAPA BUKAN “COCOK”?','t:Penjelasan alasan','e:YANG BISA ANDA LAKUKAN','l:Saran 1|Saran 2','ro:Ke jalur|Lanjutkan persiapan']]]],
+['Simpanan & Bandingkan',[
+['06 · Simpanan + catatan','',['h:Simpanan   [Bagikan]','k:Tautan hanya-baca, 7 hari|memount.id/b/…   [Salin]','e:CATATAN PRIBADI · HANYA ANDA','s:+ Tambah catatan pribadi','k:☐ Jalur tersimpan 1|jarak · tanjakan · catatan','k:☐ Jalur tersimpan 2','k:☐ Jalur tersimpan 3','o:Pilih minimal 2 jalur','p:Dipilih 0 dari 3 · Bandingkan','n:1']],
+['07 · Bandingkan (maks. 3)','',['h:Bandingkan 3 jalur   [Bagikan]','k:Tautan hanya-baca 7 hari, bisa dicabut|memount.id/b/…   [Salin]','c:Sorot yang berbeda','l:Atribut | Cibodas | G. Putri | Papandayan|Jarak …|Tanjakan …|Naik …|Status … (· sama)','m:Profil elevasi · skala sama@70','e:JADIKAN DASAR RENCANA','ro:Via Gunung Putri|Papandayan','o:→ 08 Rencanakan trip','n:1']]]],
+['Trip · persiapan sampai selesai',[
+['08 · Rencanakan trip','',['h:Rencanakan trip','w:Jalur|Rencana|Persiapan|Cek','k:Gede via Cibodas   [Ganti]|9,7 km · ↑1.650 m · 7–8 j','e:JENIS TRIP','c:Tektok|Camping 2 hari|Multi-hari','e:TANGGAL','m:Kalender Okt 2026 (Sen–Min)@80','e:JAM MULAI','f:07.00 WIB','k:Peserta|Termasuk Anda','f:Nama trip','f:Catatan (opsional)','k:Ingatkan saya|Email H-3 dan H-1','p:Simpan rencana','o:→ 09','n:2']],
+['09 · Trip: persiapan','',['t:TRIP · CAMPING 2 HARI','h:Gede via Cibodas   [Ubah]','t:Sab–Min, 10–11 Okt · 07.00 · 3 orang · H-15','w:Jalur ✓|Rencana ✓|Persiapan|Cek','k:KEADAAN KESIAPAN|5 dari 8 butir kritis dikonfirmasi','e:DAFTAR PERSIAPAN (per grup)','l:☑ Butir 1|☑ Butir 2|☐ Butir kritis 3  [tautan]|☐ Butir 4','e:PENGINGAT','l:Email H-3 · Rab 7 Okt · Menunggu|Email H-1 · Jum 9 Okt','p:Lanjut ke cek kesiapan','n:2']],
+['10 · Cek kesiapan','',['h:Cek kesiapan','t:Gede via Cibodas · Sab 10 Okt','k:KEADAAN KESIAPAN|Masih perlu persiapan','e:TIGA HAL YANG DIPERIKSA','l:1. Kecocokan jalur · Perlu persiapan|2. Persiapan · 5/8 kritis|Headlamp cadangan [Konfirmasi]|Izin masuk · tutup Rab 7 Okt [Pesan]|Kontak darurat [Isi]','e:KONDISI TERKINI','l:Status resmi: Buka|Gunung api: Level I|Prakiraan 10 Okt: belum terbit','e:SEJAK CEK TERAKHIR','l:Perubahan / laporan komunitas','p:Selesaikan 3 butir','n:2']]]],
+['Mendaki, Ringkasan, Progres, Profil',[
+['11a · Mendaki (pratinjau hari-H)','',['h:Mendaki','k:PRATINJAU HARI-H · SAB 10 OKT|Gede via Cibodas|Mulai di Pintu Cibodas · 1.340 m','t:Rekam jejak aktif saat mendaki','p:Mulai pendakian','n:3']],
+['11b · Mendaki (mode lapangan, gelap)','dk',['m:Peta + jejak@130','k:Anda|2.150 m · km 5,3','k:POS BERIKUTNYA · 5|Kandang Badak','g:Sisa jarak/1,9 km|Naik lagi/↑245 m|Perkiraan/— j|Segmen/licin','k:Segmen ini dilaporkan licin|Laporan komunitas, 2 hari lalu','s:Selesai','o:Selesai → 12']],
+['12 · Ringkasan + laporan','',['t:PENDAKIAN SELESAI · TERCATAT','h:Gede via Cibodas','t:10–11 Okt · bermalam di Kandang Badak','g:Jarak PP/19,4 km|Tanjakan/↑1.660|Waktu bergerak/— j|Titik tertinggi/2.958','s:Ubah angka','e:DIBANDING PENDAKIAN ANDA SENDIRI','b:Andong 380/22|Batur 600/36|Prau 700/42|Gede 1.660/100','t:+960 m · Tanjakan pertama di atas 1.000 m','e:BANTU PENDAKI BERIKUTNYA','f:Tanggal pendakian','c:Kondisi yang ditemui (pilih ≥1)','f:Segmen (opsional)','f:Catatan','s:Foto','p:Kirim untuk dimoderasi','t:Ubah sebelum dimoderasi']],
+['13 · Progres','',['h:Progres','t:Pendakian 2026 · 4 selesai, 1 batal','g:Tanjakan/3.340 m|Jarak/39,6 km','w:Tanjakan|Jarak','e:PER PENDAKIAN','b:Pendakian 1/30|Pendakian 2/45|Pendakian 3/55|Gede/100','e:TARGET PRIBADI   [Ubah target]','b:Tanjakan/bln 100|Pendakian/bln 100','e:PENCAPAIAN','l:Tanjakan pertama >1.000 m|Camping pertama >2.000 m|Laporan kondisi pertama terbit','e:RIWAYAT','l:Gede via Cibodas · Selesai|Sindoro via Kledung · Dibatalkan','s:Catat pendakian di luar trip','n:4']],
+['14 · Profil','',['i:Avatar','h:Budi Setiawan','t:Pemula · diisi sendiri · Bergabung Feb 2026','e:PENGALAMAN   [Ubah]','l:Tingkat|Pendakian selesai|Tanjakan tertinggi|Medan|Navigasi','e:PREFERENSI','l:Jenis trip|Durasi|Wilayah','e:PERLENGKAPAN PRIBADI','c:Headlamp|Jas hujan|Jaket|Sepatu|Kompor|+ Tambah','e:TAMPILAN & BAHASA','tg:Tema|Bahasa','e:PRIVASI','tg:Rekam jejak saat mendaki','l:Hapus semua jejak saya|Kebijakan data pribadi|Hapus akun','s:Keluar','n:4']]]]
+];
+const app=document.getElementById('app');
+app.innerHTML=S.map(([g,fs])=>`<h2>${g}</h2><div class="row">${fs.map(([n,v,b])=>`<div class="fr"><div class="lb">${n}</div><div class="ph ${v=='dk'?'dk':''}">${b.map(x=>{const j=x.indexOf(':');return R[x.slice(0,j)](x.slice(j+1))}).join('')}</div></div>`).join('')}</div>`).join('');
+</script></body></html>

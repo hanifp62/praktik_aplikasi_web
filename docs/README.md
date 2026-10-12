@@ -59,6 +59,14 @@ benar pada hari itu dan tidak ditulis ulang.
 | [superpowers/specs/](superpowers/specs/) | Spec desain per gelombang |
 | [superpowers/plans/](superpowers/plans/) | Rencana implementasi per gelombang |
 
+## Tugas praktikum tim
+
+| Dokumen | Isi |
+|---|---|
+| [job-2/](job-2/) | Job 2: masalah dan visi, persona, user story, kriteria penerimaan, product backlog, dan peer review |
+| [job-3/](job-3/) | Job 3: scope canvas, sitemap, user flow pengguna dan admin, wireframe, prototype, dan usability walkthrough |
+| [Pertemuan04/](Pertemuan04/) | Pertemuan 04: design tokens, inventaris komponen, tangkapan UI, checklist test, dan keputusan implementasi |
+
 ## Arsip
 
 | Dokumen | Isi |

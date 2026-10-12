@@ -57,6 +57,16 @@ class RouteAccessMatrixTest extends TestCase
          * bahwa isinya hanya data publik jalur.
          */
         'b/{token}',
+
+        /*
+         * API baca publik dari PR #1 tim (feature/db-migration): hanya GET, hanya data jalur
+         * terbit tanpa kolom internal, dan dibatasi laju. PublicReadApiTest menjaga batas itu.
+         */
+        'api/mountains',
+        'api/mountains/{id}',
+        'api/trails',
+        'api/trails/{id}',
+        'api/checkpoints',
     ];
 
     public function test_every_route_is_either_public_by_design_or_closed_to_guests(): void
