@@ -4,8 +4,8 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 12 Oktober 2026 (bagian 0, W6 selesai dan diaudit sebelum inspeksi pemilik; W1 sampai W6 dan
-perbaikan audit di-commit di branch hardening, belum di-push; W7 sampai W9 ditunda pemilik untuk evaluasi). Bagian 1–10 berasal dari 21 September 2026
+Terakhir diperbarui: 13 Oktober 2026 (bagian 0, blok paling atas: deploy ke Vercel disiapkan dan ditinjau, menunggu izin
+push dan langkah akun pemilik; W7 sampai W9 ditunda pemilik untuk evaluasi). Bagian 1–10 berasal dari 21 September 2026
 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
@@ -30,6 +30,66 @@ di branch `hardening`. Push belum dilakukan dan tetap butuh izin (R-018).
 > induk `docs/superpowers/plans/2026-09-26-memount-v3-induk.md`. Periksa keadaan nyata dulu: `git status`,
 > `php artisan test --compact --testsuite=Unit,Feature`, `npx tsc --noEmit`. Jangan commit, push, mengakses
 > Supabase, menjalankan migrasi, atau menambah dependensi tanpa izin saya.
+
+### 13 Oktober 2026: deploy ke Vercel (paket Hobby, kontainer FrankenPHP)
+
+Blok ini menggantikan butir "Deploy inspeksi tim" dan dua butir pertama "Keputusan pemilik yang masih terbuka" (Render,
+dan workflow migrasi yang disebut opsional) di blok 12 Oktober di bawahnya. Render meminta kartu dan pemilik menolak jalur
+tunnel dari laptop, lalu meminta "ya, deploy ke vercel". Jalurnya *container-backed Vercel Function*, yang sudah
+direkomendasikan PRD §154 (DK-12), jadi platform tidak butuh governance record baru. Riset 12 Oktober yang menyingkirkan
+Vercel keliru karena hanya menilai runtime komunitas `vercel-php`.
+
+| Commit | Isi |
+|---|---|
+| `b1980d1` | Foto laporan dibersihkan EXIF sebelum disimpan. Alur lama membuang setiap foto di disk S3 (Supabase) dan sempat menyimpan foto asli berkoordinat (PRD §82). Formulir menolak foto di atas 4 MB sebelum mengirim (batas body Vercel 4,5 MB), galat 413 lain mendapat pesan bahasa Indonesia, dan `imagedestroy` dibuang. Commit ini juga memuat penghapusan `render.yaml` yang sudah ter-stage lebih dulu, sehingga sendirian ia membuat `CiWorkflowsTest` merah; keadaan akhir `f7aa0d7` hijau |
+| `f7aa0d7` | `vercel.json` (kontainer dari `Dockerfile`, region `sin1`, deploy otomatis hanya `main`, tujuh Vercel Cron harian), `CronController` di `GET /api/cron/{tugas}`, `PENJADWAL_HANYA_HARIAN`, `start.sh` tanpa migrasi dan `schedule:work`, job CI `image` dengan langkah migrasi dan uji cron, `KunciCronTest`, dan langkah pemilik di README |
+
+- **Bukti.**
+  - Suite penuh 2.714 test: 2.658 lulus, 56 dilewati (54 Spatial tanpa DSN dan 2 lama), 0 gagal. Pint, `tsc`, dan build
+    bersih.
+  - Uji mutasi, semuanya merah saat dimutasi: alur foto lama, pemeriksaan rahasia, daftar putih tugas, jam cron, zona
+    jadwal, susulan pengingat, migrasi di `start.sh`, pelepasan kunci di jalur galat, gagal simpan foto, dan penjaga
+    ukuran di formulir.
+  - Rute cron diuji lewat HTTP sungguhan (SAPI cli-server) pada salinan data demo: tanpa rahasia 401, rahasia salah 401,
+    `migrate` 404, ketiga tugas 200 dan tercatat, tanpa cookie sesi. `weather:refresh` tidak memanggil BMKG karena data
+    demo tanpa area referensi cuaca.
+  - Peramban (salinan data demo): berkas 5 MB ditolak di formulir laporan tanpa permintaan terkirim, dan galatnya
+    diumumkan lewat `aria-live` dengan `aria-invalid`; foto 200 KB diterima.
+  - Tinjauan independen (memount-peninjau): 0 KRITIS, 4 PENTING, 5 MINOR. Tinjauan ulang menyatakan semuanya tertutup
+    dan menemukan 5 MINOR baru, yang ikut ditutup sebelum commit.
+  - Belum terbukti: job CI `image` (port 80 sebagai www-data, migrasi, cron 401 lalu 200) dan job Spatial
+    (`KunciCronTest`) untuk commit ini; perilaku Vercel sesudah deploy (region service, cron lewat rewrite, preset
+    framework saat impor, batas 50 image VCR, tombol Run cron mengirim `CRON_SECRET`).
+- **Keputusan teknis (dalam batas DK-12 dan §154).**
+  - Kontainer tetap `www-data` di port 80, karena image dasar FrankenPHP memberi binarinya `cap_net_bind_service`.
+  - Migrasi tidak berjalan saat kontainer mulai. Skema Supabase diperbarui lewat workflow "Migrasi Supabase" sebelum
+    commit yang membutuhkannya dibawa ke `main`; urutan itu aman selama migrasinya aditif (kebijakan `database/README.md`).
+  - Vercel men-deploy setiap push ke `main` tanpa menunggu CI, jadi `main` hanya menerima commit yang sudah hijau di
+    cabang kerja (fast-forward). Preview cabang lain dimatikan (`git.deploymentEnabled`).
+  - Hobby hanya mengizinkan cron harian. Pengingat dipicu pada jam jatuh tempo (22.00, 23.00, 00.00 UTC) ditambah
+    susulan 02.00 UTC, dan halaman kesehatan memakai toleransi 23 jam bila `PENJADWAL_HANYA_HARIAN=true`. Server dengan
+    `schedule:work` tetap memakai jadwal tiap jam di `routes/console.php`.
+- **Langkah pemilik, berurutan** (rincian di README bagian "Deploy untuk inspeksi tim"):
+  1. izinkan push `hardening`, lalu fast-forward `main` sesudah CI hijau;
+  2. GitHub: rahasia `SUPABASE_DB_URL`, lalu workflow "Migrasi Supabase" (pratinjau, lalu terapkan; 14 migrasi tertunda
+     per 12 Oktober);
+  3. Supabase: bucket privat foto dan kunci S3; disarankan mematikan Data API (lint `spatial_ref_sys`);
+  4. Vercel: impor repo, isi variabel lingkungan untuk Production saja (termasuk `APP_KEY`, `DEVICE_KEY_SECRET`, dan
+     `CRON_SECRET` baru), lalu deploy;
+  5. jalankan lima pemeriksaan K27 di README sebelum membagikan alamat.
+- **Terbuka (baru).**
+  - Teks jadwal di halaman Kesehatan Sistem menyebut WIB, padahal `routes/console.php` berjalan dalam UTC: cuaca
+    sebenarnya pukul 13.00 dan 01.00 WIB, kesegaran pukul 14.00 WIB. Ini pra-ada; pemilik memutuskan mana yang dimaksud.
+  - `MAIL_MAILER=log` menulis isi surel, termasuk tautan atur ulang sandi, ke log runtime Vercel (disimpan satu jam,
+    hanya terbaca pemilik). Sebelum dipakai publik, butuh penyedia surel sungguhan.
+  - Gerbang CI yang ditegakkan platform: branch protection `main` dengan status check `test` dan `image`, atau Deploy
+    Hook dari workflow (ketersediaan Deployment Checks di Hobby belum pasti).
+  - Verifikasi sebelum produksi kini berlangsung di Production sebelum alamat dibagikan, bukan di lingkungan preview
+    seperti bunyi amandemen Vercel di PRD; produksi publik butuh preview atau staging (keputusan pemilik).
+  - Pesan 413 global memakai `window.alert`; sebaiknya diganti toast kerangka (`useKerangka`).
+  - Durasi `weather:refresh` pada data produksi belum diukur (batas PHP 270 detik di rute cron).
+- Butir lain di daftar 12 Oktober tetap terbuka: persetujuan R-021, pin PHP 8.3.33 tim, baris kosong `docs/PRD.md`, makna
+  wilayah multi-provinsi, dan CF-7. `DEVICE_KEY_SECRET` produksi terjawab oleh langkah 4.
 
 ### 12 Oktober 2026: integrasi tim, CI hijau penuh, upgrade dependensi, bahan presentasi
 
