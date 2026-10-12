@@ -90,8 +90,9 @@ function ContohGaris({ pola }: { pola: Pola }) {
  * halaman hasil yang sama dengan daftar.
  *
  * Petanya dibuat sekali dan hanya datanya yang diganti ketika saringan berubah, jadi posisi
- * dan zoom pembaca tidak hilang. Setiap label punya lapisan sendiri karena line-dasharray
- * MapLibre 4.7 tidak dapat berbeda per fitur; semua garis berdiri di atas satu tepi --surface
+ * dan zoom pembaca tidak hilang. Setiap label punya lapisan sendiri; alasannya semula
+ * line-dasharray MapLibre 4.7 yang tidak dapat berbeda per fitur. MapLibre 6 sudah dapat (sejak
+ * 5.8), dan lapisan per label dipertahankan karena perilakunya teruji; semua garis berdiri di atas satu tepi --surface
  * yang lebih lebar. Jalur yang disorot dari daftar atau dipilih lewat chip dan garisnya
  * tergambar lebih tebal; jalur yang tampil lewat "Tampilkan juga" tergambar pudar.
  *

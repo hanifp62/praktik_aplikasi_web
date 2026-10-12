@@ -27,7 +27,9 @@ class FocusIndicatorTest extends TestCase
     {
         $pelanggar = [];
 
-        foreach (File::allFiles(resource_path('views')) as $berkas) {
+        // Tinjauan upgrade M-3: komponen React ikut disapu, dan outline pengganti wajib menyebut gayanya. Di Tailwind 4
+        // focus:outline-hidden menolkan --tw-outline-style, jadi focus-visible:outline-2 saja tidak menggambar apa pun.
+        foreach ([...File::allFiles(resource_path('views')), ...File::allFiles(resource_path('js'))] as $berkas) {
             $isi = $berkas->getContents();
             preg_match_all('/focus:outline-(?:none|hidden)/', $isi, $cocok, PREG_OFFSET_CAPTURE);
 
@@ -36,7 +38,16 @@ class FocusIndicatorTest extends TestCase
                 // yang sama, dan daftar itu kerap dipecah beberapa baris.
                 $konteks = substr($isi, max(0, $posisi - 400), 800);
 
-                if (! preg_match('/focus-visible:ring|focus:ring|focus-visible:outline|outline-offset/', $konteks)) {
+                // Target fokus terprogram (tabIndex -1 pada tag yang sama) tidak berada di urutan Tab dan bukan kontrol.
+                $awal = strrpos(substr($isi, 0, $posisi), '<');
+                $akhir = strpos($isi, '>', $posisi);
+
+                if ($awal !== false && $akhir !== false && $akhir - $awal < 400 && preg_match('/tab[iI]ndex=(?:\{-1\}|"-1")/', substr($isi, $awal, $akhir - $awal))) {
+                    continue;
+                }
+
+                // Cincin pengganti boleh datang dari kelas bersama gaya.ts yang dipasang pada anak atau label pembungkus.
+                if (! preg_match('/(?:focus-visible|focus|group-focus-visible|has-focus-visible):ring|focus-visible:outline-(?:solid|dashed|dotted|double)|\b(?:fokusTerlihat|fokusKelompok|fokusDiDalam)\b/', $konteks)) {
                     $pelanggar[] = $berkas->getRelativePathname();
                 }
             }

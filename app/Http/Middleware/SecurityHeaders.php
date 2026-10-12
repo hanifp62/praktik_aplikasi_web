@@ -60,8 +60,9 @@ class SecurityHeaders
             "font-src 'self' data:",
 
             // MapLibre 6 menjalankan pengurai tile di web worker dari berkas build sendiri ('self').
-            // blob: tetap: bila URL pekerja berasal lain, misalnya server Vite saat npm run dev,
-            // MapLibre memuatnya lewat URL blob sesama asal.
+            // blob: peninggalan MapLibre 4, yang membuat pekerja dari URL blob bundel. Build produksi
+            // MapLibre 6 tidak lagi membutuhkannya; pencabutannya menunggu uji peramban di mode
+            // lapangan luring (tinjauan upgrade M-4).
             "worker-src 'self' blob:",
         ]);
     }

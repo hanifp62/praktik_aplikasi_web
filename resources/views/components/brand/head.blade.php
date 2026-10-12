@@ -36,7 +36,7 @@
     {{-- Satu keluarga huruf dari asal aplikasi sendiri (DK-38). Subset Latin
          dipramuat karena hampir setiap halaman memakainya; subset Latin Extended
          hanya diunduh peramban bila halaman memuat glyph-nya. @font-face dan
-         font-display: swap ada di resources/css/app.css, alasan pemilihannya di
-         tailwind.config.js. --}}
+         font-display: swap ada di resources/css/app.css, alasan pemilihannya di komentar
+         blok @theme berkas yang sama. --}}
     <link rel="preload" href="/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 @endif

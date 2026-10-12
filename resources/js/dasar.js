@@ -1,8 +1,8 @@
 /*
  * MapLibre dimuat saat dibutuhkan, bukan di setiap halaman.
  *
- * Pustakanya sekitar 1,6 MB (MapLibre 6: modul 1,1 MB dan pekerja 0,5 MB) sementara satu-satunya
- * halaman yang menggambar peta adalah mode pendakian. Memuatnya di halaman masuk, dasbor, dan
+ * Pustakanya sekitar 1,6 MB (MapLibre 6: modul 1,1 MB dan pekerja 0,5 MB) sementara peta hanya
+ * digambar empat komponen: Jelajah, rincian jalur, mode lapangan, dan Progres. Memuatnya di halaman masuk, dasbor, dan
  * daftar jalur berarti menagih ratusan kilobita kepada pengguna yang tidak akan melihat peta
  * sama sekali, padahal PRD §88 menempatkan ponsel sebagai platform utama.
  *

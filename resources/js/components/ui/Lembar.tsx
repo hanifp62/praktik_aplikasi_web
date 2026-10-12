@@ -108,7 +108,7 @@ interface LapisanProps {
  * Lembar bawah: naik dari tepi bawah di ponsel (sudut atas 26 px, pegangan hiasan), menjadi
  * panel tengah mulai sm. Isi yang panjang bergulir di dalam lembar; kaki aksi tetap terlihat.
  *
- * Margin letak memakai penanda penting Tailwind (!mt-auto, !mb-0, sm:!mb-auto; ruling AF-7,
+ * Margin letak memakai penanda penting Tailwind (mt-auto!, mb-0!, sm:mb-auto!; ruling AF-7,
  * audit E2E M-5). <dialog> dirender di tempat pemanggil, dan bila ia anak bukan-pertama wadah
  * space-y-*, aturan `.space-y-4 > :not([hidden]) ~ :not([hidden])` (spesifisitas tiga kelas)
  * mengalahkan mt-auto dan mb-auto (satu kelas): lembar menempel 16 px dari atas layar, bukan duduk

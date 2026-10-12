@@ -350,8 +350,9 @@
 | yang membaca token ini, jadi mengubah rasa seluruh aplikasi cukup menyentuh nilai di
 | sini.
 |
-| Nilai ditulis sebagai komponen RGB tanpa fungsi rgb() agar Tailwind dapat menerapkan
-| opacity lewat sintaks <alpha-value> (mis. bg-brand-600/50).
+| Nilai ditulis sebagai komponen RGB tanpa fungsi rgb(), supaya tema ditukar lewat satu
+| variabel per peran. Blok @theme inline membungkusnya dengan rgb(), dan Tailwind 4 menerapkan
+| opacity (mis. bg-brand-600/50) lewat color-mix di atas warna itu.
 |
 | Palet berasal dari prototype pemilik (docs/desain/prototype/), dengan koreksi terukur
 | DK-31: batas kontrol #8C8579, garis komunitas #5F82B8, teks redup #626965. Satu koreksi

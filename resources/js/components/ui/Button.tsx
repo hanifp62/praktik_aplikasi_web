@@ -65,7 +65,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /**
  * Satu-satunya definisi tombol aplikasi: min-h-11 di kelas dasar untuk target sentuh
- * (PRD §87), focus-visible:ring-3 untuk fokus terlihat, dan varian yang rasionya sudah
+ * (PRD §87), focus-visible:ring-2 untuk fokus terlihat, dan varian yang rasionya sudah
  * dihitung ColourContrastTest. brand-700 sebagai isian dengan teks on-brand, bukan
  * brand-600 yang gagal AA.
  *

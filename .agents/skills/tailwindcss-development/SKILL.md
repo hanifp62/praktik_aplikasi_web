@@ -10,7 +10,7 @@ metadata:
 
 ## Documentation
 
-Use `search-docs` for detailed Tailwind CSS v3 patterns and documentation.
+Use `search-docs` for detailed Tailwind CSS v4 patterns and documentation.
 
 ## Basic Usage
 
@@ -18,17 +18,16 @@ Use `search-docs` for detailed Tailwind CSS v3 patterns and documentation.
 - Offer to extract repeated patterns into components that match the project's conventions (e.g., Blade, JSX, Vue).
 - Consider class placement, order, priority, and defaults. Remove redundant classes, add classes to parent or child elements carefully to reduce repetition, and group elements logically.
 
-## Tailwind CSS v3 Specifics
+## Tailwind CSS v4 Specifics (proyek ini: 4.3, sejak 12 Oktober 2026)
 
-- Always use Tailwind CSS v3 and verify you're using only classes it supports.
-- Configuration is done in the `tailwind.config.js` file.
-- Import using `@tailwind` directives:
+- Always use Tailwind CSS v4 and verify you're using only classes it supports.
+- Configuration is CSS-first in `resources/css/app.css` (`@theme`, `@theme inline`, `@plugin`, `@source`, `@utility`); there is no `tailwind.config.js` and no PostCSS config. The Vite plugin `@tailwindcss/vite` builds it.
+- The important modifier goes at the end (`mt-auto!`), `outline-none` from v3 is `outline-hidden`, and `ring` without a width is 1px, so write `ring-2` explicitly.
+- Import with `@import`:
 
-<!-- v3 Import Syntax -->
+<!-- v4 Import Syntax -->
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss' source(none);
 ```
 
 ## Spacing
@@ -45,7 +44,7 @@ When listing items, use gap utilities for spacing; don't use margins.
 
 ## Dark Mode
 
-If existing pages and components support dark mode, new pages and components must support it the same way, typically using the `dark:` variant:
+Proyek ini tidak memakai varian `dark:`: tema terang, gelap, dan lapangan ditukar lewat token warna di `resources/css/app.css` (lihat `docs/MATRIKS-SKILL.md`). Contoh generik di bawah hanya untuk proyek lain:
 
 <!-- Dark Mode -->
 ```html

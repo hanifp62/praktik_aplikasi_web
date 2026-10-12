@@ -73,9 +73,10 @@ class TypeFloorTest extends TestCase
      */
     public function test_the_named_type_scale_stops_at_the_floor(): void
     {
-        $this->assertSame(1, preg_match('/@theme \{(.*?)\n\}/s', File::get(resource_path('css/app.css')), $skala), 'Skala tipe bernama tidak ditemukan.');
+        // Tinjauan upgrade M-2: kedua blok dibaca, supaya ukuran --text-* yang kelak ditulis di @theme inline ikut dijaga.
+        $this->assertGreaterThanOrEqual(1, preg_match_all('/@theme(?: inline)? \{(.*?)\n\}/s', File::get(resource_path('css/app.css')), $blok), 'Skala tipe bernama tidak ditemukan.');
 
-        preg_match_all('/--text-[a-z-]+:\s*(\d*\.?\d+)rem;/', $skala[1], $ukuran);
+        preg_match_all('/--text-[a-z-]+:\s*(\d*\.?\d+)rem;/', implode("\n", $blok[1]), $ukuran);
 
         $this->assertCount(9, $ukuran[1], 'Skala tipe bernama berisi sembilan tingkat.');
 

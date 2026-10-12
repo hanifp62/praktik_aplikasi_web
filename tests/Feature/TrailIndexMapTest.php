@@ -85,8 +85,9 @@ class TrailIndexMapTest extends TestCase
     /**
      * Spec v3 bagian 6.2: setiap label punya pola garisnya sendiri (utuh, putus panjang,
      * titik-titik, dan titik-garis untuk yang belum dinilai), dan legenda menggambar pola yang
-     * sama. line-dasharray MapLibre 4.7 tidak dapat berbeda per fitur, jadi satu lapisan per
-     * label, semuanya di atas satu tepi (MapComponentTest). Lapisan BELUM memakai line-cap
+     * sama. Satu lapisan per label, semuanya di atas satu tepi (MapComponentTest); alasannya
+     * semula line-dasharray MapLibre 4.7 yang tidak dapat berbeda per fitur, dan susunan itu
+     * dipertahankan sesudah MapLibre 6. Lapisan BELUM memakai line-cap
      * round, bukan butt: ujung butt merender titik dash sepanjang kurang dari 0,5 px yang
      * hampir tak terlihat dan terbaca mirip pola Perlu persiapan, sedangkan ujung bulat
      * memperlebar dash secara radial sehingga titik dan celahnya tetap tampak (WCAG 1.4.1;
