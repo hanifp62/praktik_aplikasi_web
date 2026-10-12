@@ -69,9 +69,23 @@ Actions, dan upgrade maplibre-gl 6 serta tailwindcss 4 untuk menutup semua advis
 - **Dokumen untuk pemilik.**
   - Deck presentasi 15 slide dari tangkapan nyata: https://claude.ai/artifact/UkTXKFUYWFenojPfxcBb35.
   - Introspeksi dan rencana produksi lima fase bergerbang: https://claude.ai/code/artifact/90d5de1d-447f-45a8-af92-255d2f68d4de.
+- **Deploy inspeksi tim (12 Oktober 2026, sore).** Pemilik meminta hosting gratis supaya tim menginspeksi dari
+  perangkat lain. Riset 11 platform memilih Render paket Free (tanpa kartu kredit, region Singapura); Koyeb, Fly.io,
+  dan Zeabur sudah menutup paket gratisnya, dan Vercel berisiko gagal build karena build Vite butuh PHP dan Node
+  sekaligus. Disiapkan di `cdd1cce` (proxy tepercaya lewat `TRUSTED_PROXIES`) dan `2bc64c4` (`Dockerfile` FrankenPHP
+  PHP 8.5, `docker/`, `.dockerignore`, `render.yaml` dengan `autoDeployTrigger: checksPass`, job CI `image`). Job
+  `image` hijau di run 38257261653: image terbangun, start kontainer menjalankan seluruh migrasi di PostGIS, `/up` dan
+  `/login` menjawab 200. Langkahnya ada di README bagian "Deploy untuk inspeksi tim". GR-09 untuk mengganti target
+  DK-12 (Vercel) ditulis sesudah pemilik mengonfirmasi Render.
+- **Akun contoh di Supabase produksi dikunci (persetujuan pemilik 12 Oktober).** `admin@`, `moderator@`, dan
+  `pendaki@example.com` (sandinya tertulis di README repo publik) diberi hash bcrypt dari rahasia acak yang dibuang,
+  dan `remember_token` dikosongkan; tidak ada sesi aktif. Data dan relasinya utuh.
 - **Keputusan pemilik yang masih terbuka:**
+  - Render: masuk dengan GitHub, buat Blueprint dari `render.yaml`, isi `APP_KEY`, `APP_URL`, `DB_URL`, dan empat
+    nilai `SUPABASE_STORAGE_*`; di Supabase matikan Data API (lint `spatial_ref_sys`), buat bucket privat foto, dan buat
+    kunci S3. Start kontainer menerapkan 14 migrasi yang tertunda di Supabase (51 dari 65 per 12 Oktober);
   - isi rahasia `SUPABASE_DB_URL` (Session pooler), lalu jalankan workflow "Migrasi Supabase": pratinjau dulu, baru
-    terapkan;
+    terapkan (opsional sesudah Render memakai `migrate --force` saat start);
   - persetujuan R-021 untuk satu rumah per pekerjaan inti. Saat ini empat pekerjaan punya 2 sampai 4 pintu masuk di tab
     berbeda; rinciannya ada di dokumen introspeksi;
   - hosting staging. Syaratnya PHP 8.5, cron untuk 3 perintah terjadwal di `routes/console.php`, surel, dan pengelola
