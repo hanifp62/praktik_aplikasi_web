@@ -31,20 +31,24 @@ return new class extends Migration
             return;
         }
 
-        DB::statement('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated');
-        DB::statement('REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated');
+        $peran = $this->peranPostgrest();
 
-        // Fungsi PostGIS dimiliki supabase_admin, bukan kita, sehingga pencabutannya
-        // boleh gagal. Itu bukan alasan membatalkan penutupan akses tabel.
-        try {
-            DB::statement('REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM anon, authenticated');
-        } catch (Throwable $e) {
-            report($e);
+        if ($peran !== '') {
+            DB::statement("REVOKE ALL ON ALL TABLES IN SCHEMA public FROM {$peran}");
+            DB::statement("REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM {$peran}");
+
+            // Fungsi PostGIS dimiliki supabase_admin, bukan kita, sehingga pencabutannya
+            // boleh gagal. Itu bukan alasan membatalkan penutupan akses tabel.
+            try {
+                DB::statement("REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM {$peran}");
+            } catch (Throwable $e) {
+                report($e);
+            }
+
+            // Tanpa ini, tabel yang dibuat migrasi berikutnya akan kembali mendapat hak penuh.
+            DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM {$peran}");
+            DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM {$peran}");
         }
-
-        // Tanpa ini, tabel yang dibuat migrasi berikutnya akan kembali mendapat hak penuh.
-        DB::statement('ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated');
-        DB::statement('ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, authenticated');
 
         foreach ($this->tabelAplikasi() as $tabel) {
             DB::statement("ALTER TABLE public.\"{$tabel}\" ENABLE ROW LEVEL SECURITY");
@@ -61,10 +65,32 @@ return new class extends Migration
             DB::statement("ALTER TABLE public.\"{$tabel}\" DISABLE ROW LEVEL SECURITY");
         }
 
-        DB::statement('GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated');
-        DB::statement('GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated');
-        DB::statement('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated');
-        DB::statement('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated');
+        $peran = $this->peranPostgrest();
+
+        if ($peran === '') {
+            return;
+        }
+
+        DB::statement("GRANT ALL ON ALL TABLES IN SCHEMA public TO {$peran}");
+        DB::statement("GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO {$peran}");
+        DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO {$peran}");
+        DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO {$peran}");
+    }
+
+    /**
+     * Peran PostgREST yang ada di basis data ini, siap disisipkan ke GRANT dan REVOKE. Supabase selalu
+     * memiliki keduanya. PostgreSQL biasa (CI, Docker lokal) tidak, dan REVOKE ke peran yang tidak ada
+     * menggagalkan migrasi; sampai 12 Oktober 2026 hal itu membuat seluruh suite Spatial galat sebelum
+     * satu test pun berjalan. Nama peran berasal dari daftar tetap di query ini, bukan dari masukan.
+     */
+    private function peranPostgrest(): string
+    {
+        $ada = array_map(
+            fn (object $baris) => $baris->rolname,
+            DB::select("SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated') ORDER BY rolname")
+        );
+
+        return implode(', ', $ada);
     }
 
     /**

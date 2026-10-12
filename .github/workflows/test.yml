@@ -93,6 +93,18 @@ jobs:
       - name: Feature tests
         run: php artisan test --testsuite=Feature --log-junit "$RUNNER_TEMP/feature-junit.xml"
 
+      # Supabase punya peran PostgREST anon dan authenticated, dan memberi keduanya hak bawaan atas
+      # tabel baru di schema public; PostGIS biasa tidak punya keduanya. Peran dan hak bawaan itu
+      # dibuat di sini supaya migrasi penutupan PostgREST berjalan di jalur produksi dan
+      # PostgrestClosureTest membuktikan hasilnya (R-024).
+      - name: Siapkan peran Supabase
+        run: >-
+          php -r '$db = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=hiking_test", "hiking", "hiking");
+          foreach (["CREATE ROLE anon NOLOGIN", "CREATE ROLE authenticated NOLOGIN",
+          "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated",
+          "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated"]
+          as $sql) { $db->exec($sql); }'
+
       # --fail-on-skipped (ruling W6-FI): DSN di bawah selalu diisi, jadi test Spatial yang
       # dilewati berarti suite tidak benar-benar berjalan. CI tidak boleh hijau tanpa bukti
       # PostgreSQL (R-024).
