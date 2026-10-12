@@ -77,15 +77,15 @@ class CiWorkflowsTest extends TestCase
 
         $bernama = $this->langkahBernama($pekerjaan['steps']);
 
-        // Diubah 12 Oktober: setiap suite menulis JUnit, yang diterbitkan sebagai anotasi publik bila gagal,
-        // karena log job hanya terbaca admin repo.
-        $this->assertSame('php artisan test --testsuite=Unit --log-junit unit-junit.xml', $bernama['Unit tests']['run']);
-        $this->assertSame('php artisan test --testsuite=Feature --log-junit feature-junit.xml', $bernama['Feature tests']['run']);
+        // Diubah 12 Oktober: setiap suite menulis JUnit ke RUNNER_TEMP (root repo dijaga RepoHygieneTest), yang
+        // diterbitkan sebagai anotasi publik bila gagal, karena log job hanya terbaca admin repo.
+        $this->assertSame('php artisan test --testsuite=Unit --log-junit "$RUNNER_TEMP/unit-junit.xml"', $bernama['Unit tests']['run']);
+        $this->assertSame('php artisan test --testsuite=Feature --log-junit "$RUNNER_TEMP/feature-junit.xml"', $bernama['Feature tests']['run']);
         // Diubah ruling W6-FI: --fail-on-skipped wajib, karena test Spatial yang dilewati membuat
         // langkah ini hijau tanpa satu pun test PostGIS yang berjalan.
-        $this->assertSame('php artisan test --testsuite=Spatial --fail-on-skipped --log-junit spatial-junit.xml', $bernama['Spatial tests (PostGIS)']['run'], 'Langkah Spatial harus menjalankan suite Spatial dan gagal bila ada test yang dilewati; nama langkah saja tidak menjamin gerbang PostGIS (R-024) masih ada.');
+        $this->assertSame('php artisan test --testsuite=Spatial --fail-on-skipped --log-junit "$RUNNER_TEMP/spatial-junit.xml"', $bernama['Spatial tests (PostGIS)']['run'], 'Langkah Spatial harus menjalankan suite Spatial dan gagal bila ada test yang dilewati; nama langkah saja tidak menjamin gerbang PostGIS (R-024) masih ada.');
         $this->assertSame('failure()', $bernama['Ringkas kegagalan test']['if']);
-        $this->assertSame('python3 .github/scripts/junit_anotasi.py unit-junit.xml feature-junit.xml spatial-junit.xml', $bernama['Ringkas kegagalan test']['run']);
+        $this->assertSame('python3 .github/scripts/junit_anotasi.py "$RUNNER_TEMP/unit-junit.xml" "$RUNNER_TEMP/feature-junit.xml" "$RUNNER_TEMP/spatial-junit.xml"', $bernama['Ringkas kegagalan test']['run']);
         $this->assertLessThan($this->posisi($langkah, 'Ringkas kegagalan test'), $this->posisi($langkah, 'Spatial tests (PostGIS)'), 'Ringkasan harus sesudah suite terakhir, atau kegagalannya tidak pernah terbaca.');
         $this->assertStringStartsWith('pgsql://', $bernama['Spatial tests (PostGIS)']['env']['SPATIAL_TEST_DSN']);
         $this->assertStringContainsString('@127.0.0.1:', $bernama['Spatial tests (PostGIS)']['env']['SPATIAL_TEST_DSN']);

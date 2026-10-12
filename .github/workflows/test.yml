@@ -88,10 +88,10 @@ jobs:
       # menjalankan Feature, dan 104 test Unit tidak pernah dieksekusi CI sama sekali.
       # Dipisah juga membuat kegagalan tiap suite terbaca sendiri-sendiri.
       - name: Unit tests
-        run: php artisan test --testsuite=Unit --log-junit unit-junit.xml
+        run: php artisan test --testsuite=Unit --log-junit "$RUNNER_TEMP/unit-junit.xml"
 
       - name: Feature tests
-        run: php artisan test --testsuite=Feature --log-junit feature-junit.xml
+        run: php artisan test --testsuite=Feature --log-junit "$RUNNER_TEMP/feature-junit.xml"
 
       # --fail-on-skipped (ruling W6-FI): DSN di bawah selalu diisi, jadi test Spatial yang
       # dilewati berarti suite tidak benar-benar berjalan. CI tidak boleh hijau tanpa bukti
@@ -99,11 +99,12 @@ jobs:
       - name: Spatial tests (PostGIS)
         env:
           SPATIAL_TEST_DSN: pgsql://hiking:hiking@127.0.0.1:5432/hiking_test
-        run: php artisan test --testsuite=Spatial --fail-on-skipped --log-junit spatial-junit.xml
+        run: php artisan test --testsuite=Spatial --fail-on-skipped --log-junit "$RUNNER_TEMP/spatial-junit.xml"
 
       # Log job hanya terbaca admin repo; anotasi terbaca publik lewat API check-runs. Penyebab
       # kegagalan ketiga suite diterbitkan sebagai anotasi supaya dapat diperiksa tanpa hak
-      # admin. Laporan suite yang tidak sempat berjalan dilewati skrip.
+      # admin. Laporan suite yang tidak sempat berjalan dilewati skrip. Laporan ditulis di
+      # RUNNER_TEMP, bukan root repo, karena RepoHygieneTest menolak entri root tak terinventaris.
       - name: Ringkas kegagalan test
         if: failure()
-        run: python3 .github/scripts/junit_anotasi.py unit-junit.xml feature-junit.xml spatial-junit.xml
+        run: python3 .github/scripts/junit_anotasi.py "$RUNNER_TEMP/unit-junit.xml" "$RUNNER_TEMP/feature-junit.xml" "$RUNNER_TEMP/spatial-junit.xml"
