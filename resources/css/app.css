@@ -76,6 +76,19 @@
     --text-meta--line-height: 1.4;
     --text-label: 0.75rem;
     --text-label--line-height: 1.35;
+
+    /*
+     * Breakpoint dalam px, sama dengan Tailwind 3 dan dengan media query px di berkas ini
+     * (@media (min-width: 1024px)) serta di JS (Trails/Index.tsx, min-width 1280px). Bawaan
+     * Tailwind 4 memakai rem, yang ikut ukuran huruf bawaan peramban: pada huruf 20 sampai 24 px
+     * kepala lebar hilang dan bilah tab muncul tanpa ruang di bawah isi (tinjauan upgrade I-2).
+     * Satu satuan untuk kelimanya, supaya urutannya tetap benar.
+     */
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1536px;
 }
 
 /*
@@ -833,23 +846,32 @@
      * Kontrol formulir dari @tailwindcss/forms membawa latar putih dan teks hitam yang
      * ditulis langsung, bukan lewat token. Di sini keduanya diarahkan ke permukaan dan
      * teks tema supaya isian tidak menjadi kotak putih di halaman gelap.
+     *
+     * Dibungkus :is() supaya spesifisitasnya (0,1,1) untuk setiap kontrol. Di Tailwind 4 aturan
+     * dasar plugin forms keluar SESUDAH lapisan base ini, dan selektor textarea serta select
+     * miliknya (0,0,1) sama kuat dengan selektor tipe polos, sehingga yang belakangan menang:
+     * select dan textarea menjadi kotak putih bertulisan hampir putih di tema gelap (tinjauan
+     * upgrade C-1). Blok kotak centang dan radio di bawah sengaja tidak dibungkus, karena harus
+     * tetap kalah dari :checked milik forms.
      */
-    input:not([type]),
-    [type='text'],
-    [type='email'],
-    [type='url'],
-    [type='password'],
-    [type='number'],
-    [type='date'],
-    [type='datetime-local'],
-    [type='month'],
-    [type='search'],
-    [type='tel'],
-    [type='time'],
-    [type='week'],
-    [multiple],
-    textarea,
-    select {
+    :is(
+        input:not([type]),
+        [type='text'],
+        [type='email'],
+        [type='url'],
+        [type='password'],
+        [type='number'],
+        [type='date'],
+        [type='datetime-local'],
+        [type='month'],
+        [type='search'],
+        [type='tel'],
+        [type='time'],
+        [type='week'],
+        [multiple],
+        textarea,
+        select
+    ) {
         background-color: rgb(var(--surface));
         color: rgb(var(--text-primary));
         border-color: rgb(var(--control-border));

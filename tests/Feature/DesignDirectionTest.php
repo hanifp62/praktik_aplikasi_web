@@ -113,7 +113,11 @@ class DesignDirectionTest extends TestCase
      *   semantik Tailwind 3 (margin dan batas atas anak sesudah yang pertama) dipulihkan, karena
      *   <dialog> tertutup dan wilayah status kosong di ujung wadah menambah ruang sisa;
      * - batas transparan kotak centang tercentang dari @tailwindcss/forms kini kalah dari kelas
-     *   border-control; ditulis sendiri di Checkbox.
+     *   border-control; ditulis sendiri di Checkbox;
+     * - aturan dasar forms kini keluar sesudah lapisan base app, jadi select dan textarea kembali
+     *   putih di tema gelap; kontrol teks dibungkus :is() supaya selalu menang (tinjauan upgrade C-1);
+     * - breakpoint bawaan kini rem; dikembalikan ke px supaya sama dengan media query px di app.css
+     *   dan JS (tinjauan upgrade I-2).
      */
     public function test_tailwind_4_keeps_the_tailwind_3_defaults_the_interface_relies_on(): void
     {
@@ -126,6 +130,14 @@ class DesignDirectionTest extends TestCase
     dialog \{\s*margin: auto;\s*\}/', $css);
         $this->assertMatchesRegularExpression('/@utility space-y-\* \{\s*& > :not\(\[hidden\]\) ~ :not\(\[hidden\]\) \{\s*margin-top: --spacing\(--value\(number\)\);\s*margin-bottom: 0;\s*\}\s*:where\(&\) > :not\(template\) \{\s*margin-block-start: revert-layer;\s*margin-block-end: revert-layer;\s*\}/', $css);
         $this->assertMatchesRegularExpression('/@utility divide-y \{\s*& > :not\(\[hidden\]\) ~ :not\(\[hidden\]\) \{\s*border-top-width: 1px;\s*border-bottom-width: 0;\s*\}\s*:where\(&\) > :not\(template\) \{\s*border-top-width: revert-layer;\s*border-bottom-width: revert-layer;/', $css);
+        $this->assertMatchesRegularExpression('/:is\(\s*input:not\(\[type\]\),.*?\btextarea,\s*select\s*\)\s*\{\s*background-color: rgb\(var\(--surface\)\);/s', $css, 'Kontrol teks harus menang atas textarea dan select milik @tailwindcss/forms.');
+
+        foreach (['sm' => 640, 'md' => 768, 'lg' => 1024, 'xl' => 1280, '2xl' => 1536] as $nama => $px) {
+            $this->assertMatchesRegularExpression("/@theme \{[^}]*--breakpoint-{$nama}: {$px}px;/s", $css, "Breakpoint {$nama} harus {$px}px.");
+        }
+
+        $this->assertStringContainsString('@media (min-width: 1024px)', $css);
+        $this->assertStringContainsString("useCocokMedia('(min-width: 1280px)')", File::get(resource_path('js/pages/Trails/Index.tsx')));
         $this->assertMatchesRegularExpression('/@utility divide-subtle \{\s*& > :not\(\[hidden\]\) ~ :not\(\[hidden\]\) \{\s*border-color: rgb\(var\(--border-subtle\)\);\s*\}\s*:where\(&\) > :not\(template\) \{\s*border-color: revert-layer;/', $css);
 
         // Setiap kotak centang dan tombol radio bergaris border-control menulis batas transparannya

@@ -17,8 +17,11 @@ export const fokusKelompok = 'group-focus-visible:ring-2 group-focus-visible:rin
 /** Cincin fokus pada label yang membungkus input tersembunyi (kontrol segmen). */
 export const fokusDiDalam = 'has-focus-visible:ring-2 has-focus-visible:ring-brand-600 has-focus-visible:ring-offset-2';
 
-/** Umpan balik tekan: hanya transform dan warna yang berpindah, tanpa gerak ketika nonaktif. */
-export const umpanTekan = 'transition-[transform,background-color,border-color,color] duration-sentuh ease-gerak active:scale-[0.98] disabled:active:scale-100';
+/**
+ * Umpan balik tekan: hanya transform, scale, dan warna yang berpindah, tanpa gerak ketika nonaktif. Tailwind 4
+ * menulis active:scale sebagai properti scale tersendiri, bukan bagian transform, jadi scale wajib ada di daftar transisi.
+ */
+export const umpanTekan = 'transition-[transform,scale,background-color,border-color,color] duration-sentuh ease-gerak active:scale-[0.98] disabled:active:scale-100';
 
 /** Umpan balik tekan untuk anak di dalam elemen berkelas group. */
-export const umpanTekanKelompok = 'transition-[transform,background-color,border-color,color] duration-sentuh ease-gerak group-active:scale-[0.98]';
+export const umpanTekanKelompok = 'transition-[transform,scale,background-color,border-color,color] duration-sentuh ease-gerak group-active:scale-[0.98]';

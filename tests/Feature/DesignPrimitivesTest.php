@@ -70,6 +70,9 @@ class DesignPrimitivesTest extends TestCase
         $this->assertStringContainsString("fokusTerlihat = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2'", $gaya);
         $this->assertStringContainsString('active:scale-[0.98]', $gaya);
         $this->assertStringContainsString('group-active:scale-[0.98]', $gaya);
+        // Tinjauan upgrade I-1: Tailwind 4 menulis active:scale-[0.98] sebagai properti scale, bukan bagian transform.
+        // Tanpa scale di daftar transisi, tekan melompat seketika alih-alih bergerak 120 ms.
+        $this->assertSame(2, substr_count($gaya, 'transition-[transform,scale,background-color,border-color,color]'), 'Daftar transisi tekan harus memuat scale.');
         $this->assertSame(2, substr_count($gaya, 'duration-sentuh ease-gerak'), 'Tekan memakai token durasi dan kurva gerak.');
         $this->assertDoesNotMatchRegularExpression('/\banimate-|\bduration-\d/', $gaya, 'Gerak primitif hanya lewat token bernama.');
     }
