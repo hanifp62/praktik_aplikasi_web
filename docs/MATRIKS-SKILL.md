@@ -56,7 +56,7 @@ dengan urutan wewenang di atas.
 | `animate`, `improve-animations`, `find-animation-opportunities`, `review-animations`, `animation-vocabulary` | INTI gerak | Memutuskan, membangun, mengaudit, dan meninjau gerak | Setiap gerak harus menjelaskan; `prefers-reduced-motion` wajib |
 | `apple-design` | PENDUKUNG | Gestur, pegas, seret, lembar bawah, material | Kaca paling banyak dua elemen per layar (rencana induk v3) |
 | `mobile-native` | INTI seluler | Rasa terpasang di ponsel: area aman, sentuh, meta | PWA sudah ada; lengkapi, jangan ganti |
-| `tailwindcss-development` | INTI implementasi | Kelas Tailwind 3.4 dan token | Tanpa `dark:` dan warna palet mentah; token dari `app.css` |
+| `tailwindcss-development` | INTI implementasi | Kelas Tailwind 4 dan token | Tanpa `dark:` dan warna palet mentah; token dari `app.css` |
 | `design-taste-frontend` | INTI desain (arahan pemilik 26 September 2026: selalu diterapkan dan digabung) | Perombakan layar yang ada dengan audit lebih dulu (cakupannya sendiri: "landing pages, portfolios, and redesigns"), halaman publik, dan pemeriksaan pra-kirim anti-generik | Menurut cakupannya bukan untuk dasbor, tabel data, dan alur bertahap; di layar itu yang diambil hanya pemeriksaan anti-generik dan kontras formulirnya. Rekomendasi pustakanya (Motion, GSAP, Tailwind v4) tidak dipakai (DK-24, R-020); huruf, warna, dan geraknya kalah oleh `DESIGN.md` |
 | `design-taste-frontend-v1`, `high-end-visual-design`, `stitch-design-taste`, `minimalist-ui` | PENDUKUNG | Rujukan tata letak dan standar anti-generik tambahan | Font, bayangan, dan warna resepnya kalah oleh `DESIGN.md` |
 | `gpt-taste` | TIDAK RELEVAN untuk layar aplikasi | Mewajibkan GSAP dan struktur AIDA pemasaran | Bertentangan dengan DK-24 dan mode kerja aplikasi |

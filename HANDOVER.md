@@ -31,6 +31,54 @@ di branch `hardening`. Push belum dilakukan dan tetap butuh izin (R-018).
 > `php artisan test --compact --testsuite=Unit,Feature`, `npx tsc --noEmit`. Jangan commit, push, mengakses
 > Supabase, menjalankan migrasi, atau menambah dependensi tanpa izin saya.
 
+### 12 Oktober 2026: integrasi tim, CI hijau penuh, upgrade dependensi, bahan presentasi
+
+Blok ini menggantikan daftar "keputusan terbuka" dan "batas yang diketahui" di blok W6 di bawahnya. Permintaan pemilik
+(ringkas): integrasikan basis data dengan repo, pull dan push ke `main` dengan rapi, introspeksi, laporan presentasi
+bergaya GEMASTIK yang selaras dengan uji nyata, dan rencana lanjutan sampai layak demo dan produksi. Pemilik memilih:
+skema kanonik dengan API tim dipertahankan, Supabase sebagai basis data utama yang mengikuti migrasi repo lewat GitHub
+Actions, dan upgrade maplibre-gl 6 serta tailwindcss 4 untuk menutup semua advisori npm.
+
+| Commit | Isi |
+|---|---|
+| `a03bf6c` | Merge `origin/main` tim: API baca publik `/api` (5 rute GET, `throttle:60,1`, hanya jalur terbit) di atas skema kanonik; migrasi duplikat tim dilepas; pin platform PHP 8.3.33 dari tim tidak diambil (R-020); migrasi RLS untuk semua tabel aplikasi |
+| `2c55ab5` | Workflow tangan `migrate-supabase.yml` (environment `supabase-produksi`, rahasia `SUPABASE_DB_URL`) |
+| `c02d32f`, `b762cda` | Kegagalan ketiga suite diterbitkan sebagai anotasi publik dari JUnit di `RUNNER_TEMP`; pagar `DB_*` hanya untuk workflow yang menjalankan test |
+| `501ad0e`, `e524c27` | Migrasi penutupan PostgREST portabel di PostgreSQL biasa; CI meniru peran `anon` dan `authenticated` Supabase; tabel milik ekstensi bukan tabel aplikasi; test hitungan kueri pos diperbaiki |
+| `8f9adf1` | maplibre-gl 6.14.0 dan tailwindcss 4.3.3 lewat `@tailwindcss/vite`; npm audit 8 menjadi 0 |
+
+- **Bukti.**
+  - CI hijau penuh untuk pertama kalinya: Test run 38217749993 dan Security run 38217750034 pada `8f9adf1`.
+  - Suite Spatial (52 test, PostGIS 16-3.4) baru benar-benar berjalan hari ini. Sejak 20 September seluruh suite galat di
+    migrasi karena peran `anon` tidak ada di PostgreSQL biasa. Begitu berjalan, suite ini menemukan tiga cacat yang lolos
+    dari SQLite (R-024).
+  - Unit dan Feature: 2.633 test, 2.631 lulus, 2 dilewati, 18.287 asersi.
+  - Upgrade: 96 dari 104 tangkapan identik piksel, 8 sisanya teks waktu, dan console error 0. Laporannya ada di
+    `.superpowers/sdd/2026-10-07-memount-v3-w6-mendaki/upgrade-dep-report.md`.
+- **Dokumen untuk pemilik.**
+  - Deck presentasi 15 slide dari tangkapan nyata: https://claude.ai/artifact/UkTXKFUYWFenojPfxcBb35.
+  - Introspeksi dan rencana produksi lima fase bergerbang: https://claude.ai/code/artifact/90d5de1d-447f-45a8-af92-255d2f68d4de.
+- **Keputusan pemilik yang masih terbuka:**
+  - isi rahasia `SUPABASE_DB_URL` (Session pooler), lalu jalankan workflow "Migrasi Supabase": pratinjau dulu, baru
+    terapkan;
+  - persetujuan R-021 untuk satu rumah per pekerjaan inti. Saat ini empat pekerjaan punya 2 sampai 4 pintu masuk di tab
+    berbeda; rinciannya ada di dokumen introspeksi;
+  - hosting staging. Syaratnya PHP 8.5, cron untuk 3 perintah terjadwal di `routes/console.php`, surel, dan pengelola
+    rahasia;
+  - `DEVICE_KEY_SECRET` produksi (izin akhir 40), sebelum deploy pertama;
+  - pin platform PHP 8.3.33 dari tim, karena runtime proyek PHP 8.5;
+  - satu baris kosong baru di `docs/PRD.md` baris 26 yang tidak dibuat agen, dibiarkan tidak di-commit;
+  - makna isian wilayah yang memuat banyak provinsi;
+  - jeda toast Urungkan pada modalitas campuran (CF-7).
+- **Batas yang diketahui:**
+  - data contoh tanpa geometri jalur dan tanpa akun moderator dan admin;
+  - pembaca layar belum diuji;
+  - uji kegunaan 5 pendaki dan SUS belum dijalankan;
+  - halaman peta kini memuat sekitar 225 kB gzip lebih banyak (MapLibre 6), dan paket lapangan naik dari 0,4 menjadi
+    0,6 MB gzip;
+  - Tailwind 4 dan MapLibre 6 menuntut Safari 16.4+, Chrome 111+, Firefox 128+, dan WebGL2. Dukungan Firefox 125
+    sampai 127 yang disebut DESIGN.md perlu ditinjau ulang.
+
 ### W6 Mendaki dan paket luring (selesai 11 Oktober 2026, di-commit 11 Oktober 2026)
 
 Rencana `docs/superpowers/plans/2026-10-07-memount-v3-w6-mendaki.md`, 13 tugas, ditambah dua sisipan. Kedua sisipan
