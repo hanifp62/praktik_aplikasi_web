@@ -22,6 +22,10 @@ class AppTablesRowLevelSecurityTest extends SpatialTestCase
                 AND c.relkind = 'r'
                 AND t.tableowner = current_user
                 AND NOT c.relrowsecurity
+                AND NOT EXISTS (
+                    SELECT 1 FROM pg_depend d
+                     WHERE d.classid = 'pg_class'::regclass AND d.objid = c.oid AND d.deptype = 'e'
+                )
               ORDER BY c.relname"
         ));
 

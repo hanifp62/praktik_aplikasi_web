@@ -94,8 +94,10 @@ return new class extends Migration
     }
 
     /**
-     * Hanya tabel milik peran aplikasi. spatial_ref_sys milik supabase_admin, berisi
-     * definisi sistem koordinat PostGIS, bukan data pengguna, dan bukan milik kita.
+     * Hanya tabel milik peran aplikasi, di luar tabel milik ekstensi. spatial_ref_sys berisi definisi sistem
+     * koordinat PostGIS, bukan data pengguna. Di Supabase pemiliknya supabase_admin; di PostgreSQL tempat peran
+     * aplikasi sendiri memasang PostGIS (CI, Docker lokal) pemiliknya peran aplikasi, jadi penyaring pemilik saja
+     * tidak cukup.
      *
      * @return array<int, string>
      */
@@ -104,8 +106,16 @@ return new class extends Migration
         return array_map(
             fn (object $baris) => $baris->tablename,
             DB::select(
-                'SELECT tablename FROM pg_tables WHERE schemaname = ? AND tableowner = current_user',
-                ['public']
+                "SELECT c.relname AS tablename
+                   FROM pg_class c
+                   JOIN pg_namespace n ON n.oid = c.relnamespace
+                  WHERE n.nspname = 'public'
+                    AND c.relkind IN ('r', 'p')
+                    AND pg_get_userbyid(c.relowner) = current_user
+                    AND NOT EXISTS (
+                        SELECT 1 FROM pg_depend d
+                         WHERE d.classid = 'pg_class'::regclass AND d.objid = c.oid AND d.deptype = 'e'
+                    )"
             )
         );
     }

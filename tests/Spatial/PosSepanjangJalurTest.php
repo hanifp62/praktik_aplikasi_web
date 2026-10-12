@@ -54,9 +54,11 @@ class PosSepanjangJalurTest extends SpatialTestCase
             Checkpoint::factory()->for($trail)->create(['sequence' => $i])->setCoordinates(-7.0 - $i * 0.004, 110.0);
         }
 
+        $segar = $trail->fresh();
+
         DB::enableQueryLog();
         DB::flushQueryLog();
-        $km = app(PosSepanjangJalur::class)->km($trail->fresh());
+        $km = app(PosSepanjangJalur::class)->km($segar);
         $kueri = count(DB::getQueryLog());
         DB::disableQueryLog();
 
