@@ -1,0 +1,67 @@
+name: Migrasi Supabase
+
+# Basis data utama (Supabase) mengikuti migrasi di repo ini: database/migrations adalah satu-satunya sumber skema.
+# Dijalankan tangan dari tab Actions. Tanpa centang "terapkan", workflow hanya menampilkan status migrasi (pratinjau).
+# Rahasia SUPABASE_DB_URL berisi connection string Session pooler (IPv4) dari dashboard Supabase, dan tidak pernah
+# ditulis di repo (CLAUDE.md R-019). Semua migrasi aditif; rollback tidak dijalankan dari sini.
+
+on:
+  workflow_dispatch:
+    inputs:
+      terapkan:
+        description: 'Terapkan migrasi yang tertunda (kosongkan untuk pratinjau saja)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrasi-supabase
+  cancel-in-progress: false
+
+jobs:
+  migrasi:
+    runs-on: ubuntu-latest
+    environment: supabase-produksi
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo, pdo_pgsql
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress
+
+      - name: Pastikan rahasia tersedia
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "::error::Rahasia SUPABASE_DB_URL belum diisi di Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Siapkan environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      - name: Status migrasi (pratinjau)
+        env:
+          DB_CONNECTION: pgsql
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: php artisan migrate:status --no-interaction
+
+      - name: Terapkan migrasi
+        if: ${{ inputs.terapkan }}
+        env:
+          DB_CONNECTION: pgsql
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          php artisan migrate --force --no-interaction
+          php artisan migrate:status --no-interaction

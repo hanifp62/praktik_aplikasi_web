@@ -99,4 +99,11 @@ jobs:
       - name: Spatial tests (PostGIS)
         env:
           SPATIAL_TEST_DSN: pgsql://hiking:hiking@127.0.0.1:5432/hiking_test
-        run: php artisan test --testsuite=Spatial --fail-on-skipped
+        run: php artisan test --testsuite=Spatial --fail-on-skipped --log-junit spatial-junit.xml
+
+      # Log job hanya terbaca admin repo; anotasi terbaca publik lewat API check-runs. Penyebab
+      # kegagalan suite PostgreSQL diterbitkan sebagai anotasi supaya dapat diperiksa tanpa
+      # kredensial (R-024).
+      - name: Ringkas kegagalan Spatial
+        if: failure()
+        run: python3 .github/scripts/junit_anotasi.py spatial-junit.xml

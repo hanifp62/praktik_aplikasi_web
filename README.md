@@ -68,6 +68,10 @@ composer run dev        # server, antrean, log, dan Vite sekaligus
 
 Buka `http://localhost:8000`.
 
+**Inspeksi cepat tanpa PostgreSQL.** `composer inspeksi:data` mengisi `database/demo.sqlite` dengan data
+contoh dan mencetak sandi akun `budi@contoh.test`; `composer inspeksi` lalu menyalakan `http://127.0.0.1:8000`
+dengan data itu. Peta jalur tampil tanpa garis rute, karena SQLite tidak punya PostGIS.
+
 **Windows:** PHP butuh CA bundle untuk panggilan HTTPS (misalnya prakiraan BMKG). Isi
 `curl.cainfo` dan `openssl.cafile` di `php.ini` dengan `ca-bundle.crt`; Git for Windows
 sudah membawa satu.
@@ -97,6 +101,11 @@ pemeriksaan tipe, Pint, Unit, Feature, dan Spatial di PostGIS untuk push ke `mai
 rahasia pada pemicu yang sama, ditambah setiap Senin setelah workflow itu ada di cabang
 bawaan `main`. `.github/workflows/deploy.yml` hanya dijalankan tangan untuk memverifikasi
 kandidat rilis dan belum memuat langkah deploy.
+
+`.github/workflows/migrate-supabase.yml` menyelaraskan Supabase dengan `database/migrations`, satu-satunya
+sumber skema. Workflow ini dijalankan tangan dari tab Actions: ia selalu menampilkan status migrasi, dan baru
+menerapkannya bila "terapkan" dicentang. Rahasia `SUPABASE_DB_URL` (connection string Session pooler dari dashboard
+Supabase) diisi di Settings > Secrets and variables > Actions; kredensial tidak pernah ditulis di repo.
 
 ## Peta repo
 

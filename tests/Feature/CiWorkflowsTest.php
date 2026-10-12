@@ -81,7 +81,11 @@ class CiWorkflowsTest extends TestCase
         $this->assertSame('php artisan test --testsuite=Feature', $bernama['Feature tests']['run']);
         // Diubah ruling W6-FI: --fail-on-skipped wajib, karena test Spatial yang dilewati membuat
         // langkah ini hijau tanpa satu pun test PostGIS yang berjalan.
-        $this->assertSame('php artisan test --testsuite=Spatial --fail-on-skipped', $bernama['Spatial tests (PostGIS)']['run'], 'Langkah Spatial harus menjalankan suite Spatial dan gagal bila ada test yang dilewati; nama langkah saja tidak menjamin gerbang PostGIS (R-024) masih ada.');
+        // Diubah 12 Oktober: langkah Spatial juga menulis JUnit, yang diterbitkan sebagai anotasi publik bila gagal,
+        // karena log job hanya terbaca admin repo.
+        $this->assertSame('php artisan test --testsuite=Spatial --fail-on-skipped --log-junit spatial-junit.xml', $bernama['Spatial tests (PostGIS)']['run'], 'Langkah Spatial harus menjalankan suite Spatial dan gagal bila ada test yang dilewati; nama langkah saja tidak menjamin gerbang PostGIS (R-024) masih ada.');
+        $this->assertSame('failure()', $bernama['Ringkas kegagalan Spatial']['if']);
+        $this->assertSame('python3 .github/scripts/junit_anotasi.py spatial-junit.xml', $bernama['Ringkas kegagalan Spatial']['run']);
         $this->assertStringStartsWith('pgsql://', $bernama['Spatial tests (PostGIS)']['env']['SPATIAL_TEST_DSN']);
         $this->assertStringContainsString('@127.0.0.1:', $bernama['Spatial tests (PostGIS)']['env']['SPATIAL_TEST_DSN']);
     }
