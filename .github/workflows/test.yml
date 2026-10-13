@@ -191,6 +191,32 @@ jobs:
           curl --silent --fail http://127.0.0.1/login | grep --quiet 'https://127.0.0.1/build/assets/'
           curl --silent --fail --header 'X-Forwarded-Proto: https' --header 'X-Forwarded-Host: contoh.test' http://127.0.0.1/login | grep --quiet 'https://contoh.test/build/assets/'
 
+      # 13 Oktober 2026: variabel Vercel berisi APP_ENV=local dan APP_DEBUG=true tanpa TRUSTED_PROXIES, sehingga halaman
+      # galat memperlihatkan jejak dan header permintaan, rute pengembangan termuat, dan aset termuat lewat http. Image
+      # yang sama dijalankan dengan variabel keliru itu dan harus tetap berperilaku sebagai produksi (docker/start.sh).
+      - name: Jalankan image dengan variabel keliru
+        run: |
+          docker stop memount
+          docker run --detach --name memount-keliru --network host \
+            --env APP_ENV=local --env APP_DEBUG=true --env APP_KEY \
+            --env DB_CONNECTION=pgsql --env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test \
+            --env SESSION_DRIVER=database --env CACHE_STORE=database --env QUEUE_CONNECTION=sync \
+            memount:ci
+          for percobaan in $(seq 1 90); do
+            curl --silent --fail --output /dev/null http://127.0.0.1/up && break
+            sleep 2
+          done
+          test "$(curl --silent --output "$RUNNER_TEMP/galat-405.html" --write-out '%{http_code}' --request PUT http://127.0.0.1/login)" = 405
+          if grep --quiet 'MethodNotAllowedHttpException' "$RUNNER_TEMP/galat-405.html"; then
+            echo 'Halaman galat masih memperlihatkan jejak: mode debug menyala.' >&2
+            exit 1
+          fi
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1/dev/primitif)" = 404
+          curl --silent --fail --header 'X-Forwarded-Proto: https' --header 'X-Forwarded-Host: contoh.test' http://127.0.0.1/login | grep --quiet 'https://contoh.test/build/assets/'
+          docker logs memount-keliru 2>&1 | grep --quiet 'APP_ENV=local dan APP_DEBUG=true diabaikan'
+
       - name: Log kontainer
         if: always()
-        run: docker logs memount 2>&1 | tail -n 100
+        run: |
+          docker logs memount 2>&1 | tail -n 100
+          docker logs memount-keliru 2>&1 | tail -n 40

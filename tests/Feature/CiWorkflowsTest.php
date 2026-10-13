@@ -143,6 +143,34 @@ class CiWorkflowsTest extends TestCase
         $this->assertMatchesRegularExpression('/^ENV PORT=80$/m', $dockerfile, 'Vercel mengirim trafik ke port 80.');
     }
 
+    /**
+     * 13 Oktober 2026: variabel Vercel berisi APP_ENV=local dan APP_DEBUG=true tanpa TRUSTED_PROXIES. Situs publik
+     * memperlihatkan jejak galat dan header permintaan, memuat rute pengembangan, dan aset termuat lewat http sehingga
+     * halamannya kosong. docker/start.sh karena itu memaksa production tanpa debug sebelum config:cache, dan job image
+     * menjalankan image dengan variabel keliru yang sama untuk membuktikannya.
+     */
+    public function test_the_production_image_ignores_debug_and_non_production_settings(): void
+    {
+        $mulai = File::get(base_path('docker/start.sh'));
+        $paksa = strpos($mulai, "\nexport APP_ENV=production APP_DEBUG=false\n");
+
+        $this->assertNotFalse($paksa, 'Image produksi harus memaksa APP_ENV=production dan APP_DEBUG=false.');
+        $this->assertLessThan(strpos($mulai, "\nphp artisan optimize --no-interaction\n"), $paksa, 'Nilai dipaksa sebelum konfigurasi di-cache.');
+        $this->assertStringContainsString('TRUSTED_PROXIES="${TRUSTED_PROXIES:-*}"', $mulai);
+        $this->assertStringContainsString('LOG_CHANNEL="${LOG_CHANNEL:-stderr}"', $mulai);
+
+        $bernama = $this->langkahBernama($this->alur('test.yml')['jobs']['image']['steps']);
+        $urutan = array_keys($bernama);
+        $keliru = $bernama['Jalankan image dengan variabel keliru']['run'];
+
+        $this->assertLessThan(array_search('Jalankan image dengan variabel keliru', $urutan, true), array_search('Jalankan image', $urutan, true));
+        $this->assertStringContainsString('--env APP_ENV=local --env APP_DEBUG=true', $keliru);
+        $this->assertStringNotContainsString('TRUSTED_PROXIES', $keliru, 'Bawaan proxy tepercaya diuji tanpa nilai dari platform.');
+        $this->assertStringContainsString("if grep --quiet 'MethodNotAllowedHttpException'", $keliru, 'Halaman galat tidak boleh memperlihatkan jejak.');
+        $this->assertStringContainsString('http://127.0.0.1/dev/primitif)" = 404', $keliru, 'Rute pengembangan tidak boleh termuat.');
+        $this->assertStringContainsString("http://127.0.0.1/login | grep --quiet 'https://contoh.test/build/assets/'", $keliru);
+    }
+
     public function test_the_security_workflow_audits_dependencies_and_scans_for_secrets(): void
     {
         $alur = $this->alur('security.yml');

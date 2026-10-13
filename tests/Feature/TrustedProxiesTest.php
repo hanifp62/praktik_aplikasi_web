@@ -46,10 +46,9 @@ class TrustedProxiesTest extends TestCase
     }
 
     /**
-     * Regresi deploy Vercel (13 Oktober 2026). docker/start.sh meng-cache konfigurasi saat kontainer mulai, dan sesudah
-     * itu env() di luar berkas config kosong di Vercel. bootstrap/app.php dulu membaca TRUSTED_PROXIES lewat env(),
-     * sehingga proxy tidak dipercaya, aset termuat lewat http, dan halaman kosong. Di sini konfigurasinya benar-benar
-     * di-cache dan nilai itu hanya ada di cache, tidak di env, seperti di Vercel; proxy harus tetap dipercaya.
+     * docker/start.sh meng-cache konfigurasi saat kontainer mulai, dan sesudah config:cache berkas .env tidak dimuat
+     * lagi. Proxy tepercaya karena itu dibaca dari konfigurasi, bukan env() di bootstrap/app.php. Di sini
+     * konfigurasinya benar-benar di-cache dan nilainya hanya ada di cache, tidak di env; proxy harus tetap dipercaya.
      */
     public function test_the_proxy_setting_is_read_from_the_cached_configuration(): void
     {

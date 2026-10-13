@@ -40,7 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: [ThemePreference::COOKIE, DisplayPreference::COOKIE_EFEK, DisplayPreference::COOKIE_GERAK]);
 
         // Proxy tepercaya diterapkan AppServiceProvider dari config('app.trusted_proxies'), bukan env() di sini:
-        // sesudah config:cache, env() di luar berkas config kosong di Vercel (13 Oktober 2026).
+        // sesudah config:cache berkas .env tidak dimuat lagi, jadi env() di luar berkas config tidak dapat diandalkan.
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

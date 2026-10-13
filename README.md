@@ -118,6 +118,10 @@ data. `vercel.json` mengatur layanan, region, cabang yang di-deploy, dan jadwal 
 
 Yang berbeda dari server biasa:
 
+- **Image selalu berjalan sebagai produksi.** `docker/start.sh` memaksa `APP_ENV=production` dan `APP_DEBUG=false`
+  walau variabel Vercel berkata lain, dan mencatat nilai yang diabaikan di log runtime, karena mode debug di situs
+  publik memperlihatkan jejak galat dan header permintaan kepada siapa pun. `TRUSTED_PROXIES` dan `LOG_CHANNEL` diberi
+  bawaan `*` dan `stderr` bila kosong.
 - **Vercel tidak menunggu CI.** Setiap push ke `main` langsung di-deploy, jadi `main` hanya menerima commit yang CI-nya
   sudah hijau di cabang kerja (fast-forward, SHA yang sama). Bila deploy bermasalah, kembalikan lewat Instant Rollback
   di dashboard Vercel; Hobby hanya dapat kembali ke deploy sebelumnya. Sesudah rollback, push berikutnya tidak tayang
@@ -154,7 +158,9 @@ Langkah pemilik, sekali saja:
    Lakukan sebelum langkah 3, karena kode di `main` membutuhkan skema terbaru.
 3. **Vercel.** Masuk dengan akun GitHub (paket Hobby), pilih Add New > Project, impor repo ini, dan biarkan pengaturan
    build bawaan karena `vercel.json` yang mengaturnya. Di Environment Variables, pilih environment **Production** saja,
-   tempel blok di bawah sekaligus, lalu isi nilai yang kosong. `APP_KEY` dibuat dengan
+   tempel blok di bawah sekaligus, lalu isi nilai yang kosong. Salin blok lewat tombol salin di tampilan GitHub; bila
+   disalin dari berkas mentah, hapus spasi di awal tiap baris, karena nama variabel hanya boleh berisi huruf, angka,
+   dan garis bawah. `APP_KEY` dibuat dengan
    `php -r "echo 'base64:'.base64_encode(random_bytes(32)), PHP_EOL;"`, sedangkan `DEVICE_KEY_SECRET` dan
    `CRON_SECRET` masing-masing dengan `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. Nilai rahasia hanya diisi
    di dashboard, tidak pernah ditulis di repo.
