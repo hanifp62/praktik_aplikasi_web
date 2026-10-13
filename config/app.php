@@ -49,6 +49,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Proxy tepercaya
+    |--------------------------------------------------------------------------
+    |
+    | Di belakang proxy platform (Vercel) isi '*', supaya skema https, host, dan IP pengguna dari
+    | X-Forwarded-* dipakai. Kosong di lokal dan test, jadi header itu diabaikan. Dibaca lewat
+    | config, bukan env() di bootstrap/app.php: sesudah config:cache (docker/start.sh) env() di
+    | luar berkas config tidak dapat diandalkan, dan di Vercel ia kosong (13 Oktober 2026).
+    |
+    */
+
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
     |

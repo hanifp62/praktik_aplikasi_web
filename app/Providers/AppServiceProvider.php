@@ -30,8 +30,10 @@ use App\Policies\UsabilitySessionPolicy;
 use App\Support\PenjagaDataContoh;
 use Illuminate\Console\Events\ScheduledTaskFailed;
 use Illuminate\Console\Events\ScheduledTaskFinished;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -66,5 +68,16 @@ class AppServiceProvider extends ServiceProvider
         // mencatat dirinya sendiri hanya mencatat perintah yang ingat melakukannya.
         Event::listen(ScheduledTaskFinished::class, [RecordScheduledTaskRun::class, 'handleFinished']);
         Event::listen(ScheduledTaskFailed::class, [RecordScheduledTaskRun::class, 'handleFailed']);
+
+        // Di belakang proxy platform (Vercel) TLS diakhiri di tepi: tanpa proxy tepercaya setiap permintaan
+        // terbaca http dan semua pengguna ber-IP sama, sehingga URL aset, cookie aman, dan batas laju per IP
+        // salah. Nilainya dari config, yang ikut di-cache saat start, bukan env() pada tiap permintaan.
+        if (filled($proxy = config('app.trusted_proxies'))) {
+            TrustProxies::at($proxy);
+        }
+
+        // Produksi selalu dilayani lewat https. Skema URL dipaksa supaya aset tidak pernah termuat lewat http,
+        // yang diblokir peramban dan membuat halaman kosong, walau proxy platform tidak meneruskan protokolnya.
+        URL::forceHttps($this->app->isProduction());
     }
 }

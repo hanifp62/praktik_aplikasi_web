@@ -187,6 +187,9 @@ jobs:
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1/api/cron/data-freshness-check)" = 401
           curl --silent --fail --output /dev/null --header "Authorization: Bearer $CRON_SECRET" http://127.0.0.1/api/cron/data-freshness-check
           test "$(docker inspect --format '{{.Config.User}}' memount)" = www-data
+          # Konfigurasi sudah di-cache start.sh: aset tetap https di produksi, dan host dari proxy tepercaya dipakai.
+          curl --silent --fail http://127.0.0.1/login | grep --quiet 'https://127.0.0.1/build/assets/'
+          curl --silent --fail --header 'X-Forwarded-Proto: https' --header 'X-Forwarded-Host: contoh.test' http://127.0.0.1/login | grep --quiet 'https://contoh.test/build/assets/'
 
       - name: Log kontainer
         if: always()

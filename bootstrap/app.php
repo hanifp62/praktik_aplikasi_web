@@ -39,11 +39,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // dienkripsi. Nilainya tetap diwhitelist di ThemePreference dan DisplayPreference.
         $middleware->encryptCookies(except: [ThemePreference::COOKIE, DisplayPreference::COOKIE_EFEK, DisplayPreference::COOKIE_GERAK]);
 
-        // Di belakang proxy platform (Vercel) TLS diakhiri di tepi: tanpa ini setiap permintaan terbaca http dan
-        // semua pengguna ber-IP sama, sehingga cookie aman dan batas laju per IP salah. Kosong di lokal dan test,
-        // jadi header X-Forwarded-* tidak dipercaya. Isi '*' hanya di platform yang tidak dapat diakses tanpa
-        // melewati proxy-nya.
-        $middleware->trustProxies(at: env('TRUSTED_PROXIES') ?: null);
+        // Proxy tepercaya diterapkan AppServiceProvider dari config('app.trusted_proxies'), bukan env() di sini:
+        // sesudah config:cache, env() di luar berkas config kosong di Vercel (13 Oktober 2026).
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

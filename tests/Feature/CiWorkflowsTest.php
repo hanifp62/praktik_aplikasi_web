@@ -123,6 +123,8 @@ class CiWorkflowsTest extends TestCase
         $this->assertStringContainsString('/api/cron/data-freshness-check)" = 401', $jalankan);
         $this->assertStringContainsString('--header "Authorization: Bearer $CRON_SECRET" http://127.0.0.1/api/cron/data-freshness-check', $jalankan);
         $this->assertStringContainsString('test "$(docker inspect --format \'{{.Config.User}}\' memount)" = www-data', $jalankan);
+        $this->assertStringContainsString("curl --silent --fail http://127.0.0.1/login | grep --quiet 'https://127.0.0.1/build/assets/'", $jalankan, 'Aset harus https di produksi, atau halaman kosong.');
+        $this->assertStringContainsString("--header 'X-Forwarded-Host: contoh.test' http://127.0.0.1/login | grep --quiet 'https://contoh.test/build/assets/'", $jalankan, 'Proxy tepercaya harus berlaku sesudah config:cache di dalam image.');
         $this->assertSame('always()', $bernama['Log kontainer']['if']);
 
         // Baris komentar dibuang: komentarnya justru menjelaskan mengapa migrasi dan schedule:work tidak ada di sini.
