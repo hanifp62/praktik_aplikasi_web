@@ -4,9 +4,9 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 13 Oktober 2026 (bagian 0, blok paling atas: deploy ke Vercel disiapkan dan ditinjau, menunggu izin
-push dan langkah akun pemilik; W7 sampai W9 ditunda pemilik untuk evaluasi). Bagian 1–10 berasal dari 21 September 2026
-dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
+Terakhir diperbarui: 15 Oktober 2026 (bagian 0, blok paling atas: situs Vercel tampil dan aman sesudah `df49705`, tetapi
+belum terhubung ke Supabase sampai pemilik mengisi ulang variabel Vercel; W7 sampai W9 ditunda pemilik untuk evaluasi).
+Bagian 1–10 berasal dari 21 September 2026 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
 
@@ -30,6 +30,71 @@ di branch `hardening`. Push belum dilakukan dan tetap butuh izin (R-018).
 > induk `docs/superpowers/plans/2026-09-26-memount-v3-induk.md`. Periksa keadaan nyata dulu: `git status`,
 > `php artisan test --compact --testsuite=Unit,Feature`, `npx tsc --noEmit`. Jangan commit, push, mengakses
 > Supabase, menjalankan migrasi, atau menambah dependensi tanpa izin saya.
+
+### 13 sampai 15 Oktober 2026: situs tayang kosong, mode debug di produksi, dan penjaga di image
+
+Blok ini melanjutkan blok deploy di bawahnya. Pemilik mengizinkan push ("saya izinkan"), mengimpor proyek ke Vercel,
+lalu melaporkan `https://memount-zeta.vercel.app` kosong dan meminta "ricek database, postgres nya error cek
+keseluruhan".
+
+| Commit | Isi |
+|---|---|
+| `7a27211` | Proxy tepercaya dibaca dari `config('app.trusted_proxies')` dan `URL::forceHttps()` di produksi. Premis di pesan commit-nya, bahwa `env()` kosong di Vercel sesudah `config:cache`, tidak terbukti (lihat diagnosis); perubahan kodenya tetap benar |
+| `df49705` | `docker/start.sh` memaksa `APP_ENV=production` dan `APP_DEBUG=false` sebelum `config:cache`, mencatat nilai yang diabaikan di log runtime, dan memberi bawaan `TRUSTED_PROXIES=*` serta `LOG_CHANNEL=stderr`. Job CI `image` mendapat langkah "Jalankan image dengan variabel keliru"; `CiWorkflowsTest` menjaganya. Komentar yang memuat premis keliru diperbaiki |
+
+- **Basis data Supabase.** Dengan izin pemilik ("diizinkan"), 14 migrasi tertunda diterapkan dari mesin lokal lewat
+  koneksi `pgsql`, sesudah koneksinya dipastikan menunjuk Supabase dan bukan SQLite demo bawaan lokal: 65 dari 65
+  tercatat, RLS menyala tanpa policy sesuai rancangan, tanpa hak `anon`. Galat `schema "pg_pgrst_no_exposed_schemas"
+  does not exist` di log Supabase datang dari PostgREST saat Data API dimatikan, bukan dari aplikasi.
+- **Diagnosis, bukti dari luar terhadap deploy yang tayang.**
+  - Yang tayang `7a27211`: header `x-vercel-deployment-url` sama dengan `environment_url` deployment GitHub 7034645019.
+  - `APP_DEBUG=true`: `PUT /login` menjawab 405 dengan halaman galat Laravel lengkap (jejak, header, routing, kueri).
+    Header yang ditampilkan termasuk `x-vercel-oidc-token`. Tidak ada nilai lingkungan di halaman itu: 0 kecocokan untuk
+    URL basis data, `APP_KEY`, `base64:`, `CRON_SECRET`, `DEVICE_KEY_SECRET`, dan `SUPABASE_STORAGE`.
+  - `APP_ENV=local`: `GET /dev/primitif` menjawab 302 ke `/login`, padahal rute itu hanya terdaftar di `local`.
+  - `TRUSTED_PROXIES` kosong: Vercel meneruskan `x-forwarded-proto: https` dan `x-forwarded-host`, tetapi URL aplikasi
+    tetap `http://`. Dengan `*`, job CI membuktikan URL yang sama menjadi https.
+  - `SESSION_SECURE_COOKIE=true` terisi (cookie sesi `secure`), jadi variabel Vercel campuran blok README dan nilai lain.
+  - Akar: nilai variabel di Vercel, bukan kode. Dugaan yang belum terbukti: blok README ada di dalam daftar bernomor,
+    sehingga berkas mentahnya berindentasi tiga spasi; salinan mentah memberi nama variabel berawalan spasi, cocok dengan
+    galat "contains invalid characters" yang dilihat pemilik.
+  - Koreksi premis `7a27211`: sesudah `config:cache` berkas `.env` tidak dimuat, tetapi `env()` tetap membaca variabel
+    sistem (dokumentasi Laravel), dan variabel Vercel adalah variabel sistem.
+- **Rotasi rahasia tidak diperlukan menurut bukti.** Halaman galat Laravel 13 tidak menampilkan env atau config, dan
+  `php.ini-production` di image menyetel `zend.exception_ignore_args=On`, jadi argumen fungsi tidak ikut di jejak. Token
+  OIDC Vercel berumur pendek dan proyek ini tidak memakai federasi OIDC apa pun.
+- **Bukti perbaikan.**
+  - Suite Unit dan Feature lokal: 2.663 test, 2.661 lulus, 2 dilewati, 18.461 asersi; Pint bersih.
+  - Uji mutasi: menghapus baris `export APP_ENV=production APP_DEBUG=false` membuat
+    `test_the_production_image_ignores_debug_and_non_production_settings` merah.
+  - Simulasi `start.sh` dengan tiga set variabel (keliru seperti di Vercel, blok README, dan kosong dengan
+    `LOG_CHANNEL=stack`) menghasilkan production tanpa debug, proxy `*`, dan kanal log yang diharapkan.
+  - CI hijau untuk `df49705`: Test run 38609572114 (job test dan image, termasuk langkah "Jalankan image dengan variabel
+    keliru") dan Security run 38609571889. `main` di-fast-forward ke SHA yang sama sesudahnya.
+  - Peramban sebelum perbaikan: halaman hanya menampilkan tautan lewati, dan 11 sumber (skrip dan CSS) diblokir CSP
+    karena dimuat lewat `http://` dari halaman `https`.
+  - Situs sesudah deploy: pada 15 Oktober (sekitar 00.55 WIB) `/dev/primitif` 404, `PUT /login` 405 tanpa
+    jejak, dan 18 dari 18 aset `https`. Di peramban beranda tampil penuh dengan 0 galat dan 0 peringatan di konsol.
+- **Masih rusak: aplikasi di Vercel tidak memakai basis data Supabase** (bukti 15 Oktober).
+  - `/api/mountains`, `/api/trails`, `/api/checkpoints`, dan `/sitemap.xml` menjawab 500.
+  - Supabase tidak menerima tulisan apa pun dari situs: sesi terbaru 28 September, baris cache terbaru 26 September,
+    akun terbaru dibuat 20 September dan terakhir diubah 12 Oktober saat akun contoh dikunci, dan `scheduled_task_runs`
+    kosong. Padahal situs memasang cookie sesi yang bertahan antarpermintaan (token CSRF sama di
+    dua permintaan), dan Vercel Cron semestinya sudah memanggil sekitar tujuh kali sejak 13 Oktober.
+  - Log Postgres Supabase tidak memuat galat dari aplikasi; log pooler Supavisor tidak tersedia lewat MCP.
+  - Bukan ekstensi PHP yang hilang: kode aplikasi hanya memakai fungsi `mb_*`.
+  - Dugaan terkuat, belum terbukti: `DB_URL` di Vercel kosong atau bukan URI Session pooler, dan `SESSION_DRIVER` bukan
+    `database`. Bukti penentunya ada di log runtime Vercel atau daftar nama variabel Vercel, yang hanya terbaca pemilik.
+- **Langkah pemilik, mendesak untuk basis data.** Kosongkan variabel Production di Vercel, lalu isi ulang persis seperti
+  blok README, dengan `DB_URL` dari Supabase Connect > Session pooler. `APP_KEY` baru aman: `app/` tidak memakai cast
+  `encrypted` maupun `Crypt::`, dan Supabase tidak memuat tulisan apa pun dari situs Vercel. Sesudah Redeploy, agen
+  memeriksa API 200, sesi tercatat di Supabase, dan jalannya cron. Langkah 1 README (bucket foto dan kunci S3) dan
+  lima pemeriksaan K27 tetap berlaku.
+- **Terbuka (baru).**
+  - Job CI `image` belum memanggil endpoint publik yang membaca data (`/api/mountains`, `/sitemap.xml`), jadi kegagalan
+    baca data di image tidak tertangkap CI.
+  - `LOG_CHANNEL=stack` dari `.env.example` menulis log ke berkas di dalam kontainer, yang tidak terbaca di Vercel;
+    `start.sh` hanya memberi bawaan `stderr` bila variabel itu kosong.
 
 ### 13 Oktober 2026: deploy ke Vercel (paket Hobby, kontainer FrankenPHP)
 
