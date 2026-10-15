@@ -66,6 +66,7 @@ benar pada hari itu dan tidak ditulis ulang.
 | [job-2/](job-2/) | Job 2: masalah dan visi, persona, user story, kriteria penerimaan, product backlog, dan peer review |
 | [job-3/](job-3/) | Job 3: scope canvas, sitemap, user flow pengguna dan admin, wireframe, prototype, dan usability walkthrough |
 | [Pertemuan04/](Pertemuan04/) | Pertemuan 04: design tokens, inventaris komponen, tangkapan UI, checklist test, dan keputusan implementasi |
+| [Pertemuan05/](Pertemuan05/) | Pertemuan 05: data model, migration dan model, seeder, CRUD jalur dan rencana trip, serta checklist test |
 
 ## Arsip
 
