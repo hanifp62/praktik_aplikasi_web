@@ -1,0 +1,535 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Enums\CheckpointType;
+use App\Enums\CompletionState;
+use App\Enums\ConditionTag;
+use App\Enums\ExperienceLevel;
+use App\Enums\ModerationStatus;
+use App\Enums\NavigationComplexity;
+use App\Enums\NavigationExperience;
+use App\Enums\OfficialStatusValue;
+use App\Enums\PreferredChallenge;
+use App\Enums\PreferredDuration;
+use App\Enums\SourceType;
+use App\Enums\StatusScope;
+use App\Enums\TechnicalDemand;
+use App\Enums\TripStatus;
+use App\Enums\TripType;
+use App\Enums\VerificationStatus;
+use App\Enums\WaterAvailability;
+use App\Exceptions\DataContohDitolak;
+use App\Models\Checkpoint;
+use App\Models\DataSource;
+use App\Models\HikingHistory;
+use App\Models\Mountain;
+use App\Models\OfficialStatus;
+use App\Models\PermitRequirement;
+use App\Models\Trail;
+use App\Models\TrailConditionReport;
+use App\Models\TrailConsideration;
+use App\Models\TripPlan;
+use App\Models\User;
+use App\Services\Trips\TripReminderScheduler;
+use App\Support\Timezone;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+/**
+ * Data contoh berlabel (DK-35, spec v3 bagian 11).
+ *
+ * Satu pendaki pemula, Budi Setiawan; delapan gunung; sebelas jalur (sepuluh terbit, satu
+ * menunggu data); trip "Gede via Cibodas" lima belas hari lagi dengan pengingat surel H-3 dan
+ * H-1; tiga pendakian selesai; satu trip batal; lima jalur tersimpan; dan satu aturan izin
+ * tingkat gunung untuk Gunung Gede (jendela pesan H-30 sampai H-3). Simpanan, pengingat, dan
+ * aturan izin mengisi kerangka W2 (hitungan Simpanan dan lembar Pengingat) lewat tabel dan
+ * penjadwal yang sama dengan fitur aslinya. Sejak W3 setiap jalur terbit membawa profil
+ * elevasi, Gunung Gede punya status tingkat gunung, dan satu laporan kondisi termoderasi dari
+ * pendaki contoh kedua. Isinya meniru contoh di prototype pemilik supaya tangkapan pratinjau
+ * dapat dibandingkan dengan gambar acuannya: tanjakan tertinggi Budi 700 m dari Prau,
+ * sehingga Cibodas (1.650 m) menjadi tanjakan terbesarnya.
+ *
+ * Setiap teks yang dapat terbaca sebagai fakta diawali "DATA CONTOH", dan layout memasang
+ * lencana "Data contoh" lewat APP_DEMO. Geometri jalur tidak diisi: kolom geografi hanya
+ * ada di PostGIS, sedangkan data contoh wajib SQLite (W1-K10). Kata sandi pendaki contoh
+ * diacak setiap kali dan hanya dicetak ke konsol.
+ *
+ * Jalan masuknya `php artisan memount:demo` (penjaga berkas di PenjagaDataContoh) atau
+ * suite PHPUnit Pratinjau (SQLite dalam memori). DatabaseSeeder tidak memanggilnya.
+ */
+class DemoSeeder extends Seeder
+{
+    public const EMAIL_PENDAKI = 'budi@contoh.test';
+
+    public const PENANDA = 'DATA CONTOH';
+
+    /**
+     * Gunung: nama, provinsi, zona waktu, ketinggian, lintang, bujur. Koordinat Gede,
+     * Pangrango, Papandayan, Prau, dan Rinjani sama dengan MountainSeeder; Batu tanpa
+     * koordinat.
+     *
+     * @var array<string, array{0: string, 1: string, 2: string, 3: int, 4: float|null, 5: float|null}>
+     */
+    private const GUNUNG = [
+        'gede' => ['Gunung Gede', 'Jawa Barat', 'Asia/Jakarta', 2958, -6.78833, 106.98167],
+        'pangrango' => ['Gunung Pangrango', 'Jawa Barat', 'Asia/Jakarta', 3019, -6.76667, 106.95000],
+        'papandayan' => ['Gunung Papandayan', 'Jawa Barat', 'Asia/Jakarta', 2665, -7.32897, 107.71570],
+        'batu' => ['Gunung Batu', 'Jawa Barat', 'Asia/Jakarta', 875, null, null],
+        'prau' => ['Gunung Prau', 'Jawa Tengah', 'Asia/Jakarta', 2590, -7.18694, 109.92278],
+        'andong' => ['Gunung Andong', 'Jawa Tengah', 'Asia/Jakarta', 1726, -7.39040, 110.37060],
+        'batur' => ['Gunung Batur', 'Bali', 'Asia/Makassar', 1717, -8.24190, 115.37530],
+        'rinjani' => ['Gunung Rinjani', 'Nusa Tenggara Barat', 'Asia/Makassar', 3726, -8.41667, 116.46667],
+    ];
+
+    public function run(): void
+    {
+        $pengemudi = DB::connection()->getDriverName();
+
+        if ($pengemudi !== 'sqlite') {
+            throw new DataContohDitolak("Data contoh hanya ditulis ke SQLite; koneksi bawaan sekarang {$pengemudi}.");
+        }
+
+        if (app()->environment('production')) {
+            throw new DataContohDitolak('Data contoh tidak pernah ditulis di lingkungan produksi.');
+        }
+
+        $this->call([RecommendationRuleSeeder::class, PreparationTemplateSeeder::class]);
+
+        $sumber = DataSource::create([
+            'source_name' => self::PENANDA.', bukan sumber resmi',
+            'source_type' => SourceType::ADMIN_VERIFIED->value,
+            'source_owner' => 'Tim Memount',
+            'retrieved_at' => now(),
+            // Tinjauan W1-9a #6: null, bukan now(), supaya cocok dengan
+            // verification_status UNVERIFIED di bawah. source_type ADMIN_VERIFIED tetap
+            // karena itu klasifikasi otoritas sumbernya (tim internal), bukan status
+            // verifikasi catatan ini sendiri.
+            'verified_at' => null,
+            'freshness_policy' => 'Data contoh untuk peninjauan tampilan lokal; tidak pernah dipakai di produksi.',
+            'verification_status' => VerificationStatus::UNVERIFIED->value,
+            'notes' => self::PENANDA.'. Nilai jalur, pos, dan status dibuat untuk peninjauan, bukan diambil dari pengelola.',
+        ]);
+
+        $budi = $this->pendaki();
+        $jalur = $this->jalur($sumber);
+        $this->trip($budi, $jalur);
+        $this->simpanan($budi, $jalur);
+        $this->izin($sumber, $jalur);
+        $this->statusGunung($sumber, $jalur);
+        $this->laporan($jalur);
+    }
+
+    private function pendaki(): User
+    {
+        $kataSandi = Str::password(20, symbols: false);
+
+        $budi = User::create(['name' => 'Budi Setiawan', 'email' => self::EMAIL_PENDAKI, 'password' => $kataSandi]);
+        $budi->forceFill(['email_verified_at' => now()])->save();
+
+        $budi->profile()->create([
+            'experience_level' => ExperienceLevel::BEGINNER->value,
+            'region_preference' => 'Jawa Barat',
+            'completed_at' => now(),
+        ]);
+
+        $budi->experience()->create([
+            'completed_hikes_count' => 3,
+            'terrain_experience' => ['FOREST', 'ROCKY'],
+            'navigation_experience' => NavigationExperience::BASIC->value,
+            'longest_hike_duration_minutes' => 300,
+            'highest_elevation_gain_m' => 700,
+        ]);
+
+        $budi->preference()->create([
+            'preferred_duration' => PreferredDuration::TWO_DAY->value,
+            'preferred_trip_type' => TripType::CAMPING->value,
+            'preferred_challenge' => PreferredChallenge::MODERATE->value,
+            // Sama dengan profile.region_preference di atas (DF-1, audit-e2e-ulang N-1):
+            // dua kolom yang berbeda untuk preferensi wilayah yang sama membuat isian
+            // bawaan "Cari jalur yang sesuai" berakhir di teks wilayah yang tidak cocok
+            // dengan gunung mana pun.
+            'region_preference' => 'Jawa Barat',
+            'record_track' => false,
+        ]);
+
+        $this->command?->info('Pendaki contoh: '.self::EMAIL_PENDAKI." dengan kata sandi {$kataSandi} (hanya untuk berkas lokal ini).");
+
+        return $budi;
+    }
+
+    /**
+     * @return array<string, Trail>
+     */
+    private function jalur(DataSource $sumber): array
+    {
+        $gunung = [];
+
+        foreach (self::GUNUNG as $kunci => [$nama, $provinsi, $zona, $tinggi, $lintang, $bujur]) {
+            $gunung[$kunci] = Mountain::create([
+                'name' => $nama,
+                'slug' => Str::slug($nama),
+                'province' => $provinsi,
+                'region' => $provinsi,
+                'timezone' => $zona,
+                'elevation_mdpl' => $tinggi,
+                'latitude' => $lintang,
+                'longitude' => $bujur,
+                'description' => self::PENANDA.". {$nama} di {$provinsi}, dipakai untuk meninjau tampilan.",
+                'data_source_id' => $sumber->id,
+            ]);
+        }
+
+        $jalur = [];
+
+        foreach ($this->dataJalur() as $slug => $data) {
+            $trail = Trail::create([
+                'mountain_id' => $gunung[$data['gunung']]->id,
+                'name' => $data['nama'],
+                'slug' => $slug,
+                'description' => self::PENANDA.'. '.$data['keterangan'],
+                'distance_km' => $data['jarak'],
+                'elevation_gain_m' => $data['naik'],
+                'elevation_loss_m' => $data['naik'],
+                'elevation_profile' => $data['profil'] ?? null,
+                'estimated_duration_minutes' => $data['menit'],
+                'technical_demand' => $data['teknis']->value,
+                'navigation_complexity' => $data['navigasi']->value,
+                'water_availability' => $data['air']->value,
+                'terrain_character' => $data['medan'],
+                'camping_available' => $data['kemah'],
+                'starting_point' => $data['awal'],
+                'data_source_id' => $sumber->id,
+            ]);
+
+            $jalur[$slug] = $trail;
+
+            if ($data['status'] === null) {
+                continue;
+            }
+
+            foreach ($data['pos'] as $urutan => [$nama, $jenis, $tinggi]) {
+                Checkpoint::create([
+                    'trail_id' => $trail->id,
+                    'sequence' => $urutan + 1,
+                    'name' => $nama,
+                    'checkpoint_type' => $jenis->value,
+                    'elevation_m' => $tinggi,
+                ]);
+            }
+
+            OfficialStatus::create([
+                'statusable_type' => $trail->getMorphClass(),
+                'statusable_id' => $trail->id,
+                'scope' => StatusScope::TRAIL->value,
+                'status' => $data['status']->value,
+                'data_source_id' => $sumber->id,
+                'source' => self::PENANDA.', bukan status resmi',
+                'published_at' => now()->subDays(8),
+                'fetched_at' => now()->subDays(8),
+                'effective_at' => now()->subDays(8),
+                'verified_at' => now()->subDays(7),
+                // Tinjauan W1-9a #5: reason juga terbaca sebagai fakta ("Perbaikan
+                // jembatan", "Penutupan musiman"), jadi memakai penanda yang sama dengan
+                // description dan notes, bukan ditulis polos.
+                'reason' => isset($data['alasan']) ? self::PENANDA.'. '.$data['alasan'] : null,
+            ]);
+
+            // Menerbitkan lewat gerbang publikasi model, bukan menulis kolomnya langsung.
+            $trail->refresh()->update(['is_published' => true]);
+        }
+
+        return $jalur;
+    }
+
+    /**
+     * @param  array<string, Trail>  $jalur
+     */
+    private function trip(User $budi, array $jalur): void
+    {
+        $hariIni = Carbon::parse(Timezone::earliestDateInIndonesia());
+
+        $gede = TripPlan::create([
+            'user_id' => $budi->id,
+            'trail_id' => $jalur['gede-via-cibodas']->id,
+            'name' => 'Gede via Cibodas',
+            'planned_date' => $hariIni->copy()->addDays(15)->toDateString(),
+            'end_date' => $hariIni->copy()->addDays(16)->toDateString(),
+            'start_time' => '07:00',
+            'participants_count' => 3,
+            'trip_type' => TripType::CAMPING->value,
+            'notes' => self::PENANDA.'. Berangkat bersama Dimas dan Sari; kumpul di Cibodas Jumat malam.',
+            'reminders_enabled' => true,
+            'status' => TripStatus::PLANNED->value,
+        ]);
+
+        // Pengingat H-3 dan H-1 dijadwalkan lewat penjadwal yang sama dengan halaman trip,
+        // supaya lembar Pengingat di kerangka W2 berisi jadwal sungguhan, bukan tempelan.
+        app(TripReminderScheduler::class)->sinkronkan($gede);
+
+        foreach ([['andong-via-sawit', 120, TripType::TEKTOK], ['batur-via-toya-bungkah', 75, TripType::TEKTOK], ['prau-via-wates', 40, TripType::CAMPING]] as [$slug, $hariLalu, $jenis]) {
+            $tanggal = $hariIni->copy()->subDays($hariLalu);
+            $selesai = $tanggal->copy()->setTime(16, 0);
+
+            $trip = TripPlan::create([
+                'user_id' => $budi->id,
+                'trail_id' => $jalur[$slug]->id,
+                'name' => $jalur[$slug]->name,
+                'planned_date' => $tanggal->toDateString(),
+                'trip_type' => $jenis->value,
+                'status' => TripStatus::COMPLETED->value,
+                'completed_at' => $selesai,
+            ]);
+
+            HikingHistory::create([
+                'user_id' => $budi->id,
+                'trip_plan_id' => $trip->id,
+                'trail_id' => $jalur[$slug]->id,
+                'trip_type' => $jenis->value,
+                'completion_state' => CompletionState::COMPLETED->value,
+                'completed_at' => $selesai,
+            ]);
+        }
+
+        TripPlan::create([
+            'user_id' => $budi->id,
+            'trail_id' => $jalur['pangrango-via-cibodas']->id,
+            'name' => 'Pangrango akhir pekan',
+            'planned_date' => $hariIni->copy()->subDays(20)->toDateString(),
+            'trip_type' => TripType::CAMPING->value,
+            'notes' => self::PENANDA.'. Dibatalkan karena cuaca.',
+            'status' => TripStatus::CANCELLED->value,
+        ]);
+    }
+
+    /**
+     * Lima jalur tersimpan, seperti "Simpanan 5" di prototype 02 dan 15, lewat tabel yang sama
+     * dengan tombol Simpan (W2).
+     *
+     * @param  array<string, Trail>  $jalur
+     */
+    private function simpanan(User $budi, array $jalur): void
+    {
+        foreach (['batu-via-jonggol', 'gede-via-cibodas', 'gede-via-gunung-putri', 'pangrango-via-cibodas', 'gede-via-selabintana'] as $slug) {
+            TrailConsideration::create(['user_id' => $budi->id, 'trail_id' => $jalur[$slug]->id]);
+        }
+    }
+
+    /**
+     * Aturan izin tingkat gunung untuk Gunung Gede, jendela pesan H-30 sampai H-3, supaya
+     * tenggat izin di lembar Pengingat punya isi (W2). Nama pengelolanya diberi penanda, tidak
+     * meniru pengelola sungguhan, dan tautan pemesanan sengaja kosong.
+     *
+     * @param  array<string, Trail>  $jalur
+     */
+    private function izin(DataSource $sumber, array $jalur): void
+    {
+        PermitRequirement::create([
+            'mountain_id' => $jalur['gede-via-cibodas']->mountain_id,
+            'authority' => self::PENANDA.', bukan pengelola resmi',
+            'booking_opens_days_before' => 30,
+            'booking_closes_days_before' => 3,
+            'notes' => self::PENANDA.'. Jendela pemesanan dibuat untuk peninjauan tampilan.',
+            'data_source_id' => $sumber->id,
+            'source' => self::PENANDA.', bukan sumber resmi',
+        ]);
+    }
+
+    /**
+     * Status akses tingkat gunung untuk Gunung Gede (halaman gunung W3): Buka, dengan sumber
+     * dan penanda yang sama dengan status jalurnya, supaya kalimat "status tingkat gunung tidak
+     * berarti semua jalur buka" punya status untuk diterangkan.
+     *
+     * @param  array<string, Trail>  $jalur
+     */
+    private function statusGunung(DataSource $sumber, array $jalur): void
+    {
+        OfficialStatus::create([
+            'statusable_type' => (new Mountain)->getMorphClass(),
+            'statusable_id' => $jalur['gede-via-cibodas']->mountain_id,
+            'scope' => StatusScope::MOUNTAIN->value,
+            'status' => OfficialStatusValue::OPEN->value,
+            'data_source_id' => $sumber->id,
+            'source' => self::PENANDA.', bukan status resmi',
+            'published_at' => now()->subDays(9),
+            'fetched_at' => now()->subDays(9),
+            'effective_at' => now()->subDays(9),
+            'verified_at' => now()->subDays(7),
+        ]);
+    }
+
+    /**
+     * Satu laporan kondisi yang lolos moderasi di Gede via Cibodas, dari pendaki contoh kedua
+     * berinisial (antislop R-23), supaya lapisan komunitas halaman gunung dan rincian jalur
+     * punya isi. Catatannya berpenanda DATA CONTOH.
+     *
+     * @param  array<string, Trail>  $jalur
+     */
+    private function laporan(array $jalur): void
+    {
+        $pelapor = User::create(['name' => 'Sari Wulandari', 'email' => 'sari@contoh.test', 'password' => Str::password(20, symbols: false)]);
+
+        TrailConditionReport::create([
+            'trail_id' => $jalur['gede-via-cibodas']->id,
+            'user_id' => $pelapor->id,
+            'hike_date' => Carbon::parse(Timezone::earliestDateInIndonesia())->subDays(2)->toDateString(),
+            'condition_tags' => [ConditionTag::SLIPPERY->value, ConditionTag::MUDDY->value],
+            'note' => self::PENANDA.'. Licin dan berlumpur antara Air Panas dan Kandang Badak setelah hujan sore.',
+            'moderation_status' => ModerationStatus::APPROVED->value,
+            'moderated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Sebelas jalur. Jalur dengan status null belum punya pos dan status resmi, jadi tetap
+     * tidak terbit dan tampil sebagai jalur yang datanya belum tersedia.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function dataJalur(): array
+    {
+        return [
+            'gede-via-cibodas' => [
+                'gunung' => 'gede', 'nama' => 'Gede via Cibodas', 'jarak' => 9.7, 'naik' => 1650, 'menit' => 450,
+                'teknis' => TechnicalDemand::MODERATE, 'navigasi' => NavigationComplexity::MODERATE, 'air' => WaterAvailability::LIMITED,
+                'medan' => ['FOREST', 'ROCKY', 'STEEP_SLOPE'], 'kemah' => true, 'awal' => 'Pintu Cibodas',
+                'keterangan' => 'Jalur lewat Telaga Biru, aliran air panas, dan Kandang Badak.',
+                'status' => OfficialStatusValue::OPEN,
+                'pos' => [
+                    ['Pintu Cibodas', CheckpointType::BASECAMP, 1340],
+                    ['Telaga Biru', CheckpointType::POS, 1575],
+                    ['Panyancangan', CheckpointType::JUNCTION, 1620],
+                    ['Air Panas', CheckpointType::POS, 2150],
+                    ['Kandang Badak', CheckpointType::CAMPGROUND, 2395],
+                    ['Puncak Gede', CheckpointType::SUMMIT, 2958],
+                ],
+                'profil' => [
+                    ['km' => 0, 'm' => 1340], ['km' => 1.5, 'm' => 1575], ['km' => 2.8, 'm' => 1620],
+                    ['km' => 5.3, 'm' => 2150], ['km' => 7.2, 'm' => 2395], ['km' => 9.7, 'm' => 2958],
+                ],
+            ],
+            'gede-via-gunung-putri' => [
+                'gunung' => 'gede', 'nama' => 'Gede via Gunung Putri', 'jarak' => 7.2, 'naik' => 1720, 'menit' => 390,
+                'teknis' => TechnicalDemand::MODERATE, 'navigasi' => NavigationComplexity::LOW, 'air' => WaterAvailability::SCARCE,
+                'medan' => ['FOREST', 'STEEP_SLOPE'], 'kemah' => true, 'awal' => 'Basecamp Gunung Putri',
+                'keterangan' => 'Jalur pendek yang menanjak terus sampai Alun-alun Surya Kencana.',
+                'status' => OfficialStatusValue::OPEN,
+                'pos' => [
+                    ['Basecamp Gunung Putri', CheckpointType::BASECAMP, 1450],
+                    ['Alun-alun Surya Kencana', CheckpointType::CAMPGROUND, 2750],
+                    ['Puncak Gede', CheckpointType::SUMMIT, 2958],
+                ],
+                'profil' => [['km' => 0, 'm' => 1450], ['km' => 2.5, 'm' => 1900], ['km' => 5.0, 'm' => 2750], ['km' => 7.2, 'm' => 2958]],
+            ],
+            'gede-via-selabintana' => [
+                'gunung' => 'gede', 'nama' => 'Gede via Selabintana', 'jarak' => 11.8, 'naik' => 1900, 'menit' => 660,
+                'teknis' => TechnicalDemand::HIGH, 'navigasi' => NavigationComplexity::HIGH, 'air' => WaterAvailability::LIMITED,
+                'medan' => ['FOREST', 'MUD', 'STEEP_SLOPE'], 'kemah' => true, 'awal' => 'Pintu Selabintana',
+                'keterangan' => 'Jalur terpanjang ke Gede dari sisi Sukabumi.',
+                'status' => OfficialStatusValue::RESTRICTED, 'alasan' => 'Perbaikan jembatan',
+                'pos' => [
+                    ['Pintu Selabintana', CheckpointType::BASECAMP, 1100],
+                    ['Alun-alun Surya Kencana', CheckpointType::CAMPGROUND, 2750],
+                    ['Puncak Gede', CheckpointType::SUMMIT, 2958],
+                ],
+                'profil' => [['km' => 0, 'm' => 1100], ['km' => 4.0, 'm' => 1700], ['km' => 8.0, 'm' => 2400], ['km' => 10.0, 'm' => 2750], ['km' => 11.8, 'm' => 2958]],
+            ],
+            'pangrango-via-cibodas' => [
+                'gunung' => 'pangrango', 'nama' => 'Pangrango via Cibodas', 'jarak' => 11.2, 'naik' => 1680, 'menit' => 510,
+                'teknis' => TechnicalDemand::HIGH, 'navigasi' => NavigationComplexity::MODERATE, 'air' => WaterAvailability::LIMITED,
+                'medan' => ['FOREST', 'STEEP_SLOPE'], 'kemah' => true, 'awal' => 'Pintu Cibodas',
+                'keterangan' => 'Berpisah dari jalur Gede di Kandang Badak, lalu hutan rapat sampai puncak.',
+                'status' => OfficialStatusValue::OPEN,
+                'pos' => [
+                    ['Pintu Cibodas', CheckpointType::BASECAMP, 1340],
+                    ['Kandang Badak', CheckpointType::CAMPGROUND, 2395],
+                    ['Puncak Pangrango', CheckpointType::SUMMIT, 3019],
+                ],
+                'profil' => [['km' => 0, 'm' => 1340], ['km' => 5.3, 'm' => 2150], ['km' => 7.2, 'm' => 2395], ['km' => 11.2, 'm' => 3019]],
+            ],
+            'papandayan-via-camp-david' => [
+                'gunung' => 'papandayan', 'nama' => 'Papandayan via Camp David', 'jarak' => 7.4, 'naik' => 610, 'menit' => 270,
+                'teknis' => TechnicalDemand::LOW, 'navigasi' => NavigationComplexity::LOW, 'air' => WaterAvailability::ABUNDANT,
+                'medan' => ['ROCKY', 'FOREST'], 'kemah' => true, 'awal' => 'Camp David',
+                'keterangan' => 'Melewati kawah lalu padang Pondok Saladah.',
+                'status' => OfficialStatusValue::OPEN,
+                'pos' => [
+                    ['Camp David', CheckpointType::BASECAMP, 2050],
+                    ['Pondok Saladah', CheckpointType::CAMPGROUND, 2288],
+                    ['Tegal Alun', CheckpointType::POS, 2600],
+                ],
+                'profil' => [['km' => 0, 'm' => 2050], ['km' => 2.5, 'm' => 2288], ['km' => 5.0, 'm' => 2450], ['km' => 7.4, 'm' => 2600]],
+            ],
+            'batu-via-jonggol' => [
+                'gunung' => 'batu', 'nama' => 'Batu via Jonggol', 'jarak' => 1.6, 'naik' => 280, 'menit' => 90,
+                'teknis' => TechnicalDemand::LOW, 'navigasi' => NavigationComplexity::LOW, 'air' => WaterAvailability::SCARCE,
+                'medan' => ['ROCKY'], 'kemah' => false, 'awal' => 'Basecamp Gunung Batu',
+                'keterangan' => 'Pendakian singkat ke puncak batu di Bogor timur.',
+                'status' => OfficialStatusValue::OPEN,
+                'pos' => [
+                    ['Basecamp Gunung Batu', CheckpointType::BASECAMP, 600],
+                    ['Puncak Gunung Batu', CheckpointType::SUMMIT, 875],
+                ],
+                'profil' => [['km' => 0, 'm' => 600], ['km' => 0.8, 'm' => 760], ['km' => 1.6, 'm' => 875]],
+            ],
+            'prau-via-wates' => [
+                'gunung' => 'prau', 'nama' => 'Prau via Wates', 'jarak' => 6.1, 'naik' => 700, 'menit' => 270,
+                'teknis' => TechnicalDemand::LOW, 'navigasi' => NavigationComplexity::MODERATE, 'air' => WaterAvailability::LIMITED,
+                'medan' => ['FOREST', 'SAVANNA'], 'kemah' => true, 'awal' => 'Basecamp Wates',
+                'keterangan' => 'Jalur hutan yang lebih sepi menuju sabana Prau.',
+                'status' => OfficialStatusValue::OPEN,
+                'pos' => [
+                    ['Basecamp Wates', CheckpointType::BASECAMP, 1890],
+                    ['Puncak Prau', CheckpointType::SUMMIT, 2590],
+                ],
+                'profil' => [['km' => 0, 'm' => 1890], ['km' => 2.0, 'm' => 2150], ['km' => 4.0, 'm' => 2400], ['km' => 6.1, 'm' => 2590]],
+            ],
+            'andong-via-sawit' => [
+                'gunung' => 'andong', 'nama' => 'Andong via Sawit', 'jarak' => 2.8, 'naik' => 400, 'menit' => 120,
+                'teknis' => TechnicalDemand::LOW, 'navigasi' => NavigationComplexity::LOW, 'air' => WaterAvailability::SCARCE,
+                'medan' => ['FOREST', 'EXPOSED_RIDGE'], 'kemah' => true, 'awal' => 'Basecamp Sawit',
+                'keterangan' => 'Pendakian pendek ke punggungan terbuka.',
+                'status' => OfficialStatusValue::OPEN,
+                'pos' => [
+                    ['Basecamp Sawit', CheckpointType::BASECAMP, 1340],
+                    ['Puncak Andong', CheckpointType::SUMMIT, 1726],
+                ],
+                'profil' => [['km' => 0, 'm' => 1340], ['km' => 1.4, 'm' => 1550], ['km' => 2.8, 'm' => 1726]],
+            ],
+            'batur-via-toya-bungkah' => [
+                'gunung' => 'batur', 'nama' => 'Batur via Toya Bungkah', 'jarak' => 4.6, 'naik' => 630, 'menit' => 150,
+                'teknis' => TechnicalDemand::LOW, 'navigasi' => NavigationComplexity::LOW, 'air' => WaterAvailability::SCARCE,
+                'medan' => ['SAND', 'ROCKY'], 'kemah' => false, 'awal' => 'Toya Bungkah',
+                'keterangan' => 'Pendakian dini hari di pasir vulkanik.',
+                'status' => OfficialStatusValue::OPEN,
+                'pos' => [
+                    ['Toya Bungkah', CheckpointType::BASECAMP, 1100],
+                    ['Puncak Batur', CheckpointType::SUMMIT, 1717],
+                ],
+                'profil' => [['km' => 0, 'm' => 1100], ['km' => 2.3, 'm' => 1450], ['km' => 4.6, 'm' => 1717]],
+            ],
+            'rinjani-via-sembalun' => [
+                'gunung' => 'rinjani', 'nama' => 'Rinjani via Sembalun', 'jarak' => 22.5, 'naik' => 2600, 'menit' => 1500,
+                'teknis' => TechnicalDemand::HIGH, 'navigasi' => NavigationComplexity::MODERATE, 'air' => WaterAvailability::LIMITED,
+                'medan' => ['SAVANNA', 'SCREE', 'EXPOSED_RIDGE'], 'kemah' => true, 'awal' => 'Pintu Sembalun',
+                'keterangan' => 'Sabana panjang lalu pasir berbatu ke puncak.',
+                'status' => OfficialStatusValue::CLOSED, 'alasan' => 'Penutupan musiman',
+                'pos' => [
+                    ['Pintu Sembalun', CheckpointType::BASECAMP, 1150],
+                    ['Plawangan Sembalun', CheckpointType::CAMPGROUND, 2639],
+                    ['Puncak Rinjani', CheckpointType::SUMMIT, 3726],
+                ],
+                'profil' => [['km' => 0, 'm' => 1150], ['km' => 8.0, 'm' => 1800], ['km' => 15.0, 'm' => 2639], ['km' => 22.5, 'm' => 3726]],
+            ],
+            'rinjani-via-senaru' => [
+                'gunung' => 'rinjani', 'nama' => 'Rinjani via Senaru', 'jarak' => null, 'naik' => null, 'menit' => null,
+                'teknis' => TechnicalDemand::MODERATE, 'navigasi' => NavigationComplexity::MODERATE, 'air' => WaterAvailability::UNKNOWN,
+                'medan' => null, 'kemah' => false, 'awal' => null,
+                'keterangan' => 'Jalur yang dikenali sistem tetapi datanya belum dimasukkan pengelola.',
+                'status' => null,
+            ],
+        ];
+    }
+}

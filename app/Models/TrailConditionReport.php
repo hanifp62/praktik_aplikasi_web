@@ -1,0 +1,184 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\ConditionTag;
+use App\Enums\ModerationStatus;
+use App\Support\Timezone;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+
+#[Fillable([
+    'trail_id', 'trail_segment_id', 'user_id', 'hike_date', 'condition_tags',
+    'photo_path', 'note', 'moderation_status', 'moderated_by', 'moderated_at',
+])]
+class TrailConditionReport extends Model
+{
+    use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'hike_date' => 'date',
+            'condition_tags' => 'array',
+            'moderation_status' => ModerationStatus::class,
+            'moderated_at' => 'datetime',
+        ];
+    }
+
+    public function trail(): BelongsTo
+    {
+        return $this->belongsTo(Trail::class);
+    }
+
+    public function segment(): BelongsTo
+    {
+        return $this->belongsTo(TrailSegment::class, 'trail_segment_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function moderatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'moderated_by');
+    }
+
+    /**
+     * Ucapan terima kasih dari pendaki lain yang laporan ini menolongnya.
+     */
+    public function thanks(): HasMany
+    {
+        return $this->hasMany(ReportThank::class);
+    }
+
+    public function moderationActions(): MorphMany
+    {
+        return $this->morphMany(ModerationAction::class, 'moderatable');
+    }
+
+    public function scopeVisibleToPublic(Builder $query): Builder
+    {
+        return $query->where('moderation_status', ModerationStatus::APPROVED->value);
+    }
+
+    /**
+     * Laporan dalam jendela "terbaru" komunitas: tanggal pendakian tidak lebih tua dari
+     * hiking.conditions.community_recent_days hari, dihitung dari tanggal terbaru di Indonesia
+     * (WIT), bukan tanggal UTC server (T9-M5 tinjauan akhir W3). Batasnya inklusif. Dipakai
+     * Banding dan halaman gunung, supaya keduanya menyebut "terbaru" dengan jendela yang sama.
+     */
+    public function scopeDalamJendelaTerbaru(Builder $query): Builder
+    {
+        $hari = (int) config('hiking.conditions.community_recent_days', 30);
+
+        return $query->where('hike_date', '>=', Carbon::parse(Timezone::latestDateInIndonesia())->subDays($hari)->toDateString());
+    }
+
+    /**
+     * @return array<int, ConditionTag>
+     */
+    public function tags(): array
+    {
+        return array_values(array_filter(array_map(
+            fn (string $value) => ConditionTag::tryFrom($value),
+            $this->condition_tags ?? []
+        )));
+    }
+
+    /**
+     * PRD §51: freshness is expressed relative to the hike date, not just created_at.
+     *
+     * Ini bukan validasi batas (hike_date sendiri sudah dijamin tidak di masa depan oleh
+     * ConditionReportForm, yang memakai Timezone::latestDateInIndonesia() sebagai
+     * langit-langit). Di sini now() dipakai sebagai "hari ini" untuk menghitung sudah
+     * berapa lama laporan itu berlalu, dan zona aplikasi (UTC, config/app.php) selama
+     * tujuh jam setiap hari masih membaca tanggal kemarin dibanding kalender Indonesia.
+     *
+     * Arahnya sama berbahayanya dengan status resmi basi yang disajikan dari cache
+     * (§94, §95): laporan yang mulai basi tampil seolah masih baru lebih berbahaya
+     * daripada laporan baru yang sesaat tampil sedikit lebih basi. Supaya jumlah hari
+     * ini tidak pernah terlihat lebih segar daripada kenyataan, dipakai WIT
+     * (latestDateInIndonesia), zona yang paling dahulu berganti hari sehingga
+     * tanggalnya selalu yang terbesar di antara ketiganya.
+     */
+    public function daysSinceHike(): int
+    {
+        return (int) $this->hike_date->diffInDays(Carbon::parse(Timezone::latestDateInIndonesia()));
+    }
+
+    /**
+     * PRD §84: pengguna yang menghapus akunnya kehilangan kaitan ke laporannya, tetapi
+     * laporan yang sudah disetujui tetap berguna bagi pendaki lain. Label netral ini
+     * dipakai di seluruh tampilan, bukan $report->user->name yang akan menjadi null.
+     */
+    public function authorLabel(): string
+    {
+        return $this->user?->name ?? 'Pendaki terdahulu';
+    }
+
+    /**
+     * Sidik isi laporan (ruling W6-6c, I-1): sha256 atas JSON berurutan tetap dari isian yang
+     * dapat diubah pelapor sendiri lewat "Ubah sebelum dimoderasi" (catatan, tag terurut,
+     * segmen, tanggal pendakian, dan foto bila ada). Moderator membawa sidik yang ia baca saat
+     * menyetujui atau menolak; bila isinya berubah sesudah itu sidiknya ikut berubah, dan
+     * tindakan ditolak alih-alih diam-diam menerbitkan isi yang tidak pernah dibaca moderator.
+     * Urutan kunci array ditulis tetap di sini, bukan bergantung pada urutan properti model,
+     * supaya sidik yang dihitung ulang sesudah lockForUpdate selalu sebanding dengan yang
+     * dikirim klien.
+     */
+    public function sidik(): string
+    {
+        return hash('sha256', json_encode([
+            'catatan' => $this->note,
+            'tag' => collect($this->condition_tags ?? [])->sort()->values()->all(),
+            'segmen' => $this->trail_segment_id,
+            'tanggal' => $this->hike_date?->toDateString(),
+            'foto' => $this->photo_path,
+        ]));
+    }
+
+    /**
+     * Alasan penolakan, untuk ditunjukkan kepada pelapornya (PRD §57).
+     *
+     * Moderator mengetik alasan pada setiap tindakan, tetapi sebelumnya alasan itu
+     * tersimpan lalu tidak pernah dibaca siapa pun. Pelapor hanya melihat "Ditolak" dan
+     * tidak dapat memperbaiki apa pun, sementara usaha moderator terbuang.
+     *
+     * Hanya untuk penolakan dan penghapusan. Alasan pada persetujuan adalah catatan
+     * internal moderator, bukan kabar untuk pelapor.
+     */
+    public function rejectionReason(): ?string
+    {
+        if (! in_array($this->moderation_status, [ModerationStatus::REJECTED, ModerationStatus::REMOVED], true)) {
+            return null;
+        }
+
+        return $this->moderationActions
+            ->sortByDesc('created_at')
+            ->firstWhere(fn (ModerationAction $action) => filled($action->reason))
+            ?->reason;
+    }
+
+    protected static function booted(): void
+    {
+        // Berkas foto tidak ikut terhapus oleh penghapusan baris, sehingga tanpa ini
+        // gambar milik laporan yang sudah hilang tetap tertinggal di penyimpanan.
+        static::deleting(function (self $report) {
+            if (blank($report->photo_path)) {
+                return;
+            }
+
+            Storage::disk(config('filesystems.report_photos_disk'))->delete($report->photo_path);
+        });
+    }
+}

@@ -1,0 +1,152 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\ModerationStatus;
+use App\Enums\UserRole;
+use App\Models\ModerationAction;
+use App\Models\OfficialStatus;
+use App\Models\Trail;
+use App\Models\TrailConditionReport;
+use App\Models\User;
+use App\Services\ConditionAggregatorService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Tests\TestCase;
+
+/**
+ * Community report matrix from PRD §103 plus the moderation acceptance criteria in §118.
+ */
+class CommunityReportModerationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
+    public function test_a_new_report_enters_moderation_and_is_not_public_yet(): void
+    {
+        $trail = Trail::factory()->create();
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('reports.store'), [
+                'trail_id' => $trail->id,
+                'hike_date' => now()->subDay()->toDateString(),
+                'condition_tags' => ['MUDDY'],
+                'note' => 'Licin setelah hujan.',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('history'));
+
+        $report = TrailConditionReport::firstOrFail();
+
+        $this->assertSame(ModerationStatus::PENDING, $report->moderation_status);
+        $this->assertSame(0, TrailConditionReport::visibleToPublic()->count());
+    }
+
+    public function test_moderator_approval_makes_a_report_public_and_is_logged(): void
+    {
+        $report = TrailConditionReport::factory()->create();
+        $moderator = User::factory()->create(['role' => UserRole::MODERATOR->value]);
+
+        // Ruling W6-6c dan W6-6q: setuju dan tolak membawa sidik isi dan status yang moderator baca.
+        $this->actingAs($moderator)
+            ->post(route('moderation.act', $report), ['action' => 'APPROVE', 'sidik' => $report->sidik(), 'status_dibaca' => $report->moderation_status->value])
+            ->assertSessionHasNoErrors();
+
+        $report->refresh();
+
+        $this->assertSame(ModerationStatus::APPROVED, $report->moderation_status);
+        $this->assertSame($moderator->id, $report->moderated_by);
+        $this->assertSame(1, ModerationAction::count());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'report.moderated']);
+    }
+
+    public function test_hikers_cannot_moderate(): void
+    {
+        $report = TrailConditionReport::factory()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('moderation.act', $report), ['action' => 'APPROVE'])
+            ->assertForbidden();
+
+        // Laporan yang belum lolos tidak pernah menjadi publik lewat jalan pintas.
+        $this->assertSame(ModerationStatus::PENDING, $report->fresh()->moderation_status);
+        $this->assertSame(0, TrailConditionReport::visibleToPublic()->count());
+    }
+
+    public function test_case_a_open_status_with_community_caution_keeps_status_and_adds_warning(): void
+    {
+        $trail = Trail::factory()->create();
+        OfficialStatus::factory()->create([
+            'statusable_id' => $trail->id,
+            'statusable_type' => $trail->getMorphClass(),
+        ]);
+        TrailConditionReport::factory()->approved()->create(['trail_id' => $trail->id]);
+
+        $conditions = app(ConditionAggregatorService::class)->forTrail($trail);
+
+        $this->assertSame('OPEN', $conditions['official_status']['status']);
+        $this->assertTrue($conditions['community_context']['available']);
+        $this->assertNotEmpty($conditions['warnings']);
+    }
+
+    public function test_case_b_closed_status_remains_authoritative_over_community_reports(): void
+    {
+        $trail = Trail::factory()->create();
+        OfficialStatus::factory()->closed()->create([
+            'statusable_id' => $trail->id,
+            'statusable_type' => $trail->getMorphClass(),
+        ]);
+        TrailConditionReport::factory()->approved()->create([
+            'trail_id' => $trail->id,
+            'condition_tags' => ['DRY', 'GOOD_MARKING'],
+        ]);
+
+        $conditions = app(ConditionAggregatorService::class)->forTrail($trail);
+
+        $this->assertSame('CLOSED', $conditions['official_status']['status']);
+    }
+
+    /**
+     * Pukul 18:00 UTC sudah pukul 01:00 keesokan harinya di WIB (UTC+7): tanggal WIB
+     * (dan WITA, WIT) sudah berganti hari sementara tanggal UTC (zona aplikasi,
+     * config/app.php) belum. Laporan ini didaki 8 hari yang lalu menurut kalender
+     * Indonesia (AGING, PRD §59: CURRENT <= 7 hari). daysSinceHike() yang memakai
+     * now() mentah masih membaca tanggal kemarin sehingga selisihnya terhitung satu
+     * hari lebih sedikit, cukup untuk menggeser laporan ini ke CURRENT, laporan yang
+     * sudah mulai basi tampil seolah masih baru.
+     */
+    public function test_report_freshness_does_not_look_fresher_than_the_indonesian_calendar_day(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-10 18:00:00', 'UTC'));
+
+        $trail = Trail::factory()->create();
+        TrailConditionReport::factory()->approved()->create([
+            'trail_id' => $trail->id,
+            'hike_date' => '2026-09-03',
+        ]);
+
+        $conditions = app(ConditionAggregatorService::class)->forTrail($trail);
+
+        $this->assertSame('AGING', $conditions['community_context']['freshness']);
+    }
+
+    public function test_case_c_no_community_report_says_so_explicitly(): void
+    {
+        $trail = Trail::factory()->create();
+
+        $conditions = app(ConditionAggregatorService::class)->forTrail($trail);
+
+        $this->assertFalse($conditions['community_context']['available']);
+        $this->assertSame(
+            'Belum ada laporan kondisi terbaru dari komunitas.',
+            $conditions['community_context']['message']
+        );
+    }
+}

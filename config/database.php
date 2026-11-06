@@ -44,6 +44,26 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
+        /*
+         * Data contoh lokal (DK-35): berkas SQLite database/demo.sqlite yang hanya diisi
+         * `php artisan memount:demo` atas keputusan pemilik (Q1). Jalurnya ditulis tetap
+         * dan 'url' sengaja null, bukan env('DB_URL'): DB_URL di .env menunjuk basis data
+         * sungguhan, dan URL mengalahkan setiap kunci lain di koneksi ini, termasuk
+         * pengemudinya. PenjagaDataContoh memeriksa ulang pengemudi dan jalurnya sebelum
+         * apa pun ditulis.
+         */
+        'demo' => [
+            'driver' => 'sqlite',
+            'url' => null,
+            'database' => database_path('demo.sqlite'),
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),

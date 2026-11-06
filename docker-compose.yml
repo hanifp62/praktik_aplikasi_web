@@ -1,0 +1,36 @@
+# PostgreSQL + PostGIS lokal untuk suite Spatial (spec v3 DK-55, paritas R-024).
+#
+# Opsional: aplikasi tidak membutuhkan Docker. Kontainer ini hanya untuk
+# SPATIAL_TEST_DSN, bukan basis data aplikasi, karena suite Spatial memakai
+# RefreshDatabase dan mengosongkan seluruh isinya setiap kali berjalan.
+#
+# Citra dan kredensialnya sama dengan layanan postgis di .github/workflows/test.yml
+# (dijaga LocalPostgisComposeTest). Kata sandinya bukan rahasia: kontainer sekali
+# pakai, hanya terikat ke 127.0.0.1, dan tidak pernah memegang data sungguhan.
+#
+#   docker compose up -d postgis
+#   SPATIAL_TEST_DSN="pgsql://hiking:hiking@127.0.0.1:54329/hiking_test" php artisan test --testsuite=Spatial
+#   docker compose down        (data tetap di volume)
+#   docker compose down -v     (volume ikut dihapus)
+
+name: memount
+
+services:
+    postgis:
+        image: postgis/postgis:16-3.4
+        environment:
+            POSTGRES_USER: hiking
+            POSTGRES_PASSWORD: hiking
+            POSTGRES_DB: hiking_test
+        ports:
+            - "127.0.0.1:${SPATIAL_PG_PORT:-54329}:5432"
+        volumes:
+            - memount-postgis-data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U hiking -d hiking_test"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    memount-postgis-data:

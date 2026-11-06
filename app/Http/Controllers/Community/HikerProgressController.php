@@ -1,0 +1,95 @@
+<?php
+
+namespace App\Http\Controllers\Community;
+
+use App\Enums\ModerationStatus;
+use App\Http\Controllers\Controller;
+use App\Models\TrailConditionReport;
+use App\Services\HikerProgressService;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+/**
+ * Progres pendaki, dipantulkan kembali kepadanya sendiri (R-015). Tidak ada perbandingan
+ * dengan pendaki lain: angka di sini hanya milik pemiliknya.
+ *
+ * `laporan.menunggu` (ruling AF-3, audit E2E I-3): jumlah laporan kondisi pengguna ini yang masih
+ * menunggu moderasi. FLAGGED ikut terhitung, karena laporan itu tampil ke pelapornya sebagai
+ * menunggu moderasi (ruling W6-6c2, HasilPendakian::laporan()). Tanpa angka ini halaman menulis
+ * "Belum ada laporan kondisi dari Anda" sesudah laporan dikirim.
+ *
+ * `laporan.ditolak` (ruling DF-10, tinjauan audit TA-m11, sisa I-3): jumlah laporan pengguna ini
+ * yang ditolak atau dihapus moderator. Tanpa angka ini, pelapor yang laporannya hanya ditolak
+ * membaca kalimat yang sama dengan pelapor yang belum pernah menulis laporan sama sekali.
+ *
+ * Kedua angka dihitung dari SATU kueri agregat `groupBy('moderation_status')`, bukan satu COUNT
+ * per status atau N+1 per laporan (anggaran dijaga PageQueryBudgetTest). `groupBy` dengan kolom
+ * yang juga di-select aman untuk SQLite maupun PostgreSQL (R-024).
+ *
+ * `grafik.*.tanggal` (ruling FF-1): HikerProgressService::tanjakanPerPendakian() mengirim instan yang sudah berada di
+ * zona gunung jalur tiap pendakian, jadi tanggal kalender di sini sama dengan ringkasan pendakian dan Riwayat.
+ */
+class HikerProgressController extends Controller
+{
+    public function __invoke(Request $request, HikerProgressService $progres): Response
+    {
+        $user = $request->user();
+        $angka = $progres->forUser($user);
+
+        $perStatus = TrailConditionReport::query()
+            ->where('user_id', $user->id)
+            ->selectRaw('moderation_status, count(*) as jumlah')
+            ->groupBy('moderation_status')
+            ->get()
+            ->mapWithKeys(fn (TrailConditionReport $baris) => [$baris->moderation_status->value => (int) $baris->jumlah]);
+
+        $menunggu = ($perStatus[ModerationStatus::PENDING->value] ?? 0) + ($perStatus[ModerationStatus::FLAGGED->value] ?? 0);
+        $ditolak = ($perStatus[ModerationStatus::REJECTED->value] ?? 0) + ($perStatus[ModerationStatus::REMOVED->value] ?? 0);
+
+        $gunung = $progres->summitedMountains($user);
+        $tanpaKoordinat = max(0, $angka['gunung'] - count($gunung));
+
+        return Inertia::render('Community/HikerProgress', [
+            'title' => 'Progres Pendakian',
+            // Keadaan awal setiap pendaki. Nol di sini artinya belum mulai, bukan tertinggal.
+            'kosong' => $angka['pendakian'] === 0 && $angka['laporan_terbit'] === 0,
+            'gunung' => $gunung,
+            'keteranganPeta' => count($gunung) === 1
+                ? 'Satu gunung yang sudah Anda daki.'
+                : count($gunung).' gunung yang sudah Anda daki.',
+            'gunungTanpaKoordinat' => $tanpaKoordinat > 0
+                ? $tanpaKoordinat.' gunung lainnya belum berkoordinat, jadi belum dapat digambar.'
+                : null,
+            'angka' => $angka['pendakian'] === 0 ? null : [
+                'pendakian' => (string) $angka['pendakian'],
+                // Pendakian yang dibatalkan disebut apa adanya, tanpa nada menghukum.
+                'sampaiPuncak' => $angka['pendakian'] > $angka['tuntas'] ? $angka['tuntas'].' sampai puncak' : null,
+                'gunung' => (string) $angka['gunung'],
+                'jalur' => $angka['jalur'].' jalur',
+                'elevasiTotal' => number_format($angka['elevasi_total_m'], 0, ',', '.').' m',
+                // Totalnya tidak boleh terbaca lengkap ketika sebagian jalurnya belum punya data (§95).
+                'elevasiBelumDiketahui' => $angka['elevasi_belum_diketahui'] > 0
+                    ? $angka['elevasi_belum_diketahui'].' jalur belum ada datanya'
+                    : null,
+                'elevasiTertinggi' => $angka['elevasi_tertinggi_m'] !== null
+                    ? number_format($angka['elevasi_tertinggi_m'], 0, ',', '.').' m'
+                    : 'belum ada',
+            ],
+            'laporan' => [
+                'terbit' => $angka['laporan_terbit'],
+                'menunggu' => $menunggu,
+                'ditolak' => $ditolak,
+                'terimaKasih' => $angka['terima_kasih'],
+            ],
+            'grafik' => array_map(fn (array $p) => [
+                'tanggal' => $p['tanggal']->translatedFormat('d M Y'),
+                'jalur' => $p['jalur'] ?? 'Jalur',
+                'm' => $p['elevasi_m'],
+                'teks' => $p['elevasi_m'] !== null
+                    ? number_format($p['elevasi_m'], 0, ',', '.').' m'
+                    : 'belum ada datanya',
+            ], $progres->tanjakanPerPendakian($user)),
+        ]);
+    }
+}

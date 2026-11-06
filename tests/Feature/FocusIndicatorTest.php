@@ -1,0 +1,84 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Support\Facades\File;
+use Tests\TestCase;
+
+/**
+ * Setiap kontrol yang mematikan outline fokus harus menggantinya.
+ *
+ * `focus:outline-none` menghapus satu-satunya penanda posisi yang dimiliki pengguna
+ * papan ketik. Menghapusnya sah selama ada penggantinya; menghapusnya tanpa pengganti
+ * membuat seseorang menekan Tab berkali-kali tanpa tahu di mana ia berada (WCAG 2.4.7).
+ *
+ * Kelas cacat ini lolos ke dalam kode lewat scaffolding Breeze dan bertahan di komponen
+ * navigasi, yaitu komponen yang muncul di setiap halaman. Disapu, bukan didaftar per
+ * berkas, karena daftar per berkas persis yang membuat dua pelanggaran kontras lolos
+ * sebelumnya.
+ *
+ * Diubah upgrade tailwind 4: outline-none Tailwind 3 bernama outline-hidden di Tailwind 4, dan
+ * outline-none Tailwind 4 menghapus outline sepenuhnya. Keduanya disapu; tanpa itu sapuan ini
+ * lulus kosong karena tidak ada lagi focus:outline-none di view.
+ */
+class FocusIndicatorTest extends TestCase
+{
+    public function test_nothing_removes_the_focus_outline_without_replacing_it(): void
+    {
+        $pelanggar = [];
+
+        // Tinjauan upgrade M-3: komponen React ikut disapu, dan outline pengganti wajib menyebut gayanya. Di Tailwind 4
+        // focus:outline-hidden menolkan --tw-outline-style, jadi focus-visible:outline-2 saja tidak menggambar apa pun.
+        foreach ([...File::allFiles(resource_path('views')), ...File::allFiles(resource_path('js'))] as $berkas) {
+            $isi = $berkas->getContents();
+            preg_match_all('/focus:outline-(?:none|hidden)/', $isi, $cocok, PREG_OFFSET_CAPTURE);
+
+            foreach ($cocok[0] as [, $posisi]) {
+                // Penggantinya boleh berada sebelum maupun sesudah dalam daftar kelas
+                // yang sama, dan daftar itu kerap dipecah beberapa baris.
+                $konteks = substr($isi, max(0, $posisi - 400), 800);
+
+                // Target fokus terprogram (tabIndex -1 pada tag yang sama) tidak berada di urutan Tab dan bukan kontrol.
+                $awal = strrpos(substr($isi, 0, $posisi), '<');
+                $akhir = strpos($isi, '>', $posisi);
+
+                if ($awal !== false && $akhir !== false && $akhir - $awal < 400 && preg_match('/tab[iI]ndex=(?:\{-1\}|"-1")/', substr($isi, $awal, $akhir - $awal))) {
+                    continue;
+                }
+
+                // Cincin pengganti boleh datang dari kelas bersama gaya.ts yang dipasang pada anak atau label pembungkus.
+                if (! preg_match('/(?:focus-visible|focus|group-focus-visible|has-focus-visible):ring|focus-visible:outline-(?:solid|dashed|dotted|double)|\b(?:fokusTerlihat|fokusKelompok|fokusDiDalam)\b/', $konteks)) {
+                    $pelanggar[] = $berkas->getRelativePathname();
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            array_values(array_unique($pelanggar)),
+            'Outline fokus dimatikan tanpa pengganti di: '.implode(', ', array_unique($pelanggar))
+        );
+    }
+
+    /**
+     * Penanda fokus adalah komponen non-teks dan menuntut 3:1 (WCAG 1.4.11). Batas
+     * gray-300 hanya 1.47:1, jadi memakainya sebagai penanda fokus berarti mengganti
+     * outline dengan sesuatu yang praktis tidak terlihat.
+     */
+    public function test_the_replacement_is_not_itself_invisible(): void
+    {
+        $pelanggar = [];
+
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            if (preg_match('/focus:border-gray-300|focus-visible:border-gray-300|focus:ring-gray-300/', $berkas->getContents())) {
+                $pelanggar[] = $berkas->getRelativePathname();
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            'Penanda fokus 1.47:1 di: '.implode(', ', $pelanggar)
+        );
+    }
+}

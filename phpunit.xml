@@ -3,6 +3,7 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         defaultTestSuite="Unit,Feature,Spatial"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -11,6 +12,26 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <!--
+            Suite spasial membutuhkan Postgres dengan PostGIS. Tanpa SPATIAL_TEST_DSN
+            ia melewati dirinya sendiri dengan pesan yang jelas, bukan gagal, sehingga
+            kontributor tanpa Postgres lokal tetap dapat menjalankan seluruh suite,
+            dan tetap diingatkan bahwa suite ini ada. Cara menjalankannya penuh ada di
+            CONTRIBUTING.md, bagian "Suite spasial di mesin sendiri".
+        -->
+        <testsuite name="Spatial">
+            <directory>tests/Spatial</directory>
+        </testsuite>
+        <!--
+            Harness pratinjau visual (ruling W1-R4): menulis HTML halaman berisi data
+            contoh ke public/_pratinjau/ untuk dipotret. Tidak termasuk suite bawaan
+            (defaultTestSuite di atas) dan tidak dijalankan CI; jalankan dengan
+            testsuite Pratinjau sesudah build aset. Caranya di CONTRIBUTING.md, bagian
+            "Pratinjau visual tanpa basis data".
+        -->
+        <testsuite name="Pratinjau">
+            <directory>tests/Pratinjau</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
@@ -18,14 +39,52 @@
         </include>
     </source>
     <php>
+        <!--
+            Suite ini berjalan dalam satu proses dan sudah melewati enam ratus test.
+            Batas bawaan 128 MB terlampaui saat deteksi MIME foto laporan, dan gejalanya
+            menyesatkan: PHPUnit melaporkannya sebagai test yang mati mendadak, bukan
+            sebagai kehabisan memori.
+        -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
-        <env name="DB_URL" value=""/>
+        <!--
+            Pagar basis data (tinjauan akhir W1, M-9). .env menunjuk basis data produksi, dan
+            variabel DB_* yang tertinggal di shell mengalahkan <env> biasa, sehingga
+            RefreshDatabase bisa menjalankan migrate:fresh di koneksi itu. force="true" menimpa
+            putenv dan $_ENV, tetapi Laravel membaca $_SERVER lebih dulu, jadi setiap variabel
+            juga ditulis lewat <server>. Host, pengguna, dan sandi pgsql dibuat tidak dapat
+            dijangkau. SpatialTestCase memasang koneksi pgsql-nya sendiri dari
+            SPATIAL_TEST_DSN, dan CI tidak menyetel DB_*. Dijaga PratinjauHarnessTest.
+        -->
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="DB_HOST" value="tidak-ada.invalid" force="true"/>
+        <env name="DB_PORT" value="5432" force="true"/>
+        <env name="DB_USERNAME" value="tidak_ada" force="true"/>
+        <env name="DB_PASSWORD" value="" force="true"/>
+        <server name="DB_CONNECTION" value="sqlite"/>
+        <server name="DB_DATABASE" value=":memory:"/>
+        <server name="DB_URL" value=""/>
+        <server name="DB_HOST" value="tidak-ada.invalid"/>
+        <server name="DB_PORT" value="5432"/>
+        <server name="DB_USERNAME" value="tidak_ada"/>
+        <server name="DB_PASSWORD" value=""/>
+        <!--
+            Sakelar fitur W6 dan penyaji data contoh dipaksa mati seperti di CI, supaya .env lokal (misalnya
+            inspeksi dengan data contoh, FIELD_PACK_ENABLED=true) tidak mengubah hasil test. Test yang butuh
+            sakelar menyalakannya sendiri lewat config().
+        -->
+        <env name="FIELD_PACK_ENABLED" value="false" force="true"/>
+        <env name="FIELD_SAFETY_ENABLED" value="false" force="true"/>
+        <env name="APP_DEMO" value="false" force="true"/>
+        <server name="FIELD_PACK_ENABLED" value="false"/>
+        <server name="FIELD_SAFETY_ENABLED" value="false"/>
+        <server name="APP_DEMO" value="false"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

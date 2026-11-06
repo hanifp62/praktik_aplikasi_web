@@ -1,0 +1,62 @@
+name: Usulan fitur
+description: Kebutuhan baru atau perubahan perilaku produk.
+title: "[Fitur] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fitur baru masuk MVP hanya bila memenuhi feature gate PRD §131. Perubahan arah produk butuh persetujuan pemilik dan governance record (R-021, PRD §130).
+  - type: textarea
+    id: masalah
+    attributes:
+      label: Masalah pendaki yang diselesaikan
+      description: Siapa, dalam situasi apa, dan bukti bahwa masalahnya nyata (riset, uji kegunaan, laporan).
+    validations:
+      required: true
+  - type: dropdown
+    id: loop
+    attributes:
+      label: Posisi di loop produk (PRD §7)
+      options:
+        - PROFILE
+        - ROUTE FIT
+        - PLAN
+        - PREPARE
+        - CHECK
+        - HIKE
+        - REPORT
+        - IMPROVE
+    validations:
+      required: true
+  - type: checkboxes
+    id: gerbang
+    attributes:
+      label: Feature gate (PRD §131), centang yang dipenuhi
+      options:
+        - label: Meningkatkan pemilihan rute
+        - label: Meningkatkan persiapan
+        - label: Meningkatkan kesadaran akan kondisi terkini
+        - label: Meningkatkan keterpakaian di lapangan
+        - label: Meningkatkan kepercayaan data
+  - type: textarea
+    id: usulan
+    attributes:
+      label: Usulan perilaku
+    validations:
+      required: true
+  - type: textarea
+    id: dampak
+    attributes:
+      label: Dampak dan risiko
+      description: Aturan kanonis yang tersentuh, data, keamanan dan privasi, cakupan MVP.
+  - type: dropdown
+    id: arah
+    attributes:
+      label: Apakah usulan ini mengubah arah produk (R-021)?
+      options:
+        - Tidak
+        - Ya, butuh persetujuan pemilik dan governance record
+        - Belum tahu
+    validations:
+      required: true

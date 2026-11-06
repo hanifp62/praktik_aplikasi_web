@@ -1,0 +1,264 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Listeners\RecordScheduledTaskRun;
+use App\Models\ScheduledTaskRun;
+use App\Services\SchedulerHealthService;
+use Illuminate\Console\Events\ScheduledTaskFailed;
+use Illuminate\Console\Events\ScheduledTaskFinished;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use RuntimeException;
+use Tests\TestCase;
+
+/**
+ * Kesehatan tugas terjadwal.
+ *
+ * Kegagalan yang dijaga di sini bentuknya ketiadaan, bukan galat. Cron yang tidak pernah
+ * dipasang tidak menghasilkan apa pun untuk dilihat: prakiraan cuaca berhenti diperbarui
+ * dan status resmi yang kedaluwarsa berhenti diperiksa, keduanya diam-diam, dan setiap
+ * halaman tetap tampak normal karena data lamanya masih ada di sana.
+ */
+class SchedulerHealthTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
+    private function service(): SchedulerHealthService
+    {
+        return app(SchedulerHealthService::class);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function baris(string $kunci): array
+    {
+        foreach ($this->service()->report() as $baris) {
+            if ($baris['kunci'] === $kunci) {
+                return $baris;
+            }
+        }
+
+        $this->fail("Tugas {$kunci} tidak ada di laporan.");
+    }
+
+    private function catat(string $kunci, string $status, Carbon $kapan): void
+    {
+        ScheduledTaskRun::create([
+            'task' => $kunci,
+            'status' => $status,
+            'ran_at' => $kapan,
+        ]);
+    }
+
+    /**
+     * Keadaan awal sebuah pemasangan baru, dan justru yang paling sering luput: cron
+     * belum pernah dipasang sama sekali.
+     */
+    public function test_a_task_that_never_ran_is_reported_as_such(): void
+    {
+        $this->assertSame(SchedulerHealthService::BELUM_PERNAH, $this->baris('weather:refresh')['keadaan']);
+        $this->assertTrue($this->service()->needsAttention());
+    }
+
+    /**
+     * Setiap tugas yang dipantau berjalan baru-baru ini. Fixture-nya menyapu
+     * SchedulerHealthService::TUGAS, bukan daftar tulisan tangan, supaya tugas yang
+     * didaftarkan besok ikut tercakup.
+     */
+    public function test_a_recent_successful_run_is_healthy(): void
+    {
+        foreach (array_keys(SchedulerHealthService::TUGAS) as $kunci) {
+            $this->catat($kunci, ScheduledTaskRun::SUCCESS, now()->subHour());
+        }
+
+        $this->assertSame(SchedulerHealthService::SEHAT, $this->baris('weather:refresh')['keadaan']);
+        $this->assertFalse($this->service()->needsAttention());
+    }
+
+    /**
+     * Bentuk kegagalan yang paling sering luput: tidak ada galat sama sekali, hanya
+     * tidak ada yang berjalan lagi.
+     */
+    public function test_a_task_that_simply_stopped_running_is_overdue(): void
+    {
+        $this->catat('weather:refresh', ScheduledTaskRun::SUCCESS, now()->subHours(20));
+
+        $this->assertSame(SchedulerHealthService::TERLAMBAT, $this->baris('weather:refresh')['keadaan']);
+    }
+
+    /**
+     * trips:kirim-pengingat berjalan tiap jam. Dua jam tanpa jalan masih wajar; lebih
+     * dari tiga jam berarti penjadwalnya berhenti, dan pengingat yang jatuh tempo baru
+     * terkirim ketika ia berjalan lagi.
+     */
+    public function test_the_hourly_reminder_task_is_overdue_after_three_hours_without_a_run(): void
+    {
+        $this->catat('trips:kirim-pengingat', ScheduledTaskRun::SUCCESS, now()->subHours(2));
+
+        $this->assertSame(SchedulerHealthService::SEHAT, $this->baris('trips:kirim-pengingat')['keadaan']);
+
+        $this->travel(2)->hours();
+
+        $this->assertSame(SchedulerHealthService::TERLAMBAT, $this->baris('trips:kirim-pengingat')['keadaan']);
+    }
+
+    /**
+     * Toleransinya lebih longgar dari jadwalnya. weather:refresh berjarak 12 jam, dan
+     * ambang yang dipasang persis 12 jam akan menyala merah setiap beberapa hari tanpa
+     * ada yang rusak.
+     */
+    public function test_a_slightly_late_run_is_not_yet_an_alarm(): void
+    {
+        $this->catat('weather:refresh', ScheduledTaskRun::SUCCESS, now()->subHours(13));
+
+        $this->assertSame(SchedulerHealthService::SEHAT, $this->baris('weather:refresh')['keadaan']);
+    }
+
+    /**
+     * Tugas yang berjalan tepat waktu lalu meledak bukan tugas yang sehat, meskipun
+     * waktunya masih baru.
+     */
+    public function test_a_fresh_but_failed_run_is_not_healthy(): void
+    {
+        $this->catat('weather:refresh', ScheduledTaskRun::SUCCESS, now()->subHours(12));
+        $this->catat('weather:refresh', ScheduledTaskRun::FAILED, now()->subMinutes(5));
+
+        $baris = $this->baris('weather:refresh');
+
+        $this->assertSame(SchedulerHealthService::GAGAL, $baris['keadaan']);
+        $this->assertNotNull($baris['terakhir_berhasil'], 'Keberhasilan sebelumnya tetap disebut agar terlihat sejak kapan rusaknya.');
+    }
+
+    /**
+     * TA-m1 (tinjauan audit): jam dalam kalimat jadwal ditulis bertitik ("06.00"), bukan
+     * bertitik dua ("06:00"), sama dengan konvensi BF-5 di halaman lain. Halaman Kesehatan
+     * admin tidak terjangkau data contoh (tidak ada akun admin di DemoSeeder), sehingga
+     * cacat ini lolos dari audit E2E dan hanya tertangkap tinjauan kode.
+     */
+    public function test_the_task_schedule_sentence_uses_a_dotted_clock(): void
+    {
+        foreach (SchedulerHealthService::TUGAS as $tugas) {
+            $this->assertDoesNotMatchRegularExpression(
+                '/\b[0-2]?[0-9]:[0-5][0-9]\b/',
+                $tugas['jadwal'],
+                "Jadwal \"{$tugas['jadwal']}\" masih memakai jam bertitik dua."
+            );
+        }
+
+        $this->assertStringContainsString('06.00', SchedulerHealthService::TUGAS['weather:refresh']['jadwal']);
+        $this->assertStringContainsString('18.00', SchedulerHealthService::TUGAS['weather:refresh']['jadwal']);
+        $this->assertStringContainsString('07.00', SchedulerHealthService::TUGAS['data:freshness-check']['jadwal']);
+    }
+
+    /**
+     * Vercel Hobby (hiking.penjadwal.hanya_harian): pengingat berjalan pada jam jatuh temponya ditambah satu
+     * susulan. Jalan 21 jam lalu masih wajar di sana, padahal di server dengan scheduler tiap jam itu terlambat;
+     * lewat 23 jam tetap terlambat di keduanya.
+     */
+    public function test_on_daily_only_cron_the_reminder_task_is_judged_by_its_daily_runs(): void
+    {
+        $this->catat('trips:kirim-pengingat', ScheduledTaskRun::SUCCESS, Carbon::parse('2026-10-13 00:40:00'));
+        Carbon::setTestNow('2026-10-13 21:40:00');
+
+        $this->assertSame(SchedulerHealthService::TERLAMBAT, $this->baris('trips:kirim-pengingat')['keadaan']);
+
+        config(['hiking.penjadwal.hanya_harian' => true]);
+
+        $baris = $this->baris('trips:kirim-pengingat');
+        $this->assertSame(SchedulerHealthService::SEHAT, $baris['keadaan']);
+        $this->assertSame(23, $baris['toleransi_jam']);
+        $this->assertStringContainsString('07.00', $baris['jadwal']);
+        $this->assertStringNotContainsString('07:00', $baris['jadwal']);
+
+        Carbon::setTestNow('2026-10-14 02:00:00');
+
+        $this->assertSame(SchedulerHealthService::TERLAMBAT, $this->baris('trips:kirim-pengingat')['keadaan']);
+    }
+
+    public function test_the_listener_records_a_finished_task(): void
+    {
+        $task = app(Schedule::class)->command('weather:refresh');
+
+        app(RecordScheduledTaskRun::class)->handleFinished(new ScheduledTaskFinished($task, 1.25));
+
+        $run = ScheduledTaskRun::firstOrFail();
+
+        $this->assertSame('weather:refresh', $run->task);
+        $this->assertSame(ScheduledTaskRun::SUCCESS, $run->status);
+        $this->assertSame(1250, $run->runtime_ms);
+    }
+
+    /**
+     * Perintah yang berjalan tetapi mengaku gagal lewat exit code. Tanpa pemeriksaan
+     * itu, tugas yang gagal setiap hari tercatat sehat setiap hari.
+     */
+    public function test_a_nonzero_exit_code_is_recorded_as_a_failure(): void
+    {
+        $task = app(Schedule::class)->command('weather:refresh');
+        $task->exitCode = 1;
+
+        app(RecordScheduledTaskRun::class)->handleFinished(new ScheduledTaskFinished($task, 0.5));
+
+        $this->assertSame(ScheduledTaskRun::FAILED, ScheduledTaskRun::firstOrFail()->status);
+    }
+
+    public function test_the_listener_records_a_failed_task_with_its_message(): void
+    {
+        $task = app(Schedule::class)->command('data:freshness-check');
+
+        app(RecordScheduledTaskRun::class)->handleFailed(
+            new ScheduledTaskFailed($task, new RuntimeException('BMKG tidak dapat dihubungi.'))
+        );
+
+        $run = ScheduledTaskRun::firstOrFail();
+
+        $this->assertSame('data:freshness-check', $run->task);
+        $this->assertSame(ScheduledTaskRun::FAILED, $run->status);
+        $this->assertStringContainsString('BMKG', $run->summary);
+    }
+
+    /**
+     * Penjaga yang paling berharga dari berkas ini.
+     *
+     * Tugas terjadwal yang ditambahkan besok tanpa masuk daftar pantau akan berjalan,
+     * gagal, dan berhenti berjalan tanpa satu pun tanda, persis seperti keadaan sebelum
+     * halaman ini ada. Test ini gagal saat itu terjadi, bukan berbulan kemudian.
+     */
+    public function test_every_scheduled_task_is_actually_monitored(): void
+    {
+        $tidakDipantau = [];
+
+        foreach (app(Schedule::class)->events() as $event) {
+            $perintah = (string) ($event->command ?? '');
+
+            if ($perintah === '') {
+                continue;
+            }
+
+            foreach (array_keys(SchedulerHealthService::TUGAS) as $kunci) {
+                if (str_contains($perintah, $kunci)) {
+                    continue 2;
+                }
+            }
+
+            $tidakDipantau[] = $event->getSummaryForDisplay();
+        }
+
+        $this->assertSame(
+            [],
+            $tidakDipantau,
+            'Tugas terjadwal berikut tidak terdaftar di SchedulerHealthService::TUGAS, '
+                .'jadi berhentinya tidak akan terlihat: '.implode(', ', $tidakDipantau)
+        );
+    }
+}

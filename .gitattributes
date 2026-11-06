@@ -6,6 +6,10 @@
 *.md diff=markdown
 *.php diff=php
 
+# Prototype pemilik (DK-47): artefak rujukan yang disimpan apa adanya, tanpa diff teks,
+# dan tidak dihitung dalam statistik bahasa GitHub.
+/docs/desain/prototype/*.html binary linguist-documentation
+
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore

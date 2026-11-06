@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Laporan kerentanan keamanan
+    url: https://github.com/hanifp62/praktik_aplikasi_web/security/advisories/new
+    about: Laporkan secara privat lewat GitHub private vulnerability reporting, bukan lewat isu publik (lihat SECURITY.md).

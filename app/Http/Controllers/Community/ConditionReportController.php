@@ -1,0 +1,204 @@
+<?php
+
+namespace App\Http\Controllers\Community;
+
+use App\Enums\AnalyticsEvent;
+use App\Enums\ConditionTag;
+use App\Enums\ModerationStatus;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreConditionReportRequest;
+use App\Http\Requests\UpdateConditionReportRequest;
+use App\Models\HikingHistory;
+use App\Models\Trail;
+use App\Models\TrailConditionReport;
+use App\Models\TrailSegment;
+use App\Models\User;
+use App\Services\AnalyticsRecorder;
+use App\Support\ImageSanitizer;
+use App\Support\Timezone;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Inertia\Inertia;
+use Inertia\Response;
+
+/**
+ * FR-13 laporan kondisi jalur dari komunitas. Setiap kiriman masuk moderasi dan tidak
+ * pernah diperlakukan sebagai status resmi (PRD §49, §118, R-010).
+ */
+class ConditionReportController extends Controller
+{
+    public function create(Request $request): Response
+    {
+        $trailId = $request->integer('trail') ?: null;
+        $tripId = $request->integer('trip') ?: null;
+        $jalur = $trailId !== null ? Trail::with('segments', 'mountain')->find($trailId) : null;
+
+        return Inertia::render('Community/ConditionReport', [
+            'title' => 'Laporan Kondisi Jalur',
+            'trails' => Trail::published()->with('mountain')->orderBy('name')->get()
+                ->map(fn (Trail $t) => ['value' => $t->id, 'label' => $t->name.' - '.$t->mountain?->name])
+                ->values()
+                ->all(),
+            // Segmen mengikuti jalur yang dipilih; halaman memuat ulang prop ini saja
+            // ketika pilihan jalurnya berubah.
+            'segments' => ($jalur?->segments ?? collect())
+                ->map(fn (TrailSegment $s) => ['value' => $s->id, 'label' => $s->sequence.'. '.$s->name])
+                ->values()
+                ->all(),
+            'tags' => array_map(fn (ConditionTag $t) => ['value' => $t->value, 'label' => $t->label()], ConditionTag::cases()),
+            'awal' => [
+                'trail_id' => $trailId,
+                'trip_plan_id' => $tripId,
+                'hike_date' => $this->tanggalPendakianBawaan($request->user(), $tripId, $jalur),
+            ],
+            'tanggalMaksimum' => Timezone::latestDateInIndonesia(),
+        ]);
+    }
+
+    /**
+     * Tanggal pendakian bawaan formulir (ruling W5-FC, I3 tinjauan akhir W5). Kesegaran laporan
+     * diukur dari tanggal pendakian (§59), jadi pintu B4 Beranda, yang membawa trip yang baru
+     * selesai, membuka formulir pada tanggal selesai riwayat MILIK pendaki ini untuk trip itu,
+     * dalam zona gunung jalurnya, dijepit ke tanggal maksimum formulir. Tanpa riwayat milik
+     * sendiri, bawaannya tanggal hari ini di zona gunung jalur yang dipilih (WIB bila belum ada
+     * jalur), bukan tanggal UTC. Id trip pendaki lain diperlakukan seperti tidak ada: kueri
+     * riwayatnya disaring pengguna sesi, jadi tidak mengubah bawaan dan tidak membuka data apa
+     * pun (IDOR).
+     */
+    private function tanggalPendakianBawaan(?User $pengguna, ?int $tripId, ?Trail $jalur): string
+    {
+        $riwayat = $pengguna === null || $tripId === null ? null : HikingHistory::query()
+            ->where('user_id', $pengguna->id)
+            ->where('trip_plan_id', $tripId)
+            ->whereNotNull('completed_at')
+            ->with('trail.mountain')
+            ->first();
+
+        $tanggal = $riwayat?->trail !== null
+            ? $riwayat->completed_at->copy()->setTimezone(Timezone::forTrail($riwayat->trail))->toDateString()
+            : Carbon::now($jalur === null ? Timezone::DEFAULT : Timezone::forTrail($jalur))->toDateString();
+
+        return min($tanggal, Timezone::latestDateInIndonesia());
+    }
+
+    public function store(StoreConditionReportRequest $request, AnalyticsRecorder $analytics): RedirectResponse
+    {
+        $user = $request->user();
+        $data = $request->validated();
+
+        // PRD §100. Batas per pengguna, bukan global, supaya satu pengguna yang
+        // berlebihan tidak membungkam pengguna lain; laporan masuk antrean moderasi
+        // manusia, jadi batasnya menjaga moderator sekaligus penyimpanan.
+        $kunci = 'report-submit:'.$user->id;
+        $batas = (int) config('hiking.rate_limits.report_submissions_per_hour');
+
+        if (RateLimiter::tooManyAttempts($kunci, $batas)) {
+            return back()->withErrors(['form' => sprintf(
+                'Anda sudah mengirim %d laporan dalam satu jam terakhir. Coba lagi dalam %d menit.',
+                $batas,
+                (int) ceil(RateLimiter::availableIn($kunci) / 60)
+            )]);
+        }
+
+        RateLimiter::hit($kunci, 3600);
+
+        $pathFoto = null;
+        $alasanFotoGagal = null;
+
+        if ($request->hasFile('photo')) {
+            $foto = $request->file('photo');
+            $disk = config('filesystems.report_photos_disk');
+
+            // EXIF foto ponsel membawa koordinat GPS pendaki (PRD §82). Berkas sementara unggahan
+            // dibersihkan lebih dulu, baru disimpan: foto aslinya tidak pernah menyentuh penyimpanan,
+            // dan disk S3 (Supabase Storage di produksi) tidak punya path lokal untuk dibersihkan
+            // sesudahnya. Nama berkas acak menjauhkan nama dari pengguna dari path penyimpanan. Foto
+            // yang gagal dibersihkan atau gagal disimpan dibuang, tetapi laporannya tetap tersimpan.
+            if (! ImageSanitizer::trySanitize((string) $foto->getRealPath(), (int) config('hiking.uploads.report_photo_max_dimension'))) {
+                $alasanFotoGagal = 'Foto tidak dapat diproses dan tidak disertakan. Laporan tetap tersimpan.';
+            } elseif (($tersimpan = $foto->store('condition-reports', $disk)) === false) {
+                // Disk supabase tidak melempar maupun melaporkan galat tulis, jadi kunci, bucket, atau endpoint
+                // S3 yang salah hanya terlihat dari baris log ini. Tanpa data pribadi: cukup nama disknya.
+                Log::warning('Foto laporan gagal disimpan; periksa pengaturan disk penyimpanan foto.', ['disk' => $disk]);
+                $alasanFotoGagal = 'Foto tidak dapat disimpan dan tidak disertakan. Laporan tetap tersimpan.';
+            } else {
+                $pathFoto = $tersimpan;
+            }
+        }
+
+        $laporan = TrailConditionReport::create([
+            'trail_id' => (int) $data['trail_id'],
+            'trail_segment_id' => $data['trail_segment_id'] ?? null,
+            'user_id' => $user->id,
+            'hike_date' => $data['hike_date'],
+            'condition_tags' => $data['condition_tags'],
+            'photo_path' => $pathFoto,
+            'note' => $data['note'] ?? null,
+            'moderation_status' => ModerationStatus::PENDING->value,
+        ]);
+
+        $tertaut = ! empty($data['trip_plan_id']) && HikingHistory::where('trip_plan_id', $data['trip_plan_id'])
+            ->where('user_id', $user->id)
+            ->update(['trail_condition_report_id' => $laporan->id]) > 0;
+
+        $analytics->record(AnalyticsEvent::CONDITION_REPORT_SUBMITTED, $user, ['trail_id' => (int) $data['trail_id']]);
+
+        // Laporan dari ringkasan pendakian kembali ke ringkasannya (spec v3 bagian 6.13), tempat
+        // keadaannya dan "Ubah sebelum dimoderasi" tampil.
+        $respons = ($tertaut ? redirect()->route('history.summary', (int) $data['trip_plan_id']) : redirect()->route('history'))
+            ->with('status', 'Laporan terkirim dan menunggu moderasi sebelum tampil untuk pengguna lain.');
+
+        // Kunci terpisah dari 'status'. Versi Livewire menulis keduanya ke 'status'
+        // berturut-turut, sehingga kabar foto yang dibuang tertimpa dan tidak pernah
+        // terbaca pengirimnya.
+        return $alasanFotoGagal !== null
+            ? $respons->with('foto-tidak-disertakan', $alasanFotoGagal)
+            : $respons;
+    }
+
+    /**
+     * Mengubah laporan sebelum dimoderasi (spec v3 bagian 6.13): hanya pemiliknya
+     * (UpdateConditionReportRequest) dan hanya selama menunggu moderasi. Jalur, tanggal, dan foto
+     * tetap; yang dapat diubah kondisi, segmen, dan catatan. Laporannya tetap menunggu moderasi.
+     *
+     * Ruling W6-6r huruf (a): tulisannya UPDATE bersyarat "masih PENDING", bukan periksa lalu
+     * tulis. Moderator dapat menyetujui isi lama di antara otorisasi dan tulisan ini; UPDATE
+     * tanpa syarat lalu menerbitkan isi yang tidak pernah dibaca moderator (probe P1-balapan,
+     * tinjauan task-6-fix1-review bagian 2.2). Bila tidak ada baris yang terubah, pelapor
+     * menerima kalimat di formulirnya, bukan 403 atau 500. Kalimatnya menyebut moderator
+     * "mulai meninjau", bukan "sudah dimoderasi", karena laporan FLAGGED tampil ke pelapor
+     * sebagai menunggu moderasi (ruling W6-6c2).
+     *
+     * Builder::update() tidak menerapkan cast model, jadi isiannya diisi ke model lebih dulu dan
+     * nilai mentahnya yang ditulis: tag, segmen, dan catatan tersimpan dalam bentuk yang sama
+     * dengan Eloquent update(), dan updated_at ditambahkan Builder dengan format model yang sama.
+     */
+    public function update(UpdateConditionReportRequest $request, TrailConditionReport $report): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $report->fill([
+            'condition_tags' => $data['condition_tags'],
+            'trail_segment_id' => $data['trail_segment_id'] ?? null,
+            'note' => $data['note'] ?? null,
+        ]);
+
+        $terubah = TrailConditionReport::query()
+            ->whereKey($report->getKey())
+            ->where('moderation_status', ModerationStatus::PENDING->value)
+            ->update(Arr::only($report->getAttributes(), ['condition_tags', 'trail_segment_id', 'note']));
+
+        if ($terubah === 0) {
+            return back()->withErrors(['form' => 'Moderator sudah mulai meninjau laporan ini, jadi laporan tidak dapat diubah lagi. Perubahan Anda tidak tersimpan.']);
+        }
+
+        $trip = HikingHistory::where('trail_condition_report_id', $report->id)->where('user_id', $request->user()->id)->value('trip_plan_id');
+
+        return ($trip !== null ? redirect()->route('history.summary', $trip) : redirect()->route('history'))
+            ->with('status', 'Laporan diperbarui dan tetap menunggu moderasi.');
+    }
+}

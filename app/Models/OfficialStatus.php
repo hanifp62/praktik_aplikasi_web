@@ -1,0 +1,161 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\OfficialStatusValue;
+use App\Enums\StatusScope;
+use App\Exceptions\PublicationGateViolation;
+use App\Services\OfficialStatusService;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
+
+#[Fillable([
+    'statusable_type', 'statusable_id', 'scope', 'status', 'data_source_id', 'source', 'source_url',
+    'published_at', 'fetched_at', 'verified_at', 'effective_at', 'expires_at', 'reason', 'notes', 'recorded_by',
+])]
+class OfficialStatus extends Model
+{
+    use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'status' => OfficialStatusValue::class,
+            'scope' => StatusScope::class,
+            'published_at' => 'datetime',
+            'fetched_at' => 'datetime',
+            'verified_at' => 'datetime',
+            'effective_at' => 'datetime',
+            'expires_at' => 'datetime',
+        ];
+    }
+
+    public function statusable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function dataSource(): BelongsTo
+    {
+        return $this->belongsTo(DataSource::class);
+    }
+
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    public function scopeCurrentlyEffective(Builder $query): Builder
+    {
+        return $query->effectiveOn(Carbon::now());
+    }
+
+    /**
+     * Status yang berlaku pada satu tanggal tertentu, bukan hanya hari ini.
+     *
+     * Penutupan besar di Indonesia bersifat tahunan dan diumumkan jauh hari: Rinjani
+     * tutup 1 Januari sampai 31 Maret, Semeru pada periode yang sama ditambah sepanjang
+     * Desember. Pendaki menyusun rencananya berbulan-bulan sebelumnya, jadi pertanyaan
+     * yang menentukan adalah "tutup pada tanggal rencana saya", bukan "tutup hari ini".
+     */
+    public function scopeEffectiveOn(Builder $query, CarbonInterface $date): Builder
+    {
+        return $query->where(fn (Builder $q) => $q->whereNull('effective_at')->orWhere('effective_at', '<=', $date))
+            ->where(fn (Builder $q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', $date));
+    }
+
+    /**
+     * Catatan terbaru lebih dulu, dengan urutan NULL yang sama di SQLite dan PostgreSQL
+     * (I3 dan m6 tinjauan akhir W3, R-024).
+     *
+     * `effective_at` boleh kosong (StoreOfficialStatusRequest), dan `ORDER BY ... DESC`
+     * menaruh NULL terakhir di SQLite tetapi pertama di PostgreSQL. Tanpa urutan eksplisit,
+     * catatan Buka tanpa tanggal berlaku mengalahkan penutupan bertanggal di Supabase
+     * sementara suite SQLite memilih penutupan. Di sini catatan bertanggal selalu
+     * didahulukan, seri diputus published_at (juga bertanggal dulu), lalu id.
+     *
+     * Satu-satunya tempat urutan ini ditulis: setiap pembaca "catatan terbaru per entitas"
+     * (OfficialStatusService, StatusJalurRingkas) memakainya, jadi keputusan semantik W8
+     * (COALESCE dengan created_at, parkir W3-1i) cukup mengubah scope ini.
+     */
+    public function scopeTerbaruDulu(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw('effective_at is null')
+            ->orderByDesc('effective_at')
+            ->orderByRaw('published_at is null')
+            ->orderByDesc('published_at')
+            ->orderByDesc('id');
+    }
+
+    /**
+     * Stempel waktu yang dikutip layar untuk sebuah catatan, beserta kata awalannya (W3-2c dan
+     * I1 tinjauan akhir W3).
+     *
+     * Verifikasi didahulukan, lalu terbit, lalu mulai berlaku, dan awalannya menyebut kolom
+     * yang benar-benar dipakai: catatan yang belum pernah diverifikasi tidak boleh tertulis
+     * "Diverifikasi" hanya karena ia punya tanggal terbit. Statis supaya dipakai bersama oleh
+     * daftar (model) dan rincian (snapshot bercache berisi string ISO).
+     *
+     * @return array{waktu: CarbonInterface, awalan: string}|null
+     */
+    public static function waktuDikutip(?CarbonInterface $diverifikasi, ?CarbonInterface $diterbitkan, ?CarbonInterface $berlaku): ?array
+    {
+        return match (true) {
+            $diverifikasi !== null => ['waktu' => $diverifikasi, 'awalan' => 'Diverifikasi'],
+            $diterbitkan !== null => ['waktu' => $diterbitkan, 'awalan' => 'Diterbitkan'],
+            $berlaku !== null => ['waktu' => $berlaku, 'awalan' => 'Berlaku sejak'],
+            default => null,
+        };
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    protected static function booted(): void
+    {
+        // Dipasang pada model, bukan pada komponen admin, agar setiap jalur tulis
+        // tercakup, penutupan jalur tidak boleh tertahan di cache sampai TTL habis.
+        static::saved(fn (self $status) => $status->forgetAffectedTrailCaches());
+        static::deleted(fn (self $status) => $status->forgetAffectedTrailCaches());
+
+        // R-022 sebagai invariant keadaan: jalur terbit tidak boleh kehilangan catatan
+        // status resmi terakhirnya. Penghapusan terjadi di model ini, bukan di Trail,
+        // sehingga penjaga di sana buta terhadapnya.
+        static::deleting(function (self $status): void {
+            $trail = $status->statusable;
+
+            if (! $trail instanceof Trail || ! $trail->is_published) {
+                return;
+            }
+
+            if ($trail->officialStatuses()->count() > 1) {
+                return;
+            }
+
+            throw new PublicationGateViolation($trail, ['Status resmi belum pernah dicatat.']);
+        });
+    }
+
+    private function forgetAffectedTrailCaches(): void
+    {
+        $trailIds = match ($this->statusable_type) {
+            (new Trail)->getMorphClass() => [$this->statusable_id],
+            (new Mountain)->getMorphClass() => Trail::where('mountain_id', $this->statusable_id)->pluck('id')->all(),
+            (new TrailSegment)->getMorphClass() => TrailSegment::where('id', $this->statusable_id)->pluck('trail_id')->all(),
+            default => [],
+        };
+
+        foreach ($trailIds as $trailId) {
+            OfficialStatusService::forgetCachedSnapshot((int) $trailId);
+        }
+    }
+}

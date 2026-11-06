@@ -1,0 +1,222 @@
+name: Test
+
+# Gerbang mutu untuk setiap push dan pull request (spec v3 DK-54). Isinya sama dengan
+# ci.yml sebelum dipecah; workflow_call membuat deploy.yml dapat memanggil gerbang yang
+# sama tanpa menyalinnya. Mayor action dinaikkan ke versi Node 24 karena runner GitHub
+# melepas Node 20 pada 23 September 2026.
+
+on:
+  push:
+    branches: [main, develop, hardening]
+  pull_request:
+    branches: [main, develop]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Suite spasial membutuhkan PostGIS sungguhan. Tanpa service ini, seluruh kode
+    # geografi hanya dijalankan sebagai no-op di SQLite dan kesalahannya tidak akan
+    # pernah terlihat (PRD §66). Citra dan kredensial yang sama dipakai
+    # docker-compose.yml untuk paritas lokal (DK-55).
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: hiking
+          POSTGRES_PASSWORD: hiking
+          POSTGRES_DB: hiking_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hiking"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          # Disamakan dengan versi pengembangan; perbedaan minor PHP adalah sumber
+          # kegagalan yang hanya muncul di satu sisi.
+          php-version: '8.5'
+          extensions: mbstring, pdo, pdo_sqlite, pdo_pgsql, gd, exif
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # Manifest Vite tidak ada di repositori: /public/build di-gitignore. Enam view
+      # memakai @vite, jadi seluruh test yang merender halaman akan gagal dengan
+      # ViteException bila aset belum dibangun. Langkah ini sebelumnya berada di
+      # bawah test, sehingga urutannya sendiri yang membuat CI merah.
+      - name: Build assets
+        run: npm run build
+
+      # Vite membuang anotasi tipe tanpa memeriksanya, jadi galat tipe di halaman React
+      # lolos build. Langkah ini sesudah build karena rute bertipe Wayfinder
+      # dibangkitkan oleh build itu.
+      - name: Type check
+        run: npm run types
+
+      - name: Lint (Pint)
+        run: vendor/bin/pint --test
+
+      # Dipisah menjadi dua langkah, bukan satu perintah dengan dua opsi suite: opsi
+      # kedua menimpa yang pertama, bukan menambahnya. Perintah lama karena itu hanya
+      # menjalankan Feature, dan 104 test Unit tidak pernah dieksekusi CI sama sekali.
+      # Dipisah juga membuat kegagalan tiap suite terbaca sendiri-sendiri.
+      - name: Unit tests
+        run: php artisan test --testsuite=Unit --log-junit "$RUNNER_TEMP/unit-junit.xml"
+
+      - name: Feature tests
+        run: php artisan test --testsuite=Feature --log-junit "$RUNNER_TEMP/feature-junit.xml"
+
+      # Supabase punya peran PostgREST anon dan authenticated, dan memberi keduanya hak bawaan atas
+      # tabel baru di schema public; PostGIS biasa tidak punya keduanya. Peran dan hak bawaan itu
+      # dibuat di sini supaya migrasi penutupan PostgREST berjalan di jalur produksi dan
+      # PostgrestClosureTest membuktikan hasilnya (R-024).
+      - name: Siapkan peran Supabase
+        run: >-
+          php -r '$db = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=hiking_test", "hiking", "hiking");
+          foreach (["CREATE ROLE anon NOLOGIN", "CREATE ROLE authenticated NOLOGIN",
+          "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated",
+          "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated"]
+          as $sql) { $db->exec($sql); }'
+
+      # --fail-on-skipped (ruling W6-FI): DSN di bawah selalu diisi, jadi test Spatial yang
+      # dilewati berarti suite tidak benar-benar berjalan. CI tidak boleh hijau tanpa bukti
+      # PostgreSQL (R-024).
+      - name: Spatial tests (PostGIS)
+        env:
+          SPATIAL_TEST_DSN: pgsql://hiking:hiking@127.0.0.1:5432/hiking_test
+        run: php artisan test --testsuite=Spatial --fail-on-skipped --log-junit "$RUNNER_TEMP/spatial-junit.xml"
+
+      # Log job hanya terbaca admin repo; anotasi terbaca publik lewat API check-runs. Penyebab
+      # kegagalan ketiga suite diterbitkan sebagai anotasi supaya dapat diperiksa tanpa hak
+      # admin. Laporan suite yang tidak sempat berjalan dilewati skrip. Laporan ditulis di
+      # RUNNER_TEMP, bukan root repo, karena RepoHygieneTest menolak entri root tak terinventaris.
+      - name: Ringkas kegagalan test
+        if: failure()
+        run: python3 .github/scripts/junit_anotasi.py "$RUNNER_TEMP/unit-junit.xml" "$RUNNER_TEMP/feature-junit.xml" "$RUNNER_TEMP/spatial-junit.xml"
+
+  # Image produksi (Dockerfile, dipakai vercel.json) dibangun dan dijalankan terhadap PostGIS sungguhan, dengan urutan
+  # yang sama seperti di platform: migrasi berjalan sebagai langkah tersendiri (di produksi lewat workflow Migrasi
+  # Supabase, tidak pernah saat kontainer mulai), lalu /up dan halaman masuk harus menjawab 200, dan rute Vercel Cron
+  # menolak panggilan tanpa rahasia tetapi menjalankan tugasnya dengan rahasia. Mesin pengembangan tidak selalu punya
+  # Docker, jadi inilah bukti bahwa image dapat di-deploy.
+  image:
+    runs-on: ubuntu-latest
+
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: hiking
+          POSTGRES_PASSWORD: hiking
+          POSTGRES_DB: hiking_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hiking"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build image
+        run: docker build --tag memount:ci .
+
+      # Nilai acak sekali pakai untuk kontainer uji ini, disamarkan dari log publik.
+      - name: Siapkan variabel image
+        run: |
+          kunci="base64:$(openssl rand -base64 32)"
+          rahasia="$(openssl rand -hex 24)"
+          echo "::add-mask::$kunci"
+          echo "::add-mask::$rahasia"
+          {
+            echo "APP_KEY=$kunci"
+            echo "CRON_SECRET=$rahasia"
+          } >> "$GITHUB_ENV"
+
+      - name: Migrasi
+        run: |
+          docker run --rm --network host \
+            --env APP_ENV=production --env APP_KEY \
+            --env DB_CONNECTION=pgsql --env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test \
+            memount:ci php artisan migrate --force --no-interaction
+
+      - name: Jalankan image
+        run: |
+          # Tanpa PORT: image melayani port 80 sebagai www-data, persis seperti di Vercel.
+          docker run --detach --name memount --network host \
+            --env APP_ENV=production --env APP_DEBUG=false --env APP_KEY --env CRON_SECRET \
+            --env DB_CONNECTION=pgsql --env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test \
+            --env SESSION_DRIVER=database --env CACHE_STORE=database --env QUEUE_CONNECTION=sync \
+            --env LOG_CHANNEL=stderr --env TRUSTED_PROXIES='*' \
+            memount:ci
+          for percobaan in $(seq 1 90); do
+            curl --silent --fail --output /dev/null http://127.0.0.1/up && break
+            sleep 2
+          done
+          curl --silent --fail --output /dev/null http://127.0.0.1/up
+          curl --silent --fail --output /dev/null http://127.0.0.1/login
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1/api/cron/data-freshness-check)" = 401
+          curl --silent --fail --output /dev/null --header "Authorization: Bearer $CRON_SECRET" http://127.0.0.1/api/cron/data-freshness-check
+          test "$(docker inspect --format '{{.Config.User}}' memount)" = www-data
+          # Konfigurasi sudah di-cache start.sh: aset tetap https di produksi, dan host dari proxy tepercaya dipakai.
+          curl --silent --fail http://127.0.0.1/login | grep --quiet 'https://127.0.0.1/build/assets/'
+          curl --silent --fail --header 'X-Forwarded-Proto: https' --header 'X-Forwarded-Host: contoh.test' http://127.0.0.1/login | grep --quiet 'https://contoh.test/build/assets/'
+
+      # 13 Oktober 2026: variabel Vercel berisi APP_ENV=local dan APP_DEBUG=true tanpa TRUSTED_PROXIES, sehingga halaman
+      # galat memperlihatkan jejak dan header permintaan, rute pengembangan termuat, dan aset termuat lewat http. Image
+      # yang sama dijalankan dengan variabel keliru itu dan harus tetap berperilaku sebagai produksi (docker/start.sh).
+      - name: Jalankan image dengan variabel keliru
+        run: |
+          docker stop memount
+          docker run --detach --name memount-keliru --network host \
+            --env APP_ENV=local --env APP_DEBUG=true --env APP_KEY \
+            --env DB_CONNECTION=pgsql --env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test \
+            --env SESSION_DRIVER=database --env CACHE_STORE=database --env QUEUE_CONNECTION=sync \
+            memount:ci
+          for percobaan in $(seq 1 90); do
+            curl --silent --fail --output /dev/null http://127.0.0.1/up && break
+            sleep 2
+          done
+          test "$(curl --silent --output "$RUNNER_TEMP/galat-405.html" --write-out '%{http_code}' --request PUT http://127.0.0.1/login)" = 405
+          if grep --quiet 'MethodNotAllowedHttpException' "$RUNNER_TEMP/galat-405.html"; then
+            echo 'Halaman galat masih memperlihatkan jejak: mode debug menyala.' >&2
+            exit 1
+          fi
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1/dev/primitif)" = 404
+          curl --silent --fail --header 'X-Forwarded-Proto: https' --header 'X-Forwarded-Host: contoh.test' http://127.0.0.1/login | grep --quiet 'https://contoh.test/build/assets/'
+          docker logs memount-keliru 2>&1 | grep --quiet 'APP_ENV=local dan APP_DEBUG=true diabaikan'
+
+      - name: Log kontainer
+        if: always()
+        run: |
+          docker logs memount 2>&1 | tail -n 100
+          docker logs memount-keliru 2>&1 | tail -n 40

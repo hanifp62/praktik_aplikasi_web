@@ -1,0 +1,63 @@
+name: Deploy
+
+# Hanya dijalankan tangan. Workflow ini memverifikasi kandidat rilis lewat gerbang yang
+# sama dengan test.yml (build, tipe, Pint, Unit, Feature, Spatial di PostGIS), lalu
+# mengunggah hasil build Vite sebagai artefak.
+#
+# Langkah deploy sengaja belum ada. Target produksi Vercel sudah diputuskan (DK-12),
+# tetapi jalur teknisnya (container FrankenPHP atau runtime vercel-php) dan rahasia
+# penerapannya menunggu keputusan pemilik. Push, deploy, dan penambahan rahasia
+# repositori tetap butuh izin eksplisit pemilik (CLAUDE.md R-018, spec v3 DK-54).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifikasi:
+    uses: ./.github/workflows/test.yml
+
+  artefak-build:
+    needs: verifikasi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo, pdo_sqlite, pdo_pgsql, gd, exif
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # Rute bertipe Wayfinder dibangkitkan build ini lewat Artisan, jadi PHP dan
+      # vendor/ harus siap lebih dulu.
+      - name: Build assets
+        run: npm run build
+
+      - name: Unggah artefak build
+        uses: actions/upload-artifact@v6
+        with:
+          name: "build-${{ github.sha }}"
+          path: public/build
+          if-no-files-found: error
+          retention-days: 14
