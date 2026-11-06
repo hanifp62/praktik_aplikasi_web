@@ -22,10 +22,15 @@ Bagian 1–10 berasal dari 21 September 2026 dan akan ditulis ulang penuh di Tug
 - **Perbaikan.** Syarat PHP di `composer.json` menjadi `^8.5`, Symfony naik ke 8.1 (`http-kernel` v8.1.11), commonmark ke
   2.10.7. Laravel tetap 13.32.0, versi yang sudah ada di lockfile `0a5120d`.
   `CiWorkflowsTest::test_composer_cannot_resolve_dependencies_below_the_runtime_php_target` menjaganya.
+- **Sesudah merge.** PR #5 masuk `main` secara fast-forward di `a6c8f11`, CI dan deploy Vercel hijau (Spatial 54 lulus).
+  Branch protection aktif: `test`, `image`, `audit-dependensi`, dan `pemindai-rahasia` wajib lulus, force push dan
+  penghapusan `main` diblokir, tanpa syarat review, admin masih bisa melewatinya. Advisory baru akan menahan merge
+  sampai dependensinya diperbarui.
 - **Masih terbuka.**
-  - PR #4 di-merge dengan empat check gagal, dan `main` belum punya branch protection.
-  - `/api/mountains`, `/api/trails`, `/api/checkpoints`, dan `/sitemap.xml` masih 500 di produksi.
-  - Workflow "Migrasi Supabase" terakhir gagal 13 Oktober karena autentikasi kata sandi; `SUPABASE_DB_URL` perlu dicek.
+  - `/api/mountains`, `/api/trails`, `/api/checkpoints`, dan `/sitemap.xml` masih 500 di produksi. Konektor Vercel belum
+    diotorisasi dan Vercel CLI tidak terpasang, jadi log dan variabel Vercel hanya terbaca pemilik.
+  - Workflow "Migrasi Supabase" terakhir gagal 13 Oktober karena autentikasi kata sandi. `SUPABASE_DB_URL` terakhir
+    diubah 13 Oktober 02.07 UTC, dua menit sebelum run itu, jadi nilainya belum diperbaiki.
   - Mesin lokal tidak punya PostgreSQL. `database/demo.sqlite` diisi pemilik lewat `composer inspeksi:data`, bukan agen.
 
 ### 6 November 2026: pemetaan Job 6 ke Memount
