@@ -186,6 +186,26 @@ class CiWorkflowsTest extends TestCase
         $this->assertStringContainsString('php artisan test --filter=SecretsNotInRepoTest --fail-on-skipped', $perintah);
     }
 
+    /**
+     * Pembaruan dari PHP 8.3 pernah menurunkan 18 paket Symfony ke 7.4 dan memunculkan
+     * kembali advisory yang sudah tertutup, karena composer.json masih mengizinkan ^8.3.
+     */
+    public function test_composer_cannot_resolve_dependencies_below_the_runtime_php_target(): void
+    {
+        $composer = json_decode(File::get(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
+        $kunci = json_decode(File::get(base_path('composer.lock')), true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('^8.5', $composer['require']['php'], 'composer.json harus mengikuti target runtime PHP 8.5.');
+
+        $httpKernel = collect($kunci['packages'])->firstWhere('name', 'symfony/http-kernel');
+
+        $this->assertNotNull($httpKernel, 'symfony/http-kernel tidak ada di composer.lock.');
+        $this->assertTrue(
+            version_compare(ltrim($httpKernel['version'], 'v'), '8.0.0', '>='),
+            "composer.lock menurunkan symfony/http-kernel ke {$httpKernel['version']}."
+        );
+    }
+
     public function test_the_deploy_workflow_runs_only_by_hand_and_deploys_nothing_yet(): void
     {
         $alur = $this->alur('deploy.yml');
