@@ -4,13 +4,35 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 15 Oktober 2026 (bagian 0, blok paling atas: situs Vercel tampil dan aman sesudah `df49705`, tetapi
-belum terhubung ke Supabase sampai pemilik mengisi ulang variabel Vercel; W7 sampai W9 ditunda pemilik untuk evaluasi).
+Terakhir diperbarui: 6 November 2026 (bagian 0 memuat pemetaan Job 6 ke Memount dan hasil verifikasi terpilih;
+catatan deploy 15 Oktober tetap berada di bawahnya).
 Bagian 1–10 berasal dari 21 September 2026 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
 
 ## 0. Titik lanjut terkini (tonggak M1, 26 September 2026)
+
+### 6 November 2026: pemetaan Job 6 ke Memount
+
+Atas permintaan pemilik, brief Job 6 disesuaikan dengan domain project, bukan menambahkan
+Room/Booking. Kode yang diperiksa sudah mempunyai autentikasi, role `hiker`/`moderator`/`admin`,
+middleware route, policy kepemilikan trip, dan alur moderasi laporan. Dokumentasi pemetaan
+ditambahkan di `docs/Pertemuan06/` dan indeks `docs/README.md`.
+
+- Branch aktual saat pemeriksaan: `main`; remote `origin` menunjuk repo GitHub project.
+- PHP pengujian 8.5.12 dan Composer 2.9.2; Laravel 13.31.0. PHP 8.5 dipasang setelah izin
+  pemilik karena PHP awal 8.3.33 tidak memenuhi dependency lock.
+- `composer install --no-interaction --prefer-dist`, `npm ci --ignore-scripts`, dan
+  `npm run build` berhasil. Npm melaporkan satu temuan audit berkeparahan tinggi yang tidak
+  dianalisis atau diperbaiki pada tugas ini.
+- Empat kelompok test terkait lulus: Auth 30/154 assertion, route/admin 20/20, kepemilikan trip
+  8/21, moderasi 30/207. Total 88 test dan 402 assertion.
+- `TeamDocsIndexTest`: 10 test dan 96 assertion lulus untuk indeks dokumentasi.
+- `SecretsNotInRepoTest`: 20 test dan 35 assertion lulus untuk pemeriksaan rahasia.
+- Tidak ada source aplikasi, skema, data, atau manifest dependensi yang diubah. Tidak ada
+  migrasi atau akses Supabase. Uji browser dan tangkapan layar belum dilakukan.
+- Berikutnya, tinjau diff, pastikan artefak build dan konfigurasi runtime sementara tidak ikut
+  perubahan, kemudian commit dan push dokumentasi sesuai izin pemilik.
 
 **Arahan pemilik 26 September 2026 malam (verbatim), berlaku sampai W9 selesai:** "ya, selesaikan semuanya baru minta
 izin commit dan integrasi nya jika belum selesai semua jangan minta ke saya, jika anda meminta perizinan artinya semua

@@ -67,6 +67,7 @@ benar pada hari itu dan tidak ditulis ulang.
 | [job-3/](job-3/) | Job 3: scope canvas, sitemap, user flow pengguna dan admin, wireframe, prototype, dan usability walkthrough |
 | [Pertemuan04/](Pertemuan04/) | Pertemuan 04: design tokens, inventaris komponen, tangkapan UI, checklist test, dan keputusan implementasi |
 | [Pertemuan05/](Pertemuan05/) | Pertemuan 05: data model, migration dan model, seeder, CRUD jalur dan rencana trip, serta checklist test |
+| [Pertemuan06/](Pertemuan06/) | Pertemuan 06: autentikasi, matriks akses peran Memount, middleware, policy kepemilikan trip, moderasi laporan, dan checklist test |
 
 ## Arsip
 
