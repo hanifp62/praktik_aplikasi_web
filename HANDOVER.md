@@ -4,13 +4,29 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 6 November 2026 (bagian 0 memuat pemetaan Job 6 ke Memount dan hasil verifikasi terpilih;
-catatan deploy 15 Oktober tetap berada di bawahnya).
+Terakhir diperbarui: 6 November 2026 (bagian 0, blok paling atas: dependensi dipulihkan ke Symfony 8 lewat branch
+`fix/pulihkan-dependensi-php85`; pemetaan Job 6 dan catatan deploy 15 Oktober ada di bawahnya).
 Bagian 1–10 berasal dari 21 September 2026 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
 
 ## 0. Titik lanjut terkini (tonggak M1, 26 September 2026)
+
+### 6 November 2026: dependensi turun ke Symfony 7.4 dan workflow Security merah
+
+- **Cacat.** Commit `223d4fb` sampai `0a5120d` menurunkan 18 paket Symfony dari 8.1 ke 7.4 dan `league/commonmark` dari
+  2.10.3 ke 2.10.1. Commonmark 2.10.1 masuk rentang dua advisory, dan `symfony/http-kernel` v7.4.19 masuk rentang satu
+  advisory, jadi workflow Security tetap merah. Perubahan ini tayang di produksi lewat deploy `0a5120d`.
+- **Akar, dugaan.** `composer update` dijalankan di PHP 8.3: `composer.json` masih mengizinkan `^8.3`, dan Symfony 8
+  butuh PHP 8.4.1 ke atas.
+- **Perbaikan.** Syarat PHP di `composer.json` menjadi `^8.5`, Symfony naik ke 8.1 (`http-kernel` v8.1.11), commonmark ke
+  2.10.7. Laravel tetap 13.32.0, versi yang sudah ada di lockfile `0a5120d`.
+  `CiWorkflowsTest::test_composer_cannot_resolve_dependencies_below_the_runtime_php_target` menjaganya.
+- **Masih terbuka.**
+  - PR #4 di-merge dengan empat check gagal, dan `main` belum punya branch protection.
+  - `/api/mountains`, `/api/trails`, `/api/checkpoints`, dan `/sitemap.xml` masih 500 di produksi.
+  - Workflow "Migrasi Supabase" terakhir gagal 13 Oktober karena autentikasi kata sandi; `SUPABASE_DB_URL` perlu dicek.
+  - Mesin lokal tidak punya PostgreSQL. `database/demo.sqlite` diisi pemilik lewat `composer inspeksi:data`, bukan agen.
 
 ### 6 November 2026: pemetaan Job 6 ke Memount
 
