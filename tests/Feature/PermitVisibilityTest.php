@@ -11,6 +11,7 @@ use App\Models\HikingGoal;
 use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\TripPlan;
+use App\Models\TripPreparationItem;
 use App\Models\User;
 use App\Services\PreparationService;
 use App\Services\RouteFitService;
@@ -93,7 +94,7 @@ class PermitVisibilityTest extends TestCase
         $trip = $this->tripFor($trail);
         app(PreparationService::class)->generateFor($trip);
 
-        $item = $trip->preparationItems()->where('label', 'Booking izin pendakian (SIMAKSI)')->first();
+        $item = $trip->preparationItems()->where('kind', TripPreparationItem::JENIS_IZIN)->first();
 
         $this->assertNotNull($item, 'Checklist harus memuat item perizinan.');
         $this->assertTrue($item->is_critical, 'Izin tidak dapat diurus di basecamp pada hari keberangkatan.');
@@ -110,7 +111,7 @@ class PermitVisibilityTest extends TestCase
         app(PreparationService::class)->generateFor($trip);
 
         $this->assertNull(
-            $trip->preparationItems()->where('label', 'Booking izin pendakian (SIMAKSI)')->first()
+            $trip->preparationItems()->where('kind', TripPreparationItem::JENIS_IZIN)->first()
         );
     }
 
@@ -124,14 +125,14 @@ class PermitVisibilityTest extends TestCase
 
         $service->generateFor($trip);
         $trip->preparationItems()
-            ->where('label', 'Booking izin pendakian (SIMAKSI)')
+            ->where('kind', TripPreparationItem::JENIS_IZIN)
             ->update(['status' => PreparationStatus::CONFIRMED->value]);
 
         $service->generateFor($trip->fresh());
 
         $this->assertSame(
             PreparationStatus::CONFIRMED,
-            $trip->preparationItems()->where('label', 'Booking izin pendakian (SIMAKSI)')->first()->status
+            $trip->preparationItems()->where('kind', TripPreparationItem::JENIS_IZIN)->first()->status
         );
     }
 

@@ -18,6 +18,7 @@ use App\Models\ReadinessCheck;
 use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\TripPlan;
+use App\Models\TripPreparationItem;
 use App\Models\User;
 use App\Models\WeatherSnapshot;
 use App\Services\PreparationService;
@@ -636,7 +637,8 @@ class ReadinessDashboardTest extends TestCase
             $trip = $this->trip();
             $trip->update(['planned_date' => $tanggal]);
             PermitRequirement::factory()->create(['trail_id' => $trip->trail_id, 'authority' => 'Balai Uji', 'booking_url' => 'https://izin.example.test', 'booking_opens_days_before' => 30, 'booking_closes_days_before' => 3]);
-            $trip->preparationItems()->create(['category' => PreparationCategory::LOGISTICS->value, 'label' => PreparationService::PERMIT_LABEL, 'is_critical' => true, 'status' => PreparationStatus::NOT_CONFIRMED->value]);
+            // Kunci stabil butir izin (W8-R24): ditulis lewat forceFill karena kind bukan fillable.
+            $trip->preparationItems()->make(['category' => PreparationCategory::LOGISTICS->value, 'label' => PreparationService::PERMIT_LABEL, 'is_critical' => true, 'status' => PreparationStatus::NOT_CONFIRMED->value])->forceFill(['kind' => TripPreparationItem::JENIS_IZIN])->save();
 
             return collect($this->actingAs($trip->user)->get(route('trips.readiness', $trip))->viewData('page')['props']['persiapan']['butir'])->firstWhere('label', PreparationService::PERMIT_LABEL);
         };
@@ -753,8 +755,8 @@ class ReadinessDashboardTest extends TestCase
         $tutup->trail->officialStatuses()->update(['status' => OfficialStatusValue::CLOSED->value]);
         $alasan = $this->actingAs($tutup->user)->get(route('trips.readiness', $tutup))->viewData('page')['props']['keadaan']['alasan'];
 
-        $this->assertContains('Status resmi jalur ini tercatat TUTUP.', $alasan);
-        $this->assertNotContains('Jalur tidak tersedia karena status resmi TUTUP.', $alasan);
+        $this->assertContains('Status resmi jalur ini tercatat Tutup.', $alasan);
+        $this->assertNotContains('Jalur tidak tersedia karena status resminya Tutup.', $alasan);
     }
 
     /**
@@ -867,7 +869,8 @@ class ReadinessDashboardTest extends TestCase
     /**
      * NOT_RECOMMENDED tetap memakai kalimat "rencana ini tidak disarankan" -- kelas
      * penolakan yang berbeda dari status trip, karena penyebabnya memang penilaian
-     * kesiapan rencananya, bukan status administratif trip itu.
+     * kesiapan rencananya, bukan status administratif trip itu. Sejak W9 statusnya ditulis
+     * dengan kata lencananya, "Tutup", bukan nilai mesin "TUTUP" (ruling W4-C3).
      */
     public function test_a_not_recommended_plan_names_the_plan_not_the_status(): void
     {
@@ -879,7 +882,7 @@ class ReadinessDashboardTest extends TestCase
         $this->assertSame('NOT_RECOMMENDED', $props['keadaan']['nilai']);
         $this->assertFalse($props['bolehKonfirmasi']);
         $this->assertStringStartsWith('Tinjauan tidak dapat dicatat karena rencana ini tidak disarankan.', $props['alasanTanpaTinjauan']);
-        $this->assertStringContainsString('TUTUP', $props['alasanTanpaTinjauan']);
+        $this->assertStringContainsString('tercatat Tutup', $props['alasanTanpaTinjauan']);
     }
 
     /**

@@ -217,7 +217,7 @@ class TripSteps
             return null;
         }
 
-        return sprintf('%s; %d butir cuaca menunggu BMKG, terbit mulai %s', self::teksPersiapan($persiapan), $menunggu, $terbit->translatedFormat('D, j M'));
+        return sprintf('%s; %d butir cuaca menunggu BMKG, terbit mulai %s', self::teksPersiapan($persiapan), $menunggu, Timezone::tanggalPendek($terbit, denganHari: true));
     }
 
     /**

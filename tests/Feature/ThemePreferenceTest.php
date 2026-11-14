@@ -145,7 +145,8 @@ class ThemePreferenceTest extends TestCase
             '/router\.post\(simpan\.url\(\), \{ tema: nilai \}, \{[^}]*onSuccess: \(\) => window\.terapkanTema\(\),/s',
             $pemilih,
         );
-        $this->assertStringContainsString('<ThemePicker />', File::get(resource_path('js/pages/Profile/Edit.tsx')));
+        $this->assertStringContainsString('<TampilanProfil />', File::get(resource_path('js/pages/Profile/Edit.tsx')));
+        $this->assertStringContainsString('<ThemePicker />', File::get(resource_path('js/components/profil/TampilanProfil.tsx')));
         $this->assertStringContainsString('<ThemePicker compact />', File::get(resource_path('js/pages/Welcome.tsx')));
     }
 }

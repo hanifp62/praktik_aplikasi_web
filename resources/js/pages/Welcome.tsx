@@ -1,11 +1,28 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Lockup } from '@/components/brand/Lockup';
-import { JudulHalaman } from '@/components/ui/JudulHalaman';
 import { Button } from '@/components/ui/Button';
+import { JudulHalaman } from '@/components/ui/JudulHalaman';
 import { ThemePicker } from '@/components/ui/ThemePicker';
+import { fokusTerlihat } from '@/components/ui/gaya';
+import { kelas } from '@/lib/kelas';
 import { dashboard, login, register } from '@/routes';
 import { index as trailsIndex } from '@/routes/trails';
 import type { PropsBersama } from '@/types';
+
+type ContohJalurPublik = {
+    slug: string;
+    nama: string;
+    gunung: string;
+    provinsi: string;
+    jarakKm: string | null;
+    tanjakanM: string | null;
+    durasi: string | null;
+    url: string;
+};
+
+type WelcomeProps = PropsBersama & {
+    contohJalur?: ContohJalurPublik[];
+};
 
 const langkah = [
     ['Ceritakan pengalaman Anda', 'Berapa kali mendaki, medan apa saja yang pernah dilalui, seberapa jauh kemampuan navigasi Anda.'],
@@ -14,12 +31,11 @@ const langkah = [
 ] as const;
 
 /**
- * Halaman depan: satu pertanyaan per layar. Apa ini, bagaimana cara kerjanya, dari
- * mana datanya. Meta description dirender server dari prop halaman ini; judul tab
- * dipasang JudulHalaman supaya klien tidak menimpanya dengan nama merek saja.
+ * Halaman depan: satu pertanyaan per layar. Apa ini, contoh jalur terbit yang dapat
+ * dibaca tanpa masuk, bagaimana cara kerjanya, dan dari mana datanya.
  */
 export default function Welcome() {
-    const { auth, merek } = usePage<PropsBersama>().props;
+    const { auth, merek, contohJalur = [] } = usePage<WelcomeProps>().props;
 
     return (
         <div className="min-h-dvh bg-canvas">
@@ -60,6 +76,58 @@ export default function Welcome() {
                     </div>
                     <p className="mt-4 text-sm text-secondary">Membuat profil memakan waktu beberapa menit dan menentukan seluruh rekomendasi berikutnya.</p>
                 </section>
+
+                {contohJalur.length > 0 ? (
+                    <section className="border-t border-subtle bg-surface">
+                        <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+                            <div className="max-w-2xl">
+                                <h2 className="text-xl font-semibold text-primary">Contoh jalur terbit</h2>
+                                <p className="mt-2 text-sm text-secondary">
+                                    Ringkasan tetap jalur yang sudah lolos gerbang publikasi. Halaman publik sengaja tidak memuat status resmi
+                                    atau prakiraan cuaca supaya salinan mesin pencari tidak menyajikan keadaan lama sebagai keadaan hari ini.
+                                </p>
+                            </div>
+                            <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {contohJalur.map((jalur) => {
+                                    const angka = [
+                                        jalur.jarakKm,
+                                        jalur.tanjakanM ? `tanjakan ${jalur.tanjakanM}` : null,
+                                        jalur.durasi,
+                                    ].filter((nilai): nilai is string => nilai !== null);
+
+                                    return (
+                                        <li key={jalur.slug} className="flex">
+                                            <Link
+                                                href={jalur.url}
+                                                className={kelas(
+                                                    'flex min-h-11 w-full flex-col justify-between rounded-kartu border border-subtle bg-canvas p-4 transition-colors hover:border-control',
+                                                    fokusTerlihat,
+                                                )}
+                                            >
+                                                <div>
+                                                    <p className="text-kecil text-secondary">
+                                                        {jalur.gunung}{jalur.provinsi ? `, ${jalur.provinsi}` : ''}
+                                                    </p>
+                                                    <h3 className="mt-1 text-subjudul font-semibold text-primary">{jalur.nama}</h3>
+                                                </div>
+                                                <div className="mt-4 border-t border-subtle pt-3">
+                                                    {angka.length > 0 ? (
+                                                        <p data-angka="" className="text-kecil text-secondary">
+                                                            {angka.join(' · ')}
+                                                        </p>
+                                                    ) : (
+                                                        <p className="text-kecil text-muted">Ringkasan angka sedang dilengkapi</p>
+                                                    )}
+                                                    <p className="mt-2 text-kecil font-semibold text-brand-ink">Baca ringkasan jalur</p>
+                                                </div>
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    </section>
+                ) : null}
 
                 <section className="border-t border-subtle bg-surface-sunken">
                     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">

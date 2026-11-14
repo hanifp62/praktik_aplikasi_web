@@ -93,10 +93,10 @@ class KeyboardAndScreenReaderTest extends TestCase
                 continue;
             }
 
-            // Hanya halaman aplikasi. Manifest, service worker, sitemap, dan endpoint
-            // kesehatan bukan halaman dan tidak punya navigasi untuk dilewati.
+            // Hanya halaman aplikasi. Manifest, service worker, sitemap, robots.txt, dan
+            // endpoint kesehatan bukan halaman dan tidak punya navigasi untuk dilewati.
             if (! in_array('web', $rute->gatherMiddleware(), true)
-                || preg_match('/^(sitemap\.xml|sw\.js|manifest|up$|logout)/', $rute->uri())) {
+                || preg_match('/^(sitemap\.xml|robots\.txt|sw\.js|manifest|up$|logout|profile\/foto$)/', $rute->uri())) {
                 continue;
             }
 

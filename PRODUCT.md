@@ -22,7 +22,7 @@ Tiga peran lain yang nyata dan sudah berjalan di sistem:
 ## Product Purpose
 
 Membantu pendaki memilih jalur yang sesuai dengan pengalaman yang benar-benar ia miliki,
-lalu bersiap sampai benar-benar layak berangkat.
+lalu bersiap sampai jelas apa yang masih kurang sebelum berangkat.
 
 Ukuran keberhasilannya sudah ditetapkan PRD §63 dan tidak diubah: bagian rencana yang
 sampai ke pre-departure check, bukan jumlah pengguna terdaftar.
@@ -192,8 +192,8 @@ kondisi terbaru, dan celah persiapan.
 **Traveloka — kemudahan memutuskan.** Mekanisme: pencarian, filter, penyimpanan,
 perbandingan, penyempitan pilihan, menunda komitmen tanpa kehilangan kandidat. Efek yang
 dituju: *"Saya dapat mempersempit pilihan, menyimpan kandidat, membandingkan, lalu
-memutuskan."* Adaptasinya: permukaan Pertimbangkan, shortlist, perbandingan maksimum
-lima, berbagi read-only, dan membuat trip dari jalur terpilih.
+memutuskan."* Adaptasinya: Simpanan dengan catatan pribadi, perbandingan maksimal tiga
+jalur (DK-05), tautan bagikan read-only, dan membuat trip dari jalur terpilih.
 
 **Strava — kesinambungan dan kemajuan pribadi.** Mekanisme: siklus hidup aktivitas,
 riwayat, perbandingan dengan diri sendiri, penemuan rute, komunitas, alasan untuk

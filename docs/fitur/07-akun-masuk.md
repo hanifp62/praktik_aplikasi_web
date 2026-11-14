@@ -2,7 +2,7 @@
 
 **FR utama:** FR-01 Autentikasi (§20), FR-02 Profil pendaki (§21), FR-26 Verifikasi kode multi-kanal (§151). Tujuan pendakian (FR-03) dicatat di spesifikasi 04 sesuai tabel FR di PRD.
 **Bahan:** features/07-akun-masuk.md dari NgodingPakeAI (keluaran alat di root, diabaikan git), `docs/PRD.md`, spec v3 bagian 6.15 dan 6.16.
-**Diperiksa terhadap kode:** 26 September 2026, setelah gelombang W0. Status adalah FAKTA dari berkas yang disebut (R-023).
+**Diperiksa terhadap kode:** 8 Oktober 2026 untuk baris yang disentuh W7; selebihnya 26 September 2026, setelah gelombang W0. Status adalah FAKTA dari berkas yang disebut (R-023).
 
 ## Tujuan dan pertanyaan pengguna
 
@@ -43,9 +43,10 @@ Satu akun menyimpan pilihan, rencana, dan riwayat pendaki, dan hanya pemiliknya 
 |---|---|---|
 | `users` | `name`, `email`, `email_verified_at`, `password`, `role` | `create_users_table`, `add_role_to_users_table` |
 | `password_reset_tokens`, `sessions` | token atur ulang; sesi | `create_users_table` |
-| `profiles` | `experience_level`, `region_preference`, `bio`, `avatar_path`, `completed_at` | `create_profiles_table` |
+| `profiles` | `experience_level`, `region_preference`, `bio`, `avatar_path` (foto profil W7; berkasnya di disk `avatars_disk`), `completed_at` | `create_profiles_table` |
 | `user_experience` | `completed_hikes_count`, `terrain_experience`, `navigation_experience`, `longest_hike_duration_minutes`, `highest_elevation_gain_m`, `notes` | `create_user_experience_table` |
-| `user_preferences` | `preferred_duration`, `preferred_trip_type`, `preferred_challenge`, `max_elevation_gain_preference_m`, `region_preference`, `record_track` | `create_user_preferences_table`, `add_track_recording_preference` |
+| `user_preferences` | `preferred_duration`, `preferred_trip_type`, `preferred_challenge`, `max_elevation_gain_preference_m`, `region_preference`, `interest_regions` (DK-42), `record_track` | `create_user_preferences_table`, `add_track_recording_preference`, `add_interest_regions_to_user_preferences_table` |
+| `user_owned_items` | `user_id`, `name`; unik per pendaki tanpa memandang huruf besar; RLS di PostgreSQL | `create_user_owned_items_table` (rintisan), `complete_user_owned_items_table` |
 | Cookie peramban | tema dan tampilan (bukan basis data) | `app/Support/ThemePreference.php`, `app/Support/DisplayPreference.php` |
 
 ## State
@@ -63,7 +64,10 @@ Satu akun menyimpan pilihan, rencana, dan riwayat pendaki, dan hanya pemiliknya 
 |---|---|---|
 | Daftar akun | Ada, tanpa akun Google | `app/Http/Controllers/Auth/RegisteredUserController.php`, `app/Http/Requests/Auth/RegisterRequest.php`, `app/Support/PetunjukKataSandi.php`, `resources/js/pages/Auth/Register.tsx`, `tests/Feature/Auth/RegistrationTest.php`; masuk dengan Google belum ada (K10) |
 | Masuk dan keluar | Ada | `app/Http/Controllers/Auth/AuthenticatedSessionController.php`, `app/Http/Requests/Auth/LoginRequest.php`, `app/Actions/Logout.php`, `resources/js/pages/Auth/Login.tsx`, `tests/Feature/Auth/AuthenticationTest.php` |
-| Profil dan preferensi | Ada | `app/Http/Controllers/Onboarding/ProfileSetupController.php`, `app/Http/Requests/StoreProfileSetupRequest.php`, `resources/js/pages/Onboarding/ProfileSetup.tsx`, `app/Http/Controllers/Profile/ProfileController.php`, `resources/js/pages/Profile/Edit.tsx`, `resources/js/components/akun/`, `tests/Feature/ProfileTest.php`; onboarding tiga langkah dengan turunan medan dan navigasi menyusul W7 (DK-41) |
+| Profil dan preferensi | Ada | `app/Http/Controllers/Onboarding/ProfileSetupController.php`, `app/Http/Requests/StoreProfileSetupRequest.php`, `resources/js/pages/Onboarding/ProfileSetup.tsx`, `app/Http/Controllers/Profile/ProfileController.php`, `resources/js/pages/Profile/Edit.tsx`, `resources/js/components/akun/`, `resources/js/components/profil/`, `resources/js/components/onboarding/`, `app/Services/Profil/HalamanProfil.php`, `app/Services/Profil/TurunanPengalaman.php`, `tests/Feature/ProfileTest.php`, `tests/Feature/OnboardingDerivationTest.php`, `tests/Feature/InterestRegionTest.php`; onboarding tiga langkah dengan turunan medan dan navigasi (W7, DK-41) |
+| Foto profil | Ada (W7) | `app/Http/Controllers/Profile/ProfilePhotoController.php`, `app/Services/Profil/FotoProfil.php`, `app/Http/Requests/Profile/UpdateProfilePhotoRequest.php`, `tests/Feature/ProfilePhotoTest.php` |
+| Perlengkapan pribadi | Ada (W7) | `app/Http/Controllers/Profile/OwnedItemController.php`, `app/Policies/UserOwnedItemPolicy.php`, `resources/js/components/profil/PerlengkapanPribadi.tsx`, `tests/Feature/OwnedEquipmentTest.php` |
+| Hapus semua jejak | Ada (W7) | `app/Http/Controllers/Profile/TrackDataController.php`, `app/Services/AccountDeletionService.php`, `resources/js/components/profil/DataLokasi.tsx`, `tests/Feature/PersonalDataDeletionTest.php` |
 | Keamanan kata sandi | Ada | `app/Http/Controllers/Auth/PasswordResetLinkController.php`, `app/Http/Controllers/Auth/NewPasswordController.php`, `ProfileController::password`, `tests/Feature/Auth/PasswordResetTest.php`, `tests/Feature/Auth/PasswordUpdateTest.php` |
 | Hapus akun | Ada | `ProfileController::destroy`, `app/Http/Requests/Profile/DestroyAccountRequest.php`, `resources/js/components/akun/HapusAkun.tsx`, migrasi `anonymise_reports_on_user_delete` |
 | Tema dan tampilan | Ada | `app/Http/Controllers/ThemePreferenceController.php`, `app/Http/Controllers/DisplayPreferenceController.php`, `tests/Feature/ThemePreferenceTest.php`, `tests/Feature/DisplayPreferenceTest.php` |
@@ -90,5 +94,6 @@ Satu akun menyimpan pilihan, rencana, dan riwayat pendaki, dan hanya pemiliknya 
 ## Keputusan dan konflik terkait
 
 - **DK-08** verifikasi kode multi-kanal; **DK-17** mode gelap; **DK-20** bahasa Indonesia utama, Inggris menyusul; **DK-40** pilihan bahasa disembunyikan; **DK-41** onboarding menurunkan pengalaman medan dan navigasi (W7); **DK-42** wilayah minat di preferensi (W7).
+- **Ruling W7:** W7-R8 perlengkapan pribadi mengisi awal persiapan; onboarding menyimpan satu jenis trip (enum Route Fit) walau prototype 00 memungkinkan beberapa; tautan kebijakan data pribadi di Profil menunggu halaman publiknya.
 - **K10** masuk dengan Google mengikuti DK-07 dan DK-08; **K29** Indonesia sebagai bahasa sumber; **K30** mode gelap ditutup dengan bawaan ikuti sistem.
 - **Menunggu pemilik:** spec v2 P4 (penyedia kode dan data nomor telepon), spec v3 bagian 15 Q5 (jawaban lupa kata sandi, verifikasi email, 404 atau 403 untuk IDOR).

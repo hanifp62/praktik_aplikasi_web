@@ -148,11 +148,15 @@ export function LembarBawah({ terbuka, onTutup, judul, keterangan, aksi, pemicu,
     );
 }
 
+interface DialogProps extends Omit<LapisanProps, 'children'> {
+    children?: ReactNode;
+}
+
 /**
  * Dialog tengah untuk keputusan singkat, misalnya konfirmasi yang menyebut akibatnya. Tanpa
  * aksi dari pemanggil, kakinya berisi tombol Tutup.
  */
-export function Dialog({ terbuka, onTutup, judul, keterangan, aksi, pemicu, children }: LapisanProps) {
+export function Dialog({ terbuka, onTutup, judul, keterangan, aksi, pemicu, children }: DialogProps) {
     const ref = useDialogAsli(terbuka, onTutup, pemicu);
     const id = useId();
 
@@ -174,7 +178,7 @@ export function Dialog({ terbuka, onTutup, judul, keterangan, aksi, pemicu, chil
                     </p>
                 ) : null}
             </div>
-            <div className="px-5 py-4">{children}</div>
+            {children !== undefined && children !== null ? <div className="px-5 py-4">{children}</div> : <div className="pt-4" />}
             <div className="flex flex-wrap justify-end gap-2 border-t border-subtle px-5 py-3">
                 {aksi ?? (
                     <Button variant="secondary" onClick={() => ref.current?.close()}>

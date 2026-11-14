@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  */
 final class TenggatIzin
 {
-    private const FORMAT_TANGGAL = 'l, d M Y';
+    private const FORMAT_TANGGAL = 'l, j M Y';
 
     public function __construct(private readonly PermitService $izin) {}
 

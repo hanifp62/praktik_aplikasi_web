@@ -99,7 +99,7 @@ class RecommendationResult extends Model
                 : null,
             'technical_demand' => $angka['technical_demand'] ?? null,
             'navigation_complexity' => $angka['navigation_complexity'] ?? null,
-            'camping_available' => (bool) ($angka['camping_available'] ?? false),
+            'camping_available' => isset($angka['camping_available']) ? (bool) $angka['camping_available'] : null,
             'terrain_character' => $medan,
         ];
     }

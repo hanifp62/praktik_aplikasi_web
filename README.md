@@ -30,9 +30,10 @@ dinyatakan "belum diketahui", tidak pernah ditebak.
 
 | Lapisan | Teknologi (versi terpasang) |
 |---|---|
-| Server | Laravel 13.31, PHP 8.5 |
+| Server | Laravel 13.32, PHP 8.5 |
 | Antarmuka | React 19.3 lewat Inertia 3 (satu aplikasi, tanpa API terpisah), TypeScript 5.9 |
 | Gaya | Tailwind CSS 4.3 (konfigurasi CSS-first di `resources/css/app.css`, plugin Vite) dengan token warna CSS variable, tema terang dan gelap |
+| Sistem desain | Token di `resources/css/app.css`, primitif React di `resources/js/components/ui/`, huruf Plus Jakarta Sans dihosting sendiri di `public/fonts/`, ikon Phosphor tersalin di registri `resources/js/components/ui/ikon/`; arah di `DESIGN.md`, pratinjau tanpa basis data di `tests/Pratinjau` (`CONTRIBUTING.md`) |
 | Rute bertipe | Laravel Wayfinder (dibangkitkan saat build, tidak dilacak git) |
 | Peta | MapLibre GL 6.14, dimuat hanya di halaman yang menggambar peta |
 | Basis data | PostgreSQL + PostGIS (produksi di Supabase); test berjalan di SQLite in-memory |
@@ -158,47 +159,12 @@ Langkah pemilik, sekali saja:
    Lakukan sebelum langkah 3, karena kode di `main` membutuhkan skema terbaru.
 3. **Vercel.** Masuk dengan akun GitHub (paket Hobby), pilih Add New > Project, impor repo ini, dan biarkan pengaturan
    build bawaan karena `vercel.json` yang mengaturnya. Di Environment Variables, pilih environment **Production** saja,
-   tempel blok di bawah sekaligus, lalu isi nilai yang kosong. Salin blok lewat tombol salin di tampilan GitHub; bila
-   disalin dari berkas mentah, hapus spasi di awal tiap baris, karena nama variabel hanya boleh berisi huruf, angka,
-   dan garis bawah. `APP_KEY` dibuat dengan
+   tempel blok variabel produksi di bawah daftar ini sekaligus, lalu isi nilai yang kosong. `APP_KEY` dibuat dengan
    `php -r "echo 'base64:'.base64_encode(random_bytes(32)), PHP_EOL;"`, sedangkan `DEVICE_KEY_SECRET` dan
    `CRON_SECRET` masing-masing dengan `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. Nilai rahasia hanya diisi
    di dashboard, tidak pernah ditulis di repo.
-
-   ```
-   APP_NAME=Memount
-   APP_ENV=production
-   APP_DEBUG=false
-   APP_DEMO=false
-   APP_URL=https://<nama-proyek>.vercel.app
-   APP_KEY=
-   DB_CONNECTION=pgsql
-   DB_URL=
-   SESSION_DRIVER=database
-   SESSION_SECURE_COOKIE=true
-   CACHE_STORE=database
-   QUEUE_CONNECTION=sync
-   MAIL_MAILER=log
-   BROADCAST_CONNECTION=null
-   LOG_CHANNEL=stderr
-   LOG_LEVEL=info
-   TRUSTED_PROXIES=*
-   FILESYSTEM_DISK=local
-   REPORT_PHOTOS_DISK=supabase
-   SUPABASE_STORAGE_ENDPOINT=
-   SUPABASE_STORAGE_REGION=ap-southeast-1
-   SUPABASE_STORAGE_BUCKET=
-   SUPABASE_STORAGE_KEY=
-   SUPABASE_STORAGE_SECRET=
-   DEVICE_KEY_SECRET=
-   CRON_SECRET=
-   PENJADWAL_HANYA_HARIAN=true
-   FIELD_PACK_ENABLED=true
-   FIELD_SAFETY_ENABLED=true
-   ```
-
 4. **Periksa sebelum membagikan** (PRD §154, K27):
-   1. `https://<nama-proyek>.vercel.app/up` menjawab, juga dari peramban yang tidak masuk ke akun Vercel.
+   1. `https://<nama-proyek>.vercel.app/up` dan `https://<nama-proyek>.vercel.app/api/health` menjawab 200, juga dari peramban yang tidak masuk ke akun Vercel.
    2. Settings > Functions menunjukkan region Singapore, dan Settings > Cron Jobs menampilkan tujuh jadwal.
    3. Daftar akun baru, isi profil awal, lalu kirim satu formulir. Ini membuktikan sesi, token CSRF, dan header Inertia
       bertahan melewati Vercel.
@@ -210,6 +176,40 @@ Langkah pemilik, sekali saja:
       periksa `CRON_SECRET`. Halaman Kesehatan Sistem (admin) ikut mencatat jalannya.
 5. **Bagikan alamatnya.** Anggota tim mendaftar sendiri; menaikkan peran ke moderator atau admin butuh persetujuan
    pemilik.
+
+Blok variabel lingkungan produksi Vercel (rata kiri tanpa spasi awal agar penyalinan langsung ke dashboard Vercel tidak mengubah nama variabel):
+
+```
+APP_NAME=Memount
+APP_ENV=production
+APP_DEBUG=false
+APP_DEMO=false
+APP_URL=https://<nama-proyek>.vercel.app
+APP_KEY=
+DB_CONNECTION=pgsql
+DB_URL=
+SESSION_DRIVER=database
+SESSION_SECURE_COOKIE=true
+CACHE_STORE=database
+QUEUE_CONNECTION=sync
+MAIL_MAILER=log
+BROADCAST_CONNECTION=null
+LOG_CHANNEL=stderr
+LOG_LEVEL=info
+TRUSTED_PROXIES=*
+FILESYSTEM_DISK=local
+REPORT_PHOTOS_DISK=supabase
+SUPABASE_STORAGE_ENDPOINT=
+SUPABASE_STORAGE_REGION=ap-southeast-1
+SUPABASE_STORAGE_BUCKET=
+SUPABASE_STORAGE_KEY=
+SUPABASE_STORAGE_SECRET=
+DEVICE_KEY_SECRET=
+CRON_SECRET=
+PENJADWAL_HANYA_HARIAN=true
+FIELD_PACK_ENABLED=true
+FIELD_SAFETY_ENABLED=true
+```
 
 ## Peta repo
 
@@ -241,6 +241,8 @@ bagian "Cara memakai dokumen ini":
 - [`DESIGN.md`](DESIGN.md): arah desain; wajib sebelum pekerjaan antarmuka.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): cara mengubah sesuatu tanpa merusak yang lain.
 - [`SECURITY.md`](SECURITY.md): pelaporan kerentanan dan kebijakan rahasia.
+- [`docs/RUNBOOK-OPERASI.md`](docs/RUNBOOK-OPERASI.md): runbook operasi dan pemulihan insiden penjadwal, cuaca, status resmi, dan skema.
+- [`docs/audit/`](docs/audit/): audit antislop, keamanan, aksesibilitas, dan daftar periksa klik-lewat beserta buktinya.
 
 ## Aturan yang tidak boleh dilanggar
 

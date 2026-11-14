@@ -86,7 +86,7 @@ class VercelConfigTest extends TestCase
             $diperiksa++;
         }
 
-        $this->assertSame(2, $diperiksa, 'Cuaca dan kesegaran data seharusnya berjam tetap.');
+        $this->assertSame(3, $diperiksa, 'Cuaca, kesegaran data, dan pemangkasan tautan seharusnya berjam tetap.');
     }
 
     /**

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\OfficialStatusValue;
 use App\Models\Trail;
 use App\Services\RouteFit\FactorScore;
 
@@ -17,11 +16,11 @@ class RecommendationExplanationService
      * @param  array<int, string>  $warnings
      * @return array<string, array<int, string>>
      */
-    public function build(Trail $trail, array $factors, array $warnings, OfficialStatusValue $status): array
+    public function build(Trail $trail, array $factors, array $warnings): array
     {
         return [
             'why_it_fits' => $this->whyItFits($factors),
-            'what_to_watch' => $this->whatToWatch($trail, $factors, $warnings, $status),
+            'what_to_watch' => $this->whatToWatch($trail, $factors, $warnings),
             'preparation_gap' => $this->preparationGap($trail, $factors),
         ];
     }
@@ -54,7 +53,7 @@ class RecommendationExplanationService
      * @param  array<int, string>  $warnings
      * @return array<int, string>
      */
-    private function whatToWatch(Trail $trail, array $factors, array $warnings, OfficialStatusValue $status): array
+    private function whatToWatch(Trail $trail, array $factors, array $warnings): array
     {
         $lines = $warnings;
 
@@ -70,14 +69,6 @@ class RecommendationExplanationService
             if (! $factor->isUnknown && $factor->isWeak()) {
                 $lines[] = $factor->detail;
             }
-        }
-
-        if ($status === OfficialStatusValue::UNKNOWN) {
-            $lines[] = 'Status resmi jalur ini belum diketahui. Periksa ke pengelola sebelum berangkat.';
-        }
-
-        if ($status === OfficialStatusValue::RESTRICTED) {
-            $lines[] = 'Status resmi jalur ini sedang dibatasi. Periksa ketentuan yang berlaku.';
         }
 
         if (($trail->elevation_gain_m ?? 0) >= 1200) {

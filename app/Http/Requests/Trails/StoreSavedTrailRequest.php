@@ -12,7 +12,8 @@ use Illuminate\Foundation\Http\FormRequest;
  * Hanya `catatan` yang dibaca. Jalur datang dari rute dan pemilik dari sesi, jadi `user_id`
  * atau `trail_id` di badan permintaan tidak pernah sampai ke basis data. Catatan boleh
  * kosong (simpan biasa, atau jalur yang memang tidak bercatatan) dan dibatasi seperti
- * catatan biasa.
+ * catatan biasa. `dengan_toast` hanya memberi tahu bahwa klien akan menampilkan toast Urungkan,
+ * supaya halaman tidak mengumumkan kejadian yang sama untuk kedua kalinya (W9).
  */
 class StoreSavedTrailRequest extends FormRequest
 {
@@ -28,6 +29,7 @@ class StoreSavedTrailRequest extends FormRequest
     {
         return [
             'catatan' => ['nullable', 'string', 'max:'.TrailConsideration::CATATAN_MAKS],
+            'dengan_toast' => ['sometimes', 'boolean'],
         ];
     }
 

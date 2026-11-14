@@ -122,7 +122,9 @@ class ModerationFlowTest extends TestCase
                 ->where('actions.3.value', ModerationActionType::REMOVE->value)
                 ->where('actions.3.konfirmasi', fn (?string $teks) => $teks !== null));
 
-        $this->assertStringContainsString('window.confirm(t.konfirmasi)', File::get(resource_path('js/pages/Moderation/Queue.tsx')));
+        $sumberAntrean = File::get(resource_path('js/pages/Moderation/Queue.tsx'));
+        $this->assertStringContainsString('<Dialog', $sumberAntrean);
+        $this->assertStringContainsString('keterangan={konfirmasi?.tindakan.konfirmasi ?? undefined}', $sumberAntrean);
     }
 
     public function test_approving_never_asks_for_confirmation(): void

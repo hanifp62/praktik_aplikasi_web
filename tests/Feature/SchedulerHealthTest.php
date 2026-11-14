@@ -155,9 +155,11 @@ class SchedulerHealthTest extends TestCase
             );
         }
 
-        $this->assertStringContainsString('06.00', SchedulerHealthService::TUGAS['weather:refresh']['jadwal']);
-        $this->assertStringContainsString('18.00', SchedulerHealthService::TUGAS['weather:refresh']['jadwal']);
-        $this->assertStringContainsString('07.00', SchedulerHealthService::TUGAS['data:freshness-check']['jadwal']);
+        // Diperbarui pada perbaikan GAP-03 (selaras W9 Task 10): zona penjadwal adalah UTC,
+        // sehingga cron 06:00/18:00 UTC berjalan pukul 13.00/01.00 WIB dan 07:00 UTC pukul 14.00 WIB.
+        $this->assertStringContainsString('13.00', SchedulerHealthService::TUGAS['weather:refresh']['jadwal']);
+        $this->assertStringContainsString('01.00', SchedulerHealthService::TUGAS['weather:refresh']['jadwal']);
+        $this->assertStringContainsString('14.00', SchedulerHealthService::TUGAS['data:freshness-check']['jadwal']);
     }
 
     /**

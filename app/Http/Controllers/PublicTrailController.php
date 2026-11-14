@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AnalyticsEvent;
 use App\Models\Trail;
+use App\Services\AnalyticsRecorder;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 
@@ -28,9 +30,11 @@ use Illuminate\View\View;
  */
 class PublicTrailController extends Controller
 {
-    public function show(Trail $trail): View
+    public function show(Trail $trail, AnalyticsRecorder $analytics): View
     {
         abort_unless($trail->terbit(), 404);
+
+        $analytics->record(AnalyticsEvent::PUBLIC_TRAIL_VIEWED, null, ['trail_id' => $trail->id]);
 
         return view('public.trail', [
             'trail' => $trail->load('mountain', 'checkpoints'),
@@ -48,5 +52,22 @@ class PublicTrailController extends Controller
         return response()
             ->view('public.sitemap', ['jalur' => $jalur])
             ->header('Content-Type', 'application/xml');
+    }
+
+    public function robots(): Response
+    {
+        $isi = implode("\n", [
+            'User-agent: *',
+            'Disallow: /admin',
+            'Disallow: /moderation',
+            'Disallow: /b/',
+            '',
+            'Sitemap: '.route('public.sitemap'),
+            '',
+        ]);
+
+        return response($isi, 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+        ]);
     }
 }

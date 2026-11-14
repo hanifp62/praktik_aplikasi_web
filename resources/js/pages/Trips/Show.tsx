@@ -38,7 +38,8 @@ interface Props extends PropsBersama {
     langkah: Langkah[];
     fit: FitRingkas | null;
     penilaian: string | null;
-    izin: { ditutup: boolean; pesan: string; tautanPemesanan: string | null } | null;
+    /** PermitService::pemesananDariJendela(): kalimat keadaan, keterangan, dan tautan per keadaan jendela. */
+    izin: { keadaan: string | null; judul: string; keterangan: string; tautan: { href: string; teks: string; label: string } | null } | null;
     hasilPendakian: { url: string; label: string } | null;
     /** Ringkasan trip yang dibatalkan sesudah pendakiannya dimulai (ruling W6-6s (b)); null selain itu. */
     ringkasanBatal: { url: string; label: string } | null;
@@ -178,10 +179,12 @@ export default function Show() {
                         */}
                         {izin ? (
                             <Card title="Izin pendakian">
-                                <p className={izin.ditutup ? 'text-isi font-bold text-warn-900' : 'text-isi text-secondary'}>{izin.pesan}</p>
-                                {izin.tautanPemesanan ? (
-                                    <a href={izin.tautanPemesanan} rel="noopener noreferrer" target="_blank" className={tautanTeks}>
-                                        Pesan di sistem resmi
+                                <p className={izin.keadaan === 'DITUTUP' ? 'text-isi font-bold text-warn-900' : 'text-isi font-bold text-primary'}>{izin.judul}</p>
+                                <p className="mt-1 text-kecil text-secondary">{izin.keterangan}</p>
+                                {izin.tautan ? (
+                                    <a href={izin.tautan.href} rel="noopener noreferrer" target="_blank" className={tautanTeks}>
+                                        {izin.tautan.teks}
+                                        <span className="sr-only"> (membuka tab baru)</span>
                                     </a>
                                 ) : null}
                             </Card>

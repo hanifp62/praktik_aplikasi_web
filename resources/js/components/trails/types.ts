@@ -25,6 +25,21 @@ export interface StatusRingkas {
     kesegaran: string | null;
 }
 
+/**
+ * Status gunung api PVMBG (StatusGunungApi::bentuk, DK-43): level, rekomendasi, atribusi, tautan
+ * laporan, waktu terbit dan verifikasi dalam zona gunung, dan kesegarannya. Bukan status akses.
+ */
+export interface GunungApi {
+    level: number;
+    label: string;
+    rekomendasi: string;
+    atribusi: string;
+    tautan: string;
+    diterbitkan: string;
+    diverifikasi: string;
+    kesegaran: string;
+}
+
 /** Bentuk yang dikirim TrailRowResource: angka sudah diformat di server, "-" bila tidak ada. */
 export interface BarisJalur {
     id: number;

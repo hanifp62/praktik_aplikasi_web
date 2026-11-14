@@ -102,19 +102,32 @@ final class StatusJalurRingkas
             return [];
         }
 
+        $kini = Carbon::now();
         $baris = OfficialStatus::query()
             ->where('statusable_type', $morph)
             ->whereIn('statusable_id', $ids)
-            ->currentlyEffective()
+            ->terlihatPendaki()
+            ->dimulaiPalingLambat($kini)
             ->with('dataSource:id,source_type')
             ->terbaruDulu()
             ->get();
 
         $terbaru = [];
+        $dilihat = [];
 
         foreach ($baris as $satu) {
-            // Urutan sudah menurun, jadi kemunculan pertama adalah yang terbaru.
-            $terbaru[$satu->statusable_id] ??= $satu;
+            // Urutan sudah menurun, jadi kemunculan pertama adalah yang terakhir dimulai; bila
+            // sudah berakhir, entitas itu Belum diketahui (ruling W8-R14), sama dengan
+            // OfficialStatusService::currentFor().
+            if (isset($dilihat[$satu->statusable_id])) {
+                continue;
+            }
+
+            $dilihat[$satu->statusable_id] = true;
+
+            if ($satu->berlakuPada($kini)) {
+                $terbaru[$satu->statusable_id] = $satu;
+            }
         }
 
         return $terbaru;

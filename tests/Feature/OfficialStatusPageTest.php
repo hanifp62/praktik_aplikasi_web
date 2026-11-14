@@ -15,40 +15,38 @@ use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
- * Halaman status resmi (React). Yang dijaga: hanya admin yang mencatat status resmi,
- * setiap catatan masuk jejak audit (§61), riwayatnya menampilkan sumber dan kapan
- * terakhir diverifikasi (§41), dan status yang kedaluwarsa tampil sebagai pekerjaan
- * yang dapat langsung ditindak.
+ * Halaman status resmi (React). Yang dijaga: hanya admin yang membukanya, riwayatnya
+ * menampilkan sumber, kapan terakhir diverifikasi (§41), dan keadaan verifikasinya, dan status
+ * yang kedaluwarsa tampil sebagai pekerjaan yang perlu ditindak.
+ *
+ * Diperbarui W8 (ruling W8-R16): status resmi dicatat di meja kurator, tempat aturan dua orang
+ * dan aturan terbit asimetris ditegakkan (AsymmetricPublishRuleTest, CuratorDeskTest, termasuk
+ * jejak audit setiap langkah). Formulir pencatatan admin dipensiunkan supaya tidak ada jalan tulis
+ * yang melewati aturan itu; niat "hanya yang berwenang mencatat dan setiap catatan diaudit" tetap.
  */
 class OfficialStatusPageTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_a_hiker_can_neither_open_the_page_nor_record_a_status(): void
+    public function test_a_hiker_cannot_open_the_page(): void
     {
-        $trail = Trail::factory()->create();
-        $pendaki = User::factory()->create();
-
-        $this->actingAs($pendaki)->get(route('admin.statuses'))->assertForbidden();
-        $this->actingAs($pendaki)
-            ->post(route('admin.statuses.store'), ['scope' => 'TRAIL', 'statusable_id' => $trail->id, 'status' => 'OPEN'])
-            ->assertForbidden();
-
-        $this->assertSame(0, OfficialStatus::where('recorded_by', $pendaki->id)->count());
+        $this->actingAs(User::factory()->create())->get(route('admin.statuses'))->assertForbidden();
     }
 
-    public function test_recording_a_status_is_audited_and_announced(): void
+    public function test_nobody_records_a_status_here_anymore(): void
     {
         $trail = Trail::factory()->create();
-        $admin = $this->admin();
 
-        $this->actingAs($admin)
-            ->post(route('admin.statuses.store'), ['scope' => 'TRAIL', 'statusable_id' => $trail->id, 'status' => 'CLOSED', 'source' => 'Balai TN'])
-            ->assertRedirect(route('admin.statuses'))
-            ->assertSessionHas('status', 'Status resmi tercatat.');
+        $this->actingAs($this->admin())
+            ->post('/admin/official-statuses', ['scope' => 'TRAIL', 'statusable_id' => $trail->id, 'status' => 'OPEN'])
+            ->assertStatus(405);
 
-        $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'official_status.recorded']);
-        $this->assertDatabaseHas('official_statuses', ['statusable_id' => $trail->id, 'status' => 'CLOSED', 'recorded_by' => $admin->id]);
+        $this->assertSame(0, OfficialStatus::count());
+        $this->actingAs($this->admin())
+            ->get(route('admin.statuses'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->missing('targets')
+                ->where('badanUrl', route('admin.authorities')));
     }
 
     /**
@@ -72,8 +70,9 @@ class OfficialStatusPageTest extends TestCase
     }
 
     /**
-     * Temuan yang perlu ditinjau membawa sasarannya, supaya form dapat diisi ulang
-     * dengan satu klik alih-alih dicari lagi dari daftar.
+     * Status yang kedaluwarsa didaftar lebih dulu dengan nama sasarannya. Sebelum W8 baris ini
+     * juga membawa cakupan dan id untuk mengisi ulang formulir admin; formulir itu pindah ke meja
+     * kurator, yang menawarkan "Catat pengganti" dengan sasaran yang sama (CuratorDeskTest).
      */
     public function test_an_expired_status_is_listed_first_with_its_target(): void
     {
@@ -83,8 +82,7 @@ class OfficialStatusPageTest extends TestCase
             ->get(route('admin.statuses'))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->has('tinjau.kedaluwarsa', 1)
-                ->where('tinjau.kedaluwarsa.0.scope', StatusScope::TRAIL->value)
-                ->where('tinjau.kedaluwarsa.0.statusableId', (string) $status->statusable_id)
+                ->where('tinjau.kedaluwarsa.0.nama', $status->statusable->name)
                 ->where('tinjau.kedaluwarsa.0.keterangan', fn (string $teks) => str_starts_with($teks, 'berlaku sampai')));
     }
 

@@ -90,6 +90,13 @@ Melanggar salah satu ini membuat suite merah, bukan sekadar ditegur saat tinjaua
 | Pemilik lain tidak dapat membuka data orang lain | `TripOwnershipTest` dan test otorisasi per fitur |
 | Jejak audit mencatat nilai lama dan nilai baru | `AuditLogChangeTest` |
 | Tidak ada pola kredensial yang dikenal (daftarnya di `SECURITY.md`) di berkas terlacak dan berkas baru yang tidak diabaikan git | `SecretsNotInRepoTest` |
+| Setiap rute tulis butuh sesi dan batas laju, atau tercatat alasannya | `WriteRouteGuardTest` |
+| Tidak ada model yang membuka semua kolomnya, dan tidak ada kode HTTP yang meneruskan seluruh isi permintaan | `MassAssignmentSweepTest` |
+| Jam ditulis bertitik dengan zonanya; tanggal pendek menyebut tahun di luar tahun berjalan | `IndonesianTimeFormatTest` |
+| Kalimat mesin memakai kosakata Indonesia dan angka berpemisah ribuan | `MachineVocabularyTest` |
+| Teks yang dibaca pendaki tidak memakai kata klaim keselamatan atau kepastian | `SafetyClaimWordTest` |
+| Setiap halaman React punya pratinjau dan baris di daftar periksa klik-lewat | `PreviewCoverageTest` |
+| Laporan audit hanya menyebut test yang ada | `AuditCitationTest` |
 
 Arah yang belum ditegakkan test: ukuran teks memakai skala tipe bernama (`text-judul`, `text-isi`, `text-kecil`, dan
 seterusnya) di halaman yang dirombak W2 sampai W9. Halaman lama masih memakai `text-sm`, `text-xs`, dan sejenisnya
@@ -207,6 +214,9 @@ pendakian aktif), atau `jelajah-kosong.html`.
   ke terang dengan `tema=light`, atau hapus cookie itu untuk mengikuti sistem.
 - Lembar Pengingat memuat isinya dari server saat dibuka, jadi di pratinjau statis ia menampilkan keadaan galatnya.
   Isi daftarnya dijaga `ReminderSheetTest`.
+- Halaman React baru wajib punya pratinjau di salah satu kelas `tests/Pratinjau` dan satu baris di daftar periksa
+  klik-lewat `docs/audit/klik-lewat/2026-10-09-daftar-periksa-w9.md`; `PreviewCoverageTest` di suite Feature gagal
+  bila salah satunya lupa. Cara klik-lewat per halaman, status hasil, dan keterbatasan harness ada di berkas itu.
 
 ## Yang tidak boleh masuk
 

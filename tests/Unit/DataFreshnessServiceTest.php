@@ -28,7 +28,10 @@ class DataFreshnessServiceTest extends TestCase
         parent::setUp();
 
         $this->layanan = app(DataFreshnessService::class);
-        config(['hiking.freshness.status_review_days' => 90]);
+        // Q9 (ruling W8-R13): jadwal tinjau per jenis status menggantikan ambang tunggal 90 hari;
+        // pabrik status memakai Buka, yang ditinjau sesudah 24 jam.
+        config(['hiking.field_pack.open_status_stale_after_hours' => 24]);
+        config(['hiking.freshness.status_review_hours' => ['RESTRICTED' => 168, 'CLOSED' => 168, 'UNKNOWN' => 168]]);
         config(['hiking.freshness.status_expiry_warning_days' => 14]);
     }
 
@@ -85,9 +88,13 @@ class DataFreshnessServiceTest extends TestCase
         $this->assertTrue($this->layanan->stale()->contains('id', $status->id));
     }
 
+    /**
+     * Sebelum W8 "baru" berarti sepuluh hari untuk semua status; kini Buka ditinjau sesudah 24
+     * jam (ruling W8-R13), jadi status Buka yang diverifikasi sepuluh jam lalu masih segar.
+     */
     public function test_a_recently_verified_status_is_not_stale(): void
     {
-        $status = $this->buatStatus(['verified_at' => now()->subDays(10), 'expires_at' => null]);
+        $status = $this->buatStatus(['verified_at' => now()->subHours(10), 'expires_at' => null]);
 
         $this->assertFalse($this->layanan->stale()->contains('id', $status->id));
     }
@@ -125,6 +132,31 @@ class DataFreshnessServiceTest extends TestCase
         $this->layanan->reviewCount();
 
         $this->assertSame(1, $jumlah, 'Hitungan ini tampil di setiap halaman admin.');
+    }
+
+    public function test_an_expired_historical_status_is_ignored_when_a_newer_active_status_exists_for_the_same_subject(): void
+    {
+        $jalur = Trail::factory()->create();
+
+        OfficialStatus::factory()->create([
+            'statusable_type' => Trail::class,
+            'statusable_id' => $jalur->id,
+            'effective_at' => now()->subMonths(8),
+            'expires_at' => now()->subMonths(5),
+            'verified_at' => now()->subMonths(8),
+        ]);
+
+        OfficialStatus::factory()->create([
+            'statusable_type' => Trail::class,
+            'statusable_id' => $jalur->id,
+            'effective_at' => now()->subDay(),
+            'expires_at' => now()->addMonths(4),
+            'verified_at' => now(),
+        ]);
+
+        $this->assertCount(0, $this->layanan->expired());
+        $this->assertCount(0, $this->layanan->stale());
+        $this->assertSame(0, $this->layanan->reviewCount());
     }
 
     /**

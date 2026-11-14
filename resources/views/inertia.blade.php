@@ -17,13 +17,27 @@
         @php
             $judul = $page['props']['title'] ?? null;
             $merek = config('app.name');
+            $judulPenuh = ! $judul ? $merek : (str_contains($judul, $merek) ? $judul : $judul.' · '.$merek);
         @endphp
         <x-inertia::head>
             {{-- Format sama dengan callback title di resources/js/app.tsx. --}}
-            <title>{{ ! $judul ? $merek : (str_contains($judul, $merek) ? $judul : $judul.' · '.$merek) }}</title>
+            <title>{{ $judulPenuh }}</title>
             @isset($page['props']['description'])
                 <meta name="description" content="{{ $page['props']['description'] }}">
             @endisset
+            @if (($page['component'] ?? null) === 'Welcome')
+                <link rel="canonical" href="{{ url('/') }}">
+                <meta property="og:type" content="website">
+                <meta property="og:site_name" content="{{ $merek }}">
+                <meta property="og:title" content="{{ $judulPenuh }}">
+                @isset($page['props']['description'])
+                    <meta property="og:description" content="{{ $page['props']['description'] }}">
+                @endisset
+                <meta property="og:url" content="{{ url('/') }}">
+                <meta property="og:image" content="{{ url('/icons/app-512.png') }}">
+                <meta property="og:locale" content="id_ID">
+                <meta name="twitter:card" content="summary">
+            @endif
         </x-inertia::head>
 
         <x-brand.head />

@@ -6,7 +6,6 @@ use App\Enums\ConditionTag;
 use App\Enums\OfficialStatusValue;
 use App\Enums\StatusScope;
 use App\Enums\TripStatus;
-use App\Enums\UserRole;
 use App\Models\Mountain;
 use App\Models\OfficialStatus;
 use App\Models\RestrictedArea;
@@ -18,8 +17,10 @@ use App\Models\User;
 use App\Models\WeatherSnapshot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 use Symfony\Component\Process\Process;
+use Tests\Concerns\MejaKurator;
 use Tests\TestCase;
 
 /**
@@ -42,6 +43,7 @@ use Tests\TestCase;
  */
 class FieldPackStalenessTest extends TestCase
 {
+    use MejaKurator;
     use RefreshDatabase;
 
     private const R012 = 'Status resmi menjelaskan ketentuan pengelola, bukan jaminan keselamatan.';
@@ -137,27 +139,62 @@ class FieldPackStalenessTest extends TestCase
     }
 
     /**
-     * Ruling W6-8k (tinjauan I-1, opsi B): masa berlaku yang dimasukkan admin sebagai tanggal
-     * tersimpan tengah malam UTC. Paket menulisnya sebagai tanggal saja di gunung WIB, WITA, dan
-     * WIT, bukan "07.00 WIB", "08.00 WITA", atau "09.00 WIT" yang tidak pernah dimasukkan siapa
-     * pun (R-005). berlakuIso dan turunSejak tetap memakai instan tersimpan.
+     * Ruling W6-8k (tinjauan I-1, opsi B) & rekonsiliasi W8-R16: masa berlaku yang dimasukkan
+     * sebagai tanggal saja (baik akhir hari zona gunung 23:59:59 dari formulir meja kurator W8
+     * maupun catatan lama tengah malam UTC 00:00:00) ditulis paket sebagai tanggal saja di gunung
+     * WIB, WITA, dan WIT, bukan jam karangan yang tidak pernah dimasukkan sumber (R-005).
+     * berlakuIso dan turunSejak tetap memakai instan tersimpan.
      */
     public function test_an_expiry_entered_as_a_date_is_shown_as_a_date_in_every_zone(): void
     {
-        $admin = User::factory()->create(['role' => UserRole::ADMIN->value]);
+        Storage::fake(config('filesystems.evidence_disk'));
+        $this->siapkanKawasan();
+        $pencatat = $this->kurator();
+        $pemeriksa = $this->kurator();
 
         foreach (['Asia/Jakarta' => 'WIB', 'Asia/Makassar' => 'WITA', 'Asia/Jayapura' => 'WIT'] as $zona => $label) {
-            [$user, $trip] = $this->rencana(gunung: Mountain::factory()->create(['timezone' => $zona]));
-            $this->actingAs($admin)->post(route('admin.statuses.store'), ['scope' => 'TRAIL', 'statusable_id' => $trip->trail_id, 'status' => 'CLOSED', 'reason' => 'Pemulihan ekosistem', 'expires_at' => '2026-10-31'])->assertRedirect(route('admin.statuses'));
+            $gunung = Mountain::factory()->create(['timezone' => $zona]);
+            $this->balai->mountains()->attach($gunung);
+            [$user, $trip] = $this->rencana(gunung: $gunung);
 
+            $this->actingAs($pencatat)->post(route('curator.statuses.store'), [
+                'sasaran' => 'TRAIL:'.$trip->trail_id,
+                'otoritas' => $this->balai->id,
+                'status' => 'CLOSED',
+                'jenis_bukti' => 'OFFICIAL_LETTER',
+                'bukti' => $this->suratPdf(),
+                'mulai_berlaku' => '2026-10-07',
+                'cara_berakhir' => 'ON_DATE',
+                'berlaku_sampai' => '2026-10-31',
+                'alasan' => 'Pemulihan ekosistem',
+                'ringkasan' => 'Pemulihan ekosistem.',
+            ])->assertSessionHasNoErrors();
+            $this->actingAs($pencatat)->post(route('curator.statuses.submit', OfficialStatus::latest('id')->firstOrFail()))->assertSessionHasNoErrors();
+
+            $akhirHari = Carbon::parse('2026-10-31', $zona)->endOfDay()->utc()->toIso8601String();
             $status = $this->dinamis($user, $trip)['status'];
-            $this->assertSame(['CLOSED', '31 Okt 2026 '.$label, '2026-10-31T00:00:00+00:00'], [$status['nilai'], $status['berlaku'], $status['berlakuIso']], $zona);
+            $this->assertSame(['CLOSED', '31 Okt 2026 '.$label, $akhirHari], [$status['nilai'], $status['berlaku'], $status['berlakuIso']], $zona);
         }
 
-        $this->actingAs($admin)->post(route('admin.statuses.store'), ['scope' => 'TRAIL', 'statusable_id' => $trip->trail_id, 'status' => 'OPEN', 'expires_at' => '2026-10-08'])->assertRedirect(route('admin.statuses'));
+        $this->actingAs($pencatat)->post(route('curator.statuses.store'), [
+            'sasaran' => 'TRAIL:'.$trip->trail_id,
+            'otoritas' => $this->balai->id,
+            'status' => 'OPEN',
+            'jenis_bukti' => 'OFFICIAL_LETTER',
+            'bukti' => $this->suratPdf(),
+            'mulai_berlaku' => '2026-10-07',
+            'cara_berakhir' => 'ON_DATE',
+            'berlaku_sampai' => '2026-10-07',
+            'ringkasan' => 'Pendakian dibuka.',
+        ])->assertSessionHasNoErrors();
+        $drafBuka = OfficialStatus::latest('id')->firstOrFail();
+        $this->actingAs($pencatat)->post(route('curator.statuses.submit', $drafBuka))->assertSessionHasNoErrors();
+        $this->actingAs($pemeriksa)->post(route('curator.statuses.verify', $drafBuka))->assertSessionHasNoErrors();
+
+        $akhirHariWit = Carbon::parse('2026-10-07', 'Asia/Jayapura')->endOfDay()->utc()->toIso8601String();
         $status = $this->dinamis($user, $trip)['status'];
 
-        $this->assertSame(['OPEN', '8 Okt 2026 WIT', '2026-10-08T00:00:00+00:00'], [$status['nilai'], $status['berlaku'], $status['turunSejak']]);
+        $this->assertSame(['OPEN', '7 Okt 2026 WIT', $akhirHariWit], [$status['nilai'], $status['berlaku'], $status['turunSejak']]);
     }
 
     /**

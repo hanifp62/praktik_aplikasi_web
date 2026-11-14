@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Models\ScheduledTaskRun;
+use App\Services\PeringatanOperasi;
 use App\Services\SchedulerHealthService;
 use Illuminate\Console\Events\ScheduledTaskFailed;
 use Illuminate\Console\Events\ScheduledTaskFinished;
@@ -17,12 +18,19 @@ use Illuminate\Console\Scheduling\Event as ScheduledEvent;
  */
 class RecordScheduledTaskRun
 {
+    public function __construct(private readonly PeringatanOperasi $peringatan) {}
+
     public function handleFinished(ScheduledTaskFinished $event): void
     {
         $kunci = $this->taskKey($event->task);
 
         if ($kunci !== null) {
-            ScheduledTaskRun::catatKeluar($kunci, $event->task->exitCode ?? 0, (int) round($event->runtime * 1000));
+            $kode = $event->task->exitCode ?? 0;
+            ScheduledTaskRun::catatKeluar($kunci, $kode, (int) round($event->runtime * 1000));
+
+            if ($kode !== 0) {
+                $this->peringatan->tugasGagal($kunci, "Kode keluar {$kode}", ['kode' => $kode]);
+            }
         }
     }
 
@@ -32,6 +40,7 @@ class RecordScheduledTaskRun
 
         if ($kunci !== null) {
             ScheduledTaskRun::catatGalat($kunci, $event->exception);
+            $this->peringatan->tugasGagal($kunci, $event->exception->getMessage());
         }
     }
 

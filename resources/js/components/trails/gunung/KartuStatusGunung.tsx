@@ -1,5 +1,6 @@
 import { Kesegaran } from '@/components/trails/Kesegaran';
 import { LabelSumber } from '@/components/trails/LabelSumber';
+import { LaporkanKesalahan, type LaporKesalahan } from '@/components/trails/LaporkanKesalahan';
 import { StatusAkses } from '@/components/trails/StatusAkses';
 import type { StatusRingkas } from '@/components/trails/types';
 import { kelas } from '@/lib/kelas';
@@ -29,7 +30,7 @@ const kalimatCakupan: Record<'OPEN' | 'CLOSED' | 'RESTRICTED', string> = {
  * status sendiri atau tidak -- jalur di bawahnya bisa saja Buka lewat catatannya sendiri
  * walau gunungnya tidak punya catatan apa pun.
  */
-export function KartuStatusGunung({ status }: { status: StatusRingkas }) {
+export function KartuStatusGunung({ status, lapor, sasaran }: { status: StatusRingkas; lapor?: LaporKesalahan; sasaran?: string }) {
     const resmi = status.sumber?.jenis === 'OFFICIAL';
 
     return (
@@ -56,6 +57,7 @@ export function KartuStatusGunung({ status }: { status: StatusRingkas }) {
                 </p>
             ) : null}
             {status.sumber ? <Kesegaran waktu={status.waktu} awalan={status.awalanWaktu ?? undefined} keadaan={status.kesegaran} className="mt-1" /> : null}
+            {lapor && sasaran ? <LaporkanKesalahan lapor={lapor} sasaran={sasaran} /> : null}
         </section>
     );
 }

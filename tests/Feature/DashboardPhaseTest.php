@@ -374,7 +374,7 @@ class DashboardPhaseTest extends TestCase
         $this->assertSame(['luar', 'Pesan di sistem resmi', 'https://contoh.test/pemesanan'], [$aksi['jenis'], $aksi['label'], $aksi['href']]);
         $this->assertSame('Sistem resmi Balai Besar TNGGP. Memount menautkan sistem resmi dan tidak menjual izin.', $aksi['keterangan']);
 
-        $this->butir($trip, PreparationService::PERMIT_LABEL, PreparationStatus::CONFIRMED);
+        $this->butir($trip, PreparationService::PERMIT_LABEL, PreparationStatus::CONFIRMED)->forceFill(['kind' => TripPreparationItem::JENIS_IZIN])->save();
 
         $this->assertSame('Buka ruang kerja', $this->fase($user)['kartu']['aksi']['label']);
     }

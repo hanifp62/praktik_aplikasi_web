@@ -105,6 +105,45 @@ class ReportPhotoAccessTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_an_authorized_viewer_receives_private_cache_headers_and_etag_conditional_304(): void
+    {
+        $report = $this->reportWithPhoto(ModerationStatus::APPROVED);
+        $viewer = User::factory()->create();
+
+        $pertama = $this->actingAs($viewer)
+            ->get(route('reports.photo', $report))
+            ->assertOk();
+
+        $cacheControl = (string) $pertama->headers->get('Cache-Control');
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringContainsString('max-age=3600', $cacheControl);
+
+        $etag = $pertama->headers->get('ETag');
+        $this->assertNotEmpty($etag);
+
+        $this->actingAs($viewer)
+            ->withHeaders(['If-None-Match' => $etag])
+            ->get(route('reports.photo', $report))
+            ->assertNotModified();
+    }
+
+    public function test_an_unauthorized_stranger_is_forbidden_even_when_sending_matching_if_none_match(): void
+    {
+        $report = $this->reportWithPhoto(ModerationStatus::PENDING);
+
+        $sah = $this->actingAs($report->user)
+            ->get(route('reports.photo', $report))
+            ->assertOk();
+
+        $etag = (string) $sah->headers->get('ETag');
+        $this->assertNotEmpty($etag);
+
+        $this->actingAs(User::factory()->create())
+            ->withHeaders(['If-None-Match' => $etag])
+            ->get(route('reports.photo', $report))
+            ->assertForbidden();
+    }
+
     private function reportWithPhoto(ModerationStatus $status): TrailConditionReport
     {
         $path = 'condition-reports/contoh.jpg';

@@ -31,7 +31,8 @@ class CheckpointController extends Controller
     {
         $this->authorize('update', $trail);
 
-        $checkpoints = $trail->checkpoints()->get();
+        $checkpoints = $trail->checkpoints()->with('segment:id,sequence,name')->get();
+        $segments = $trail->segments()->get(['id', 'sequence', 'name']);
 
         return Inertia::render('Admin/Checkpoints', [
             'title' => 'Kelola Checkpoint',
@@ -39,6 +40,7 @@ class CheckpointController extends Controller
             'checkpoints' => CheckpointRowResource::collection($checkpoints)->resolve($request),
             'nextSequence' => (string) (((int) $checkpoints->max('sequence')) + 1),
             'types' => array_map(fn (CheckpointType $type) => ['value' => $type->value, 'label' => $type->label()], CheckpointType::cases()),
+            'segments' => $segments->map(fn ($s) => ['value' => (string) $s->id, 'label' => $s->sequence.'. '.$s->name])->values()->all(),
             'penolakan' => session('penolakan'),
         ]);
     }
@@ -136,7 +138,7 @@ class CheckpointController extends Controller
     {
         $data = $request->validated();
 
-        return [
+        $atribut = [
             'trail_id' => $trail->id,
             'name' => $data['name'],
             'sequence' => (int) $data['sequence'],
@@ -144,6 +146,14 @@ class CheckpointController extends Controller
             'elevation_m' => isset($data['elevation_m']) ? (int) $data['elevation_m'] : null,
             'notes' => $data['notes'] ?? null,
         ];
+
+        if ($request->exists('trail_segment_id')) {
+            $atribut['trail_segment_id'] = isset($data['trail_segment_id']) && $data['trail_segment_id'] !== ''
+                ? (int) $data['trail_segment_id']
+                : null;
+        }
+
+        return $atribut;
     }
 
     /**

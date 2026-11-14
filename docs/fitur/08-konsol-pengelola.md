@@ -2,7 +2,7 @@
 
 **FR utama:** FR-16 Admin (§56), FR-17 Moderasi (§57), FR-18 Pengelolaan sumber data (§58), FR-19 Log audit (§61), FR-20 Analitik (§62).
 **Bahan:** features/08-konsol-pengelola.md dari NgodingPakeAI (keluaran alat di root, diabaikan git), `docs/PRD.md`, spec v3 bagian 10.7.
-**Diperiksa terhadap kode:** 26 September 2026, setelah gelombang W0. Status adalah FAKTA dari berkas yang disebut (R-023).
+**Diperiksa terhadap kode:** 8 Oktober 2026 untuk baris yang disentuh W8; selebihnya 26 September 2026, setelah gelombang W0. Status adalah FAKTA dari berkas yang disebut (R-023).
 
 ## Tujuan dan pertanyaan pengguna
 
@@ -14,7 +14,7 @@ Admin, moderator, dan ahli berkredensial menjaga data jalur tetap akurat dan ber
 
 - **Loop:** di luar loop pendaki; menjaga mutu data yang dibaca setiap langkah loop.
 - **Pintu:** dari menu akun sesuai peran (§145); otorisasi tetap di server (§76).
-- **Rute:** `/admin/*` (peran admin), `/moderation` (peran moderator), `/jalur/{trail}/geometri` dan `/jalur/{trail}/pos` (admin atau ahli berkredensial untuk kawasannya, lewat Policy), `/kontribusi` (ahli).
+- **Rute:** `/admin/*` (peran admin), `/moderation` (peran moderator), `/jalur/{trail}/geometri` dan `/jalur/{trail}/pos` (admin atau ahli berkredensial untuk kawasannya, lewat Policy), `/kontribusi` (ahli), `/kurator` (kurator anggota aktif badan resmi, lewat `OfficialStatusPolicy`; W8).
 
 ## Kriteria penerimaan
 
@@ -22,13 +22,15 @@ Admin, moderator, dan ahli berkredensial menjaga data jalur tetap akurat dan ber
 2. **Gunung dan jalur.** Given admin, When membuat, mengubah, atau mengarsipkan gunung dan jalur, Then tersimpan dengan sumber; jalur hanya dapat diterbitkan bila gerbang publikasi lolos (R-022), dan gerbang itu dijaga di lapisan data, bukan hanya di satu layar.
 3. **Geometri.** Given admin atau ahli berkredensial untuk kawasan jalur itu, When mengunggah GPX atau memilih garis dari OpenStreetMap, Then berkas divalidasi, garis dipratinjau sebelum disimpan, pencarian OSM dibatasi laju, dan tanjakan dapat diterapkan dari garis; ahli di luar kawasannya ditolak.
 4. **Pos.** Given pengelola berhak, When menambah, mengubah, memindah urutan, atau menghapus pos, Then pos selalu milik jalur di alamatnya (scopeBindings) dan penghapusan yang merusak perjalanan dijaga.
-5. **Status resmi.** Given admin mencatat status, When tersimpan, Then sumber, cakupan, dan waktunya tercatat, dan pencatatnya diambil dari sesi, bukan formulir.
+5. **Status resmi.** Given kurator mencatat status di meja kurator, When dikirim, Then penerbit, nomor dan tanggal surat, arsip bukti dengan SHA-256, cakupan, mulai berlaku, cara berakhir, dan ringkasannya tercatat; pencatat, pemeriksa, dan badan diambil dari sesi dan keanggotaan, bukan formulir; pembatasan berbukti primer terbit seketika dan menunggu kurator kedua, pembukaan baru terbaca sesudah diverifikasi orang kedua, dan berita saja tidak pernah membuka (spec v3 bagian 10.7, W8). Halaman admin status resmi hanya membaca.
 6. **Izin dan sumber data.** Given admin, When mencatat aturan izin atau sumber data, Then sumber dan waktu verifikasi tercatat; sumber dapat diverifikasi atau diperdebatkan.
 7. **Moderasi.** Given moderator membuka antrean, When memutuskan setuju, tolak, tandai, atau hapus dengan alasan, Then keputusan langsung memengaruhi yang tampil ke publik dan tercatat.
 8. **Kredensial ahli.** Given admin memutuskan kredensial ahli, When disetujui, Then cakupan gunungnya menentukan jalur yang boleh disunting ahli itu.
 9. **Audit.** Given aksi penting (terbitkan, moderasi, ubah data), When terjadi, Then tercatat pelaku, waktu, nilai sebelum dan sesudah; log dapat disaring per aksi.
 10. **Analitik dan studi kegunaan.** Given admin, When membuka analitik atau studi kegunaan, Then angka berasal dari peristiwa yang benar-benar tercatat; hasil uji kegunaan tidak pernah dikarang (R-023).
 11. **Kelola peran.** Given admin perlu mengubah peran pengguna, When fitur ini dibangun, Then perubahan tercatat di audit dan langsung berlaku (belum ada; lihat status).
+12. **Laporan kesalahan data.** Given pendaki melaporkan kesalahan data, When kurator kawasannya membuka meja, Then laporan itu ada di antrean cek ulang tanpa identitas pelapor, dan menandainya sudah dicek wajib menyebut hasilnya dan tidak mengubah status (W8).
+13. **Gunung api dan foto.** Given kurator mencatat level PVMBG atau admin mengunggah foto gunung, When tersimpan, Then level membawa atribusi dan tautan laporannya, foto membawa lisensi, pembuat, sumber, atribusi, dan teks alternatif, keduanya diaudit (DK-43, DK-37, W8).
 
 ## Aturan yang berlaku
 
@@ -46,7 +48,8 @@ Admin, moderator, dan ahli berkredensial menjaga data jalur tetap akurat dan ber
 | `authorities`, `authority_mountain`, `expert_credentials`, `credential_mountain` | otoritas pengelola; kredensial ahli dan cakupan gunungnya | `buat_tabel_otoritas_dan_kredensial_ahli` |
 | `moderation_actions`, `audit_logs` | keputusan moderasi; jejak `before` dan `after` | `create_moderation_actions_table`, `create_audit_logs_table` |
 | `analytics_events`, `usability_sessions`, `scheduled_task_runs` | corong, sesi uji kegunaan dan SUS, riwayat tugas terjadwal | `create_analytics_events_table`, `create_usability_sessions_table`, `create_scheduled_task_runs_table` |
-| `users.role` | `hiker`, `moderator`, `admin` | `add_role_to_users_table` |
+| `users.role` | `hiker`, `moderator`, `admin`, `curator` (W8; diberikan pemilik, Q11) | `add_role_to_users_table` |
+| `authority_members`, `official_statuses` (provenans), `data_error_reports`, `volcano_statuses`, `mountain_photos` | anggota badan untuk meja kurator; provenans, keadaan verifikasi, dan jadwal tinjau status; laporan kesalahan data; level PVMBG; foto gunung berlisensi | `create_authority_members_table`, `add_provenance_to_official_statuses_table`, `create_data_error_reports_table`, `create_volcano_statuses_table`, `create_mountain_photos_table` |
 
 ## State
 
@@ -70,7 +73,8 @@ Admin, moderator, dan ahli berkredensial menjaga data jalur tetap akurat dan ber
 | Log audit | Ada | `app/Http/Controllers/Admin/AuditLogController.php`, `app/Services/AuditLogService.php`, `resources/js/pages/Admin/AuditLogs.tsx` (saring per aksi), `tests/Feature/AuditLogChangeTest.php` |
 | Analitik dan studi kegunaan | Ada | `app/Http/Controllers/Admin/AnalyticsController.php`, `app/Services/AnalyticsRecorder.php`, `app/Http/Controllers/Admin/UsabilityStudyController.php`, `app/Services/UsabilityStudyService.php`, `tests/Feature/UsabilityStudyPageTest.php` |
 | Kelola peran pengguna | Belum ada | Tidak ada rute atau halaman; `users.role` diubah langsung di basis data. Cakupan wilayah ahli sudah ada lewat `credential_mountain` |
-| Meja kurator data resmi | Belum ada | DK-36, spec v3 bagian 10.7, W8 |
+| Meja kurator data resmi | Ada (W8) | `app/Http/Controllers/Curator/`, `app/Services/DataResmi/`, `app/Policies/OfficialStatusPolicy.php`, `resources/js/pages/Curator/`, `tests/Feature/CuratorDeskTest.php`, `tests/Feature/AsymmetricPublishRuleTest.php`, `tests/Feature/OfficialStatusConsistencyTest.php`, `tests/Feature/EvidenceArchiveTest.php`, `tests/Feature/AuthorityMemberPolicyTest.php` |
+| Status gunung api dan foto gunung | Ada (W8) | `app/Http/Controllers/Curator/VolcanoStatusController.php`, `app/Http/Controllers/Admin/MountainPhotoManagerController.php`, `tests/Feature/VolcanoStatusTest.php`, `tests/Feature/MountainPhotoLicenseTest.php` |
 
 ## Task NgodingPakeAI
 

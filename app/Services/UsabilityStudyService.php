@@ -26,11 +26,11 @@ class UsabilityStudyService
      * @var array<string, array{judul: string, berhasil: string, inti: bool}>
      */
     public const TUGAS = [
-        'T1' => ['judul' => 'Buat akun dan lengkapi profil pendaki', 'berhasil' => 'Profil tersimpan dan peserta sampai di dasbor.', 'inti' => false],
+        'T1' => ['judul' => 'Buat akun dan lengkapi profil pendaki', 'berhasil' => 'Profil tersimpan dan peserta sampai di Beranda.', 'inti' => false],
         'T2' => ['judul' => 'Cari tahu jalur mana yang sesuai', 'berhasil' => 'Peserta melihat daftar hasil kecocokan.', 'inti' => false],
         'T3' => ['judul' => 'Jelaskan mengapa satu jalur tidak direkomendasikan', 'berhasil' => 'Peserta menyebut alasannya dengan kata-katanya sendiri.', 'inti' => true],
         'T4' => ['judul' => 'Buat rencana trip dan siapkan perlengkapan', 'berhasil' => 'Trip terbuat dan lima item persiapan dikonfirmasi.', 'inti' => false],
-        'T5' => ['judul' => 'Periksa apakah sudah siap berangkat', 'berhasil' => 'Peserta sampai di halaman kesiapan dan menyebut apa yang kurang.', 'inti' => true],
+        'T5' => ['judul' => 'Periksa apa yang masih kurang sebelum berangkat', 'berhasil' => 'Peserta sampai di halaman kesiapan dan menyebut apa yang kurang.', 'inti' => true],
         'T6' => ['judul' => 'Cari status resmi jalur dan sumbernya', 'berhasil' => 'Peserta menemukan status beserta sumber dan tanggalnya.', 'inti' => false],
         'T7' => ['judul' => 'Buka aplikasi tanpa sinyal', 'berhasil' => 'Peserta memahami data lama sengaja tidak ditampilkan.', 'inti' => false],
         'T8' => ['judul' => 'Tolak satu laporan komunitas beserta alasannya', 'berhasil' => 'Laporan ditolak dan alasannya tersimpan.', 'inti' => false],

@@ -7,6 +7,7 @@ use App\Models\PermitRequirement;
 use App\Models\TripPlan;
 use App\Models\TripReminder;
 use App\Notifications\PengingatIzinDibuka;
+use App\Notifications\QueuedTripReminderNotification;
 use App\Notifications\TripReminderNotification;
 use App\Services\PermitService;
 use App\Services\PreparationService;
@@ -51,7 +52,7 @@ class TripReminderScheduler
     /** Trip per putaran pengiriman, supaya memori tidak tumbuh bersama antrean. */
     private const PER_PUTARAN = 100;
 
-    private const FORMAT_WAKTU = 'l, d M Y H.i';
+    private const FORMAT_WAKTU = 'l, j M Y H.i';
 
     /** Jenis pengingat hari pemesanan izin dibuka; muat di kolom jenis (8 karakter). */
     public const JENIS_IZIN = 'IZIN';
@@ -214,8 +215,12 @@ class TripReminderScheduler
                 ->get()
                 ->groupBy('trip_plan_id');
 
+            $aturanIzin = $this->izin->requirementsForTrails(
+                $perTrip->map(fn (Collection $p) => $p->first()?->tripPlan?->trail)->filter()->unique('id')->values(),
+            );
+
             foreach ($perTrip as $tripId => $pengingat) {
-                if (! $this->prosesTrip($pengingat, $sekarang, $hasil)) {
+                if (! $this->prosesTrip($pengingat, $sekarang, $hasil, $aturanIzin)) {
                     $tripGagal[] = $tripId;
                 }
             }
@@ -306,9 +311,10 @@ class TripReminderScheduler
      *
      * @param  Collection<int, TripReminder>  $pengingat  pengingat jatuh tempo milik satu trip
      * @param  array{terkirim: int, dilewati: int, gagal: int}  $hasil
+     * @param  array<int, PermitRequirement>  $aturanIzin  aturan izin per id jalur, dimuat sekali per putaran
      * @return bool false bila salah satu pengiriman gagal
      */
-    private function prosesTrip(Collection $pengingat, CarbonInterface $sekarang, array &$hasil): bool
+    private function prosesTrip(Collection $pengingat, CarbonInterface $sekarang, array &$hasil, array $aturanIzin): bool
     {
         $trip = $pengingat->first()?->tripPlan;
 
@@ -319,9 +325,10 @@ class TripReminderScheduler
         [$izin, $rantai] = $pengingat->partition(fn (TripReminder $p) => $p->jenis === self::JENIS_IZIN);
 
         $berhasil = $this->prosesRantai($trip, $rantai, $sekarang, $hasil);
+        $aturan = $aturanIzin[$trip->trail_id] ?? null;
 
         foreach ($izin as $satu) {
-            $berhasil = $this->prosesIzin($trip, $satu, $sekarang, $hasil) && $berhasil;
+            $berhasil = $this->prosesIzin($trip, $satu, $aturan, $sekarang, $hasil) && $berhasil;
         }
 
         return $berhasil;
@@ -359,8 +366,11 @@ class TripReminderScheduler
         }
 
         $sisaHari = (int) CarbonImmutable::parse($hariIni)->diffInDays(CarbonImmutable::parse($keberangkatan));
+        $notifikasi = config('hiking.reminders.queued')
+            ? new QueuedTripReminderNotification($trip, $sisaHari, $terdekat->id)
+            : new TripReminderNotification($trip, $sisaHari);
 
-        return $this->kirim($trip, $terdekat, new TripReminderNotification($trip, $sisaHari), $hasil);
+        return $this->kirim($trip, $terdekat, $notifikasi, $hasil);
     }
 
     /**
@@ -377,9 +387,8 @@ class TripReminderScheduler
      * @param  array{terkirim: int, dilewati: int, gagal: int}  $hasil
      * @return bool false bila pengiriman gagal
      */
-    private function prosesIzin(TripPlan $trip, TripReminder $pengingat, CarbonInterface $sekarang, array &$hasil): bool
+    private function prosesIzin(TripPlan $trip, TripReminder $pengingat, ?PermitRequirement $aturan, CarbonInterface $sekarang, array &$hasil): bool
     {
-        $aturan = $this->izin->requirementFor($trip->trail);
         $buka = $this->bukaIzin($trip, $aturan);
         $gerbang = $trip->reminders_enabled && $this->dapatDiatur($trip) && ! PreparationService::izinDiurus($trip);
 

@@ -41,6 +41,8 @@ class OfficialStatusRowResource extends JsonResource
             'diverifikasi' => $this->verified_at?->copy()->setTimezone(Timezone::DEFAULT)->translatedFormat('d M Y'),
             'berlaku' => $berlaku,
             'dicatatOleh' => $this->recordedBy?->name ?? 'Sistem',
+            // Keadaan meja kurator (W8): admin melihat draf dan catatan yang belum terbaca pendaki.
+            'keadaan' => $this->verification_state?->label() ?? 'Catatan lama',
         ];
     }
 }

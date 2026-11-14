@@ -90,7 +90,7 @@ export function KartuPerjalanan({ kartu }: { kartu: KartuPerjalananData }) {
                         </p>
                         <div aria-hidden="true" className="mt-2 flex gap-1">
                             {Array.from({ length: persiapan.berlaku }, (_, i) => (
-                                <span key={i} className={kelas('h-2 flex-1 rounded-full', i < persiapan.dikonfirmasi ? 'bg-brand-700' : 'bg-surface-sunken')} />
+                                <span key={i} className={kelas('h-2 flex-1 rounded-full', i < persiapan.dikonfirmasi ? 'bg-brand-700' : 'border border-control')} />
                             ))}
                         </div>
                         {persiapan.belum.length > 0 ? (

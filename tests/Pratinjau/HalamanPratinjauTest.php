@@ -2,25 +2,45 @@
 
 namespace Tests\Pratinjau;
 
+use App\Enums\AuthorityType;
 use App\Enums\CancellationReason;
 use App\Enums\CompletionState;
+use App\Enums\DataErrorCategory;
+use App\Enums\DataErrorState;
+use App\Enums\EvidenceType;
 use App\Enums\HikingSessionStatus;
+use App\Enums\OfficialStatusValue;
+use App\Enums\PhotoLicense;
 use App\Enums\PreparationStatus;
+use App\Enums\StatusEndCondition;
+use App\Enums\StatusReasonCategory;
 use App\Enums\TripStatus;
+use App\Enums\UserRole;
+use App\Models\Authority;
+use App\Models\AuthorityMember;
 use App\Models\Checkpoint;
+use App\Models\DataErrorReport;
 use App\Models\HikingHistory;
 use App\Models\HikingSession;
+use App\Models\Mountain;
 use App\Models\MountainFollow;
+use App\Models\OfficialStatus;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use App\Services\ConsiderationService;
+use App\Services\DataResmi\TerbitStatus;
+use App\Services\Mountains\FotoGunung;
 use App\Services\PreparationService;
 use App\Services\ReadinessService;
+use App\Services\Trails\HalamanJelajah;
 use App\Services\Trails\TautanBagikan;
+use App\Services\Trails\TrailSearch;
 use Database\Seeders\DemoSeeder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 
 /**
@@ -284,11 +304,89 @@ class HalamanPratinjauTest extends PratinjauTestCase
         $this->tulisPratinjau('mendaki', $this->get(self::ASAL.'/mendaki'), 'Track/Index');
     }
 
+    /**
+     * Progres W7 (acuan 13), seluruhnya dari DemoSeeder: Andong, Batur, dan Prau tuntas;
+     * Pangrango dibatalkan karena cuaca; satu catatan pendakian di luar trip di Papandayan
+     * dengan angka yang ditulis Budi sendiri; dan dua target bulanan.
+     */
     public function test_progres(): void
     {
         $this->sebagaiBudi();
 
         $this->tulisPratinjau('progres', $this->get(self::ASAL.'/progres'), 'Community/HikerProgress');
+    }
+
+    /**
+     * Progres pendaki baru tanpa catatan apa pun: keadaan pertama kali.
+     */
+    public function test_progres_kosong(): void
+    {
+        $this->seed(DemoSeeder::class);
+        $this->actingAs(User::factory()->create(['name' => 'Budi Setiawan']));
+
+        $this->tulisPratinjau('progres-kosong', $this->get(self::ASAL.'/progres'), 'Community/HikerProgress');
+    }
+
+    /**
+     * Onboarding pertama kali (acuan 00): langkah 1 dengan "Nanti saja", tanpa bilah tab.
+     */
+    public function test_onboarding(): void
+    {
+        $this->seed(DemoSeeder::class);
+        $this->actingAs(User::factory()->create(['name' => 'Budi Setiawan']));
+
+        $this->tulisPratinjau('onboarding', $this->get(self::ASAL.'/onboarding'), 'Onboarding/ProfileSetup');
+    }
+
+    /**
+     * Onboarding sebagai penyunting dari Profil: langkah 2 dengan pengalaman Budi yang diisi
+     * sendiri, dan langkah 3 dengan wilayah minatnya.
+     */
+    public function test_onboarding_pengalaman(): void
+    {
+        $this->sebagaiBudi();
+
+        $this->tulisPratinjau('onboarding-pengalaman', $this->get(self::ASAL.'/onboarding?langkah=2'), 'Onboarding/ProfileSetup');
+    }
+
+    public function test_onboarding_rencana(): void
+    {
+        $this->sebagaiBudi();
+
+        $this->tulisPratinjau('onboarding-rencana', $this->get(self::ASAL.'/onboarding?langkah=3'), 'Onboarding/ProfileSetup');
+    }
+
+    /**
+     * Akhir onboarding: akibat langsung dengan angka dari saringan Jelajah yang sama.
+     */
+    public function test_onboarding_selesai(): void
+    {
+        $budi = $this->sebagaiBudi();
+        $cocok = app(HalamanJelajah::class)->props(TrailSearch::dariInput(['kecocokan' => 'COCOK']), $budi, request())['ringkasan']['jumlah'];
+
+        $this->tulisPratinjau('onboarding-selesai', $this->withSession(['onboarding-selesai' => ['cocok' => $cocok]])->get(self::ASAL.'/onboarding'), 'Onboarding/ProfileSetup');
+    }
+
+    /**
+     * Profil (acuan 14): identitas dengan inisial, pengalaman dan preferensi Budi termasuk
+     * wilayah minat, perlengkapan pribadi, tampilan, privasi, akun, dan pintu konsol.
+     */
+    public function test_profil(): void
+    {
+        $this->sebagaiBudi();
+
+        $this->tulisPratinjau('profil', $this->get(self::ASAL.'/profile'), 'Profile/Edit');
+    }
+
+    /**
+     * Profil pendaki baru: pengalaman belum diisi dengan jalan ke onboarding, tanpa barang.
+     */
+    public function test_profil_kosong(): void
+    {
+        $this->seed(DemoSeeder::class);
+        $this->actingAs(User::factory()->create(['name' => 'Budi Setiawan']));
+
+        $this->tulisPratinjau('profil-kosong', $this->get(self::ASAL.'/profile'), 'Profile/Edit');
     }
 
     /**
@@ -332,6 +430,58 @@ class HalamanPratinjauTest extends PratinjauTestCase
         $this->sebagaiBudi();
 
         $this->tulisPratinjau('gunung', $this->get(self::ASAL.'/mountains/gunung-gede'), 'Mountains/Show');
+    }
+
+    /**
+     * Halaman Kabar sesudah redesain W8 (W5-C9): Budi mengikuti Gunung Gede, jadi status resmi,
+     * status gunung api contoh, dan laporan pendaki contoh ikut terpotret.
+     */
+    public function test_kabar(): void
+    {
+        $budi = $this->sebagaiBudi();
+        MountainFollow::create(['user_id' => $budi->id, 'mountain_id' => Mountain::where('slug', 'gunung-gede')->value('id')]);
+
+        $this->tulisPratinjau('kabar', $this->get(self::ASAL.'/kabar'), 'Community/TrailNews');
+    }
+
+    /**
+     * Halaman gunung dengan foto berlisensi (W8, DK-37): kepala halaman foto dengan atribusi di
+     * pojoknya. Fotonya ilustrasi buatan test ini, berlisensi milik Memount dan berpenanda DATA
+     * CONTOH; berkasnya disalin ke _pratinjau karena server statis tidak menjalankan rute foto.
+     */
+    public function test_gunung_berfoto(): void
+    {
+        Storage::fake(config('filesystems.mountain_photos_disk'));
+        $this->sebagaiBudi();
+
+        $gambar = imagecreatetruecolor(1600, 900);
+        for ($y = 0; $y < 900; $y++) {
+            imageline($gambar, 0, $y, 1599, $y, imagecolorallocate($gambar, 120 + intdiv($y, 12), 160 + intdiv($y, 15), 190 + intdiv($y, 30)));
+        }
+        imagefilledpolygon($gambar, [0, 900, 420, 380, 640, 520, 980, 210, 1600, 760, 1600, 900], imagecolorallocate($gambar, 46, 82, 58));
+        imagefilledpolygon($gambar, [0, 900, 300, 640, 760, 700, 1200, 560, 1600, 820, 1600, 900], imagecolorallocate($gambar, 30, 58, 40));
+        ob_start();
+        imagejpeg($gambar, null, 85);
+        $jpeg = (string) ob_get_clean();
+        imagedestroy($gambar);
+
+        $gede = Mountain::where('slug', 'gunung-gede')->firstOrFail();
+        app(FotoGunung::class)->simpan($gede, UploadedFile::fake()->createWithContent('ilustrasi.jpg', $jpeg), [
+            'creator' => 'DATA CONTOH',
+            'license' => PhotoLicense::OWN->value,
+            'source_url' => null,
+            'attribution' => 'DATA CONTOH, ilustrasi pratinjau, milik Memount',
+            'alt_text' => 'Ilustrasi lereng gunung berhutan di bawah langit pagi.',
+        ], User::factory()->create(['role' => UserRole::ADMIN->value]));
+
+        $this->tulisPratinjau('gunung-berfoto', $this->get(self::ASAL.'/mountains/gunung-gede'), 'Mountains/Show');
+
+        File::put(public_path('_pratinjau/foto-gunung-contoh.jpg'), $jpeg);
+        $halaman = public_path('_pratinjau/gunung-berfoto.html');
+        $asli = (string) json_encode(route('mountains.photo', ['mountain' => $gede, 'v' => substr((string) $gede->photo()->value('sha256'), 0, 12)]), JSON_UNESCAPED_SLASHES);
+        $isi = str_replace([trim($asli, '"'), str_replace('/', '\/', trim($asli, '"'))], '/_pratinjau/foto-gunung-contoh.jpg', File::get($halaman));
+        $this->assertStringContainsString('/_pratinjau/foto-gunung-contoh.jpg', $isi, 'Alamat foto tidak ditemukan di halaman pratinjau.');
+        File::put($halaman, $isi);
     }
 
     /**
@@ -400,6 +550,8 @@ class HalamanPratinjauTest extends PratinjauTestCase
         $trip = TripPlan::where('user_id', $budi->id)->where('status', TripStatus::PLANNED->value)->sole();
         $butir = app(PreparationService::class)->generateFor($trip);
         $butir->where('is_critical', true)->take(3)->each(fn ($satu) => $satu->update(['status' => PreparationStatus::CONFIRMED->value]));
+        // Catatan per butir (ruling W7-R9) seperti acuan 09 "Dibawa Dimas".
+        $butir->firstWhere('label', 'Headlamp dan cadangan baterai')?->update(['note' => 'Baterai cadangan dibawa Dimas']);
 
         $this->tulisPratinjau('persiapan', $this->get(self::ASAL.'/trips/'.$trip->id.'/preparation'), 'Trips/Preparation');
     }
@@ -532,5 +684,122 @@ class HalamanPratinjauTest extends PratinjauTestCase
         $this->sebagaiBudi();
 
         $this->tulisPratinjau('mendaki-paket', $this->get(self::ASAL.'/mendaki'), 'Track/Index');
+    }
+
+    /**
+     * Meja kurator (W8, spec v3 bagian 10.7): Citra, kurator balai Gunung Gede, dengan pembukaan
+     * dari rekannya yang menunggu verifikasinya, status contoh yang lewat jadwal tinjau, dan satu
+     * draf berbukti berita. Akun kurator hanya dibuat di test ini, tidak di data contoh (Q11).
+     */
+    public function test_meja_kurator(): void
+    {
+        $this->actingAs($this->mejaKuratorContoh()['citra']);
+
+        $this->tulisPratinjau('meja-kurator', $this->get(self::ASAL.'/kurator'), 'Curator/Desk');
+    }
+
+    /**
+     * Rincian pembukaan yang menunggu verifikasi kedua, dilihat Citra sebagai pemeriksa.
+     */
+    public function test_catatan_kurator(): void
+    {
+        $contoh = $this->mejaKuratorContoh();
+        $this->actingAs($contoh['citra']);
+
+        $this->tulisPratinjau('catatan-kurator', $this->get(self::ASAL.'/kurator/status/'.$contoh['menunggu']->id), 'Curator/Status');
+    }
+
+    /**
+     * Draf Citra berbukti berita: peringatan pemeriksaan konsistensi dan aksi pencatat.
+     */
+    public function test_catatan_kurator_draf(): void
+    {
+        $contoh = $this->mejaKuratorContoh();
+        $this->actingAs($contoh['citra']);
+
+        $this->tulisPratinjau('catatan-kurator-draf', $this->get(self::ASAL.'/kurator/status/'.$contoh['draf']->id), 'Curator/Status');
+    }
+
+    public function test_formulir_kurator(): void
+    {
+        $contoh = $this->mejaKuratorContoh();
+        $this->actingAs($contoh['citra']);
+
+        $this->tulisPratinjau('formulir-kurator', $this->get(self::ASAL.'/kurator/status/baru?sasaran=TRAIL:'.$contoh['jalur']->id), 'Curator/StatusForm');
+    }
+
+    /**
+     * Formulir status gunung api PVMBG (DK-43): Gunung Gede terpilih, level contoh sudah tercatat.
+     */
+    public function test_formulir_gunung_api(): void
+    {
+        $contoh = $this->mejaKuratorContoh();
+        $this->actingAs($contoh['citra']);
+
+        $this->tulisPratinjau('formulir-gunung-api', $this->get(self::ASAL.'/kurator/gunung-api/baru?gunung='.$contoh['jalur']->mountain_id), 'Curator/VolcanoForm');
+    }
+
+    /**
+     * @return array{citra: User, menunggu: OfficialStatus, draf: OfficialStatus, jalur: Trail}
+     */
+    private function mejaKuratorContoh(): array
+    {
+        Storage::fake(config('filesystems.evidence_disk'));
+        $this->seed(DemoSeeder::class);
+
+        $jalur = Trail::where('slug', 'gede-via-cibodas')->firstOrFail();
+        $balai = Authority::create(['name' => 'Balai Besar TN Gede Pangrango', 'slug' => 'bbtnggp-contoh', 'type' => AuthorityType::NATIONAL_PARK->value, 'abbreviation' => 'BBTNGGP']);
+        $balai->mountains()->attach($jalur->mountain_id);
+
+        $kurator = function (string $nama, string $surel) use ($balai): User {
+            $user = User::factory()->create(['name' => $nama, 'email' => $surel, 'role' => UserRole::CURATOR->value]);
+            AuthorityMember::factory()->for($user)->for($balai)->create(['appointment_reference' => 'Surat tugas DATA CONTOH']);
+
+            return $user;
+        };
+        $citra = $kurator('Citra Lestari', 'citra@contoh.test');
+        $dimas = $kurator('Dimas Pratama', 'dimas@contoh.test');
+        $surat = fn () => UploadedFile::fake()->createWithContent('surat.pdf', "%PDF-1.4\n%%EOF\n");
+        $isian = fn (string $status, array $ganti = []) => [
+            'status' => $status,
+            'document_number' => 'DATA CONTOH/PG.12/2026',
+            'document_date' => now()->subDay()->toDateString(),
+            'evidence_type' => EvidenceType::OFFICIAL_LETTER->value,
+            'source_url' => 'https://contoh.test/pengumuman',
+            'captured_at' => now()->subHours(3),
+            'effective_at' => now()->subHour(),
+            'end_condition' => StatusEndCondition::UNTIL_NOTICE->value,
+            'expires_at' => null,
+            'reason_category' => null,
+            'reason' => null,
+            'limit_description' => null,
+            'legal_basis' => null,
+            'official_excerpt' => 'DATA CONTOH. Pendakian jalur Cibodas dibuka kembali.',
+            'plain_summary' => 'DATA CONTOH. Jalur Cibodas dibuka kembali dengan kuota harian.',
+            ...$ganti,
+        ];
+
+        $layanan = app(TerbitStatus::class);
+        $menunggu = $layanan->kirim($dimas, $layanan->buatDraf($dimas, $jalur, $balai, $isian(OfficialStatusValue::OPEN->value), $surat()));
+        $draf = $layanan->buatDraf($citra, $jalur->mountain, $balai, $isian(OfficialStatusValue::RESTRICTED->value, [
+            'evidence_type' => EvidenceType::NEWS->value,
+            'limit_description' => 'Sampai Kandang Badak',
+            'reason_category' => StatusReasonCategory::WEATHER->value,
+            'official_excerpt' => 'DATA CONTOH. Pendakian dibatasi sampai Pos Kandang Badak.',
+            'plain_summary' => 'DATA CONTOH. Pendakian dibatasi sampai Kandang Badak karena cuaca.',
+        ]), $surat());
+
+        $laporan = new DataErrorReport([
+            'category' => DataErrorCategory::STATUS->value,
+            'note' => 'DATA CONTOH. Akun resmi balai mengumumkan kuota harian jalur Cibodas dikurangi mulai pekan ini.',
+        ]);
+        $laporan->forceFill([
+            'user_id' => User::factory()->create()->id,
+            'mountain_id' => $jalur->mountain_id,
+            'trail_id' => $jalur->id,
+            'state' => DataErrorState::OPEN->value,
+        ])->save();
+
+        return ['citra' => $citra, 'menunggu' => $menunggu, 'draf' => $draf, 'jalur' => $jalur];
     }
 }

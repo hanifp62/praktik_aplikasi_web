@@ -10,21 +10,36 @@ use App\Models\TrailSegment;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 class OfficialStatusService
 {
     /**
-     * Latest currently-effective official status record for any statusable entity.
+     * Catatan status yang sedang berlaku untuk sebuah entitas: catatan terlihat terakhir yang
+     * sudah dimulai, selama belum berakhir.
+     *
+     * Bila catatan terakhir itu sudah berakhir, jawabannya kosong (UNKNOWN), bukan catatan yang
+     * lebih lama: spec v3 bagian 10.7, kedaluwarsa menjadi Belum diketahui dan tidak pernah
+     * otomatis Buka (ruling W8-R14). Sebelum W8 penutupan yang berakhir mengembalikan catatan Buka
+     * yang lebih lama.
      */
     public function currentFor(Model $statusable): ?OfficialStatus
     {
-        return OfficialStatus::query()
+        return $this->terakhirPada($statusable, Carbon::now());
+    }
+
+    private function terakhirPada(Model $statusable, CarbonInterface $waktu): ?OfficialStatus
+    {
+        $terakhir = OfficialStatus::query()
             ->where('statusable_type', $statusable->getMorphClass())
             ->where('statusable_id', $statusable->getKey())
-            ->currentlyEffective()
+            ->terlihatPendaki()
+            ->dimulaiPalingLambat($waktu)
             ->terbaruDulu()
             ->first();
+
+        return $terakhir?->berlakuPada($waktu) ? $terakhir : null;
     }
 
     /**
@@ -84,13 +99,7 @@ class OfficialStatusService
      */
     public function statusOnDate(Model $statusable, CarbonInterface $date): OfficialStatusValue
     {
-        return OfficialStatus::query()
-            ->where('statusable_type', $statusable->getMorphClass())
-            ->where('statusable_id', $statusable->getKey())
-            ->effectiveOn($date)
-            ->terbaruDulu()
-            ->first()
-            ?->status ?? OfficialStatusValue::UNKNOWN;
+        return $this->terakhirPada($statusable, $date)?->status ?? OfficialStatusValue::UNKNOWN;
     }
 
     /**
@@ -176,17 +185,19 @@ class OfficialStatusService
             return $restrictions;
         }
 
+        $kini = Carbon::now();
         $statuses = OfficialStatus::query()
             ->where('statusable_type', (new TrailSegment)->getMorphClass())
             ->whereIn('statusable_id', $segments->pluck('id'))
-            ->currentlyEffective()
+            ->terlihatPendaki()
+            ->dimulaiPalingLambat($kini)
             ->terbaruDulu()
             ->get();
 
         foreach ($segments as $segment) {
             $latest = $statuses->firstWhere('statusable_id', $segment->id);
 
-            if ($latest === null || ! $this->isRestrictive($latest->status)) {
+            if ($latest === null || ! $latest->berlakuPada($kini) || ! $this->isRestrictive($latest->status)) {
                 continue;
             }
 
@@ -212,18 +223,21 @@ class OfficialStatusService
             return [];
         }
 
+        $kini = Carbon::now();
         $rows = OfficialStatus::query()
             ->where('statusable_type', $morphClass)
             ->whereIn('statusable_id', $ids)
-            ->currentlyEffective()
+            ->terlihatPendaki()
+            ->dimulaiPalingLambat($kini)
             ->terbaruDulu()
-            ->get(['statusable_id', 'status']);
+            ->get(['statusable_id', 'status', 'expires_at']);
 
         $latest = [];
 
         foreach ($rows as $row) {
-            // Urutan sudah menurun, jadi kemunculan pertama adalah yang terbaru.
-            $latest[$row->statusable_id] ??= $row->status;
+            // Urutan sudah menurun, jadi kemunculan pertama adalah yang terakhir dimulai; bila
+            // sudah berakhir, entitas itu Belum diketahui (ruling W8-R14).
+            $latest[$row->statusable_id] ??= $row->berlakuPada($kini) ? $row->status : OfficialStatusValue::UNKNOWN;
         }
 
         return $latest;
@@ -270,10 +284,12 @@ class OfficialStatusService
             return [];
         }
 
+        $kini = Carbon::now();
         $statuses = OfficialStatus::query()
             ->where('statusable_type', (new TrailSegment)->getMorphClass())
             ->whereIn('statusable_id', $segments->pluck('id'))
-            ->currentlyEffective()
+            ->terlihatPendaki()
+            ->dimulaiPalingLambat($kini)
             ->terbaruDulu()
             ->get();
 
@@ -283,7 +299,7 @@ class OfficialStatusService
             // Status paling akhir berlaku untuk tiap segmen; urutan sudah menurun.
             $latest = $statuses->firstWhere('statusable_id', $segment->id);
 
-            if ($latest === null || ! in_array($latest->status, [
+            if ($latest === null || ! $latest->berlakuPada($kini) || ! in_array($latest->status, [
                 OfficialStatusValue::CLOSED,
                 OfficialStatusValue::RESTRICTED,
             ], true)) {
@@ -301,17 +317,9 @@ class OfficialStatusService
     }
 
     /**
-     * Pembatasan segmen untuk paket lapangan luring (ruling W6-8c, pra-tinjau PT8-3).
-     *
-     * Kembaran segmentRestrictionsForTrail(), yang dipakai mesin Route Fit (RouteFitService),
-     * penilaian kecocokan (PenilaianKecocokan), dan peringatan kondisi daring
-     * (ConditionAggregatorService) dan sengaja tidak diubah di sini; W8 menyatukan keduanya saat
-     * service ini ditulis ulang. Bedanya dengan kembarannya: setiap baris membawa id segmen dan
-     * verified_at catatannya (R-013). Urutannya urutan rute dari Trail::segments() (sequence, unik
-     * per jalur), sama dengan peringatan daring, dengan pemecah seri id (ruling W6-8h); urutan ini
-     * ikut menentukan hash versi paket, jadi harus sama di SQLite dan PostgreSQL. Status terakhir
-     * per segmen memakai scope currentlyEffective()->terbaruDulu() yang sama, dan hanya Tutup
-     * dan Dibatasi yang ikut.
+     * Pembatasan segmen untuk paket lapangan luring (ruling W6-8c, W6-8h, dan W8-R14): memakai
+     * keterlihatan pendaki dan masa berlaku W8, membawa id segmen dan verified_at, serta berurut
+     * menurut sequence rute lalu id agar hash versi paket sama di SQLite dan PostgreSQL.
      *
      * @return array<int, array{segment_id: int, segment: string, status: OfficialStatusValue, reason: ?string, verified_at: ?CarbonInterface}>
      */
@@ -323,20 +331,21 @@ class OfficialStatusService
             return [];
         }
 
+        $kini = Carbon::now();
         $statuses = OfficialStatus::query()
             ->where('statusable_type', (new TrailSegment)->getMorphClass())
             ->whereIn('statusable_id', $segments->pluck('id'))
-            ->currentlyEffective()
+            ->terlihatPendaki()
+            ->dimulaiPalingLambat($kini)
             ->terbaruDulu()
             ->get();
 
         $restrictions = [];
 
         foreach ($segments as $segment) {
-            // Urutan catatan sudah menurun, jadi kemunculan pertama adalah yang berlaku.
             $latest = $statuses->firstWhere('statusable_id', $segment->id);
 
-            if ($latest === null || ! $this->isRestrictive($latest->status)) {
+            if ($latest === null || ! $latest->berlakuPada($kini) || ! $this->isRestrictive($latest->status)) {
                 continue;
             }
 
@@ -359,11 +368,60 @@ class OfficialStatusService
      */
     public function cachedSnapshotForTrail(Trail $trail): array
     {
-        return Cache::remember(
-            self::snapshotCacheKey($trail->id),
-            (int) config('hiking.cache.public_ttl_seconds'),
-            fn () => $this->snapshotForTrail($trail)
-        );
+        $kunci = self::snapshotCacheKey($trail->id);
+        $tersimpan = Cache::get($kunci);
+
+        if (is_array($tersimpan)) {
+            return $tersimpan;
+        }
+
+        $snapshot = $this->snapshotForTrail($trail);
+        Cache::put($kunci, $snapshot, $this->umurSnapshot($trail));
+
+        return $snapshot;
+    }
+
+    /**
+     * Umur snapshot bercache: TTL publik, tetapi tidak pernah melewati saat catatan jalur atau
+     * gunungnya berikutnya mulai atau berhenti berlaku (titipan W4-6h OOS6).
+     *
+     * Status yang berlaku karena waktunya tiba tidak memicu event model, jadi tanpa batas ini
+     * snapshot dapat menyebut status lama sampai lima menit, sementara pembaca langsung
+     * (kartu status, StatusJalurRingkas) sudah memakai yang baru. Satu kueri, hanya saat
+     * snapshot dibangun.
+     */
+    private function umurSnapshot(Trail $trail): int
+    {
+        $ttl = (int) config('hiking.cache.public_ttl_seconds');
+        $kini = Carbon::now();
+        $sasaran = [[(new Trail)->getMorphClass(), $trail->id]];
+
+        if ($trail->mountain_id !== null) {
+            $sasaran[] = [(new Mountain)->getMorphClass(), $trail->mountain_id];
+        }
+
+        $baris = OfficialStatus::query()
+            ->where(function ($q) use ($sasaran) {
+                foreach ($sasaran as [$jenis, $id]) {
+                    $q->orWhere(fn ($w) => $w->where('statusable_type', $jenis)->where('statusable_id', $id));
+                }
+            })
+            ->terlihatPendaki()
+            ->where(fn ($q) => $q->where('effective_at', '>', $kini)->orWhere('expires_at', '>', $kini))
+            ->get(['effective_at', 'expires_at']);
+
+        $batas = $baris
+            ->flatMap(fn (OfficialStatus $s) => [$s->effective_at, $s->expires_at])
+            ->filter(fn ($waktu) => $waktu !== null && $waktu->greaterThan($kini))
+            ->min();
+
+        if ($batas === null) {
+            return $ttl;
+        }
+
+        // Satu detik sesudah batasnya: expires_at masih berlaku pada detik itu sendiri
+        // (scopeEffectiveOn memakai >=).
+        return max(1, min($ttl, (int) $kini->diffInSeconds($batas) + 1));
     }
 
     /**
@@ -373,6 +431,19 @@ class OfficialStatusService
     public static function forgetCachedSnapshot(int $trailId): void
     {
         Cache::forget(self::snapshotCacheKey($trailId));
+    }
+
+    /**
+     * Snapshot membawa jenis sumber dari data_sources (R-009), jadi mengubah jenis sebuah
+     * sumber membuang snapshot setiap jalur yang statusnya mengutip sumber itu (titipan
+     * W3-1j), dengan kaskade yang sama seperti perubahan status.
+     */
+    public static function forgetSnapshotsForSource(int $dataSourceId): void
+    {
+        OfficialStatus::query()
+            ->where('data_source_id', $dataSourceId)
+            ->get(['id', 'statusable_type', 'statusable_id'])
+            ->each(fn (OfficialStatus $status) => $status->forgetAffectedTrailCaches());
     }
 
     private static function snapshotCacheKey(int $trailId): string
@@ -412,6 +483,8 @@ class OfficialStatusService
             // di snapshot yang bercache.
             'effective_at' => $record?->effective_at?->toIso8601String(),
             'expires_at' => $record?->expires_at?->toIso8601String(),
+            // Jadwal tinjau catatan meja kurator (W8, ruling W8-R13); kosong untuk catatan lama.
+            'next_review_at' => $record?->next_review_at?->toIso8601String(),
             'reason' => $record?->reason,
             'notes' => $record?->notes,
         ];

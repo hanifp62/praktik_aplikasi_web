@@ -541,13 +541,14 @@ class TrailFitServiceTest extends TestCase
     /**
      * Ruling W5-FR (N1 tinjauan ulang): panel "Kenapa?" kartu Jelajah tidak mengulang kalimat
      * kartunya. Jalur P1 turun karena segmen saja, dan kalimat segmen itu juga butir kedua
-     * what_to_watch; sesudah disaring, butir sah berikutnya yang tampil. Daftar harapannya dibaca
-     * dari penjelasan mesin, bukan diketik ulang.
+     * what_to_watch; sesudah disaring, butir sah berikutnya (tanjakan tinggi 1.200 m, sesudah
+     * W9 Tugas 3 menghapus kalimat status ganda) yang tampil. Daftar harapannya dibaca dari
+     * penjelasan mesin, bukan diketik ulang.
      */
     public function test_the_explore_why_panel_does_not_repeat_the_segment_reason_of_its_card(): void
     {
         $user = $this->pendakiCamping();
-        $jalur = Trail::factory()->easy()->published()->create(['camping_available' => true]);
+        $jalur = Trail::factory()->easy()->published()->create(['camping_available' => true, 'elevation_gain_m' => 1200]);
         $this->batasiSegmen($jalur, 'Puncak');
         $diperhatikan = app(RouteFitService::class)->evaluate($user, null, $jalur)->explanation['what_to_watch'];
 

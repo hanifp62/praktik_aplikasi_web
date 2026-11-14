@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use App\Services\ConsiderationService;
 use App\Services\DataFreshnessService;
+use App\Services\DataResmi\Yurisdiksi;
+use App\Services\Profil\FotoProfil;
 use App\Services\Trips\DaftarPengingat;
 use App\Services\Trips\PendakianAktif;
 use App\Support\DisplayPreference;
@@ -55,7 +57,11 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'isModerator' => $user->isModerator(),
                     'isAdmin' => $user->isAdmin(),
+                    // Pintu meja kurator (W8): satu kueri, hanya untuk pengguna berperan kurator.
+                    'isKurator' => $user->isCurator() && app(Yurisdiksi::class)->kuratorAktif($user),
                     'hasCompletedProfile' => $user->hasCompletedProfile(),
+                    // Foto profil W7 atau null; avatar memakai inisial bila null.
+                    'foto' => FotoProfil::url($user),
                 ],
             ],
 

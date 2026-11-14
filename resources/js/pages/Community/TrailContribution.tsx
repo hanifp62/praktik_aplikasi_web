@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AppLayout } from '@/layouts/AppLayout';
 import { contribute, profile } from '@/routes';
-import { checkpoints, geometry } from '@/routes/trails';
+import { checkpoints, geometry, segments } from '@/routes/trails';
 import type { PropsBersama } from '@/types';
 
 interface Props extends PropsBersama {
@@ -76,6 +76,7 @@ export default function TrailContribution() {
                                     <div className="flex flex-wrap gap-2">
                                         <Button variant="secondary" size="sm" href={contribute.url({ query: { isi: t.id } })}>Isi data</Button>
                                         <Button variant="secondary" size="sm" href={geometry.url(t.id)}>Garis jalur</Button>
+                                        <Button variant="secondary" size="sm" href={segments.url(t.id)}>Segmen</Button>
                                         <Button variant="secondary" size="sm" href={checkpoints.url(t.id)}>Pos</Button>
                                     </div>
                                 </li>

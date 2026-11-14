@@ -1,5 +1,6 @@
 import { Kesegaran } from '@/components/trails/Kesegaran';
 import { LabelSumber } from '@/components/trails/LabelSumber';
+import { LaporkanKesalahan, type LaporKesalahan } from '@/components/trails/LaporkanKesalahan';
 import { StatusAkses } from '@/components/trails/StatusAkses';
 import { Card } from '@/components/ui/Card';
 import type { Cuaca, Perizinan, StatusResmiRinci } from './types';
@@ -11,7 +12,7 @@ import type { Cuaca, Perizinan, StatusResmiRinci } from './types';
  * sumbernya (LabelSumber), bukan dengan garis aksen.
  */
 
-export function StatusResmiKartu({ status }: { status: StatusResmiRinci }) {
+export function StatusResmiKartu({ status, lapor, sasaran }: { status: StatusResmiRinci; lapor?: LaporKesalahan; sasaran?: string }) {
     return (
         <Card title="Status resmi">
             <div className="flex flex-wrap items-center gap-3">
@@ -27,6 +28,7 @@ export function StatusResmiKartu({ status }: { status: StatusResmiRinci }) {
                 <Kesegaran waktu={status.waktu} awalan={status.awalanWaktu ?? undefined} keadaan={status.kesegaran} />
             </div>
             <p className="mt-2 text-xs text-muted">Status resmi menjelaskan ketentuan pengelola, bukan jaminan keselamatan.</p>
+            {lapor && sasaran ? <LaporkanKesalahan lapor={lapor} sasaran={sasaran} /> : null}
         </Card>
     );
 }

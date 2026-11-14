@@ -30,7 +30,8 @@ class TrailFactory extends Factory
             'description' => fake()->sentence(),
             'distance_km' => 8,
             'elevation_gain_m' => 800,
-            'elevation_loss_m' => 800,
+            // Turunan sekali jalan naik tidak disalin dari tanjakan (W8-R23); kosong sampai diukur.
+            'elevation_loss_m' => null,
             'estimated_duration_minutes' => 480,
             'technical_demand' => TechnicalDemand::MODERATE->value,
             'navigation_complexity' => NavigationComplexity::MODERATE->value,

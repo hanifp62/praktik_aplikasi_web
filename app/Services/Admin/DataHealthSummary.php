@@ -53,7 +53,7 @@ class DataHealthSummary
             // Tanpa PostGIS kolom geometri tidak ada, dan publishabilityReport() melewati
             // syarat itu. Hitungannya karena itu tidak diketahui, bukan nol (R-006).
             'tanpaGeometri' => Trail::spatialSupported()
-                ? $belumLengkap->reject(fn (array $b) => $b['jalur']->hasGeometry())->count()
+                ? $belumLengkap->reject(fn (array $b) => $b['jalur']->hasGeometry() === true)->count()
                 : null,
 
             'statusPerluDitinjau' => $this->kesegaran->reviewCount(),

@@ -262,7 +262,7 @@ final class RingkasanDasbor
         $menunggu = self::kritisMenungguBmkg($trip);
 
         if ($menunggu['jumlah'] === $belum) {
-            return $kapan.' '.$belum.' butir cuaca kritis menunggu BMKG, terbit mulai '.$menunggu['terbit']->translatedFormat('D, j M').'.';
+            return $kapan.' '.$belum.' butir cuaca kritis menunggu BMKG, terbit mulai '.Timezone::tanggalPendek($menunggu['terbit'], denganHari: true).'.';
         }
 
         return $kapan.' '.$belum.' butir kritis belum dikonfirmasi.';
@@ -316,7 +316,7 @@ final class RingkasanDasbor
                 'belum' => array_slice($kritis['belum'], 0, self::BUTIR_DISEBUT),
                 'sisa' => max(0, count($kritis['belum']) - self::BUTIR_DISEBUT),
                 'menungguBmkg' => $menunggu['jumlah'] > 0
-                    ? sprintf('%d butir cuaca menunggu BMKG, terbit mulai %s', $menunggu['jumlah'], $menunggu['terbit']->translatedFormat('D, j M'))
+                    ? sprintf('%d butir cuaca menunggu BMKG, terbit mulai %s', $menunggu['jumlah'], Timezone::tanggalPendek($menunggu['terbit'], denganHari: true))
                     : null,
             ],
             'aksi' => $this->aksiPerjalanan($trip, $aturan, $kritis),

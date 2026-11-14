@@ -183,6 +183,10 @@ jobs:
             sleep 2
           done
           curl --silent --fail --output /dev/null http://127.0.0.1/up
+          curl --silent --fail http://127.0.0.1/api/health | grep --quiet '"db":true'
+          curl --silent --fail --output /dev/null http://127.0.0.1/api/mountains
+          curl --silent --fail --output /dev/null http://127.0.0.1/api/trails
+          curl --silent --fail --output /dev/null http://127.0.0.1/sitemap.xml
           curl --silent --fail --output /dev/null http://127.0.0.1/login
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1/api/cron/data-freshness-check)" = 401
           curl --silent --fail --output /dev/null --header "Authorization: Bearer $CRON_SECRET" http://127.0.0.1/api/cron/data-freshness-check
@@ -198,7 +202,7 @@ jobs:
         run: |
           docker stop memount
           docker run --detach --name memount-keliru --network host \
-            --env APP_ENV=local --env APP_DEBUG=true --env APP_KEY \
+            --env APP_ENV=local --env APP_DEBUG=true --env LOG_CHANNEL=stack --env APP_KEY \
             --env DB_CONNECTION=pgsql --env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test \
             --env SESSION_DRIVER=database --env CACHE_STORE=database --env QUEUE_CONNECTION=sync \
             memount:ci
@@ -212,8 +216,10 @@ jobs:
             exit 1
           fi
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1/dev/primitif)" = 404
+          curl --silent --fail http://127.0.0.1/api/health | grep --quiet '"db":true'
           curl --silent --fail --header 'X-Forwarded-Proto: https' --header 'X-Forwarded-Host: contoh.test' http://127.0.0.1/login | grep --quiet 'https://contoh.test/build/assets/'
           docker logs memount-keliru 2>&1 | grep --quiet 'APP_ENV=local dan APP_DEBUG=true diabaikan'
+          docker logs memount-keliru 2>&1 | grep --quiet 'LOG_CHANNEL=stack menulis ke berkas kontainer'
 
       - name: Log kontainer
         if: always()

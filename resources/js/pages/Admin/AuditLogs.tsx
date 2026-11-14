@@ -49,18 +49,18 @@ export default function AuditLogs() {
             <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                 <PageHeader
                     induk={{ href: profile.url(), label: 'Profil' }}
-                    title="Audit Log"
+                    title="Catatan audit"
                     description="Catatan tindakan kritis: perubahan status resmi, data jalur dan gunung, moderasi, sumber data, dan peran pengguna."
                 />
 
                 <AdminNav />
 
                 <div className="mb-4 max-w-sm">
-                    <Label htmlFor="action">Filter aksi</Label>
+                    <Label htmlFor="action">Saring aksi</Label>
                     <TextInput id="action" value={saringan} onChange={(e) => setSaringan(e.target.value)} placeholder="trail.published" />
                 </div>
 
-                <BingkaiTabel keterangan="Daftar audit log" kolom={['Waktu', 'Aktor', 'Aksi', 'Entitas', 'Perubahan']}>
+                <BingkaiTabel keterangan="Daftar catatan audit" kolom={['Waktu', 'Aktor', 'Aksi', 'Entitas', 'Perubahan']}>
                     {logs.data.length === 0 ? (
                         <BarisKosong
                             kolom={5}

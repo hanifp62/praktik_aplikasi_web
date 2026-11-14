@@ -425,9 +425,10 @@ class TripWorkspaceTest extends TestCase
         );
 
         $hapusRencana = File::get(resource_path('js/components/trips/rencana/HapusRencana.tsx'));
-        $this->assertStringContainsString('<Button variant="secondary" className="mt-3" onClick={hapus} processing={menghapus}>', $hapusRencana);
+        $this->assertStringContainsString('<Button variant="secondary" className="mt-3" onClick={() => setTerbuka(true)} processing={menghapus}>', $hapusRencana);
+        $this->assertStringContainsString('<Dialog', $hapusRencana);
         $this->assertStringContainsString(
-            "window.confirm('Hapus rencana trip ini? Daftar persiapan, penilaian kesiapan, dan pengingatnya ikut terhapus dan tidak dapat dikembalikan.')",
+            'Hapus rencana trip ini? Daftar persiapan, penilaian kesiapan, dan pengingatnya ikut terhapus dan tidak dapat dikembalikan.',
             $hapusRencana,
         );
     }

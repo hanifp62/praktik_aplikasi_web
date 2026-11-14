@@ -39,6 +39,9 @@ class SchedulerHealthService
      * jam yang terlewat masih wajar, tetapi pengingat yang jatuh tempo baru terkirim
      * ketika penjadwal berjalan lagi, dan pada hari keberangkatan tidak dikirim sama sekali.
      *
+     * Jam di label ditulis dalam WIB dari ekspresi tugasnya, yang dibaca penjadwal dalam zona aplikasi
+     * (UTC, config/app.php); ScheduleLabelTest mencocokkan keduanya (temuan audit W9).
+     *
      * @var array<string, array{judul: string, jadwal: string, toleransi_jam: int}>
      */
     public const TUGAS = [
@@ -46,18 +49,23 @@ class SchedulerHealthService
             'judul' => 'Pembaruan prakiraan BMKG',
             // Jam bertitik (TA-m1, tinjauan audit): sapuan BF-5 menyisir kode format
             // ("H:i"), bukan jam yang ditulis sebagai teks seperti ini.
-            'jadwal' => 'Dua kali sehari, pukul 06.00 dan 18.00 WIB',
+            'jadwal' => 'Dua kali sehari, pukul 13.00 dan 01.00 WIB',
             'toleransi_jam' => 14,
         ],
         'data:freshness-check' => [
             'judul' => 'Pemeriksaan kesegaran status resmi',
-            'jadwal' => 'Setiap hari pukul 07.00 WIB',
+            'jadwal' => 'Setiap hari pukul 14.00 WIB',
             'toleransi_jam' => 26,
         ],
         'trips:kirim-pengingat' => [
             'judul' => 'Pengiriman pengingat perjalanan',
             'jadwal' => 'Setiap jam, pada menit ke-0',
             'toleransi_jam' => 3,
+        ],
+        'model:prune' => [
+            'judul' => 'Pemangkasan tautan bagikan yang berakhir',
+            'jadwal' => 'Setiap hari pukul 03.00 WIB',
+            'toleransi_jam' => 26,
         ],
     ];
 

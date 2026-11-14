@@ -43,6 +43,12 @@ class CheckpointRequest extends FormRequest
                     ->ignore($checkpoint instanceof Checkpoint ? $checkpoint->getKey() : null),
             ],
             'checkpoint_type' => ['required', new Enum(CheckpointType::class)],
+            'trail_segment_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('trail_segments', 'id')
+                    ->where('trail_id', $trail instanceof Trail ? $trail->getKey() : null),
+            ],
             'elevation_m' => ['nullable', 'integer', 'min:0', 'max:9000'],
             'notes' => ['nullable', 'string', 'max:500'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],

@@ -54,9 +54,15 @@ class ReporterImpactTest extends TestCase
         return $laporan;
     }
 
+    /**
+     * Diperbarui W7: dampak laporan kini satu metode tersendiri (HikerProgressService), karena
+     * ringkasan tahun milik HubProgres; kunci dan niatnya sama.
+     *
+     * @return array{laporan_terbit: int, terima_kasih: int}
+     */
     private function progres(User $user): array
     {
-        return app(HikerProgressService::class)->forUser($user);
+        return app(HikerProgressService::class)->dampakLaporan($user);
     }
 
     private function sumber(): string

@@ -51,7 +51,7 @@ class TrailDataHealth
             ],
             'tanpa-status' => [
                 'label' => 'Status resmi belum pernah dicatat',
-                'lingkup' => fn (Builder $query) => $query->whereDoesntHave('officialStatuses'),
+                'lingkup' => fn (Builder $query) => $query->whereDoesntHave('statusTerlihat'),
             ],
             'karakteristik' => [
                 'label' => 'Karakteristik dasar belum lengkap (jarak, tanjakan, estimasi durasi)',

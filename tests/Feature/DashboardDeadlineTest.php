@@ -120,13 +120,14 @@ class DashboardDeadlineTest extends TestCase
     public function test_a_permit_already_handled_drops_its_deadline(): void
     {
         $trip = $this->trip('2026-10-10', ['booking_opens_days_before' => 30, 'booking_closes_days_before' => 2]);
-        TripPreparationItem::create([
+        (new TripPreparationItem)->forceFill([
             'trip_plan_id' => $trip->id,
+            'kind' => TripPreparationItem::JENIS_IZIN,
             'category' => PreparationCategory::LOGISTICS->value,
             'label' => PreparationService::PERMIT_LABEL,
             'is_critical' => true,
             'status' => PreparationStatus::CONFIRMED->value,
-        ]);
+        ])->save();
 
         $this->assertSame(['Prakiraan BMKG untuk 10 Okt mulai terbit'], array_column($this->tenggat($trip)['baris'], 'judul'));
     }

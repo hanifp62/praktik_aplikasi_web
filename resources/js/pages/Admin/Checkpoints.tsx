@@ -1,10 +1,11 @@
 import { router, useForm, usePage } from '@inertiajs/react';
 import { useRef, useState, type ReactNode } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
-import { FormulirAdmin, PilihanAdmin, TeksPanjangAdmin, konfirmasiLalu, type Pilihan } from '@/components/admin/FormulirAdmin';
+import { FormulirAdmin, PilihanAdmin, TeksPanjangAdmin, useKonfirmasiAdmin, type Pilihan } from '@/components/admin/FormulirAdmin';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { FormField } from '@/components/ui/Field';
 import { fokusTerlihat } from '@/components/ui/gaya';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -19,6 +20,7 @@ interface IsianCheckpoint {
     name: string;
     sequence: string;
     checkpoint_type: string;
+    trail_segment_id: string;
     elevation_m: string;
     notes: string;
     latitude: string;
@@ -31,6 +33,7 @@ interface BarisCheckpoint {
     title: string;
     type: string;
     elevation: string | null;
+    segment?: string | null;
     isian: IsianCheckpoint;
 }
 
@@ -39,6 +42,7 @@ interface Props extends PropsBersama {
     checkpoints: BarisCheckpoint[];
     nextSequence: string;
     types: Pilihan[];
+    segments?: Pilihan[];
     penolakan: string | null;
 }
 
@@ -51,7 +55,7 @@ const idHapus = (id: number): string => `hapus-checkpoint-${id}`;
 /** Judul daftar, tujuan fokus terakhir sesudah hapus, juga saat daftar kosong (ruling EF-6). */
 const ID_JUDUL_DAFTAR = 'judul-daftar-checkpoint';
 
-const kosong = (urutan: string): IsianCheckpoint => ({ name: '', sequence: urutan, checkpoint_type: 'POS', elevation_m: '', notes: '', latitude: '', longitude: '' });
+const kosong = (urutan: string): IsianCheckpoint => ({ name: '', sequence: urutan, checkpoint_type: 'POS', trail_segment_id: '', elevation_m: '', notes: '', latitude: '', longitude: '' });
 
 /**
  * FR-16: tambah, ubah, urutkan, dan hapus checkpoint. Terbuka juga bagi pemandu
@@ -59,10 +63,11 @@ const kosong = (urutan: string): IsianCheckpoint => ({ name: '', sequence: uruta
  * pemandu setiap tautannya akan berujung penolakan.
  */
 export default function Checkpoints() {
-    const { auth, flash, trail, checkpoints, nextSequence, types, penolakan } = usePage<Props>().props;
+    const { auth, flash, trail, checkpoints, nextSequence, types, segments = [], penolakan } = usePage<Props>().props;
     const [sunting, setSunting] = useState<number | null>(null);
     const sedangPindah = useRef(false);
     const form = useForm<IsianCheckpoint>(kosong(nextSequence));
+    const { konfirmasiLalu, dialogKonfirmasi } = useKonfirmasiAdmin();
     const admin = auth.user?.isAdmin ?? false;
 
     const ubah = (baris: BarisCheckpoint) => {
@@ -195,11 +200,16 @@ export default function Checkpoints() {
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <PilihanAdmin name="checkpoint_type" label="Tipe" required placeholder="Pilih tipe" options={types} value={form.data.checkpoint_type} onChange={(v) => form.setData('checkpoint_type', v)} error={form.errors.checkpoint_type} />
-                        <FormField name="latitude" type="number" step="any" label="Latitude" value={form.data.latitude} onChange={(e) => form.setData('latitude', e.target.value)} error={form.errors.latitude} />
-                        <FormField name="longitude" type="number" step="any" label="Longitude" value={form.data.longitude} onChange={(e) => form.setData('longitude', e.target.value)} error={form.errors.longitude} />
+                        <FormField name="latitude" type="number" step="any" label="Garis lintang" value={form.data.latitude} onChange={(e) => form.setData('latitude', e.target.value)} error={form.errors.latitude} />
+                        <FormField name="longitude" type="number" step="any" label="Garis bujur" value={form.data.longitude} onChange={(e) => form.setData('longitude', e.target.value)} error={form.errors.longitude} />
                     </div>
 
-                    <FormField name="elevation_m" type="number" label="Ketinggian (mdpl)" value={form.data.elevation_m} onChange={(e) => form.setData('elevation_m', e.target.value)} error={form.errors.elevation_m} />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <FormField name="elevation_m" type="number" label="Ketinggian (mdpl)" value={form.data.elevation_m} onChange={(e) => form.setData('elevation_m', e.target.value)} error={form.errors.elevation_m} />
+                        {segments.length > 0 ? (
+                            <PilihanAdmin name="trail_segment_id" label="Segmen jalur (opsional)" placeholder="Tanpa segmen" options={segments} value={form.data.trail_segment_id} onChange={(v) => form.setData('trail_segment_id', v)} error={form.errors.trail_segment_id} />
+                        ) : null}
+                    </div>
 
                     <TeksPanjangAdmin name="notes" label="Catatan" rows={2} value={form.data.notes} onChange={(v) => form.setData('notes', v)} error={form.errors.notes} />
                 </FormulirAdmin>
@@ -212,7 +222,11 @@ export default function Checkpoints() {
                     </h2>
                     <div className="mt-3">
                         {checkpoints.length === 0 ? (
-                            <p className="text-sm text-secondary">Belum ada checkpoint.</p>
+                            <EmptyState
+                                jenis="pertama"
+                                title="Belum ada pos tercatat"
+                                description="Tambahkan pos berurutan dari pintu jalur sampai tujuan agar jalur memenuhi syarat terbit dan pendaki melihat tahapan perjalanan."
+                            />
                         ) : (
                             <ol className="space-y-2">
                                 {checkpoints.map((c, i) => (
@@ -221,6 +235,7 @@ export default function Checkpoints() {
                                             <span className="font-medium text-primary">{c.title}</span>
                                             <span className="text-secondary"> · {c.type}</span>
                                             {c.elevation ? <span className="text-secondary"> · {c.elevation}</span> : null}
+                                            {c.segment ? <span className="text-secondary"> · Segmen {c.segment}</span> : null}
                                         </span>
                                         <span className="flex flex-wrap gap-2">
                                             <Button id={idArah(c.id, -1)} variant="secondary" size="sm" disabled={i === 0} onClick={() => pindah(c.id, -1)} aria-label={`Naikkan urutan ${c.name}`}>Naik</Button>
@@ -240,6 +255,7 @@ export default function Checkpoints() {
                 ) : (
                     <Button variant="secondary" href={contribute.url()}>Kembali ke halaman kontribusi</Button>
                 )}
+                {dialogKonfirmasi}
             </div>
         </div>
     );

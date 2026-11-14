@@ -140,7 +140,7 @@ class PageHeaderContractTest extends TestCase
 
         $this->assertStringContainsString('href={profile.url()}', $tautan);
         $this->assertStringContainsString('h-11 w-11', $tautan);
-        $this->assertStringContainsString('<Avatar nama={auth.user.name} ukuran={44} />', $tautan);
+        $this->assertStringContainsString('<Avatar nama={auth.user.name} foto={auth.user.foto} ukuran={44} />', $tautan);
         $this->assertStringContainsString('<span className="sr-only">Profil {auth.user.name}</span>', $tautan);
         $this->assertStringContainsString('{tempat.akar ? <TautanProfil className="lg:hidden" /> : null}', $kepala);
         $this->assertStringContainsString('{tempat.merek ? <Lockup className="lg:hidden" /> : null}', $kepala);
@@ -178,8 +178,10 @@ class PageHeaderContractTest extends TestCase
             $nama = str_replace('\\', '/', $berkas->getRelativePathname());
 
             // Halaman tamu dan halaman publik tanpa kerangka aplikasi (tautan bagikan FR-23):
-            // tanpa tombol kembali dan tanpa avatar, jadi di luar kontrak ini.
-            if (str_starts_with($nama, 'Auth/') || str_starts_with($nama, 'Public/') || $nama === 'Welcome.tsx') {
+            // tanpa tombol kembali dan tanpa avatar, jadi di luar kontrak ini. Halaman Galat
+            // (W9, ruling W4-6j) juga tanpa kerangka: props bersama kerangka membaca basis data,
+            // jadi ia hanya membawa judul h1 dan tombol ke halaman yang dapat dibuka dengan GET.
+            if (str_starts_with($nama, 'Auth/') || str_starts_with($nama, 'Public/') || $nama === 'Welcome.tsx' || $nama === 'Galat.tsx') {
                 continue;
             }
 

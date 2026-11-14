@@ -16,6 +16,7 @@ use App\Models\TrailConditionReport;
 use App\Models\TripPlan;
 use App\Models\TripReminder;
 use App\Models\User;
+use App\Models\VolcanoStatus;
 use App\Services\ConsiderationService;
 use App\Support\PenjagaDataContoh;
 use App\Support\Timezone;
@@ -57,7 +58,13 @@ class DemoSeederTest extends TestCase
         $this->assertSame(10, Trail::where('is_published', true)->count());
         $this->assertSame(1, Trail::where('is_published', false)->count());
         $this->assertSame(1, TripPlan::where('status', TripStatus::CANCELLED->value)->count());
-        $this->assertSame(3, HikingHistory::where('user_id', $budi->id)->count());
+        $this->assertSame(3, HikingHistory::where('user_id', $budi->id)->where('source', 'TRIP')->count());
+        // W7: satu catatan di luar trip, target, perlengkapan, wilayah minat, dan alasan batal.
+        $this->assertSame(1, HikingHistory::where('user_id', $budi->id)->where('source', 'MANUAL')->count());
+        $this->assertSame(['GAIN', 'HIKES'], $budi->personalTargets()->orderBy('metric')->pluck('metric')->map->value->all());
+        $this->assertSame(5, $budi->ownedItems()->count());
+        $this->assertSame(['JAWA_BARAT_BANTEN', 'JAWA_TENGAH_DIY'], $budi->preference->interest_regions);
+        $this->assertSame('WEATHER', TripPlan::where('status', TripStatus::CANCELLED->value)->sole()->cancellation_reason->value);
     }
 
     /**
@@ -170,6 +177,8 @@ class DemoSeederTest extends TestCase
             ...PermitRequirement::whereNotNull('notes')->pluck('notes')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA.'.'))->all(),
             // W3: laporan kondisi contoh untuk halaman gunung dan rincian jalur.
             ...TrailConditionReport::pluck('note')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA.'.'))->all(),
+            // W8: rekomendasi gunung api contoh (DK-43).
+            ...VolcanoStatus::pluck('recommendation')->reject(fn (string $t): bool => str_starts_with($t, DemoSeeder::PENANDA.'.'))->all(),
         ];
 
         $this->assertSame([], $tanpaPenanda);

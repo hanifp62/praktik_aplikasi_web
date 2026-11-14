@@ -79,6 +79,20 @@ class InertiaLayoutTest extends TestCase
     }
 
     /**
+     * Titipan W2-C10: dengan view terkompilasi ikut dipindai, CSS build lokal memuat kelas dari
+     * halaman pengecualian bawaan Laravel dan dari view basi (204 kelas, 85.909 B lawan 71.823 B
+     * pada simulasi W9), sedangkan build produksi dari checkout bersih tidak memuatnya. Sumber
+     * kelas di Tailwind 4 CSS-first hanya Blade dan React di resources, ditambah view paginasi.
+     */
+    public function test_tailwind_does_not_scan_compiled_views(): void
+    {
+        preg_match_all('/^@source\s+([^;]+);/m', File::get(resource_path('css/app.css')), $sumber);
+
+        $this->assertNotEmpty($sumber[1], 'Daftar @source Tailwind di app.css tidak ditemukan.');
+        $this->assertStringNotContainsString('storage/', implode("\n", $sumber[1]));
+    }
+
+    /**
      * Teks pembaca layar (sr-only) berposisi absolut. Di dalam wadah gulir yang tidak
      * berposisi, blok penampungnya jatuh ke dokumen, sehingga teks itu lolos dari
      * guliran dan melebarkan seluruh halaman. Di 360px halaman banding sempat selebar

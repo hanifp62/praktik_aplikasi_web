@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Tanpa rute storage/{path}: foto laporan dan berkas pribadi hanya disajikan
+            // lewat rute yang memeriksa Policy, bukan URL bertanda tangan dari APP_KEY.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
@@ -87,6 +89,44 @@ return [
     */
 
     'report_photos_disk' => env('REPORT_PHOTOS_DISK', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile Photo Disk
+    |--------------------------------------------------------------------------
+    |
+    | Disk untuk foto profil (W7). Bawaannya disk privat lokal; ganti ke "supabase"
+    | bersama foto laporan. Berkasnya tidak pernah publik: selalu disajikan lewat
+    | rute pemiliknya sendiri (profile.photo.show).
+    |
+    */
+
+    'avatars_disk' => env('AVATARS_DISK', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Evidence Archive Disk
+    |--------------------------------------------------------------------------
+    |
+    | Disk arsip bukti status resmi (W8, spec v3 bagian 10.7). Bawaannya disk privat
+    | lokal; berkasnya tidak pernah publik dan hanya diunduh lewat rute
+    | curator.evidence.show sesudah sidik SHA-256-nya cocok.
+    |
+    */
+
+    'evidence_disk' => env('EVIDENCE_DISK', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mountain Photo Disk
+    |--------------------------------------------------------------------------
+    |
+    | Disk foto gunung berlisensi (W8, DK-37). Bawaannya disk privat lokal; fotonya
+    | disajikan lewat rute mountains.photo kepada pengguna masuk, bersama atribusinya.
+    |
+    */
+
+    'mountain_photos_disk' => env('MOUNTAIN_PHOTOS_DISK', 'local'),
 
     /*
     |--------------------------------------------------------------------------

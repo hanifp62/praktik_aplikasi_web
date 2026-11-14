@@ -49,6 +49,7 @@ class RouteAccessMatrixTest extends TestCase
          * tahu ia memang publik dan bukan kelolosan.
          */
         'sitemap.xml',
+        'robots.txt',
         'pendakian/{trail:slug}',
 
         /*
@@ -57,6 +58,12 @@ class RouteAccessMatrixTest extends TestCase
          * bahwa isinya hanya data publik jalur.
          */
         'b/{token}',
+
+        /*
+         * Pemeriksaan kesiapan basis data produksi: hanya boolean status dan db tanpa detail koneksi.
+         * HealthCheckEndpointTest menjaga agar DSN dan pesan galat tidak pernah ikut keluar.
+         */
+        'api/health',
 
         /*
          * API baca publik dari PR #1 tim (feature/db-migration): hanya GET, hanya data jalur

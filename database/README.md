@@ -10,9 +10,9 @@ memastikan setiap tabel yang dibuat migrasi tercantum di sini. Model domain dan 
 | Domain | Tabel | Catatan |
 |---|---|---|
 | Akun dan profil pendaki | `users`, `password_reset_tokens`, `sessions`, `profiles`, `user_experience`, `user_preferences` | Peran di `users.role`; pengalaman yang diisi sendiri dipakai Route Fit |
-| Gunung dan jalur | `mountains`, `trails`, `trail_segments`, `checkpoints`, `restricted_areas` | Mountain dan Trail entitas terpisah (R-001); jalur adalah unit keputusan (R-002) |
-| Otoritas dan sumber data | `data_sources`, `authorities`, `authority_mountain`, `expert_credentials`, `credential_mountain` | Hierarki otoritas (R-009) |
-| Kondisi dan kepercayaan data | `official_statuses`, `weather_snapshots`, `trail_condition_reports`, `report_thanks`, `permit_requirements`, `mountain_follows` | Laporan komunitas tidak menimpa status resmi (R-010); cuaca bersumber dan berkesegaran (R-013) |
+| Gunung dan jalur | `mountains`, `trails`, `trail_segments`, `checkpoints`, `restricted_areas`, `mountain_photos` | Mountain dan Trail entitas terpisah (R-001); jalur adalah unit keputusan (R-002); satu foto berlisensi per gunung dengan atribusi, foto komunitas tidak pernah menjadi kepala halaman (DK-37, R-017, W8) |
+| Otoritas dan sumber data | `data_sources`, `authorities`, `authority_mountain`, `expert_credentials`, `credential_mountain`, `authority_members` | Hierarki otoritas (R-009); anggota meja kurator per badan resmi, dengan masa berlaku dan pencabutan (W8) |
+| Kondisi dan kepercayaan data | `official_statuses`, `weather_snapshots`, `trail_condition_reports`, `report_thanks`, `permit_requirements`, `mountain_follows`, `data_error_reports`, `volcano_statuses` | Laporan komunitas tidak menimpa status resmi (R-010); cuaca bersumber dan berkesegaran (R-013); laporan kesalahan data pendaki menjadi tugas cek ulang kurator, tidak pernah mengubah status (W8); level gunung api PVMBG disimpan terpisah dan tidak pernah dipetakan ke Buka atau Tutup (DK-43, W8) |
 | Route Fit dan rekomendasi | `recommendation_rules`, `recommendation_runs`, `recommendation_results` | Skor internal tidak pernah keluar dari server (BR-09) |
 | Pertimbangkan | `trail_considerations`, `comparison_shares` | Simpanan pribadi dan catatannya (FR-22); tautan bagikan perbandingan, hanya hash tokennya yang disimpan (FR-23) |
 | Rencana dan persiapan | `hiking_goals`, `trip_plans`, `trip_reminders`, `preparation_templates`, `preparation_items`, `trip_preparation_items`, `readiness_checks`, `user_owned_items` | Kesiapan adalah pendukung keputusan (R-014) |

@@ -70,11 +70,13 @@
 
         return $bagian === [] ? null : implode(' · ', $bagian);
     });
+
+    $tempoAntara = $pos->map(fn ($_, $i) => $i === 0 ? null : $tempo->get($pos[$i - 1]->id.'-'.$pos[$i]->id));
 @endphp
 
 <ol {{ $attributes }}>
     @foreach ($pos as $i => $titik)
-        @if ($antara[$i] !== null)
+        @if ($antara[$i] !== null || $tempoAntara[$i] !== null)
             <li class="flex items-stretch gap-3" aria-hidden="true">
                 {{-- Garis penghubung: hiasan yang mengulang urutan yang sudah terbaca
                      dari nomor pos dan dari struktur daftarnya sendiri. --}}
@@ -82,17 +84,19 @@
                     <span class="w-px bg-subtle"></span>
                 </div>
                 <div class="py-1 text-xs">
-                    {{-- Arah naik dan turun membawa arti, jadi ia mendapat ikon; ikonnya
-                         aria-hidden karena teks di sebelahnya sudah menyebut arahnya, dan
-                         seluruh barisnya memang sudah disembunyikan dari pembaca layar. --}}
-                    <p class="flex items-center gap-1 text-secondary">
-                        @if (str_contains($antara[$i], 'naik'))
-                            <x-ui.icon name="arrow-up" />
-                        @elseif (str_contains($antara[$i], 'turun'))
-                            <x-ui.icon name="arrow-down" />
-                        @endif
-                        {{ $antara[$i] }}
-                    </p>
+                    @if ($antara[$i] !== null)
+                        {{-- Arah naik dan turun membawa arti, jadi ia mendapat ikon; ikonnya
+                             aria-hidden karena teks di sebelahnya sudah menyebut arahnya, dan
+                             seluruh barisnya memang sudah disembunyikan dari pembaca layar. --}}
+                        <p class="flex items-center gap-1 text-secondary">
+                            @if (str_contains($antara[$i], 'naik'))
+                                <x-ui.icon name="arrow-up" />
+                            @elseif (str_contains($antara[$i], 'turun'))
+                                <x-ui.icon name="arrow-down" />
+                            @endif
+                            {{ $antara[$i] }}
+                        </p>
+                    @endif
 
                     {{--
                         Waktu tempuh dari rekaman pendaki, bukan dari rumus.
@@ -103,7 +107,7 @@
                         justru rentang itulah yang cakupannya dapat dipertanggungjawabkan
                         pada sampel sekecil ini.
                     --}}
-                    @if ($t = $tempo->get($pos[$i - 1]->id.'-'.$pos[$i]->id))
+                    @if ($t = $tempoAntara[$i])
                         <p class="mt-0.5 text-secondary">
                             Biasanya {{ $sebagaiWaktu($t['median_menit']) }},
                             terentang {{ $sebagaiWaktu($t['min_menit']) }} sampai {{ $sebagaiWaktu($t['maks_menit']) }}
@@ -132,10 +136,13 @@
                     <p class="mt-0.5 text-secondary">{{ $titik->notes }}</p>
                 @endif
 
-                {{-- Padanan teks untuk pembaca layar, karena barisnya yang menyebut
-                     kenaikan disembunyikan bersama garis penghubungnya. --}}
-                @if ($antara[$i] !== null)
-                    <p class="sr-only">Dari pos sebelumnya: {{ $antara[$i] }}.</p>
+                {{-- Padanan teks untuk pembaca layar, karena baris penghubung di atas
+                     disembunyikan bersama garis dekoratifnya. --}}
+                @if ($antara[$i] !== null || $tempoAntara[$i] !== null)
+                    <p class="sr-only">
+                        @if ($antara[$i] !== null)Dari pos sebelumnya: {{ $antara[$i] }}. @endif
+                        @if ($t = $tempoAntara[$i])Waktu tempuh dari pos sebelumnya biasanya {{ $sebagaiWaktu($t['median_menit']) }}, terentang {{ $sebagaiWaktu($t['min_menit']) }} sampai {{ $sebagaiWaktu($t['maks_menit']) }}, menurut {{ $t['rekaman'] }} rekaman pendaki.@endif
+                    </p>
                 @endif
             </div>
         </li>

@@ -291,11 +291,13 @@ class TrailNewsTest extends TestCase
         $sumber = $this->sumber();
         // Pembedanya label berkata-kata, bukan warna saja. Sejak perbaikan P-2 baris
         // resmi memakai LabelSumber (jenis sumber catatan, bukan chip "Resmi" tetap;
-        // kepekaannya diuji tersendiri di bawah), sementara laporan komunitas tetap
-        // berlatar token community (pasangan yang dihitung ColourContrastTest di kedua
-        // tema).
+        // kepekaannya diuji tersendiri di bawah). Sejak redesain W8 laporan komunitas
+        // memakai label dan garis putus-putus yang sama dengan halaman gunung dan Beranda
+        // (LabelKomunitas, KondisiPendaki), di atas token community yang pasangannya
+        // dihitung ColourContrastTest di kedua tema.
         $this->assertStringContainsString('<LabelSumber jenis={butir.jenisSumber} />', $sumber);
-        $this->assertStringContainsString('bg-community-50 px-2 py-0.5 text-xs font-medium text-community-900">Laporan komunitas</span>', $sumber);
+        $this->assertStringContainsString('<LabelKomunitas />', $sumber);
+        $this->assertStringContainsString('border-dashed border-community-500 bg-community-50', $sumber);
         $this->assertStringContainsString('Laporan komunitas tidak mengubah status resmi jalur.', $sumber);
     }
 

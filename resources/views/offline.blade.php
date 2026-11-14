@@ -47,9 +47,9 @@
             dan W6-9j). Kalimatnya karena itu menyebut ketiga kemungkinan sebab, bukan satu.
         --}}
         <main id="luring-pesan" class="mx-auto flex min-h-dvh max-w-xl flex-col justify-center px-4 py-12 sm:px-6">
-            <p class="text-sm font-medium text-muted">Luring</p>
+            <p class="text-meta font-bold text-muted">Luring</p>
 
-            <h1 class="mt-2 text-2xl font-semibold text-primary sm:text-3xl">
+            <h1 class="mt-2 text-judul text-primary">
                 {{ $dibukaPaket ? 'Paket luring di perangkat ini' : 'Halaman ini belum dapat dimuat' }}
             </h1>
 
@@ -87,10 +87,7 @@
             <div id="paket-luring"></div>
 
             <div class="mt-8">
-                <button type="button" onclick="location.reload()"
-                    class="inline-flex min-h-11 items-center justify-center rounded-control bg-brand-700 px-4 py-2 text-sm font-medium text-on-brand transition hover:bg-brand-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">
-                    Coba muat ulang
-                </button>
+                <x-ui.button onclick="location.reload()">Coba muat ulang</x-ui.button>
             </div>
         </main>
         <div id="app"></div>

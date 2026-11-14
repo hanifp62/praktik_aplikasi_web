@@ -1,7 +1,8 @@
-import { useEffect, useRef, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { InputError, Label, Select, Textarea } from '@/components/ui/Field';
+import { Dialog } from '@/components/ui/Lembar';
 
 export interface Pilihan {
     value: string;
@@ -130,9 +131,51 @@ export function TeksPanjangAdmin({ name, label, value, onChange, rows = 3, error
     );
 }
 
-/** Aksi merusak ditanyakan dulu, dengan pesan yang menyebut akibatnya (seturut wire:confirm). */
-export function konfirmasiLalu(pesan: string | null, aksi: () => void): void {
-    if (pesan === null || window.confirm(pesan)) {
-        aksi();
-    }
+/**
+ * Konfirmasi aksi merusak dengan `<Dialog>` asli (menggantikan `window.confirm` per DESIGN.md bagian 8.5).
+ * Bila `pesan` bernilai `null`, aksi langsung dijalankan tanpa membuka dialog.
+ */
+export function useKonfirmasiAdmin() {
+    const [permintaan, setPermintaan] = useState<{ pesan: string; aksi: () => void } | null>(null);
+
+    const konfirmasiLalu = (pesan: string | null, aksi: () => void): void => {
+        if (pesan === null) {
+            aksi();
+
+            return;
+        }
+
+        setPermintaan({ pesan, aksi });
+    };
+
+    const setujui = () => {
+        if (permintaan === null) {
+            return;
+        }
+
+        const jalankan = permintaan.aksi;
+        setPermintaan(null);
+        jalankan();
+    };
+
+    const dialogKonfirmasi = (
+        <Dialog
+            terbuka={permintaan !== null}
+            onTutup={() => setPermintaan(null)}
+            judul="Konfirmasi tindakan"
+            keterangan={permintaan?.pesan}
+            aksi={
+                <>
+                    <Button variant="secondary" onClick={() => setPermintaan(null)}>
+                        Batal
+                    </Button>
+                    <Button variant="danger" onClick={setujui}>
+                        Ya, lanjutkan
+                    </Button>
+                </>
+            }
+        />
+    );
+
+    return { konfirmasiLalu, dialogKonfirmasi };
 }

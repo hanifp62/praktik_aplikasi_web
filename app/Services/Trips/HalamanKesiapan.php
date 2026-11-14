@@ -15,11 +15,13 @@ use App\Models\TripPreparationItem;
 use App\Models\User;
 use App\Models\WeatherSnapshot;
 use App\Services\ConditionAggregatorService;
+use App\Services\DataResmi\StatusGunungApi;
 use App\Services\PermitService;
 use App\Services\PreparationService;
 use App\Services\Readiness\ReadinessAssessment;
 use App\Services\TrailFitService;
 use App\Services\Trails\StatusJalurRingkas;
+use App\Services\WeatherService;
 use App\Support\Timezone;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
@@ -45,6 +47,8 @@ final class HalamanKesiapan
         private readonly PermitService $permits,
         private readonly StatusJalurRingkas $statusJalur,
         private readonly ConditionAggregatorService $kondisi,
+        private readonly StatusGunungApi $gunungApi,
+        private readonly WeatherService $cuaca,
     ) {}
 
     /**
@@ -82,6 +86,8 @@ final class HalamanKesiapan
             'persiapan' => $this->persiapan($trip, $kritis),
             'kondisi' => [
                 'status' => $this->statusJalur->untuk(EloquentCollection::make([$trip->trail]))[$trip->trail->id],
+                // Kartu gunung api prototype 10 (W4-R29), dari tabel DK-43 dan hanya bila ada.
+                'gunungApi' => $this->gunungApi->untukGunung($trip->trail->mountain_id, $zona),
                 'prakiraan' => $prakiraan,
                 'laporan' => $this->laporan($penilaian->conditionSnapshot['community'] ?? []),
                 'peringatan' => $this->peringatan($penilaian, $prakiraan),
@@ -199,7 +205,7 @@ final class HalamanKesiapan
             return [
                 'id' => $item->id,
                 'label' => $item->label,
-                'menunggu' => $menunggu ? 'Menunggu BMKG: terbit mulai '.$terbit->translatedFormat('D, j M') : null,
+                'menunggu' => $menunggu ? 'Menunggu BMKG: terbit mulai '.Timezone::tanggalPendek($terbit, denganHari: true) : null,
                 // Butir izin tanpa ajakan memesan menyebut keadaan jendelanya, bukan "Pesan".
                 'keterangan' => $izin && $pemesanan !== null && $tautanIzin === null ? $pemesanan['keterangan'] : null,
                 'aksi' => match (true) {
@@ -249,11 +255,11 @@ final class HalamanKesiapan
             'butir' => $butir->all(),
             'siapDiselesaikan' => $siapDiselesaikan,
             'semuaMenungguBmkg' => $butir->isNotEmpty() && $kritisMenunggu === $butir->count()
-                ? $kritisMenunggu.' butir kritis menunggu BMKG (terbit '.$terbit->translatedFormat('D, j M').').'
+                ? $kritisMenunggu.' butir kritis menunggu BMKG (terbit '.Timezone::tanggalPendek($terbit, denganHari: true).').'
                 : null,
             // MIN-4: butir NON-KRITIS yang menunggu BMKG, supaya tidak hilang dari kartu.
             'menungguLain' => $nonKritisMenunggu > 0
-                ? $nonKritisMenunggu.' butir lain menunggu BMKG (terbit '.$terbit->translatedFormat('D, j M').').'
+                ? $nonKritisMenunggu.' butir lain menunggu BMKG (terbit '.Timezone::tanggalPendek($terbit, denganHari: true).').'
                 : null,
             'daftarBelumAda' => $daftarBelumAda,
             'semuaTidakBerlaku' => $semuaTidakBerlaku,
@@ -276,7 +282,7 @@ final class HalamanKesiapan
         $tanggal = $trip->planned_date->toDateString();
         $kesegaran = FreshnessState::tryFrom((string) ($cuaca['freshness'] ?? ''));
         $dasar = [
-            'judul' => 'Prakiraan untuk '.$trip->planned_date->translatedFormat('D, j M'),
+            'judul' => 'Prakiraan untuk '.Timezone::tanggalPendek($trip->planned_date, denganHari: true),
             'sumber' => $cuaca['source'] ?? 'BMKG',
             'area' => $cuaca['reference_area'] ?? null,
             'diperbarui' => isset($cuaca['fetched_at']) ? Timezone::display(Carbon::parse($cuaca['fetched_at']), $zona, 'j M H.i') : null,
@@ -295,7 +301,7 @@ final class HalamanKesiapan
         $terbit = PreparationService::terbitPrakiraan($trip);
 
         if ($terbit !== null) {
-            return $dasar + ['keadaan' => 'menunggu', 'pesan' => 'Menunggu BMKG. Terbit mulai '.$terbit->translatedFormat('D, j M').'; Memount tidak menebak cuaca sebelum itu.', 'baris' => [], 'sebagian' => null];
+            return $dasar + ['keadaan' => 'menunggu', 'pesan' => 'Menunggu BMKG. Terbit mulai '.Timezone::tanggalPendek($terbit, denganHari: true).'; Memount tidak menebak cuaca sebelum itu.', 'baris' => [], 'sebagian' => null];
         }
 
         // W4-4d: tanggal yang sudah lewat tidak punya prakiraan untuk diperiksa. Tanpa cabang ini
@@ -317,14 +323,15 @@ final class HalamanKesiapan
         // berbeda (ketersediaan dan kesegaran "sekarang"); baris tabel di sini menjawab cuaca
         // pada TANGGAL TRIP, dan pada hari BMKG baru terbit untuk tanggal itu jendela 72 jam
         // dari sekarang memotong baris sore/malamnya meskipun datanya sudah tersimpan (P12).
-        $baris = WeatherSnapshot::query()
+        $snapshot = WeatherSnapshot::query()
             ->where('adm4_code', $trip->trail->weather_adm4_code)
             ->whereBetween('forecast_at', [
                 Carbon::parse($tanggal, $zona)->startOfDay()->utc(),
                 Carbon::parse($tanggal, $zona)->endOfDay()->utc(),
             ])
             ->orderBy('forecast_at')
-            ->get()
+            ->get();
+        $baris = $snapshot
             ->map(fn (WeatherSnapshot $s) => [
                 'waktu' => $s->forecast_at->copy()->setTimezone($zona)->format('H.i'),
                 'cuaca' => $s->weather_description ?? 'Tidak dicatat',
@@ -348,7 +355,21 @@ final class HalamanKesiapan
             ? 'Prakiraan BMKG baru menjangkau sampai pukul '.$akhirDataLokal->format('H.i').' '.Timezone::label($zona).' pada tanggal ini.'
             : null;
 
-        return $dasar + ['keadaan' => 'tersedia', 'pesan' => null, 'baris' => $baris, 'sebagian' => $sebagian];
+        // Waktu ambil dan kesegaran dari baris tanggal trip yang tampil, bukan dari konteks 72 jam
+        // WeatherService (titipan W4, ruling W8-R26): pada area yang sama keduanya bisa diambil
+        // pada jalan refresh yang berbeda, dan kesegaran harus menyebut data yang dibaca pendaki.
+        $diambil = $snapshot->max('fetched_at');
+        $kesegaranBaris = $this->cuaca->freshness($diambil);
+
+        return [
+            ...$dasar,
+            'diperbarui' => Timezone::display($diambil, $zona, 'j M H.i'),
+            'kesegaran' => $kesegaranBaris !== FreshnessState::UNKNOWN ? $kesegaranBaris->label() : null,
+            'keadaan' => 'tersedia',
+            'pesan' => null,
+            'baris' => $baris,
+            'sebagian' => $sebagian,
+        ];
     }
 
     /**
@@ -424,7 +445,7 @@ final class HalamanKesiapan
         $labelKini = RouteFitLabel::textFor(RouteFitLabel::tryFrom((string) ($kini->routeFitSnapshot['label'] ?? '')));
 
         return [
-            'tanggal' => $lalu->computed_at?->copy()->setTimezone($zona)->translatedFormat('j M'),
+            'tanggal' => $lalu->computed_at === null ? null : Timezone::tanggalPendek($lalu->computed_at->copy()->setTimezone($zona)),
             'butir' => [
                 $statusLalu === $statusKini
                     ? ['jenis' => 'sama', 'teks' => 'Status resmi tidak berubah.']

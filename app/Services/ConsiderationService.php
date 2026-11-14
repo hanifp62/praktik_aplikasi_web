@@ -219,6 +219,7 @@ class ConsiderationService
     public function forUser(User $user): Collection
     {
         return Trail::query()
+            ->tanpaGeometri()
             ->active()
             ->whereIn('id', TrailConsideration::where('user_id', $user->id)->pluck('trail_id'))
             ->with('mountain')
@@ -236,7 +237,8 @@ class ConsiderationService
     public function simpanan(User $user): Collection
     {
         return $this->kueriSimpananAktif($user)
-            ->with('trail.mountain')
+            // Kandidat simpanan tanpa garis rute (titipan W3 I7, ruling W8-R20).
+            ->with(['trail' => fn ($query) => $query->tanpaGeometri(), 'trail.mountain'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();

@@ -23,6 +23,7 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { useKerangka } from '@/layouts/Kerangka';
 import { TautanSimpanan } from '@/layouts/TautanSimpanan';
 import { kelas } from '@/lib/kelas';
+import { MULAI_XL } from '@/lib/layar';
 import { onboarding } from '@/routes';
 import { index as trailsIndex } from '@/routes/trails';
 import type { PropsBersama } from '@/types';
@@ -117,7 +118,7 @@ export default function Index() {
     // Peta dipasang hanya saat terlihat: tampilan Peta dipilih, atau mulai 1280 px tempat kolom
     // peta selalu tampil. Di section yang tersembunyi MapLibre dibingkai pada kanvas 0x0 dan
     // dimuat walau Peta tidak pernah dibuka (I4 tinjauan akhir W3, spec v3 bagian 9.4).
-    const layarLebar = useCocokMedia('(min-width: 1280px)');
+    const layarLebar = useCocokMedia(MULAI_XL);
     const pasangPeta = tampilan === 'peta' || layarLebar;
     // Kolom ketiga di layar lebar ada selama ada hasil: peta, atau kalimat menunggu bila belum
     // satu pun jalur di hasil ini bergaris rute (data pemilik hari ini).

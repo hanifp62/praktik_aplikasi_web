@@ -26,10 +26,14 @@ class CheckpointRowResource extends JsonResource
             'elevation' => $this->elevation_m
                 ? number_format($this->elevation_m, 0, ',', '.').' mdpl'
                 : null,
+            'segment' => $this->relationLoaded('segment') && $this->segment !== null
+                ? $this->segment->sequence.'. '.$this->segment->name
+                : null,
             'isian' => [
                 'name' => $this->name,
                 'sequence' => (string) $this->sequence,
                 'checkpoint_type' => $this->checkpoint_type->value,
+                'trail_segment_id' => $this->trail_segment_id !== null ? (string) $this->trail_segment_id : '',
                 'elevation_m' => $this->elevation_m !== null ? (string) $this->elevation_m : '',
                 'notes' => $this->notes ?? '',
                 // Dibaca dari kolom biasa; tidak perlu SQL spasial hanya untuk mengisi form.

@@ -271,7 +271,7 @@ final class PaketLapangan
             'alasan' => $potret['reason'],
             'dicek' => $dicek?->toIso8601String(),
             'dicekTeks' => Timezone::display($dicek, $zona, 'j M Y H.i'),
-            'berlaku' => $berlaku === null ? null : Timezone::display($berlaku, $zona, $berlaku->format('H:i:s') === '00:00:00' || $berlaku->copy()->setTimezone($zona)->format('H.i') === '00.00' ? 'j M Y' : 'j M Y H.i'),
+            'berlaku' => $berlaku === null ? null : Timezone::display($berlaku, $zona, $berlaku->format('H:i:s') === '00:00:00' || in_array($berlaku->copy()->setTimezone($zona)->format('H:i:s'), ['00:00:00', '23:59:59'], true) ? 'j M Y' : 'j M Y H.i'),
             'berlakuIso' => $berlaku?->toIso8601String(),
             'turunSejak' => self::turunSejak($nilai, $dicek, $berlaku),
             'pembatasan' => array_map(fn (array $p) => [
@@ -357,8 +357,8 @@ final class PaketLapangan
             $belumTerbit = [];
             $hari[] = [
                 'tanggal' => $tanggal->toDateString(),
-                'label' => $tanggal->translatedFormat('D, j M'),
-                'kalimat' => $baris === null ? 'Prakiraan BMKG untuk '.$tanggal->translatedFormat('j M').' belum tersedia di Memount saat paket dibuat.' : null,
+                'label' => Timezone::tanggalPendek($tanggal, denganHari: true),
+                'kalimat' => $baris === null ? 'Prakiraan BMKG untuk '.Timezone::tanggalPendek($tanggal).' belum tersedia di Memount saat paket dibuat.' : null,
                 'baris' => $baris === null ? [] : $baris->map(fn (WeatherSnapshot $s) => [
                     'waktu' => $s->forecast_at->copy()->setTimezone($zona)->format('H.i').' '.Timezone::label($zona),
                     'cuaca' => $s->weather_description ?? 'Tidak dicatat',
@@ -403,11 +403,11 @@ final class PaketLapangan
         return [[
             'tanggal' => $pertama->toDateString(),
             'label' => count($tanggal) === 1
-                ? $pertama->translatedFormat('D, j M')
-                : $pertama->translatedFormat('D, j M').' sampai '.$terakhir->translatedFormat('D, j M'),
+                ? Timezone::tanggalPendek($pertama, denganHari: true)
+                : Timezone::tanggalPendek($pertama, denganHari: true).' sampai '.Timezone::tanggalPendek($terakhir, denganHari: true),
             'kalimat' => count($tanggal) === 1
-                ? 'Prakiraan BMKG untuk '.$pertama->translatedFormat('j M').' belum terbit saat paket dibuat. '.$jangkauan.', mulai '.PreparationService::tanggalTerbit($pertama)->translatedFormat('j M').'.'
-                : 'Prakiraan BMKG untuk '.$pertama->translatedFormat('j M').' sampai '.$terakhir->translatedFormat('j M').' belum terbit saat paket dibuat. '.$jangkauan.'.',
+                ? 'Prakiraan BMKG untuk '.Timezone::tanggalPendek($pertama).' belum terbit saat paket dibuat. '.$jangkauan.', mulai '.Timezone::tanggalPendek(PreparationService::tanggalTerbit($pertama)).'.'
+                : 'Prakiraan BMKG untuk '.Timezone::tanggalPendek($pertama).' sampai '.Timezone::tanggalPendek($terakhir).' belum terbit saat paket dibuat. '.$jangkauan.'.',
             'baris' => [],
         ]];
     }

@@ -6,7 +6,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Sakelar } from '@/components/ui/Sakelar';
 import { kelas } from '@/lib/kelas';
 import { teksAntrean } from './antrean';
-import { AKURASI_LEMAH_M, kalimatKartuLewat, teksAkurasi, teksJarak, teksNaik, teksUmur } from './hitung';
+import { AKURASI_LEMAH_M, kalimatKartuLewat, ringkasanRuasPos, teksAkurasi, teksJarak, teksNaik, teksUmur } from './hitung';
 import { KartuDarurat } from './KartuDarurat';
 import type { DataLapangan } from './types';
 import type { ModeLapangan as KeadaanLapangan } from './useModeLapangan';
@@ -85,6 +85,8 @@ export function ModeLapangan({ data, mode, selesai, pengaturan = null }: { data:
     const kartuTiba = kartu.tiba;
     const kartuLewat = kartu.lewat;
     const laporan = tujuan ? data.laporan.find((l) => l.segmen !== null && l.segmen === tujuan.segmen) : undefined;
+    const posSebelumnya = tujuan ? (data.pos.filter((p) => p.urutan <= mode.tercapai).at(-1) ?? null) : null;
+    const infoRuasPos = tujuan ? ringkasanRuasPos(data.garis, posSebelumnya, tujuan) : null;
     const umur = posisi ? (Date.now() - posisi.waktu) / 1000 : null;
     const teksStatusAntrean = teksAntrean(mode.daring, mode.antrean);
 
@@ -117,6 +119,11 @@ export function ModeLapangan({ data, mode, selesai, pengaturan = null }: { data:
                             {tujuan.nama}
                         </p>
                         <p className="text-kecil text-secondary">{tujuan.jenis}</p>
+                        {infoRuasPos ? (
+                            <p data-angka className="mt-0.5 text-kecil text-secondary">
+                                {infoRuasPos}
+                            </p>
+                        ) : null}
                     </>
                 ) : (
                     <p className="mt-1 text-judul-kartu text-primary">{data.pos.length === 0 ? 'Jalur ini belum punya pos tercatat.' : 'Semua pos jalur ini sudah dicapai.'}</p>

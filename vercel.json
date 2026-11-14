@@ -24,6 +24,7 @@
     { "path": "/api/cron/trips-kirim-pengingat", "schedule": "0 22 * * *" },
     { "path": "/api/cron/trips-kirim-pengingat", "schedule": "0 23 * * *" },
     { "path": "/api/cron/trips-kirim-pengingat", "schedule": "0 0 * * *" },
-    { "path": "/api/cron/trips-kirim-pengingat", "schedule": "0 2 * * *" }
+    { "path": "/api/cron/trips-kirim-pengingat", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/model-prune", "schedule": "0 20 * * *" }
   ]
 }

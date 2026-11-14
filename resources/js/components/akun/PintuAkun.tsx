@@ -31,6 +31,7 @@ export function PintuAkun() {
             <div className="-mx-2 flex flex-col">
                 {pengguna.isModerator ? <TautanMenu href="/moderation">Moderasi</TautanMenu> : null}
                 {pengguna.isAdmin ? <TautanMenu href="/admin/trails">Admin</TautanMenu> : null}
+                {pengguna.isKurator ? <TautanMenu href="/kurator">Meja kurator</TautanMenu> : null}
                 <button type="button" onClick={() => void keluar(perangkat?.kunci ?? null, 'kartu')} aria-busy={keadaanKeluar.sibuk} className={tombolMenu}>
                     Keluar
                 </button>

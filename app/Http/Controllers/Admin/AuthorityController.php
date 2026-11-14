@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AuthorityMemberRole;
 use App\Enums\AuthorityType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AuthorityRequest;
 use App\Models\Authority;
+use App\Models\AuthorityMember;
 use App\Models\Mountain;
 use App\Services\AuditLogService;
 use App\Support\PaginasiInertia;
@@ -53,8 +55,41 @@ class AuthorityController extends Controller
             'types' => array_map(fn (AuthorityType $t) => ['value' => $t->value, 'label' => $t->label()], AuthorityType::cases()),
             'mountains' => Mountain::active()->orderBy('name')->get()
                 ->map(fn (Mountain $m) => ['value' => $m->id, 'label' => $m->name])->values()->all(),
+
+            // Anggota meja kurator yang belum dicabut (W8, ruling W8-R7), satu kueri.
+            'anggota' => AuthorityMember::query()
+                ->whereNull('revoked_at')
+                ->with(['user:id,name,email', 'authority:id,name,abbreviation'])
+                ->orderBy('authority_id')
+                ->orderBy('id')
+                ->limit(self::BATAS_ANGGOTA)
+                ->get()
+                ->map(fn (AuthorityMember $a) => [
+                    'id' => $a->id,
+                    'badanId' => $a->authority_id,
+                    'nama' => $a->user->name,
+                    'email' => $a->user->email,
+                    'badan' => $a->authority->displayName(),
+                    'peran' => $a->role->label(),
+                    'surat' => $a->appointment_reference,
+                    'berlaku' => $a->valid_until === null
+                        ? 'Sejak '.$a->valid_from->translatedFormat('j M Y')
+                        : $a->valid_from->translatedFormat('j M Y').' sampai '.$a->valid_until->translatedFormat('j M Y'),
+                ])->values()->all(),
+            'badanBerwenang' => Authority::query()
+                ->whereIn('type', array_map(fn (AuthorityType $t) => $t->value, array_filter(AuthorityType::cases(), fn (AuthorityType $t) => $t->mayDeclareTrailStatus())))
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Authority $b) => ['value' => $b->id, 'label' => $b->displayName()])->values()->all(),
+            'peranAnggota' => array_map(fn (AuthorityMemberRole $p) => ['value' => $p->value, 'label' => $p->label()], AuthorityMemberRole::cases()),
         ]);
     }
+
+    /**
+     * Daftar anggota di halaman ini; pemilik memberi peran satu per satu, jadi seratus cukup jauh
+     * di atas kebutuhan tahap 1.
+     */
+    private const BATAS_ANGGOTA = 100;
 
     public function store(AuthorityRequest $request, AuditLogService $audit): RedirectResponse
     {

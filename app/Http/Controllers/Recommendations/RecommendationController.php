@@ -38,7 +38,8 @@ class RecommendationController extends Controller
     {
         abort_unless((int) $run->user_id === (int) $request->user()->id, 403);
 
-        $run->load('results.trail.mountain', 'hikingGoal');
+        // Hasil rekomendasi tanpa garis rute (titipan W3 I7, ruling W8-R20).
+        $run->load(['results.trail' => fn ($query) => $query->tanpaGeometri(), 'results.trail.mountain', 'hikingGoal']);
 
         $results = $run->results;
         $eligible = $results->where('eligible', true);

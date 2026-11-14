@@ -25,7 +25,6 @@ use App\Support\Timezone;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -74,7 +73,7 @@ class TripController extends Controller
      * Formulir ubah rencana. Jalurnya ditampilkan, tidak dapat diganti: jalur lain
      * berarti rencana lain beserta daftar persiapannya sendiri.
      */
-    public function edit(TripPlan $trip, TripLifecycle $lifecycle): Response|RedirectResponse
+    public function edit(Request $request, TripPlan $trip, TripLifecycle $lifecycle, RencanaTrip $rencana): Response|RedirectResponse
     {
         $this->authorize('update', $trip);
 
@@ -82,26 +81,9 @@ class TripController extends Controller
             return redirect()->route('trips.show', $trip)->with('penolakan-trip', $penolakan);
         }
 
-        $trip->load('trail.mountain');
-
         return Inertia::render('Trips/Edit', [
             'title' => 'Ubah Rencana Trip',
-            'trip' => [
-                'id' => $trip->id,
-                'jalur' => $trip->trail->name.' - '.$trip->trail->mountain->name,
-            ],
-            'awal' => [
-                'name' => $trip->name,
-                'planned_date' => $trip->planned_date->toDateString(),
-                'end_date' => $trip->end_date?->toDateString() ?? '',
-                'start_time' => $trip->start_time ? Carbon::parse($trip->start_time)->format('H:i') : '',
-                'participants_count' => $trip->participants_count !== null ? (string) $trip->participants_count : '',
-                'trip_type' => $trip->trip_type->value,
-                'notes' => $trip->notes ?? '',
-            ],
-            'tripTypes' => self::tipePerjalanan(),
-            'tanggalTerawal' => Timezone::earliestDateInIndonesia(),
-            'batas' => RencanaTrip::batasIsian(),
+            ...$rencana->propsUbah($request->user(), $trip, $request),
         ]);
     }
 
@@ -189,12 +171,10 @@ class TripController extends Controller
             // untuk jalur draf dan arsip).
             'penilaian' => $jalurTerbit ? route('trails.fit', ['trail' => $trip->trail, 'trip' => $trip->id]) : null,
             // Nadanya mengikuti §43: sistem menyebut aturan dan penyelenggaranya, tidak
-            // pernah menyatakan izinnya sudah aman atau belum.
-            'izin' => $jendela === null ? null : [
-                'ditutup' => $jendela['state'] === PermitService::BOOKING_DITUTUP,
-                'pesan' => $jendela['message'],
-                'tautanPemesanan' => $jendela['requirement']->booking_url,
-            ],
+            // pernah menyatakan izinnya sudah aman atau belum. Kalimat dan tautannya dari
+            // penentu satu sumber PermitService (W4 M1, ruling W8-R25): ajakan memesan hanya
+            // saat jendela terbuka, tanpa alamat pemesanan mentah di kalimatnya.
+            'izin' => $jendela === null ? null : PermitService::pemesananDariJendela($jendela, $jendela['requirement'], $trip->status->isActive()),
             // M-3 putaran perbaikan 1 (ruling W6-5e): "Pendakian ini sudah selesai" tertulis
             // untuk setiap hasil, termasuk Dibatalkan di jalur, bertentangan konvensi W5 M10.
             // Label hasil dikirim bersama URL supaya Show.tsx dapat menulis kalimat per

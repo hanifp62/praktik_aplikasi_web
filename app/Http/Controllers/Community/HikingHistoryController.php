@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\HikingHistory;
 use App\Models\TripPlan;
 use App\Services\Community\HasilPendakian;
+use App\Support\Durasi;
 use App\Support\Timezone;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -50,20 +51,27 @@ class HikingHistoryController extends Controller
                     'id' => $h->id,
                     'tripId' => $h->trip_plan_id,
                     'trailId' => $h->trail_id,
-                    'jalur' => $h->trail?->name,
+                    'jalur' => $h->namaJalur(),
                     'gunung' => $h->trail?->mountain?->name,
+                    // Catatan manual (FR-25) tanpa trip: tidak punya ringkasan, persiapan, atau
+                    // sesi; jarak dan lamanya angka yang ditulis pendaki sendiri.
+                    'manual' => $h->manual(),
                     // Ruling FF-1: tanggal kalender di zona gunung, sama dengan ringkasan
                     // pendakian (HasilPendakian); trail.mountain sudah dimuat di atas.
                     'tanggal' => $h->completed_at->copy()->setTimezone(Timezone::forTrail($h->trail))->translatedFormat('d M Y'),
                     'jenisTrip' => $h->trip_type?->label(),
                     'hasil' => $h->completion_state?->label(),
-                    'persiapan' => self::persiapan($h->tripPlan),
+                    'persiapan' => $h->manual() ? null : self::persiapan($h->tripPlan),
                     // Jarak milik jalurnya, bukan rekaman langkah pendaki; yang belum
                     // dicatat disebut belum diketahui, bukan nol (§95).
-                    'jarak' => $h->trail?->distance_km !== null
-                        ? number_format((float) $h->trail->distance_km, 1, ',', '.').' km'
-                        : 'belum diketahui',
-                    'durasi' => HasilPendakian::durasiSesi($h->tripPlan?->hikingSession) ?? 'tidak tercatat',
+                    'jarak' => match (true) {
+                        $h->manual() => $h->recorded_distance_m !== null ? number_format($h->recorded_distance_m / 1000, 1, ',', '.').' km' : 'belum diketahui',
+                        $h->trail?->distance_km !== null => number_format((float) $h->trail->distance_km, 1, ',', '.').' km',
+                        default => 'belum diketahui',
+                    },
+                    'durasi' => $h->manual()
+                        ? ($h->recorded_moving_minutes !== null ? Durasi::panjang($h->recorded_moving_minutes) : 'tidak tercatat')
+                        : (HasilPendakian::durasiSesi($h->tripPlan?->hikingSession) ?? 'tidak tercatat'),
                     'catatan' => $h->personal_notes,
                     'laporan' => $h->conditionReport === null ? null : [
                         'status' => $h->conditionReport->moderation_status->labelUntukPelapor(),

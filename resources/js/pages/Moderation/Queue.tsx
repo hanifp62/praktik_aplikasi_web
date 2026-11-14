@@ -5,8 +5,10 @@ import type { Opsi } from '@/components/discovery/Isian';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { InputError, Label, Select, TextInput } from '@/components/ui/Field';
 import { fokusTerlihat } from '@/components/ui/gaya';
+import { Dialog } from '@/components/ui/Lembar';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { useFokusSesudahRender } from '@/components/ui/ToastUrungkan';
@@ -82,6 +84,7 @@ export default function Queue() {
     const { flash, errors, filter, statuses, actions, reports } = usePage<Props>().props;
     const [alasan, setAlasan] = useState<Record<number, string>>({});
     const [sedang, setSedang] = useState<{ id: number; action: string } | null>(null);
+    const [konfirmasi, setKonfirmasi] = useState<{ laporan: Laporan; tindakan: Tindakan } | null>(null);
     const [terakhir, setTerakhir] = useState<Laporan | null>(null);
     const fokusKe = useFokusSesudahRender();
     const penolakan = terakhir !== null ? (errors.action ?? null) : null;
@@ -97,10 +100,13 @@ export default function Queue() {
 
     const saring = (nilai: string) => router.get(queue.url({ query: { filter: nilai } }), {}, { preserveState: true, preserveScroll: true, replace: true });
 
-    const tindak = (laporan: Laporan, t: Tindakan) => {
-        if (t.konfirmasi && !window.confirm(t.konfirmasi)) {
+    const tindak = (laporan: Laporan, t: Tindakan, sudahDikonfirmasi = false) => {
+        if (t.konfirmasi && !sudahDikonfirmasi) {
+            setKonfirmasi({ laporan, tindakan: t });
+
             return;
         }
+
         const { id } = laporan;
         let hasil: HasilTindakan = null;
         setSedang({ id, action: t.value });
@@ -147,7 +153,7 @@ export default function Queue() {
                 {penolakan !== null && terakhir !== null && !penolakanDiKartu ? kotakPenolakan(`Laporan ${terakhir.jalur}, ${terakhir.gunung}, pendakian ${terakhir.tanggalPendakian}`) : null}
 
                 <div className="mb-4 max-w-xs">
-                    <Label htmlFor="filter">Filter status</Label>
+                    <Label htmlFor="filter">Saring status</Label>
                     <Select id="filter" value={filter} onChange={(e) => saring(e.target.value)}>
                         <option value="">Semua</option>
                         {statuses.map((s) => (
@@ -157,9 +163,20 @@ export default function Queue() {
                 </div>
 
                 {reports.data.length === 0 ? (
-                    <Card>
-                        <p className="text-sm text-secondary">Tidak ada laporan pada filter ini.</p>
-                    </Card>
+                    filter ? (
+                        <EmptyState
+                            jenis="tersaring"
+                            title="Tidak ada laporan pada saringan ini"
+                            description="Pilih status lain pada saringan di atas untuk melihat riwayat keputusan atau antrean lainnya."
+                        />
+                    ) : (
+                        <EmptyState
+                            jenis="menunggu"
+                            menunggu="laporan kondisi dari pendaki"
+                            title="Belum ada laporan kondisi"
+                            description="Laporan komunitas masuk ke antrean ini setelah pendaki mengirimkan kondisi lapangan terbaru."
+                        />
+                    )
                 ) : (
                     <>
                         <p className="mb-2 text-sm text-muted">{reports.total} laporan</p>
@@ -242,6 +259,31 @@ export default function Queue() {
                         </div>
                     </>
                 )}
+                <Dialog
+                    terbuka={konfirmasi !== null}
+                    onTutup={() => setKonfirmasi(null)}
+                    judul={konfirmasi ? `${konfirmasi.tindakan.label} laporan ini?` : 'Konfirmasi tindakan'}
+                    keterangan={konfirmasi?.tindakan.konfirmasi ?? undefined}
+                    aksi={
+                        <>
+                            <Button variant="secondary" onClick={() => setKonfirmasi(null)}>
+                                Batal
+                            </Button>
+                            <Button
+                                variant="danger"
+                                onClick={() => {
+                                    if (konfirmasi !== null) {
+                                        const target = konfirmasi;
+                                        setKonfirmasi(null);
+                                        tindak(target.laporan, target.tindakan, true);
+                                    }
+                                }}
+                            >
+                                {konfirmasi?.tindakan.label ?? 'Lanjutkan'}
+                            </Button>
+                        </>
+                    }
+                />
             </div>
         </div>
     );

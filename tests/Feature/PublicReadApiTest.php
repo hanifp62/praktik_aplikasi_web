@@ -82,17 +82,24 @@ class PublicReadApiTest extends TestCase
     }
 
     /**
-     * Rute api/ adalah API baca publik, dengan satu pengecualian bernama: pemicu Vercel Cron (api.cron), yang
-     * menjalankan tugas terjadwal di balik rahasia CRON_SECRET dan dijaga CronEndpointTest. Rute api/ baru lain
+     * Rute api/ adalah API baca publik, dengan dua pengecualian bernama: pemicu Vercel Cron (api.cron, dijaga
+     * CronEndpointTest) dan kesiapan basis data (api.health, dijaga HealthCheckEndpointTest). Rute api/ baru lain
      * membuat test ini merah sampai diputuskan dengan sadar.
      */
     public function test_every_api_route_is_rate_limited_and_read_only(): void
     {
         $rute = collect(Route::getRoutes()->getRoutes())->filter(fn (Rute $r) => str_starts_with($r->uri(), 'api/'));
-        [$pemicuCron, $bacaPublik] = $rute->partition(fn (Rute $r) => $r->getName() === 'api.cron');
+        [$pemicuCron, $sisa] = $rute->partition(fn (Rute $r) => $r->getName() === 'api.cron');
+        [$kesehatan, $bacaPublik] = $sisa->partition(fn (Rute $r) => $r->getName() === 'api.health');
 
         $this->assertCount(1, $pemicuCron);
+        $this->assertCount(1, $kesehatan);
         $this->assertCount(5, $bacaPublik);
+
+        foreach ($kesehatan as $r) {
+            $this->assertContains('throttle:30,1', $r->gatherMiddleware(), $r->uri());
+            $this->assertSame(['GET', 'HEAD'], $r->methods(), $r->uri());
+        }
 
         foreach ($bacaPublik as $r) {
             $this->assertContains('throttle:60,1', $r->gatherMiddleware(), $r->uri());

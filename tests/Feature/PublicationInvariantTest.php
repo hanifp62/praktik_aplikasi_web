@@ -172,6 +172,22 @@ class PublicationInvariantTest extends TestCase
         $trail->update(['data_source_id' => null]);
     }
 
+    public function test_deleting_a_data_source_referenced_by_a_published_trail_is_rejected(): void
+    {
+        $trail = $this->publishedTrail();
+        $sumber = DataSource::findOrFail($trail->data_source_id);
+
+        try {
+            $sumber->delete();
+            $this->fail('Penghapusan DataSource jalur terbit seharusnya ditolak.');
+        } catch (PublicationGateViolation $galat) {
+            $this->assertStringContainsString('Sumber data belum ditetapkan.', $galat->getMessage());
+        }
+
+        $this->assertNotNull($sumber->fresh());
+        $this->assertSame($sumber->id, $trail->fresh()->data_source_id);
+    }
+
     public function test_a_published_trail_cannot_lose_required_characteristics(): void
     {
         $trail = $this->publishedTrail();

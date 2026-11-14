@@ -1,5 +1,7 @@
 import { router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
+import { KartuGunungApi } from '@/components/trails/KartuGunungApi';
+import type { LaporKesalahan } from '@/components/trails/LaporkanKesalahan';
 import { ProfilElevasi } from '@/components/trails/ProfilElevasi';
 import { AngkaNaik } from '@/components/trails/rinci/AngkaNaik';
 import { CocokkahUntukSaya } from '@/components/trails/rinci/CocokkahUntukSaya';
@@ -26,6 +28,7 @@ import type {
     Segmen,
     StatusResmiRinci,
 } from '@/components/trails/rinci/types';
+import type { GunungApi } from '@/components/trails/types';
 import { TombolSimpan } from '@/components/trails/TombolSimpan';
 import { BarAksi } from '@/components/ui/BarAksi';
 import { Button } from '@/components/ui/Button';
@@ -51,6 +54,8 @@ interface Props extends PropsBersama {
     waktuDariRekaman: number | null;
     segmen: Segmen[];
     statusResmi: StatusResmiRinci;
+    laporKesalahan: LaporKesalahan;
+    gunungApi: GunungApi | null;
     perizinan: Perizinan | null;
     cuaca: Cuaca;
     komunitas: Komunitas;
@@ -86,6 +91,8 @@ export default function Show() {
         waktuDariRekaman,
         segmen,
         statusResmi,
+        laporKesalahan,
+        gunungApi,
         perizinan,
         cuaca,
         komunitas,
@@ -111,15 +118,19 @@ export default function Show() {
 
     const rencanaUrl = tripsCreate.url({ query: { trail: trail.id } });
 
+    // Kolom kanan 352 px: aksi utama berdiri sendiri selebar kolom, lalu simpan dan Banding
+    // berdampingan; tiga tombol sebaris membungkus tanpa sengaja di 1440 px (W3-G2, W9).
     const aksiLebar = (
         <>
+            <Button href={rencanaUrl} className="col-span-2">
+                Rencanakan trip
+            </Button>
             <TombolSimpan jalur={jalurSimpan} tampilkanToast={tampilkanToast} bentuk="tombol" />
             {bandingUrl ? (
                 <Button variant="secondary" href={bandingUrl}>
                     Banding
                 </Button>
             ) : null}
-            <Button href={rencanaUrl}>Rencanakan trip</Button>
         </>
     );
 
@@ -129,7 +140,7 @@ export default function Show() {
                 <PageHeader induk={{ href: trailsIndex.url(), label: 'Jelajah' }} title={trail.name} description={trail.description ?? undefined}>
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
                         <p className="text-kecil text-secondary">
-                            <Tautan href={trail.mountainUrl} className="font-bold text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
+                            <Tautan href={trail.mountainUrl} className="inline-flex min-h-11 items-center font-bold text-brand-ink underline underline-offset-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
                                 {trail.mountain}
                             </Tautan>
                             {[trail.mdpl, trail.province].filter(Boolean).map((t) => `, ${t}`).join('')}
@@ -185,7 +196,8 @@ export default function Show() {
                             <h2 id="judul-kondisi" className="text-bagian text-primary">
                                 Kondisi sekarang
                             </h2>
-                            <StatusResmiKartu status={statusResmi} />
+                            <StatusResmiKartu status={statusResmi} lapor={laporKesalahan} sasaran={trail.name} />
+                            {gunungApi ? <KartuGunungApi data={gunungApi} /> : null}
                             {perizinan ? <PerizinanKartu izin={perizinan} /> : null}
                             <CuacaKartu cuaca={cuaca} />
                         </section>
@@ -209,7 +221,7 @@ export default function Show() {
                         layar tidak boleh menyembunyikan tombolnya. */}
                     <aside aria-label="Kecocokan dan aksi" className="hidden lg:block">
                         <div className="sticky top-[calc(var(--kepala-atas)+var(--pesan-jaringan,0px)+1.5rem)] max-h-[calc(100dvh-var(--kepala-atas)-var(--pesan-jaringan,0px)-var(--nav-bawah,0px)-3rem)] space-y-4 overflow-y-auto p-1">
-                            <div className="flex flex-wrap gap-2">{aksiLebar}</div>
+                            <div className="grid grid-cols-2 gap-2">{aksiLebar}</div>
                             <CocokkahUntukSaya kecocokan={kecocokan} idJudul="judul-cocok-lebar" />
                         </div>
                     </aside>

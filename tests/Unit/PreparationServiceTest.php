@@ -2,10 +2,13 @@
 
 namespace Tests\Unit;
 
+use App\Enums\PreparationCategory;
 use App\Enums\PreparationStatus;
 use App\Models\Trail;
 use App\Models\TripPlan;
+use App\Models\User;
 use App\Services\PreparationService;
+use App\Services\Trips\IsiAwalPerlengkapan;
 use Database\Seeders\PreparationTemplateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -116,6 +119,53 @@ class PreparationServiceTest extends TestCase
         $this->assertSame(1, $hitungan['dikonfirmasi']);
         $this->assertSame($kritis->count() - 1, $hitungan['berlaku']);
         $this->assertSame($kritis->slice(2)->pluck('label')->values()->all(), $hitungan['belum']);
+    }
+
+    /**
+     * Perlengkapan pribadi mengisi awal daftar sebagai butir Perlengkapan yang belum dikonfirmasi
+     * dan tidak kritis (ruling W7-R8, BR-10), sehingga tidak menambah hitungan butir kritis.
+     */
+    public function test_owned_items_prefill_the_list_unconfirmed_and_not_critical(): void
+    {
+        $user = User::factory()->create();
+        $user->ownedItems()->createMany([['name' => 'Trekking pole'], ['name' => 'Matras']]);
+        $trip = TripPlan::factory()->create(['user_id' => $user->id]);
+
+        $items = app(PreparationService::class)->generateFor($trip);
+        $milik = $items->whereNotNull('user_owned_item_id')->values();
+
+        $this->assertEqualsCanonicalizing(['Trekking pole', 'Matras'], $milik->pluck('label')->all());
+        $this->assertTrue($milik->every(fn ($item) => $item->category === PreparationCategory::EQUIPMENT
+            && $item->is_critical === false
+            && $item->status === PreparationStatus::NOT_CONFIRMED
+            && $item->description === IsiAwalPerlengkapan::KETERANGAN));
+        $this->assertSame(
+            $items->where('is_critical', true)->count(),
+            PreparationService::kritis($trip->fresh()->preparationItems)['berlaku'],
+        );
+    }
+
+    /**
+     * Membuat ulang daftar tidak menggandakan barang, mempertahankan statusnya, menambahkan
+     * barang yang baru dimiliki, dan melewati barang yang namanya sudah ada di daftar.
+     */
+    public function test_regenerating_neither_duplicates_owned_items_nor_resets_them(): void
+    {
+        $user = User::factory()->create();
+        $pole = $user->ownedItems()->create(['name' => 'Trekking pole']);
+        $user->ownedItems()->create(['name' => 'referensi NAVIGASI jalur']);
+        $trip = TripPlan::factory()->create(['user_id' => $user->id]);
+        $service = app(PreparationService::class);
+
+        $service->generateFor($trip);
+        $service->updateStatus($trip->preparationItems()->where('user_owned_item_id', $pole->id)->sole(), PreparationStatus::CONFIRMED);
+        $user->ownedItems()->create(['name' => 'Gaiter']);
+        $items = $service->generateFor($trip->fresh());
+
+        $this->assertSame(1, $items->where('user_owned_item_id', $pole->id)->count());
+        $this->assertSame(PreparationStatus::CONFIRMED, $items->firstWhere('user_owned_item_id', $pole->id)->status);
+        $this->assertSame(1, $items->where('label', 'Gaiter')->count());
+        $this->assertSame(0, $items->where('label', 'referensi NAVIGASI jalur')->count(), 'Nama yang sama dengan butir templat tidak ditambahkan dua kali.');
     }
 
     /**

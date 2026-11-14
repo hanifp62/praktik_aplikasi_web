@@ -33,8 +33,8 @@ class ProfileTest extends TestCase
     }
 
     /**
-     * Ringkasan profil pendakian memakai label dari enum, dan isian yang belum diisi
-     * dikirim sebagai null, bukan ditebak (R-007).
+     * Ringkasan pengalaman memakai label dari enum, dan isian yang belum diisi dikirim null,
+     * bukan ditebak (R-007).
      */
     public function test_the_hiking_profile_summary_shows_labels_and_leaves_blanks_blank(): void
     {
@@ -43,10 +43,57 @@ class ProfileTest extends TestCase
 
         $this->actingAs($user)->get('/profile')
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('profilPendakian.lengkap', true)
-                ->where('profilPendakian.rincian.0', ['label' => 'Tingkat pengalaman', 'nilai' => 'Menengah'])
-                ->where('profilPendakian.rincian.1', ['label' => 'Preferensi wilayah', 'nilai' => null])
-                ->where('profilPendakian.rincian.2', ['label' => 'Durasi yang Anda sukai', 'nilai' => null]));
+                ->where('pengalaman.lengkap', true)
+                ->where('pengalaman.rincian.0', ['label' => 'Tingkat', 'nilai' => 'Menengah'])
+                ->where('pengalaman.rincian.2', ['label' => 'Tanjakan tertinggi', 'nilai' => null])
+                ->where('preferensi.rincian.1', ['label' => 'Lama pendakian', 'nilai' => null]));
+    }
+
+    /**
+     * Hub Profil (spec v3 bagian 6.15, prototype 14): identitas dengan tingkat yang diisi
+     * sendiri, pengalaman, preferensi termasuk wilayah minat, dan perlengkapan urut nama;
+     * "Ubah" menuju langkah onboarding yang bersangkutan.
+     */
+    public function test_the_profile_hub_reads_the_hikers_own_answers(): void
+    {
+        $this->travelTo(now()->setDate(2026, 10, 8));
+        $user = User::factory()->create(['name' => 'Budi Setiawan', 'created_at' => '2026-02-10 03:00:00']);
+        $user->profile()->create(['experience_level' => 'BEGINNER', 'completed_at' => now()]);
+        $user->experience()->create(['completed_hikes_count' => 4, 'terrain_experience' => ['FOREST', 'ROCKY'], 'navigation_experience' => 'BASIC', 'highest_elevation_gain_m' => 1660]);
+        $user->preference()->create(['preferred_duration' => 'TWO_DAY', 'preferred_trip_type' => 'CAMPING', 'interest_regions' => ['JAWA_TENGAH_DIY', 'JAWA_BARAT_BANTEN']]);
+        $user->ownedItems()->createMany([['name' => 'Jas hujan'], ['name' => 'Headlamp']]);
+
+        $this->actingAs($user)->get('/profile')->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('identitas.nama', 'Budi Setiawan')
+            ->where('identitas.tingkat', 'Pemula, diisi sendiri')
+            ->where('identitas.bergabung', 'Bergabung Feb 2026')
+            ->where('identitas.foto', null)
+            ->where('pengalaman.rincian.1.nilai', '4')
+            ->where('pengalaman.rincian.2.nilai', '1.660 m')
+            ->where('pengalaman.rincian.3.nilai', 'Hutan, Berbatu')
+            ->where('pengalaman.rincian.4.nilai', 'Dasar')
+            ->where('pengalaman.ubah', route('onboarding'))
+            ->where('preferensi.rincian.0.nilai', 'Camping')
+            ->where('preferensi.rincian.1.nilai', '2 hari')
+            ->where('preferensi.ubah', route('onboarding', ['langkah' => 3]))
+            ->where('perlengkapan.daftar', [['id' => $user->ownedItems()->where('name', 'Headlamp')->value('id'), 'nama' => 'Headlamp'], ['id' => $user->ownedItems()->where('name', 'Jas hujan')->value('id'), 'nama' => 'Jas hujan']])
+            ->where('perlengkapan.batas', 40)
+            ->where('kabar', null));
+    }
+
+    /**
+     * Pilihan bahasa disembunyikan sampai terjemahan Inggris ada (DK-40), dan tidak ada
+     * tautan kebijakan ke halaman yang belum ada.
+     */
+    public function test_the_profile_offers_no_control_that_does_not_work_yet(): void
+    {
+        $sumber = collect([resource_path('js/pages/Profile/Edit.tsx'), ...glob(resource_path('js/components/profil/*.tsx'))])
+            ->map(fn (string $berkas) => file_get_contents($berkas))
+            ->implode("\n");
+
+        foreach (['English', 'Bahasa', 'Kebijakan data pribadi'] as $kata) {
+            $this->assertStringNotContainsString($kata, $sumber);
+        }
     }
 
     public function test_profile_information_can_be_updated(): void

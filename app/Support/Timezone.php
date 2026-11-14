@@ -57,8 +57,12 @@ class Timezone
         return Carbon::now('Asia/Jayapura')->toDateString();
     }
 
-    public static function forTrail(Trail $trail): string
+    public static function forTrail(?Trail $trail): string
     {
+        if ($trail === null) {
+            return self::DEFAULT;
+        }
+
         $timezone = $trail->relationLoaded('mountain')
             ? $trail->mountain?->timezone
             : $trail->mountain()->value('timezone');
@@ -89,14 +93,28 @@ class Timezone
 
     /**
      * Instan UTC menjadi teks siap tampil, lengkap dengan penanda zonanya.
-     * Tanpa penanda itu pengguna tidak punya cara tahu jam mana yang dimaksud.
+     * Tanpa penanda itu pengguna tidak punya cara tahu jam mana yang dimaksud. Jam ditulis
+     * dengan titik ("19.33"), seperti DESIGN.md bagian Tipografi (W9).
      */
-    public static function display(?Carbon $instant, string $timezone, string $format = 'd M Y H.i'): ?string
+    public static function display(?Carbon $instant, string $timezone, string $format = 'j M Y H.i'): ?string
     {
         if ($instant === null) {
             return null;
         }
 
         return $instant->copy()->setTimezone($timezone)->translatedFormat($format).' '.self::label($timezone);
+    }
+
+    /**
+     * Tanggal pendek "3 Nov" atau "Sab, 3 Nov", dengan tahun hanya bila tanggalnya bukan di
+     * tahun berjalan (W3-1g, W4): trip Tahun Baru yang direncanakan pada Desember dan catatan
+     * dari tahun lalu tidak terbaca seperti tanggal tahun ini. Tanggal dibaca apa adanya;
+     * instan diubah ke zona gunungnya lebih dulu oleh pemanggil.
+     */
+    public static function tanggalPendek(CarbonInterface $tanggal, bool $denganHari = false, string $zona = self::DEFAULT): string
+    {
+        $format = ($denganHari ? 'D, ' : '').'j M';
+
+        return $tanggal->translatedFormat($tanggal->year === Carbon::now($zona)->year ? $format : $format.' Y');
     }
 }

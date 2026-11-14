@@ -111,6 +111,9 @@ final class PenjagaDataContoh
         // dapat menunjuk bucket Supabase produksi.
         config(['filesystems.report_photos_disk' => 'local']);
 
+        // Disk foto profil (W7), arsip bukti status resmi, dan foto gunung (W8) punya kunci .env sendiri juga.
+        config(['filesystems.avatars_disk' => 'local', 'filesystems.evidence_disk' => 'local', 'filesystems.mountain_photos_disk' => 'local']);
+
         // Tinjauan W1-9b #2: config/broadcasting.php tidak ada di config/ aplikasi, tapi
         // itu tidak berarti config('broadcasting.*') kosong. LoadConfiguration memuat
         // konfigurasi dasar framework untuk setiap berkas yang tidak ditimpa aplikasi

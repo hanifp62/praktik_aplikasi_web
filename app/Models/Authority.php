@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\AuthorityType;
+use Database\Factories\AuthorityFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Authority extends Model
 {
+    /** @use HasFactory<AuthorityFactory> */
     use HasFactory;
 
     protected function casts(): array
@@ -45,6 +47,14 @@ class Authority extends Model
     public function endorsedCredentials(): HasMany
     {
         return $this->hasMany(ExpertCredential::class, 'endorsing_authority_id');
+    }
+
+    /**
+     * Anggota meja kurator badan ini (ruling W8-R7), termasuk yang sudah dicabut.
+     */
+    public function members(): HasMany
+    {
+        return $this->hasMany(AuthorityMember::class);
     }
 
     public function displayName(): string

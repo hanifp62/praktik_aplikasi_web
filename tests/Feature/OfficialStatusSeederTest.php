@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\OfficialStatusValue;
 use App\Models\Mountain;
 use App\Models\OfficialStatus;
+use App\Services\DataFreshnessService;
 use App\Services\OfficialStatusService;
 use Database\Seeders\MountainSeeder;
 use Database\Seeders\OfficialStatusSeeder;
@@ -143,6 +144,29 @@ class OfficialStatusSeederTest extends TestCase
             OfficialStatusValue::UNKNOWN,
             $layanan->statusOnDate($semeru, Carbon::parse('2026-11-15')),
             'November di luar periode itu, dan tidak ada keterangan lain untuk tanggal itu.'
+        );
+    }
+
+    /**
+     * Butir izin akhir 14: catatan seeder berakhir paling lambat 31 Oktober 2026. Sesudahnya
+     * setiap gunung itu Belum diketahui, tidak pernah Buka, dan seluruhnya menunggu di antrean
+     * tinjau (meja kurator dan halaman admin) sampai kurator mencatat keadaan terbaru dari
+     * sumber resmi. Penutupan Desember Semeru belum berakhir, jadi tidak ikut antrean.
+     */
+    public function test_after_october_the_seeded_statuses_read_unknown_and_wait_for_a_curator(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-01 08:00:00'));
+
+        foreach (['gunung-gede', 'gunung-pangrango', 'gunung-semeru', 'gunung-merbabu', 'gunung-rinjani'] as $slug) {
+            $this->assertSame(OfficialStatusValue::UNKNOWN, $this->statusTerkini($slug), $slug);
+        }
+
+        $kedaluwarsa = app(DataFreshnessService::class)->review()['kedaluwarsa'];
+
+        $this->assertCount(5, $kedaluwarsa);
+        $this->assertSame(
+            ['Gunung Gede', 'Gunung Merbabu', 'Gunung Pangrango', 'Gunung Rinjani', 'Gunung Semeru'],
+            $kedaluwarsa->map(fn (OfficialStatus $s) => $s->statusable->name)->sort()->values()->all(),
         );
     }
 

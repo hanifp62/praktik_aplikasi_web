@@ -2,7 +2,7 @@
 
 **FR utama:** FR-11 Status resmi (§41), FR-12 Cuaca (§44), FR-13 Laporan kondisi jalur (§48).
 **Bahan:** features/05-kabar-kondisi.md dari NgodingPakeAI (keluaran alat di root, diabaikan git), `docs/PRD.md`, spec v3 bagian 6.4, 7, dan 10.3.
-**Diperiksa terhadap kode:** 26 September 2026, setelah gelombang W0. Status adalah FAKTA dari berkas yang disebut (R-023).
+**Diperiksa terhadap kode:** 8 Oktober 2026 untuk baris yang disentuh W8; selebihnya 26 September 2026, setelah gelombang W0. Status adalah FAKTA dari berkas yang disebut (R-023).
 
 ## Tujuan dan pertanyaan pengguna
 
@@ -29,6 +29,8 @@ Status resmi, prakiraan cuaca, dan laporan pendaki tampil terpisah menurut asaln
 9. **Terima kasih.** Given laporan terbit, When pendaki lain berterima kasih, Then tercatat satu kali per pendaki, dan pelapor tidak dapat berterima kasih pada laporannya sendiri.
 10. **Ikuti gunung.** Given pendaki mengikuti gunung, When membuka `/kabar`, Then kabar dikelompokkan menurut asal (§92).
 11. **Tanpa feed sosial.** Given halaman kabar, When tampil, Then tidak ada jenis "cerita", "tips", maupun reaksi jempol (DK-11, K9).
+12. **Status gunung api.** Given level PVMBG tercatat untuk gunung yang diikuti atau dibuka, When tampil, Then level, rekomendasi radius, atribusi "PVMBG, Badan Geologi, KESDM (MAGMA Indonesia)", waktu terbit, kesegaran, dan tautan laporannya tampil terpisah dari status akses, tidak pernah dipetakan ke Buka atau Tutup, dan hanya bila ada (DK-43, W8).
+13. **Laporkan kesalahan data.** Given pendaki melihat status atau data yang keliru, When ia melapor dari kartu status jalur atau gunung, Then laporannya masuk antrean cek ulang kurator kawasan itu tanpa mengubah status yang tampil (R-010, spec v3 bagian 10.7 langkah 7, W8).
 
 ## Aturan yang berlaku
 
@@ -46,7 +48,7 @@ Status resmi, prakiraan cuaca, dan laporan pendaki tampil terpisah menurut asaln
 | `report_thanks`, `mountain_follows`, `moderation_actions` | terima kasih, ikuti gunung, keputusan moderasi | `create_report_thanks_table`, `create_mountain_follows_table`, `create_moderation_actions_table` |
 | `data_sources`, `authorities` | sumber dan penerbit | `create_data_sources_table`, `buat_tabel_otoritas_dan_kredensial_ahli` |
 
-Sumber luar: prakiraan BMKG (kode wilayah adm4) lewat `weather:refresh`; status buka dan tutup terbit sebagai surat Kemenhut atau Balai dan dicatat admin dengan sumbernya (spec v3 bagian 10.1); level PVMBG belum diinput (DK-43, W8). `config/hiking.php`: `rate_limits.report_submissions_per_hour` (5).
+Sumber luar: prakiraan BMKG (kode wilayah adm4) lewat `weather:refresh`; status buka dan tutup terbit sebagai surat Kemenhut atau Balai dan dicatat kurator di meja kurator beserta arsip bukti, verifikasi orang kedua untuk pembukaan, dan jadwal tinjau (spec v3 bagian 10.7, W8); level PVMBG diinput kurator dengan atribusi dan tautan laporan, tanpa scraping (DK-43, W8). `config/hiking.php`: `rate_limits.report_submissions_per_hour` (5), `rate_limits.data_error_reports_per_hour` (5), `freshness.volcano_review_hours` (168).
 
 ## State
 
@@ -62,13 +64,14 @@ Sumber luar: prakiraan BMKG (kode wilayah adm4) lewat `weather:refresh`; status 
 
 | Sub-fitur | Status | Bukti |
 |---|---|---|
-| Kabar resmi | Ada | `app/Services/OfficialStatusService.php`, `resources/js/components/trails/StatusAkses.tsx`, `app/Http/Controllers/Admin/OfficialStatusController.php`, `app/Console/Commands/CheckDataFreshness.php`, `tests/Feature/OfficialStatusTargetTest.php`, `tests/Feature/StatusCacheInvalidationTest.php`, `tests/Feature/DataFreshnessReviewTest.php` |
+| Kabar resmi | Ada | `app/Services/OfficialStatusService.php`, `resources/js/components/trails/StatusAkses.tsx`, `app/Http/Controllers/Curator/CuratorStatusController.php`, `app/Services/DataResmi/TerbitStatus.php`, `app/Console/Commands/CheckDataFreshness.php`, `tests/Feature/OfficialStatusTargetTest.php`, `tests/Feature/StatusCacheInvalidationTest.php`, `tests/Feature/DataFreshnessReviewTest.php`, `tests/Feature/CuratorDeskTest.php` |
 | Prakiraan cuaca | Sebagian | `app/Services/WeatherService.php`, `app/Console/Commands/RefreshWeatherSnapshots.php`, `tests/Feature/WeatherRefreshTest.php`; tampil waktu, cuaca, suhu, dan kelembapan untuk delapan titik; angin, curah hujan, dan penanda jam berisiko belum tampil |
 | Laporan pendaki | Ada | `app/Http/Controllers/Community/ConditionReportController.php`, `app/Http/Requests/StoreConditionReportRequest.php`, `app/Support/ImageSanitizer.php`, `resources/js/pages/Community/ConditionReport.tsx`, `resources/js/components/trails/rinci/LaporanKomunitas.tsx`, `tests/Feature/CommunityReportModerationTest.php`, `tests/Feature/CommunityPhotoTest.php`; saring per jenis cerita atau tips tidak dibangun (DK-11) |
 | Sumber dan kesegaran | Ada | `app/Services/DataFreshnessService.php`, `resources/js/components/community/LabelKesegaran.tsx`, `resources/js/components/trails/Kesegaran.tsx`, `resources/js/components/trails/LabelSumber.tsx`, `tests/Feature/TrustGrammarTest.php` |
-| Kabar gunung yang diikuti | Ada | `app/Http/Controllers/Community/TrailNewsController.php`, `app/Services/TrailNewsService.php`, `app/Services/Community/KabarJalur.php`, `resources/js/pages/Community/TrailNews.tsx`, `app/Http/Controllers/Trails/MountainFollowController.php`, `tests/Feature/TrailNewsTest.php` |
+| Kabar gunung yang diikuti | Ada | `app/Http/Controllers/Community/TrailNewsController.php`, `app/Services/TrailNewsService.php`, `app/Services/Community/KabarJalur.php`, `resources/js/pages/Community/TrailNews.tsx`, `app/Http/Controllers/Trails/MountainFollowController.php`, `tests/Feature/TrailNewsTest.php`, `tests/Feature/KabarPageTest.php` |
+| Laporkan kesalahan data | Ada | `app/Http/Controllers/Community/DataErrorReportController.php`, `resources/js/components/trails/LaporkanKesalahan.tsx`, `app/Http/Controllers/Curator/DataErrorCheckController.php`, `tests/Feature/DataErrorReportTest.php` |
 | Terima kasih | Ada | `app/Http/Controllers/Trails/ReportThanksController.php`, `app/Http/Requests/Trails/ThankReportRequest.php`, `tests/Feature/ReportThanksTest.php` |
-| Status gunung api PVMBG | Belum ada | DK-43, W8 |
+| Status gunung api PVMBG | Ada | `app/Services/DataResmi/StatusGunungApi.php`, `app/Http/Controllers/Curator/VolcanoStatusController.php`, `resources/js/components/trails/KartuGunungApi.tsx`, `tests/Feature/VolcanoStatusTest.php` |
 
 ## Task NgodingPakeAI
 
@@ -81,7 +84,7 @@ Sumber luar: prakiraan BMKG (kode wilayah adm4) lewat `weather:refresh`; status 
 | 5 | Tambah filter dan urutkan laporan pendaki | Terbaru dulu | Berbeda: jenis cerita dan tips tidak ada (DK-11) |
 | 6 | Tampilkan label sumber dan kesegaran info | `LabelSumber.tsx`, `LabelKesegaran.tsx` | Ada |
 | 7 | Buat empty state keterangan info tidak tersedia | Status Belum diketahui, cuaca `available: false` | Ada |
-| 8 | Rapikan tampilan responsif halaman kabar | `TrailNews.tsx` | Ada; redesain W5 |
+| 8 | Rapikan tampilan responsif halaman kabar | `TrailNews.tsx` | Ada; redesain W8 (W5-C9): kelompok menurut asal dengan garis yang sama seperti Beranda dan halaman gunung, gunung yang diikuti, dan status gunung api |
 | 9 | Buat skema dan migrasi tabel pengumuman resmi | `create_official_statuses_table` | Ada |
 | 10 | Buat skema dan migrasi tabel laporan pendaki | `create_trail_condition_reports_table` | Ada |
 | 11 | Buat skema dan migrasi data prakiraan cuaca | `create_weather_snapshots_table` dan dua migrasi lanjutannya | Ada |

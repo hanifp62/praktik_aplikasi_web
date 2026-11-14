@@ -4,13 +4,43 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 6 November 2026 (bagian 0, blok paling atas: dependensi dipulihkan ke Symfony 8 lewat branch
-`fix/pulihkan-dependensi-php85`; pemetaan Job 6 dan catatan deploy 15 Oktober ada di bawahnya).
+Terakhir diperbarui: 14 November 2026 (bagian 0, blok paling atas: riset referensi, audit profesional 252 butir, serta
+implementasi penuh Sprint 1 sampai 4 termasuk W7 sampai W9 selesai di pohon kerja; menunggu real-world testing dan izin akhir pemilik).
 Bagian 1–10 berasal dari 21 September 2026 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
 
 ## 0. Titik lanjut terkini (tonggak M1, 26 September 2026)
+
+### 14 November 2026: audit profesional 252 butir dan penyelesaian Sprint 1 sampai 4 (W7 sampai W9) di pohon kerja
+
+Atas arahan pemilik ("pelajari dan pahami secara detail lengkap... audit secara profesional... kemudian kembangkan berdasarkan hasil riset serta analisis" dan "lanjutkan dulu saya belum bisa cek 100%, saya bica cek di hasil akhir real world testing. selesaikan semua sampai implementasi dan testing"), seluruh rangkaian riset mendalam (AllTrails, Strava, Traveloka), audit kelengkapan 252 butir (`A` sampai `N` sesuai `docs/AUDIT-PROTOCOL.md`), rencana pengembangan pasca-audit yang telah disetujui pemilik, hingga implementasi dan pengujian otomatis Sprint 1 sampai 4 (termasuk penyelarasan penuh rencana gelombang W7, W8, dan W9) telah diselesaikan di pohon kerja pada branch `main` tanpa menyentuh `.env*`, tanpa mengakses Supabase, tanpa mengubah `composer.json`/`package.json`, dan tanpa commit/push sebelum izin pemilik.
+
+| Gerbang lokal | Hasil terukur (14 November 2026) | Bukti |
+|---|---|---|
+| Suite `Unit,Feature` | 3.002 test, 3.001 lulus, 1 dilewati, 0 gagal (21.203 assertion, 56,2 dtk) | `docs/audit/kandidat-rilis-w9.md` |
+| Suite bawaan (`Unit,Feature,Spatial`) | 3.104 test, 3.001 lulus, 103 dilewati (1 Feature + 102 Spatial tanpa `SPATIAL_TEST_DSN`), 0 gagal | `docs/audit/kandidat-rilis-w9.md` |
+| Suite `Pratinjau` | 57 test, 57 lulus, 0 gagal (1.137 assertion, 1,9 dtk); mencakup seluruh 57 halaman React (`PreviewCoverageTest`) | `docs/audit/kandidat-rilis-w9.md` |
+| TypeScript (`node_modules/.bin/tsc --noEmit`) | 0 galat | `docs/audit/kandidat-rilis-w9.md` |
+| Build produksi (`npm run build`) | Sukses (840 ms, 891 modul); `public/build/assets/app-CayOtsKQ.css` 84.371 B tanpa `@source` `storage/framework/views` (W2-C10) | `docs/audit/kandidat-rilis-w9.md` |
+| Format PHP (`vendor/bin/pint --format agent`) | Lulus tanpa berkas kotor | `docs/audit/kandidat-rilis-w9.md` |
+| Pemindaian em dash & kata klaim keselamatan | 0 kecocokan em dash di `app`, `resources`, `tests`, `database`, `config`, `DESIGN.md`, `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/fitur`, dan dokumen audit W9; `SafetyClaimWordTest` lulus | `docs/audit/anti-slop/audit-002-2026-10-09.md` |
+| Pohon kerja (`git status --porcelain`) | 433 entri perubahan yang belum di-commit, termasuk 18 migrasi baru (`2026_10_15_000100` sampai `2026_10_15_001800`, urutan #15 sampai #32 di `docs/audit/kandidat-rilis-w9.md`) | `docs/audit/kandidat-rilis-w9.md` |
+
+Ringkasan cakupan per sprint:
+- **Sprint 1 (`CRITICAL`, `GAP-01` sampai `GAP-06`):** keselarasan masa berlaku status resmi (`OfficialStatus::isCurrentlyEffective()` + pengosongan cache saat `DataSource` dihapus), halaman Inertia React `Expert/TrailGeometry.tsx` menggantikan tampilan Blade usang, penghapusan akun moderator aman (`nullOnDelete` pada `moderation_actions.moderator_id`) serta anonimisasi dan pembersihan berkas pengguna terhapus, indeks pencarian/filter/FK serta constraint CHECK non-negatif dan unik item persiapan, serta JSON-LD `Place`/`SportsActivityLocation` dan `noindex` varian query di halaman jalur publik.
+- **Sprint 2 (`HIGH`, `GAP-07` sampai `GAP-11` + W7 Tugas 1 sampai 12):** pemangkasan N+1 di `PreparationService` dan pemisahan `ModerationService`, plus seluruh permukaan Progres dan Profil v3: `Timezone` per pulau gunung, riwayat dan ringkasan progres perbandingan diri (R-015), catatan pendakian di luar katalog, target pribadi tanpa tenggat/peringkat, pencapaian tonggak pribadi, perlengkapan yang dimiliki (`OwnedGear` terhubung ke daftar persiapan trip), foto profil privat terkompresi tanpa EXIF, wilayah minat (`interest_regions`), dan penurunan otomatis tingkat pengalaman dengan persetujuan perubahan.
+- **Sprint 3 (`MEDIUM`, `GAP-12` sampai `GAP-15` + W8 Tugas 1 sampai 17 + S3B):** meja kurator (`Curator/Desk`, `Status`, `StatusForm`, `VolcanoForm`) dengan aturan terbit asimetris (`TerbitStatus`) dan verifikasi orang kedua, peran `curator` dan keanggotaan yurisdiksi `authority_members`, arsip bukti privat `ArsipBukti`, status gunung api PVMBG `volcano_statuses` (dengan RLS PostgreSQL), foto gunung berlisensi `mountain_photos`, formulir publik koreksi data `data_error_reports`, kolom karakteristik jalur nullable sesuai R-006 (`Trail::scopeTanpaGeometri()`), kunci stabil butir izin `kind = 'permit'` dan pengingat hari buka pemesanan izin, perombakan `/kabar`, CRUD admin segmen jalur (`Admin/TrailSegments.tsx`), lokalisasi halaman Admin/Moderasi, antrean surel `TripReminderNotification`, header `Cache-Control: private` + ETag di `ReportPhotoController`, selisih jarak dan tanjakan pos berikutnya di `ModeLapangan`, serta test aktivasi terkendali paket luring dan fitur keselamatan.
+- **Sprint 4 (`LOW` & Polish, `GAP-16` sampai `GAP-24` + W9 Tugas 1 sampai 16 + S4B):** halaman galat 403/404/419/429/500/503 satu sumber (`App\Support\HalamanGalat` untuk Inertia `Galat.tsx` dan Blade `errors/layout.blade.php`) dengan pemindahan fokus ke `<h1>`, format jam bertitik berzona dan tanggal pendek bertahun lintas tahun, penyelarasan kosakata Indonesia dan panel "Kenapa?", pengumuman tunggal pembaca layar pada aksi simpan + target remah 44 px + kontras ruas kosong peta + `Escape` di `MenuAkun` + `.sr-only` pada `checkpoint-journey.blade.php`, penjaga sesi dan throttle pada seluruh rute tulis (`WriteRouteGuardTest`) + `TrustedProxyTest`, sakelar `INERTIA_ENCRYPT_HISTORY` dan pemangkasan tautan bagikan (`ComparisonShare::prunable()`), pemicu HTTP `/api/cron/{tugas}` ber-`CRON_SECRET` selaras `vercel.json`, kait `PeringatanOperasi` dan `docs/RUNBOOK-OPERASI.md`, telemetri corong bebas PII di `AnalyticsRecorder`, pratinjau jalur nyata di `Welcome.tsx`, benchmark 300 jalur `RouteFitLoadBenchmarkTest`, cakupan pratinjau penuh 57 halaman React (`PreviewCoverageTest`), materi sesi uji kegunaan Q15 (`docs/riset/2026-10-uji-kegunaan/materi-sesi-w9.md`), serta rangkaian dokumen audit dan penutupan W9 (`docs/audit/aksesibilitas-w9.md`, `docs/audit/keamanan-w9.md`, `docs/audit/kandidat-rilis-w9.md`, `docs/audit/anti-slop/audit-002-2026-10-09.md`, dan GR-09 serta DK-30 sampai DK-58 di `docs/PRD.md`).
+
+Titik lanjut: pemilik menjalankan real-world testing di peramban nyata dan menjawab daftar permintaan izin akhir (commit, push, pemeriksaan `migrate:status` dan pemasangan 18 migrasi baru #15 sampai #32 di Supabase, `memount:demo`, variabel lingkungan produksi, serta penunjukan kurator pertama Q11).
+
+**Tempelkan ini di terminal baru:**
+
+> Baca `CLAUDE.md`, lalu `HANDOVER.md` bagian 0 ini, lalu `docs/AGENTS.md` dan `docs/audit/kandidat-rilis-w9.md`.
+> Periksa keadaan nyata dulu: `git status --short`, `php artisan test --compact --testsuite=Unit,Feature`,
+> `php artisan test --compact --testsuite=Pratinjau`, `node_modules/.bin/tsc --noEmit`. Jangan commit, push,
+> mengakses Supabase, membaca `.env*`, menjalankan migrasi, atau mengubah dependensi tanpa izin eksplisit saya.
 
 ### 6 November 2026: dependensi turun ke Symfony 7.4 dan workflow Security merah
 

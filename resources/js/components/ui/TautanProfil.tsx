@@ -20,7 +20,7 @@ export function TautanProfil({ className }: { className?: string }) {
 
     return (
         <Tautan href={profile.url()} className={kelas('inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full', fokusTerlihat, umpanTekan, className)}>
-            <Avatar nama={auth.user.name} ukuran={44} />
+            <Avatar nama={auth.user.name} foto={auth.user.foto} ukuran={44} />
             <span className="sr-only">Profil {auth.user.name}</span>
         </Tautan>
     );

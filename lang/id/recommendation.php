@@ -2,7 +2,7 @@
 
 // Hard-constraint rule keys emitted by RouteFitService, rendered to users as plain sentences.
 return [
-    'official_status_closed' => 'Status resmi jalur ini tercatat TUTUP.',
+    'official_status_closed' => 'Status resmi jalur ini tercatat Tutup.',
     'trail_not_published' => 'Data jalur ini belum dipublikasikan.',
     'trail_data_incomplete' => 'Data kritis jalur ini belum lengkap, sehingga kecocokannya '
         .'belum dapat dinilai.',

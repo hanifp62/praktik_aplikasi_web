@@ -45,6 +45,9 @@ return [
         // Referensi elevation gain (meter) per rank pengalaman, dipakai hanya
         // ketika pendaki belum mencatat riwayat maupun preferensi sendiri.
         'elevation_reference' => [1 => 600, 2 => 1000, 3 => 1600, 4 => 2200],
+
+        // Batas atas kandidat jalur yang dievaluasi dalam satu recommendation run.
+        'candidate_limit' => 200,
     ],
 
     /*
@@ -164,6 +167,11 @@ return [
         // tampilan OpenTopoMap berlisensi CC-BY-SA.
         'attribution' => env('MAP_ATTRIBUTION', '© OpenStreetMap contributors, SRTM | Tampilan: © OpenTopoMap (CC-BY-SA)'),
         'max_zoom' => (int) env('MAP_MAX_ZOOM', 17),
+
+        // Pos yang lebih jauh dari garis rutenya daripada ini tidak diberi km sepanjang jalur
+        // (W8, ruling W8-R21): koordinat pos atau garisnya keliru. GPS ponsel di bawah tajuk
+        // hutan meleset sampai sekitar 30 m, jadi 150 m adalah lima kali meleset wajar.
+        'batas_jarak_pos_m' => 150,
     ],
 
     /*
@@ -177,12 +185,27 @@ return [
     |--------------------------------------------------------------------------
     */
     'freshness' => [
-        // Status yang tidak diverifikasi ulang selama ini dianggap perlu ditinjau.
-        'status_review_days' => 90,
+        // Jadwal tinjau per jenis status (Q9; ruling W8-R13), menggantikan ambang tunggal 90 hari.
+        // Status yang tidak diverifikasi ulang selama ini dianggap perlu ditinjau, dan meja kurator
+        // mengantrekannya. Buka tidak tercantum di sini: ia memakai field_pack.open_status_stale_after_hours
+        // (24 jam, W6-R8), supaya status Buka turun pada batas yang sama di layar daring dan di paket
+        // luring; Buka paling berisiko terbaca aman (R-012). Pembatasan dan Belum diketahui: tujuh hari,
+        // sama dengan masa "terkini" laporan komunitas (conditions.community_current_days), jadi status
+        // pembatasan tidak dianggap lebih segar daripada kabar lapangan terkini yang paling lama.
+        'status_review_hours' => [
+            'RESTRICTED' => 168,
+            'CLOSED' => 168,
+            'UNKNOWN' => 168,
+        ],
 
         // Peringatan sebelum masa berlaku habis, agar sempat diperpanjang sebelum
         // jalurnya kehilangan status resmi.
         'status_expiry_warning_days' => 14,
+
+        // Level gunung api PVMBG (DK-43; ruling W8-R18): tujuh hari sesudah kurator mencocokkannya
+        // dengan laporan PVMBG, sama dengan status pembatasan. PVMBG menerbitkan laporan aktivitas
+        // setiap hari, jadi level yang tidak dicocokkan ulang seminggu disebut perlu ditinjau.
+        'volcano_review_hours' => 168,
     ],
 
     'uploads' => [
@@ -190,6 +213,20 @@ return [
 
         // Foto dikecilkan sampai sisi terpanjang ini sekaligus dibersihkan EXIF-nya.
         'report_photo_max_dimension' => 2000,
+
+        // Foto profil (W7): batas unggah, dan sisi terpanjang sesudah ditulis ulang tanpa EXIF.
+        'avatar_max_kb' => 2048,
+        'avatar_dimension' => 512,
+
+        // Foto gunung berlisensi (W8, DK-37): unggahan admin, ditulis ulang tanpa EXIF dengan sisi
+        // terpanjang 2000 px, cukup untuk kepala halaman 768 px pada layar berkepadatan dua kali.
+        'mountain_photo_max_kb' => 8192,
+        'mountain_photo_dimension' => 2000,
+
+        // Arsip bukti status resmi (W8): PDF surat atau foto unggahan pengelola. Foto ditulis
+        // ulang tanpa EXIF dengan sisi terpanjang ini, cukup untuk membaca nomor surat.
+        'evidence_max_kb' => 10240,
+        'evidence_dimension' => 2400,
 
         'gpx_max_kb' => 8192,
 
@@ -216,6 +253,10 @@ return [
     'rate_limits' => [
         'report_submissions_per_hour' => 5,
         'recommendation_runs_per_hour' => 20,
+
+        // Laporan kesalahan data ke antrean kurator (W8, ruling W8-R17): sama dengan laporan
+        // kondisi, karena keduanya ditulis pendaki dan dibaca manusia satu per satu.
+        'data_error_reports_per_hour' => 5,
 
         // Aksi tulis data pribadi (rencana, pengingat, catatan pendakian, target,
         // perlengkapan). Tiap kelompok punya hitungannya sendiri lewat awalan kunci,
@@ -299,6 +340,10 @@ return [
 
         // Halaman publik dibuka tanpa akun, jadi dibatasi per alamat IP.
         'views_per_minute' => 60,
+
+        // Hari sesudah kedaluwarsa atau dicabut sebelum barisnya dihapus model:prune.
+        // Q11 milik pemilik; selama kosong atau tidak positif tidak ada baris yang dihapus.
+        'prune_after_days' => env('SHARE_LINK_PRUNE_AFTER_DAYS'),
     ],
 
     /*
@@ -330,6 +375,10 @@ return [
         'days_before' => [3, 1],
 
         'local_hour' => 7,
+
+        // Bawaan sinkron untuk lingkungan tanpa pekerja antrean tetap (Vercel); nyalakan saat
+        // pekerja antrean latar dijalankan.
+        'queued' => (bool) env('TRIP_REMINDERS_QUEUED', false),
     ],
 
     /*
@@ -346,6 +395,19 @@ return [
     */
     'penjadwal' => [
         'hanya_harian' => (bool) env('PENJADWAL_HANYA_HARIAN', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Peringatan Operasi (PRD §98, §99)
+    |--------------------------------------------------------------------------
+    |
+    | Kanal opsional untuk memberi tahu tim saat tugas terjadwal gagal atau
+    | status resmi kawasan kedaluwarsa. Selama kosong, peringatan hanya masuk log.
+    |
+    */
+    'alerts' => [
+        'failure_webhook_url' => env('OPERATIONAL_ALERT_WEBHOOK_URL'),
     ],
 
     /*

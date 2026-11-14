@@ -175,6 +175,25 @@ class HikingHistoryPageTest extends TestCase
             ->where('entri.data.1.tanggal', '12 Okt 2026'));
     }
 
+    /**
+     * Catatan manual (FR-25) tanpa trip: tanpa tautan ringkasan dan tanpa hitungan butir persiapan;
+     * jarak dan lamanya angka yang ditulis pendaki sendiri.
+     */
+    public function test_a_manual_record_is_listed_with_its_own_numbers(): void
+    {
+        $user = User::factory()->create();
+        HikingHistory::factory()->manual()->for($user)->create(['trail_id' => null, 'trail_name' => 'Lawu via Cemoro Sewu', 'recorded_distance_m' => 7200, 'recorded_moving_minutes' => 330]);
+
+        $this->actingAs($user)->get(route('history'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('entri.data.0.jalur', 'Lawu via Cemoro Sewu')
+            ->where('entri.data.0.manual', true)
+            ->where('entri.data.0.tripId', null)
+            ->where('entri.data.0.trailId', null)
+            ->where('entri.data.0.persiapan', null)
+            ->where('entri.data.0.jarak', '7,2 km')
+            ->where('entri.data.0.durasi', '5 jam 30 menit'));
+    }
+
     public function test_the_page_does_not_grow_with_the_number_of_hikes(): void
     {
         $user = User::factory()->create();

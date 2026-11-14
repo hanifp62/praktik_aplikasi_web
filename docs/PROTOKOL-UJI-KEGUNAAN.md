@@ -58,12 +58,12 @@ Yang paling sering merusak hasil uji adalah fasilitator yang membantu. Jadi:
 Tiap tugas punya kriteria berhasil yang dapat diamati, jadi tidak perlu ditafsirkan.
 
 **T1. Buat akun dan lengkapi profil pendaki Anda.**
-Mulai dari halaman depan. Berhasil bila profil tersimpan dan peserta sampai di dasbor.
+Mulai dari halaman depan. Berhasil bila profil tersimpan dan peserta sampai di Beranda.
 Yang diamati: apakah peserta mengerti mengapa ditanya pengalaman mendaki? Adakah pertanyaan yang ia ragu menjawabnya?
 
 **T2. Cari tahu jalur mana yang sesuai untuk Anda.**
 Berhasil bila peserta melihat daftar hasil kecocokan.
-Yang diamati: apakah ia menemukan "Buat Rencana" tanpa dituntun? Berapa lama?
+Yang diamati: apakah ia menemukan "Cocokkah untuk saya?" atau "Rencanakan trip" tanpa dituntun? Berapa lama?
 
 **T3. Pilih satu jalur yang tidak direkomendasikan, lalu jelaskan kepada saya mengapa.**
 Berhasil bila peserta dapat menyebut alasannya dengan kata-katanya sendiri.
@@ -73,9 +73,9 @@ Yang diamati: **ini tugas terpenting.** Kalau peserta tidak dapat menjelaskan al
 Berhasil bila trip terbuat dan setidaknya lima item persiapan dikonfirmasi.
 Yang diamati: apakah ia mengira daftar itu wajib diisi semua? Apakah "belum dikonfirmasi" terbaca sebagai "saya tidak punya"?
 
-**T5. Periksa apakah Anda sudah siap berangkat.**
+**T5. Periksa apa yang masih kurang sebelum Anda berangkat.**
 Berhasil bila peserta sampai di halaman kesiapan dan dapat menyebutkan apa yang masih kurang.
-Yang diamati: apakah ia mengira hasil "siap" berarti aman? Ini yang paling berbahaya kalau salah dipahami.
+Yang diamati: apakah ia mengira "Persiapan kritis lengkap" berarti aman? Ini yang paling berbahaya kalau salah dipahami.
 
 **T6. Cari tahu status resmi jalur itu, dan dari mana informasinya berasal.**
 Berhasil bila peserta menemukan status beserta sumber dan tanggalnya.

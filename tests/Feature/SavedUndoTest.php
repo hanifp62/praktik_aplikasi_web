@@ -276,13 +276,14 @@ class SavedUndoTest extends TestCase
 
     /**
      * Tombol simpan memakai dua rute idempoten, membawa keadaannya lewat aria-pressed, dan
-     * bertanya dulu sebelum melepas simpanan yang bercatatan.
+     * bertanya dulu sebelum melepas simpanan yang bercatatan. Sejak W9 simpan juga mengirim
+     * dengan_toast (pengumuman tunggal, ScreenReaderAndTargetTest).
      */
     public function test_the_save_button_uses_idempotent_routes_and_asks_before_losing_a_note(): void
     {
         $tombol = File::get(resource_path('js/components/trails/TombolSimpan.tsx'));
 
-        $this->assertStringContainsString('router.post(store.url({ trail: jalur.id }), { catatan }', $tombol);
+        $this->assertStringContainsString('router.post(store.url({ trail: jalur.id }), { catatan, dengan_toast: urungkan }', $tombol);
         $this->assertStringContainsString('router.delete(remove.url({ trail: jalur.id })', $tombol);
         $this->assertDoesNotMatchRegularExpression('/\btimbang\b/', $tombol, 'Rute toggle lama dapat membalik simpanan pada halaman basi.');
         $this->assertStringContainsString('aria-pressed={jalur.ditimbang}', $tombol);

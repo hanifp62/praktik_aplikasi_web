@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AnalyticsRecorder;
 use App\Services\Dashboard\JalurUntukAnda;
 use App\Services\Dashboard\KabarBeranda;
 use App\Services\Dashboard\RingkasanDasbor;
@@ -23,6 +24,7 @@ class DashboardController extends Controller
 {
     public function __invoke(
         Request $request,
+        AnalyticsRecorder $analytics,
         RingkasanDasbor $ringkasan,
         TenggatTrip $tenggat,
         KabarBeranda $kabar,
@@ -33,7 +35,11 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'title' => 'Beranda',
-            'fase' => fn () => $ringkasan->props($user),
+            'fase' => function () use ($analytics, $ringkasan, $user): array {
+                $analytics->recordReturnVisitAfterTrip($user);
+
+                return $ringkasan->props($user);
+            },
             'tenggat' => fn () => $tenggat->untuk($ringkasan->konteks($user)),
             'kabar' => fn () => $kabar->untuk($ringkasan->konteks($user)),
             'jalurLain' => fn () => $jalurLain->untuk($ringkasan->konteks($user)),
