@@ -11,6 +11,7 @@ use App\Services\ConsiderationService;
 use App\Services\Trails\TautanBagikan;
 use App\Services\Trips\TripLifecycle;
 use Closure;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -45,7 +46,7 @@ class UserRowLockTest extends SpatialTestCase
         return [
             'simpan dari kartu' => [fn (User $user, Trail $trail): bool => app(ConsiderationService::class)->simpan($user, $trail) === ConsiderationOutcome::DITAMBAHKAN],
             'tombol simpan bolak-balik' => [fn (User $user, Trail $trail): bool => app(ConsiderationService::class)->toggle($user, $trail) === ConsiderationOutcome::DITAMBAHKAN],
-            'tautan bagikan' => [fn (User $user, Trail $trail): bool => app(TautanBagikan::class)->buat($user, collect([$trail])) !== null],
+            'tautan bagikan' => [fn (User $user, Trail $trail): bool => app(TautanBagikan::class)->buat($user, new Collection([$trail])) !== null],
             'mulai pendakian' => [fn (User $user, Trail $trail, TripPlan $trip): bool => app(TripLifecycle::class)->start($trip) === null],
         ];
     }
