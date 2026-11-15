@@ -61,6 +61,25 @@ class LocalPostgisComposeTest extends TestCase
         $this->assertStringNotContainsString('docs/CONTRIBUTING.md', File::get(base_path('phpunit.xml')), 'CONTRIBUTING.md kini di root.');
     }
 
+    public function test_compose_also_provides_a_loopback_local_app_postgres_matching_env_example(): void
+    {
+        $compose = $this->compose();
+        $ci = Yaml::parseFile(base_path('.github/workflows/test.yml'))['jobs']['test']['services']['postgis'];
+        $aplikasiLokal = $compose['services']['postgres'];
+        $contohEnv = File::get(base_path('.env.example'));
+
+        $this->assertSame($ci['image'], $aplikasiLokal['image']);
+        $this->assertSame(['127.0.0.1:${DB_PORT:-5432}:5432'], $aplikasiLokal['ports']);
+        $this->assertSame(['memount-hiking-data:/var/lib/postgresql/data'], $aplikasiLokal['volumes']);
+        $this->assertArrayHasKey('memount-hiking-data', $compose['volumes']);
+        $this->assertSame('postgres', $aplikasiLokal['environment']['POSTGRES_USER']);
+        $this->assertSame('hiking', $aplikasiLokal['environment']['POSTGRES_DB']);
+        $this->assertStringContainsString('DB_HOST=127.0.0.1', $contohEnv);
+        $this->assertStringContainsString('DB_PORT=5432', $contohEnv);
+        $this->assertStringContainsString('DB_DATABASE=hiking', $contohEnv);
+        $this->assertStringContainsString('DB_USERNAME=postgres', $contohEnv);
+    }
+
     /**
      * @return array<string, mixed>
      */

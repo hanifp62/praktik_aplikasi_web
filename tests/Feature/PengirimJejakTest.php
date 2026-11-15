@@ -760,7 +760,7 @@ class PengirimJejakTest extends TestCase
      */
     public function test_the_sender_is_wired_to_wayfinder_the_cookie_token_and_its_gate(): void
     {
-        $kirim = $this->tanpaKomentarJs(File::get(resource_path('js/luring/kirimJejak.ts')));
+        $kirim = str_replace("\r\n", "\n", $this->tanpaKomentarJs(File::get(resource_path('js/luring/kirimJejak.ts'))));
 
         foreach ([
             "import { track as unggahJejak } from '@/routes/hike';",
@@ -794,7 +794,7 @@ class PengirimJejakTest extends TestCase
         $this->assertStringContainsString("function masihBoleh(kunci: string): boolean {\n    return bolehLanjut({", $kirim);
         $this->assertStringNotContainsString('urls.jejak', $kirim);
         $this->assertStringNotContainsString('csrf-token', $kirim);
-        $this->assertStringContainsString("export function propsDariServer(): boolean {\n    return riwayat.boleh();\n}", File::get(resource_path('js/luring/keluar.ts')));
+        $this->assertStringContainsString("export function propsDariServer(): boolean {\n    return riwayat.boleh();\n}", str_replace("\r\n", "\n", File::get(resource_path('js/luring/keluar.ts'))));
     }
 
     /**

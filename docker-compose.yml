@@ -1,12 +1,20 @@
-# PostgreSQL + PostGIS lokal untuk suite Spatial (spec v3 DK-55, paritas R-024).
+# PostgreSQL + PostGIS lokal untuk suite Spatial (spec v3 DK-55, paritas R-024)
+# dan pengujian lokal aplikasi lewat `php artisan serve`.
 #
-# Opsional: aplikasi tidak membutuhkan Docker. Kontainer ini hanya untuk
-# SPATIAL_TEST_DSN, bukan basis data aplikasi, karena suite Spatial memakai
-# RefreshDatabase dan mengosongkan seluruh isinya setiap kali berjalan.
+# Opsional: aplikasi tidak membutuhkan Docker bila PostgreSQL + PostGIS sudah
+# terpasang langsung di mesin. Dua layanan dipisahkan supaya suite Spatial
+# (RefreshDatabase) tidak pernah menghapus data aplikasi lokal:
+# - `postgis` (port bawaan 54329): khusus `SPATIAL_TEST_DSN` untuk suite Spatial;
+# - `postgres` (port bawaan 5432): basis data `hiking` untuk `php artisan memount:lokal`
+#   dan `php artisan serve`.
 #
-# Citra dan kredensialnya sama dengan layanan postgis di .github/workflows/test.yml
-# (dijaga LocalPostgisComposeTest). Kata sandinya bukan rahasia: kontainer sekali
-# pakai, hanya terikat ke 127.0.0.1, dan tidak pernah memegang data sungguhan.
+# Citra dan kredensial `postgis` sama dengan layanan postgis di .github/workflows/test.yml
+# (dijaga LocalPostgisComposeTest). Kata sandinya bukan rahasia: kontainer hanya
+# terikat ke 127.0.0.1 dan tidak pernah memegang data produksi.
+#
+#   docker compose up -d postgres
+#   php artisan memount:lokal
+#   php artisan serve
 #
 #   docker compose up -d postgis
 #   SPATIAL_TEST_DSN="pgsql://hiking:hiking@127.0.0.1:54329/hiking_test" php artisan test --testsuite=Spatial
@@ -18,6 +26,7 @@ name: memount
 services:
     postgis:
         image: postgis/postgis:16-3.4
+        platform: linux/amd64
         environment:
             POSTGRES_USER: hiking
             POSTGRES_PASSWORD: hiking
@@ -32,5 +41,23 @@ services:
             timeout: 5s
             retries: 5
 
+    postgres:
+        image: postgis/postgis:16-3.4
+        platform: linux/amd64
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_HOST_AUTH_METHOD: trust
+            POSTGRES_DB: hiking
+        ports:
+            - "127.0.0.1:${DB_PORT:-5432}:5432"
+        volumes:
+            - memount-hiking-data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d hiking"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
 volumes:
     memount-postgis-data:
+    memount-hiking-data:

@@ -121,7 +121,7 @@ class TrackPreferenceTest extends TestCase
      */
     public function test_saving_the_switch_revokes_the_shell_permission_only_when_turned_off(): void
     {
-        $sumber = File::get(resource_path('js/components/akun/FormRekamJejak.tsx'));
+        $sumber = str_replace("\r\n", "\n", File::get(resource_path('js/components/akun/FormRekamJejak.tsx')));
         $kirim = substr($sumber, (int) strpos($sumber, 'const kirim = (e: FormEvent) => {'));
 
         $this->assertStringContainsString("const mati = !form.data.record_track;\n\n        form.put(preference.url(), {", $kirim);

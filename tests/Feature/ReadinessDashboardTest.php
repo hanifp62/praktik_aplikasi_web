@@ -708,7 +708,7 @@ class ReadinessDashboardTest extends TestCase
         $trip->preparationItems()->delete();
 
         $persiapan = $this->actingAs($trip->user)->get(route('trips.readiness', $trip))->viewData('page')['props']['persiapan'];
-        $halaman = File::get(resource_path('js/pages/Trips/Readiness.tsx'));
+        $halaman = str_replace("\r\n", "\n", File::get(resource_path('js/pages/Trips/Readiness.tsx')));
 
         $this->assertTrue($persiapan['daftarBelumAda']);
         $this->assertSame('Belum ada butir persiapan', $persiapan['teks']);

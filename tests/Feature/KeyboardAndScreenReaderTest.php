@@ -220,7 +220,7 @@ class KeyboardAndScreenReaderTest extends TestCase
      */
     private function formField(): string
     {
-        $isi = File::get(resource_path('js/components/ui/Field.tsx'));
+        $isi = str_replace("\r\n", "\n", File::get(resource_path('js/components/ui/Field.tsx')));
         $mulai = strpos($isi, 'export function FormField(');
 
         $this->assertNotFalse($mulai, 'FormField tidak ditemukan di Field.tsx.');

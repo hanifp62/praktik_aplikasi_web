@@ -340,7 +340,7 @@ class NavigationConsistencyTest extends TestCase
      */
     private function daftarPermukaan(): string
     {
-        $isi = File::get(resource_path('js/layouts/NavLinks.tsx'));
+        $isi = str_replace("\r\n", "\n", File::get(resource_path('js/layouts/NavLinks.tsx')));
         $mulai = strpos($isi, 'export const permukaan = [');
 
         $this->assertNotFalse($mulai, 'Daftar permukaan tidak ditemukan di NavLinks.tsx.');

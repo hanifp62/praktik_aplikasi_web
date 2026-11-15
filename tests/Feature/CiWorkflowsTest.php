@@ -181,7 +181,7 @@ class CiWorkflowsTest extends TestCase
 
     public function test_readme_vercel_environment_block_has_no_leading_spaces_on_keys(): void
     {
-        $readme = File::get(base_path('README.md'));
+        $readme = str_replace("\r\n", "\n", File::get(base_path('README.md')));
 
         $this->assertMatchesRegularExpression(
             '/^```\nAPP_NAME=Memount\n(?:[A-Z0-9_]+=.*\n)+FIELD_SAFETY_ENABLED=true\n```$/m',

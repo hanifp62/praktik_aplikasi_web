@@ -85,7 +85,7 @@ class ScreenReaderAndTargetTest extends TestCase
      */
     public function test_the_save_button_asks_for_a_single_announcer_only_when_it_shows_a_toast(): void
     {
-        $sumber = File::get(resource_path('js/components/trails/TombolSimpan.tsx'));
+        $sumber = str_replace("\r\n", "\n", File::get(resource_path('js/components/trails/TombolSimpan.tsx')));
 
         $this->assertStringContainsString('{ catatan, dengan_toast: urungkan }', $sumber);
         $this->assertStringContainsString("router.delete(remove.url({ trail: jalur.id }), {\n            ...opsi,\n            data: { dengan_toast: true },", $sumber);

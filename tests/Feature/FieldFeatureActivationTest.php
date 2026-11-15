@@ -107,14 +107,15 @@ class FieldFeatureActivationTest extends TestCase
      */
     private function hitung(array $panggilan): array
     {
-        $skrip = <<<'JS'
-import * as m from './resources/js/components/mendaki/hitung.ts';
-const calls = JSON.parse(process.argv[1]);
-console.log(JSON.stringify(calls.map(([fn, args]) => m[fn](...args))));
-JS;
+        $skrip = 'import { pathToFileURL } from "node:url";'
+            .'const modul = await import(pathToFileURL('.json_encode(resource_path('js/components/mendaki/hitung.ts')).').href);'
+            .'const panggilan = '.json_encode($panggilan, JSON_THROW_ON_ERROR).';'
+            .'process.stdout.write(JSON.stringify(panggilan.map(([nama, argumen]) => modul[nama](...argumen))));';
 
-        $proses = new Process(['node', '--input-type=module', '-e', $skrip, json_encode($panggilan, JSON_THROW_ON_ERROR)], base_path());
-        $proses->mustRun();
+        $proses = new Process(['node', '--experimental-strip-types', '--input-type=module', '-'], base_path(), null, $skrip, 60);
+        $proses->run();
+
+        $this->assertTrue($proses->isSuccessful(), 'Node gagal menjalankan hitung.ts: '.mb_substr($proses->getErrorOutput(), 0, 600));
 
         return json_decode($proses->getOutput(), true, flags: JSON_THROW_ON_ERROR);
     }

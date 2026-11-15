@@ -552,7 +552,7 @@ class PreparationUndoTest extends TestCase
      */
     public function test_a_message_that_arrives_with_the_page_sits_near_the_header(): void
     {
-        $halaman = File::get(resource_path('js/pages/Trips/Preparation.tsx'));
+        $halaman = str_replace("\r\n", "\n", File::get(resource_path('js/pages/Trips/Preparation.tsx')));
         $wilayahKabar = strpos($halaman, "<p role=\"status\" className={kabarMasuk ? 'rounded-kartu border border-brand-300 bg-brand-100 p-4 text-sm text-brand-900' : undefined}>\n                        {kabarMasuk}");
 
         $this->assertNotFalse($wilayahKabar);
