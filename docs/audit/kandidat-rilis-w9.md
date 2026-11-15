@@ -12,32 +12,25 @@ artisan selain `php artisan test`, juga `npm run build`, berawalan `DB_CONNECTIO
 
 | Gerbang | Perintah | Hasil |
 |---|---|---|
-| Suite Unit dan Feature | `php artisan test --compact --testsuite=Unit,Feature` | 3.002 test, 3.001 lulus, 1 dilewati, 0 gagal (21.203 assertion, 56,2 dtk) |
-| Suite bawaan (Spatial dilewati tanpa DSN) | `php artisan test --compact` | 3.104 test, 3.001 lulus, 103 dilewati (1 Feature + 102 Spatial tanpa `SPATIAL_TEST_DSN`; menunggu CI PostGIS, syarat rilis 1), 0 gagal |
-| Pratinjau | `php artisan test --compact --testsuite=Pratinjau` | 57 test, 57 lulus, 0 gagal (1.137 assertion, 1,9 dtk); mencakup seluruh 57 halaman React (`PreviewCoverageTest`) |
+| Suite Unit dan Feature (`laravel/framework` v13.42.0) | `php artisan test --compact --testsuite=Unit,Feature` | 3.002 test, 3.001 lulus, 1 dilewati, 0 gagal (21.218 assertion, 108,5 dtk) |
+| Suite Spatial di CI PostGIS (`postgis/postgis:16-3.4`) | `php artisan test --testsuite=Spatial --fail-on-skipped` | 102 test, 102 lulus, 0 dilewati, 0 gagal (GitHub Actions PR #7 Run #43688678920) |
+| Citra produksi (`Dockerfile`) di CI PostGIS | job `image` pada `.github/workflows/test.yml` | Lulus (83 migrasi PostGIS, `/up`, `/api/health`, `/api/mountains`, `/api/trails`, `/sitemap.xml`, `/login`, dan penjaga `CRON_SECRET`) |
+| Pratinjau | `php artisan test --compact --testsuite=Pratinjau` | 57 test, 57 lulus, 0 gagal (1.137 assertion, 4,2 dtk); mencakup seluruh 57 halaman React (`PreviewCoverageTest`) |
+| Audit dependensi & rahasia | `composer audit --locked --no-interaction --abandoned=report` & `npm audit --audit-level=high` & `SecretsNotInRepoTest` | Lulus: 0 advisori Composer (`laravel/framework` v13.42.0 menutup CVE-2026-128083), 0 kerentanan npm, 20/20 test pemindai rahasia lulus |
 | TypeScript | `node_modules/.bin/tsc --noEmit` | 0 galat |
-| Build | `DB_CONNECTION=sqlite DB_DATABASE=:memory: DB_URL= npm run build` | Sukses (840 ms, 891 modul) |
+| Build | `DB_CONNECTION=sqlite DB_DATABASE=:memory: DB_URL= npm run build` | Sukses (1,54 dtk, 891 modul) |
 | Ukuran CSS aplikasi, sama dengan build produksi bersih (W2-C10) | ukuran `public/build/assets/app-*.css` sesudah build | `public/build/assets/app-CayOtsKQ.css`: 84.371 B |
 | Format PHP | `vendor/bin/pint --format agent` | `{"tool":"pint","result":"passed"}` (tanpa berkas kotor) |
 | Tanpa em dash di kode dan dokumen antarmuka (audit 001 dicatat sebagai temuan audit 002) | `LC_ALL=C grep -rl $'\xE2\x80\x94' app resources tests database config DESIGN.md docs/ARCHITECTURE.md docs/fitur docs/audit` | 0 kecocokan di `app`, `resources`, `tests`, `database`, `config`, `DESIGN.md`, `docs/ARCHITECTURE.md`, `docs/fitur`, dan dokumen audit W9 (hanya muncul di 2 berkas arsip `audit-001`) |
 
-## Syarat rilis yang menunggu izin
+## Syarat rilis pasca-verifikasi CI
 
-Semuanya PERLU KLARIFIKASI sampai dijalankan dengan izin. Tidak satu pun boleh ditulis lulus dari suite SQLite (R-024).
+Butir yang sudah diverifikasi di CI PostGIS dicatat status faktualnya; butir yang membutuhkan kredensial atau keputusan produksi pemilik tetap menunggu eksekusi pra-deploy (R-023, R-024).
 
-1. **Suite Spatial di CI lulus.** `test.yml` menjalankannya di PostGIS sesudah push yang diizinkan. Termasuk kunci baris
-   W4 dan W9 (`tests/Spatial/UserRowLockTest.php`, `tests/Spatial/PreparationFirstVisitLockTest.php`), indeks dan CHECK
-   Sprint 1 (`tests/Spatial/SchemaConstraintSpatialTest.php`), serta test skema W7 dan W8 (`tests/Spatial/OfficialDataSchemaTest.php`).
-2. **Status migrasi Supabase.** `php artisan migrate:status` terhadap Supabase atas izin baca (Q22) sebelum deploy, lalu
-   setiap migrasi baru di tabel berikut dipasang per berkas dengan `--path` dan diperiksa lagi sesudahnya. Kode gelombang
-   mana pun tidak di-deploy sebelum migrasinya (ruling W3-8b). Baris 1 sampai 14 tercatat sudah dipasang pada 15 Oktober
-   2026 (`HANDOVER.md` bagian 0), tetapi tetap wajib dikonfirmasi ulang lewat `migrate:status`; baris 15 sampai 32 belum
-   dipasang di Supabase.
-3. **Audit dependensi.** `security.yml` menjalankan `composer audit` dan `npm audit`. Upgrade Tailwind 4.3 dan MapLibre
-   6.14 sudah masuk pada GR-08 (`a6c8f11`), tetap diverifikasi ulang oleh CI pada saat PR/push.
-4. **RLS di migrasi baru.** Seluruh tabel aplikasi sampai 12 Oktober 2026 dinyalakan RLS-nya di migrasi #14; tabel baru
-   W8 (`authority_members`, `data_error_reports`, `volcano_statuses`, `mountain_photos`) ikut menyalakan RLS di migrasi
-   masing-masing pada PostgreSQL. Tetap diverifikasi di Supabase sesudah migrasi dipasang (Q22).
+1. **Suite Spatial di CI lulus (TERVERIFIKASI LULUS).** `test.yml` pada PR #7 (Run #43688678920, `postgis/postgis:16-3.4`) meluluskan 102 dari 102 test `Spatial` (`--fail-on-skipped`), termasuk kunci baris W4 dan W9 (`tests/Spatial/UserRowLockTest.php`, `tests/Spatial/PreparationFirstVisitLockTest.php`), indeks dan CHECK Sprint 1 (`tests/Spatial/SchemaConstraintSpatialTest.php`), serta test skema W7 dan W8 (`tests/Spatial/OfficialDataSchemaTest.php`).
+2. **Status migrasi Supabase (MENUNGGU PEMBARUAN `SUPABASE_DB_URL` OLEH PEMILIK).** `php artisan migrate:status` terhadap Supabase atas izin baca (Q22) sebelum deploy, lalu setiap migrasi baru di tabel berikut dipasang sebelum merge PR #7 ke `main`. Kode gelombang mana pun tidak di-deploy sebelum migrasinya (ruling W3-8b). Baris 1 sampai 14 tercatat sudah dipasang pada 15 Oktober 2026 (`HANDOVER.md` bagian 0), tetapi tetap wajib dikonfirmasi ulang lewat `migrate:status`; baris 15 sampai 32 belum dipasang di Supabase.
+3. **Audit dependensi (TERVERIFIKASI LULUS).** Atas izin pemilik (R-020), `laravel/framework` dinaikkan dari `v13.32.0` ke `v13.42.0` untuk menutup `CVE-2026-128083`; `composer audit --locked` dan `npm audit --audit-level=high` lulus dengan 0 advisori.
+4. **RLS di migrasi baru (TERVERIFIKASI DI CI POSTGIS; VERIFIKASI ULANG DI SUPABASE SESUDAH MIGRASI).** Seluruh tabel aplikasi sampai 12 Oktober 2026 dinyalakan RLS-nya di migrasi #14; tabel baru W8 (`authority_members`, `data_error_reports`, `volcano_statuses`, `mountain_photos`) menyalakan RLS di migrasi masing-masing pada PostgreSQL dan telah dibuktikan `AppTablesRowLevelSecurityTest` serta `PostgrestClosureTest` di CI PostGIS. Tetap diverifikasi di Supabase sesudah migrasi dipasang (Q22).
 5. **Pembersihan PII snapshot kondisi lama** (`memount:bersihkan-snapshot-kondisi`, butir izin akhir 18) sebelum atau
    bersama deploy kode.
 6. **Proxy tepercaya dan rahasia operasional.** `TRUSTED_PROXIES`, `CRON_SECRET`, dan opsional
