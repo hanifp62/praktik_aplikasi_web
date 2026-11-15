@@ -30,7 +30,7 @@ dinyatakan "belum diketahui", tidak pernah ditebak.
 
 | Lapisan | Teknologi (versi terpasang) |
 |---|---|
-| Server | Laravel 13.32, PHP 8.5 |
+| Server | Laravel 13.42, PHP 8.5 |
 | Antarmuka | React 19.3 lewat Inertia 3 (satu aplikasi, tanpa API terpisah), TypeScript 5.9 |
 | Gaya | Tailwind CSS 4.3 (konfigurasi CSS-first di `resources/css/app.css`, plugin Vite) dengan token warna CSS variable, tema terang dan gelap |
 | Sistem desain | Token di `resources/css/app.css`, primitif React di `resources/js/components/ui/`, huruf Plus Jakarta Sans dihosting sendiri di `public/fonts/`, ikon Phosphor tersalin di registri `resources/js/components/ui/ikon/`; arah di `DESIGN.md`, pratinjau tanpa basis data di `tests/Pratinjau` (`CONTRIBUTING.md`) |
@@ -44,9 +44,10 @@ Keputusan arsitektur dan alasannya ada di `docs/ARCHITECTURE.md`.
 
 ## Menjalankan di komputer sendiri
 
-Prasyarat: PHP 8.5 (ekstensi `pdo_pgsql`, `pdo_sqlite`, `mbstring`, `gd`),
-Composer 2, Node 22 atau lebih baru, dan PostgreSQL 16+ dengan PostGIS, atau Docker,
-bila ingin menguji fitur spasial.
+Prasyarat: PHP 8.5 (ekstensi `pdo_pgsql`, `pdo_sqlite`, `mbstring`, `gd`, `exif`, `fileinfo`),
+Composer 2, Node 22 atau lebih baru, serta Docker Desktop atau PostgreSQL 16+ dengan PostGIS.
+
+Di macOS, Linux, atau Git Bash:
 
 ```sh
 git clone <url-repo> memount && cd memount
@@ -54,29 +55,62 @@ composer install
 npm ci
 cp .env.example .env
 php artisan key:generate
+npm run build
+```
+
+Di Windows PowerShell:
+
+```powershell
+git clone <url-repo> memount; Set-Location memount
+composer install
+npm ci
+Copy-Item .env.example .env
+php artisan key:generate
+npm run build
 ```
 
 **Arahkan `.env` ke basis data lokal, bukan Supabase.** Bawaan `.env.example` adalah
-PostgreSQL lokal bernama `hiking`. Supabase adalah basis data produksi; aksesnya hanya
-dengan izin pemilik produk (lihat [Keamanan](#keamanan)).
+PostgreSQL lokal bernama `hiking` di `127.0.0.1:5432`. Supabase adalah basis data produksi;
+aksesnya hanya dengan izin pemilik produk (lihat [Keamanan](#keamanan)).
+
+**Cara 1 (disarankan di Windows, macOS, dan Linux): Docker PostGIS lokal + `php artisan serve`.**
+Layanan `postgres` di `docker-compose.yml` menyalakan PostgreSQL 16 + PostGIS 3.4 hanya di
+`127.0.0.1:5432`, lalu `composer lokal` (`php artisan memount:lokal`) memasang ekstensi
+PostGIS, menjalankan migrasi, dan mengisi jalur terbit lengkap dengan garis rute PostGIS
+serta mencetak kata sandi acak akun uji per peran:
+
+```sh
+docker compose up -d postgres
+composer lokal          # idempoten; pakai `composer lokal:ulang` bila ingin mengosongkan ulang tabel lokal
+php artisan serve       # berjalan di http://127.0.0.1:8000
+```
+
+Saat sedang mengubah kode React/CSS sekaligus, `composer run dev` menyalakan peladen PHP,
+antrean, log, dan Vite secara bersamaan (`@laravel/multiplex` di macOS/Linux dan
+`concurrently` di Windows).
+
+**Cara 2: PostgreSQL 16+ dengan PostGIS yang terpasang langsung di mesin.**
 
 ```sh
 createdb hiking && psql hiking -c "CREATE EXTENSION IF NOT EXISTS postgis"
 php artisan migrate
-php artisan db:seed     # data contoh lokal: admin@example.com, moderator@example.com,
+php artisan db:seed     # data dasar lokal: admin@example.com, moderator@example.com,
                         # pendaki@example.com, kata sandi "password" (hanya untuk lokal)
-composer run dev        # server, antrean, log, dan Vite sekaligus
+composer lokal          # opsional: melengkapi garis rute PostGIS dan data uji lengkap di loopback lokal
+php artisan serve
 ```
 
-Buka `http://localhost:8000`.
+Buka `http://127.0.0.1:8000` (atau `http://localhost:8000`).
 
-**Inspeksi cepat tanpa PostgreSQL.** `composer inspeksi:data` mengisi `database/demo.sqlite` dengan data
-contoh dan mencetak sandi akun `budi@contoh.test`; `composer inspeksi` lalu menyalakan `http://127.0.0.1:8000`
-dengan data itu. Peta jalur tampil tanpa garis rute, karena SQLite tidak punya PostGIS.
+**Cara 3: Inspeksi cepat tanpa PostgreSQL dan tanpa Docker.** `composer inspeksi:data` mengisi
+`database/demo.sqlite` dengan data contoh dan mencetak sandi akun `budi@contoh.test`;
+`composer inspeksi` lalu menyalakan `http://127.0.0.1:8000` dengan data itu. Peta jalur tampil
+tanpa garis rute, karena SQLite tidak memiliki PostGIS.
 
-**Windows:** PHP butuh CA bundle untuk panggilan HTTPS (misalnya prakiraan BMKG). Isi
-`curl.cainfo` dan `openssl.cafile` di `php.ini` dengan `ca-bundle.crt`; Git for Windows
-sudah membawa satu.
+**Catatan Windows:** aktifkan ekstensi `pdo_pgsql`, `pdo_sqlite`, `mbstring`, `gd`, `exif`, dan
+`fileinfo` di `php.ini`. PHP di Windows juga butuh CA bundle untuk panggilan HTTPS keluar
+(misalnya prakiraan BMKG): isi `curl.cainfo` dan `openssl.cafile` di `php.ini` dengan jalur
+`ca-bundle.crt` (Git for Windows sudah menyertakannya di `mingw64/etc/ssl/certs/ca-bundle.crt`).
 
 ## Perintah harian
 

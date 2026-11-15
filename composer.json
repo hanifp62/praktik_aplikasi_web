@@ -70,6 +70,12 @@
             "@putenv DB_CONNECTION=demo",
             "@php artisan memount:demo"
         ],
+        "lokal": [
+            "@php artisan memount:lokal"
+        ],
+        "lokal:ulang": [
+            "@php artisan memount:lokal --fresh"
+        ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
