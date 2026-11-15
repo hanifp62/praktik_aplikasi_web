@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Listeners\RecordScheduledTaskRun;
 use App\Models\AuditLog;
 use App\Models\Authority;
+use App\Models\DataErrorReport;
 use App\Models\DataSource;
 use App\Models\ExpertCredential;
 use App\Models\HikingGoal;
@@ -15,8 +16,10 @@ use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\TripPlan;
 use App\Models\UsabilitySession;
+use App\Models\VolcanoStatus;
 use App\Policies\AuditLogPolicy;
 use App\Policies\AuthorityPolicy;
+use App\Policies\DataErrorReportPolicy;
 use App\Policies\DataSourcePolicy;
 use App\Policies\ExpertCredentialPolicy;
 use App\Policies\HikingGoalPolicy;
@@ -27,9 +30,11 @@ use App\Policies\TrailConditionReportPolicy;
 use App\Policies\TrailPolicy;
 use App\Policies\TripPlanPolicy;
 use App\Policies\UsabilitySessionPolicy;
+use App\Policies\VolcanoStatusPolicy;
 use App\Support\PenjagaDataContoh;
 use Illuminate\Console\Events\ScheduledTaskFailed;
 use Illuminate\Console\Events\ScheduledTaskFinished;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -50,6 +55,8 @@ class AppServiceProvider extends ServiceProvider
         // tanpa bergantung pada baris penyaji yang disalin operator (tinjauan akhir W1, I-3).
         $this->app->make(PenjagaDataContoh::class)->isolasiBilaMenyajikanDemo();
 
+        Model::preventLazyLoading(! $this->app->isProduction());
+
         // Laravel 13 ships no AuthServiceProvider, so policies are registered here.
         Gate::policy(TripPlan::class, TripPlanPolicy::class);
         Gate::policy(TrailConditionReport::class, TrailConditionReportPolicy::class);
@@ -62,6 +69,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(PermitRequirement::class, PermitRequirementPolicy::class);
         Gate::policy(ExpertCredential::class, ExpertCredentialPolicy::class);
         Gate::policy(Authority::class, AuthorityPolicy::class);
+        Gate::policy(DataErrorReport::class, DataErrorReportPolicy::class);
+        Gate::policy(VolcanoStatus::class, VolcanoStatusPolicy::class);
         Gate::policy(UsabilitySession::class, UsabilitySessionPolicy::class);
 
         // Dipasang pada event scheduler, bukan di dalam tiap perintah: perintah yang

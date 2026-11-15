@@ -7,6 +7,7 @@ use App\Models\TripPlan;
 use App\Models\TripPreparationItem;
 use App\Services\PermitService;
 use App\Services\PreparationService;
+use App\Support\Timezone;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -66,6 +67,8 @@ final class HalamanPersiapan
                 ->values()
                 ->all(),
             'pengingat' => $this->pengingat->untukHalaman($trip),
+            // Catatan per butir (ruling W7-R9) dibaca komponen CatatanButir lewat usePage.
+            'catatanButir' => CatatanButir::untukHalaman($trip),
         ];
     }
 
@@ -119,7 +122,7 @@ final class HalamanPersiapan
             'kritis' => (bool) $item->is_critical,
             'status' => $item->status->value,
             'menunggu' => PreparationService::menungguBmkg($item, $terbit)
-                ? 'Menunggu BMKG: terbit mulai '.$terbit->translatedFormat('D, j M')
+                ? 'Menunggu BMKG: terbit mulai '.Timezone::tanggalPendek($terbit, denganHari: true)
                 : null,
             'tautan' => $butirIzin && $izin['tautan'] !== null ? ['href' => $izin['tautan']['href'], 'teks' => $izin['tautan']['teks']] : null,
         ];

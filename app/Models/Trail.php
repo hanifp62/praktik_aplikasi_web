@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 #[Fillable([
     'mountain_id', 'name', 'slug', 'description', 'distance_km', 'elevation_gain_m',
@@ -32,6 +33,25 @@ class Trail extends Model
 {
     use HasFactory;
     use HasSpatialColumns;
+
+    /**
+     * Kolom tabel trails selain geometry (titipan W3 I7 dan T4-M5; ruling W8-R20). Kandidat
+     * Jelajah, rekomendasi, simpanan, dan "Jalur lain untuk Anda" tidak pernah memuat garis rute:
+     * di PostgreSQL kolom geografi itu WKB utuh per baris, padahal daftar hanya butuh penanda
+     * ada-tidaknya (has_geometry). TrailCandidateColumnsTest menjaga daftar ini sama dengan skema
+     * di SQLite dan PostgreSQL, supaya kolom baru tidak hilang diam-diam dari kandidat.
+     *
+     * @var list<string>
+     */
+    public const KOLOM_TANPA_GEOMETRI = [
+        'id', 'mountain_id', 'name', 'slug', 'description', 'distance_km', 'elevation_gain_m', 'elevation_loss_m',
+        'elevation_profile', 'estimated_duration_minutes', 'technical_demand', 'terrain_character',
+        'navigation_complexity', 'water_availability', 'camping_available', 'starting_point', 'weather_adm4_code',
+        'weather_reference_area', 'data_source_id', 'contributed_by', 'contributed_credential_id', 'contributed_at',
+        'is_published', 'archived_at', 'created_at', 'updated_at',
+    ];
+
+    public const ROUTE_FIT_COLUMNS = self::KOLOM_TANPA_GEOMETRI;
 
     protected function casts(): array
     {
@@ -70,6 +90,15 @@ class Trail extends Model
     protected static function booted(): void
     {
         static::saving(function (Trail $trail): void {
+            if (
+                ($trail->distance_km !== null && (float) $trail->distance_km < 0)
+                || ($trail->elevation_gain_m !== null && (int) $trail->elevation_gain_m < 0)
+                || ($trail->elevation_loss_m !== null && (int) $trail->elevation_loss_m < 0)
+                || ($trail->estimated_duration_minutes !== null && (int) $trail->estimated_duration_minutes < 0)
+            ) {
+                throw new InvalidArgumentException('Metrik fisik jalur tidak boleh bernilai negatif.');
+            }
+
             if (! $trail->is_published) {
                 return;
             }
@@ -102,6 +131,16 @@ class Trail extends Model
         return $this->morphMany(OfficialStatus::class, 'statusable');
     }
 
+    /**
+     * Catatan status yang dibaca pendaki (OfficialStatus::scopeTerlihatPendaki()). Gerbang
+     * publikasi menghitung relasi ini, bukan semua catatan: draf meja kurator bukan "status
+     * resmi pernah dicatat" (R-022, ruling W8-R5).
+     */
+    public function statusTerlihat(): MorphMany
+    {
+        return $this->morphMany(OfficialStatus::class, 'statusable')->terlihatPendaki();
+    }
+
     public function conditionReports(): HasMany
     {
         return $this->hasMany(TrailConditionReport::class);
@@ -109,7 +148,7 @@ class Trail extends Model
 
     public function weatherSnapshots(): HasMany
     {
-        return $this->hasMany(WeatherSnapshot::class);
+        return $this->hasMany(WeatherSnapshot::class, 'adm4_code', 'weather_adm4_code');
     }
 
     public function dataSource(): BelongsTo
@@ -151,13 +190,16 @@ class Trail extends Model
      * kandidat rekomendasi, dan satu query per jalur akan membuat anggaran query
      * tumbuh linear terhadap ukuran data (PRD §96).
      *
-     * Di SQLite kolomnya tidak ada, sehingga syarat ini dianggap terpenuhi. Itulah
-     * sebabnya bukti geometri hanya sah dari suite spasial.
+     * Null berarti koneksi ini tidak dapat menjawabnya: di SQLite kolomnya tidak ada (titipan
+     * W3 artefak hasGeometry, ruling W8-R20). Gerbang publikasi dan kelengkapan hanya menolak
+     * jawaban false, jadi perilakunya di SQLite tetap; yang berubah, halaman tidak lagi
+     * menyebut garis peta sebagai terpenuhi ketika tidak ada yang memeriksanya. Bukti geometri
+     * hanya sah dari suite spasial.
      */
-    public function hasGeometry(): bool
+    public function hasGeometry(): ?bool
     {
         if (! static::spatialSupported()) {
-            return true;
+            return null;
         }
 
         if (array_key_exists('has_geometry', $this->attributes)) {
@@ -175,13 +217,26 @@ class Trail extends Model
      */
     public function scopeWithPublishabilityData(Builder $query): Builder
     {
-        $query->withCount(['checkpoints', 'officialStatuses']);
+        // Kolom eksplisit tanpa garis rute, kecuali pemanggil sudah memilih kolomnya sendiri.
+        if ($query->getQuery()->columns === null) {
+            $query->tanpaGeometri();
+        }
+
+        $query->withCount(['checkpoints', 'statusTerlihat']);
 
         if (static::spatialSupported()) {
-            $query->addSelect(['*', DB::raw('(geometry IS NOT NULL) AS has_geometry')]);
+            $query->addSelect(DB::raw('(trails.geometry IS NOT NULL) AS has_geometry'));
         }
 
         return $query;
+    }
+
+    /**
+     * Semua kolom jalur kecuali geometry (KOLOM_TANPA_GEOMETRI).
+     */
+    public function scopeTanpaGeometri(Builder $query): Builder
+    {
+        return $query->select(array_map(fn (string $kolom) => 'trails.'.$kolom, self::KOLOM_TANPA_GEOMETRI));
     }
 
     /**
@@ -199,7 +254,7 @@ class Trail extends Model
             ->whereNotNull('elevation_gain_m')
             ->whereNotNull('estimated_duration_minutes')
             ->whereHas('checkpoints')
-            ->whereHas('officialStatuses');
+            ->whereHas('statusTerlihat');
 
         if (static::spatialSupported()) {
             $query->whereNotNull('geometry');
@@ -243,7 +298,7 @@ class Trail extends Model
                 continue;
             }
 
-            foreach (['checkpoints_count', 'official_statuses_count', 'has_geometry'] as $atribut) {
+            foreach (['checkpoints_count', 'status_terlihat_count', 'has_geometry'] as $atribut) {
                 if (array_key_exists($atribut, $sumber->getAttributes())) {
                     $trail->setAttribute($atribut, $sumber->getAttributes()[$atribut]);
                 }
@@ -313,7 +368,7 @@ class Trail extends Model
     private function countFor(string $relation): int
     {
         // withCount() menamai atributnya dari nama relasi apa adanya, tanpa
-        // di-singular-kan: officialStatuses menjadi official_statuses_count.
+        // di-singular-kan: statusTerlihat menjadi status_terlihat_count.
         $attribute = Str::snake($relation).'_count';
 
         if (array_key_exists($attribute, $this->attributes)) {
@@ -344,11 +399,11 @@ class Trail extends Model
             $menunggu[] = 'Daftar pos dan checkpoint';
         }
 
-        if (! $this->hasGeometry()) {
+        if ($this->hasGeometry() === false) {
             $menunggu[] = 'Jalur pada peta';
         }
 
-        if ($this->countFor('officialStatuses') === 0) {
+        if ($this->countFor('statusTerlihat') === 0) {
             $menunggu[] = 'Keterangan status resmi';
         }
 
@@ -383,13 +438,13 @@ class Trail extends Model
             $missing[] = 'Jalur belum memiliki checkpoint.';
         }
 
-        if ($this->countFor('officialStatuses') === 0) {
+        if ($this->countFor('statusTerlihat') === 0) {
             $missing[] = 'Status resmi belum pernah dicatat.';
         }
 
         // Geometri hanya dapat diperiksa pada koneksi berkemampuan PostGIS; pada
-        // SQLite kolomnya memang tidak ada sehingga syarat ini dilewati.
-        if (! $this->hasGeometry()) {
+        // SQLite kolomnya memang tidak ada (null) sehingga syarat ini dilewati.
+        if ($this->hasGeometry() === false) {
             $missing[] = 'Geometri jalur belum tersedia.';
         }
 

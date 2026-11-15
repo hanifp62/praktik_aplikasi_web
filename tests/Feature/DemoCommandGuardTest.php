@@ -9,6 +9,7 @@ use Illuminate\Database\Console\Migrations\FreshCommand;
 use Illuminate\Database\Console\Seeds\SeedCommand;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -56,6 +57,10 @@ class DemoCommandGuardTest extends TestCase
 
     protected function tearDown(): void
     {
+        // Di Windows NTFS, berkas SQLite yang sempat terikat ke PDO menolak unlink()
+        // sebelum koneksinya dilepas lebih dulu.
+        DB::purge(PenjagaDataContoh::KONEKSI);
+
         // Tinjauan W1-9b #3: is_file() pada symlink menggantung (sasarannya sudah
         // dihapus, seperti di test_it_refuses_a_symlink) bernilai false, sehingga
         // pemeriksaan is_file() saja melewatkan penghapusan symlink itu sendiri.

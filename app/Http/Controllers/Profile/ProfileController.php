@@ -8,6 +8,8 @@ use App\Http\Requests\Profile\DestroyAccountRequest;
 use App\Http\Requests\Profile\UpdatePasswordRequest;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Http\Requests\Profile\UpdateTrackPreferenceRequest;
+use App\Services\AccountDeletionService;
+use App\Services\Profil\HalamanProfil;
 use App\Support\PetunjukKataSandi;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -17,15 +19,17 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Halaman Profil: akun, profil pendakian, perekaman jejak, tampilan, dan penghapusan
- * akun. Setiap aksi bekerja pada pengguna yang sedang masuk; tidak ada id pengguna
- * yang diterima dari klien, jadi tidak ada akun orang lain yang dapat disentuh.
+ * Halaman Profil (spec v3 bagian 6.15, prototype 14): identitas, pengalaman, preferensi,
+ * perlengkapan pribadi, tampilan, privasi, akun, pintu konsol, dan penghapusan akun. Isi
+ * pendakiannya disusun HalamanProfil. Setiap aksi bekerja pada pengguna yang sedang masuk;
+ * tidak ada id pengguna yang diterima dari klien, jadi tidak ada akun orang lain yang dapat
+ * disentuh.
  */
 class ProfileController extends Controller
 {
-    public function edit(Request $request): Response
+    public function edit(Request $request, HalamanProfil $halaman): Response
     {
-        $user = $request->user()->loadMissing(['profile', 'preference']);
+        $user = $request->user()->loadMissing(['profile', 'experience', 'preference']);
 
         return Inertia::render('Profile/Edit', [
             'title' => 'Profil Akun',
@@ -34,18 +38,7 @@ class ProfileController extends Controller
             'rekamJejak' => (bool) $user->preference?->record_track,
             'pesanJejak' => $request->session()->get('status-jejak'),
             'petunjukSandi' => PetunjukKataSandi::teks(),
-
-            // Ringkasan dari isian onboarding, dengan label yang sama. Yang belum diisi
-            // dikirim null dan ditampilkan sebagai belum diisi, bukan ditebak (R-007).
-            'profilPendakian' => [
-                'lengkap' => $user->hasCompletedProfile(),
-                'rincian' => [
-                    ['label' => 'Tingkat pengalaman', 'nilai' => $user->profile?->experience_level?->label()],
-                    ['label' => 'Preferensi wilayah', 'nilai' => $user->profile?->region_preference ?: null],
-                    ['label' => 'Durasi yang Anda sukai', 'nilai' => $user->preference?->preferred_duration?->label()],
-                    ['label' => 'Tipe perjalanan', 'nilai' => $user->preference?->preferred_trip_type?->label()],
-                ],
-            ],
+            ...$halaman->untuk($user, $request->session()->get('kabar-profil')),
         ]);
     }
 
@@ -95,9 +88,8 @@ class ProfileController extends Controller
     }
 
     /**
-     * Sama persis dengan komponen Volt sebelumnya: keluar, lalu hapus baris pengguna.
-     * Apa yang ikut terhapus dan apa yang dipertahankan tanpa nama diatur foreign key
-     * dan docs/KEBIJAKAN-DATA-PRIBADI.md, bukan di sini.
+     * Keluar dari sesi aktif, lalu menjalankan penghapusan akun dan pembersihan residu sesuai
+     * docs/KEBIJAKAN-DATA-PRIBADI.md bagian 2 sampai 6 lewat AccountDeletionService.
      *
      * Data Memount di perangkat ini ikut dihapus, karena KEBIJAKAN bagian 4 menghapus GPS presisi
      * pada penghapusan akun, termasuk titik jejak yang belum terkirim (ruling W6-11b). Halaman
@@ -105,9 +97,11 @@ class ProfileController extends Controller
      * peramban yang mendukungnya. Kata sandi yang salah ditolak DestroyAccountRequest sebelum
      * sampai ke sini, jadi tidak ada yang dihapus.
      */
-    public function destroy(DestroyAccountRequest $request, Logout $logout): RedirectResponse
+    public function destroy(DestroyAccountRequest $request, Logout $logout, AccountDeletionService $penghapusAkun): RedirectResponse
     {
-        tap($request->user(), $logout(...))->delete();
+        $user = $request->user();
+        $logout();
+        $penghapusAkun->hapus($user);
 
         return redirect('/')->header('Clear-Site-Data', '"storage"');
     }

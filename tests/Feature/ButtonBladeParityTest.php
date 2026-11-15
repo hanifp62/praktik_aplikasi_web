@@ -82,7 +82,7 @@ class ButtonBladeParityTest extends TestCase
         $halaman->assertDontSee('text-3xl font-semibold', escape: false);
 
         $sumber = File::get(resource_path('views/public/trail.blade.php'));
-        $this->assertStringContainsString('<x-ui.button :href="route(\'login\')"', $sumber);
+        $this->assertStringContainsString('<x-ui.button :href="route(\'trails.fit\', $trail)"', $sumber);
         $this->assertStringNotContainsString('rounded-control bg-brand-700', $sumber);
     }
 }

@@ -408,7 +408,7 @@ class AntreanLapanganTest extends TestCase
         );
         $this->assertStringContainsString('id="selesai-lapangan" tahan={tahan} />', $lembar);
 
-        $show = File::get(resource_path('js/pages/Trips/Show.tsx'));
+        $show = str_replace("\r\n", "\n", File::get(resource_path('js/pages/Trips/Show.tsx')));
 
         // N-1/FC4b: penjaga kunci perangkat mengunci literal sumbernya, supaya mutan "selalu boleh"
         // (if (!kunci || kunci)) terdeteksi merah: badan if itu tidak lagi berupa penjaga sama sekali.
@@ -461,7 +461,7 @@ class AntreanLapanganTest extends TestCase
         $this->assertSame(1, substr_count($lembar, 'putarAntrean()'), 'Hanya tahan (tekan Simpan) yang memutar antrean; pemantau tidak.');
         $this->assertStringContainsString('pantauTahan={pantauTahan} id="selesai-lapangan" tahan={tahan} />', $lembar);
 
-        $show = File::get(resource_path('js/pages/Trips/Show.tsx'));
+        $show = str_replace("\r\n", "\n", File::get(resource_path('js/pages/Trips/Show.tsx')));
         $this->assertMatchesRegularExpression("/const periksa = \(\) => \{\s*if \(document\.visibilityState === 'visible'\) \{\s*void tahanSelesai\(\)\.then\(perbarui, \(\) => undefined\);/", $show);
         $this->assertStringContainsString("window.addEventListener('focus', periksa);", $show);
         $this->assertStringContainsString("document.addEventListener('visibilitychange', periksa);", $show);

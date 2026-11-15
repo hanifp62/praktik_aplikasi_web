@@ -5,12 +5,17 @@ use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Support\DisplayPreference;
+use App\Support\HalamanGalat;
 use App\Support\ThemePreference;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Routing\Router;
+use Inertia\ExceptionResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -46,4 +51,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Kunjungan Inertia yang berakhir 403, 404, 419, 429, 500, atau 503 mendapat halaman
+        // React Galat berbahasa Indonesia, bukan dialog pengembang Inertia (ruling W4-6j, W9).
+        $exceptions->respond(fn (Response $response, Throwable $galat, Request $request) => HalamanGalat::tanggapiInertia(
+            new ExceptionResponse($galat, $request, $response, app(Router::class), app(Kernel::class)),
+        ));
     })->create();

@@ -2,6 +2,12 @@ import type { InertiaFormProps } from '@inertiajs/react';
 import { FormulirAdmin, PilihanAdmin, TeksPanjangAdmin, type Pilihan } from '@/components/admin/FormulirAdmin';
 import { Checkbox, FormField, InputError } from '@/components/ui/Field';
 
+/** Area kemah tiga keadaan (R-007, W8-R22): belum diketahui bukan "tidak ada". */
+const pilihanKemah: Pilihan[] = [
+    { value: '1', label: 'Ada area kemah resmi' },
+    { value: '0', label: 'Tidak ada area kemah resmi' },
+];
+
 export interface IsianJalur {
     mountain_id: string;
     name: string;
@@ -14,7 +20,8 @@ export interface IsianJalur {
     navigation_complexity: string;
     water_availability: string;
     terrain_character: string[];
-    camping_available: boolean;
+    /** '1' ada, '0' tidak ada, '' belum diketahui. */
+    camping_available: string;
     starting_point: string;
     weather_adm4_code: string;
     weather_reference_area: string;
@@ -29,11 +36,12 @@ export const jalurKosong: IsianJalur = {
     elevation_gain_m: '',
     elevation_loss_m: '',
     estimated_duration_minutes: '',
-    technical_demand: 'MODERATE',
-    navigation_complexity: 'MODERATE',
+    // Kosong berarti belum diketahui (R-006, W8-R22); formulir tidak menebak Sedang.
+    technical_demand: '',
+    navigation_complexity: '',
     water_availability: 'UNKNOWN',
     terrain_character: [],
-    camping_available: false,
+    camping_available: '',
     starting_point: '',
     weather_adm4_code: '',
     weather_reference_area: '',
@@ -74,14 +82,22 @@ export function FormulirJalur({ judul, form, pilihan, onSubmit, onBatal }: Formu
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <FormField name="distance_km" type="number" step="any" label="Jarak (km)" value={data.distance_km} onChange={teks('distance_km')} error={errors.distance_km} />
                 <FormField name="elevation_gain_m" type="number" label="Tanjakan (m)" value={data.elevation_gain_m} onChange={teks('elevation_gain_m')} error={errors.elevation_gain_m} />
-                <FormField name="elevation_loss_m" type="number" label="Turunan (m)" value={data.elevation_loss_m} onChange={teks('elevation_loss_m')} error={errors.elevation_loss_m} />
+                <FormField
+                    name="elevation_loss_m"
+                    type="number"
+                    label="Turunan (m)"
+                    hint="Turunan sepanjang jalan naik, dari GPX atau sumber tercatat. Kosongkan bila tidak diketahui; jangan salin tanjakan."
+                    value={data.elevation_loss_m}
+                    onChange={teks('elevation_loss_m')}
+                    error={errors.elevation_loss_m}
+                />
             </div>
 
             <FormField name="estimated_duration_minutes" type="number" label="Estimasi durasi (menit)" value={data.estimated_duration_minutes} onChange={teks('estimated_duration_minutes')} error={errors.estimated_duration_minutes} />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <PilihanAdmin name="technical_demand" label="Tingkat teknis" required placeholder="Pilih" options={pilihan.technicalLevels} value={data.technical_demand} onChange={(v) => setData('technical_demand', v)} error={errors.technical_demand} />
-                <PilihanAdmin name="navigation_complexity" label="Kompleksitas navigasi" required placeholder="Pilih" options={pilihan.navigationLevels} value={data.navigation_complexity} onChange={(v) => setData('navigation_complexity', v)} error={errors.navigation_complexity} />
+                <PilihanAdmin name="technical_demand" label="Tingkat teknis" placeholder="Belum diketahui" options={pilihan.technicalLevels} value={data.technical_demand} onChange={(v) => setData('technical_demand', v)} error={errors.technical_demand} />
+                <PilihanAdmin name="navigation_complexity" label="Kompleksitas navigasi" placeholder="Belum diketahui" options={pilihan.navigationLevels} value={data.navigation_complexity} onChange={(v) => setData('navigation_complexity', v)} error={errors.navigation_complexity} />
                 <PilihanAdmin name="water_availability" label="Ketersediaan air" required placeholder="Pilih" options={pilihan.waterLevels} value={data.water_availability} onChange={(v) => setData('water_availability', v)} error={errors.water_availability} />
             </div>
 
@@ -98,10 +114,7 @@ export function FormulirJalur({ judul, form, pilihan, onSubmit, onBatal }: Formu
                 <InputError id="terrain_character-error" messages={errors.terrain_character} className="mt-2" />
             </fieldset>
 
-            <label className="flex min-h-11 items-center gap-2 text-sm text-secondary">
-                <Checkbox checked={data.camping_available} onChange={(e) => setData('camping_available', e.target.checked)} />
-                Tersedia area camping
-            </label>
+            <PilihanAdmin name="camping_available" label="Area kemah" placeholder="Belum diketahui" options={pilihanKemah} value={data.camping_available} onChange={(v) => setData('camping_available', v)} error={errors.camping_available} />
 
             <FormField name="starting_point" label="Titik awal" value={data.starting_point} onChange={teks('starting_point')} error={errors.starting_point} />
 

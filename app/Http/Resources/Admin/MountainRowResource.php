@@ -31,6 +31,8 @@ class MountainRowResource extends JsonResource
             'trails' => number_format((int) $this->trails_count, 0, ',', '.'),
             'status' => $this->isArchived() ? 'Diarsipkan' : 'Aktif',
             'archived' => $this->isArchived(),
+            // Halaman foto berlisensi gunung ini (W8, DK-37).
+            'foto' => route('admin.mountains.photo', $this->resource),
             'isian' => [
                 'name' => $this->name,
                 'province' => $this->province ?? '',

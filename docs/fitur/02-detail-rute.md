@@ -2,7 +2,7 @@
 
 **FR utama:** FR-07 Detail jalur (§34), FR-11 Status resmi (§41), FR-12 Cuaca (§44).
 **Bahan:** features/02-detail-rute.md dari NgodingPakeAI (keluaran alat di root, diabaikan git), `docs/PRD.md`, spec v3 bagian 6.4.
-**Diperiksa terhadap kode:** 26 September 2026, setelah gelombang W0. Status adalah FAKTA dari berkas yang disebut (R-023).
+**Diperiksa terhadap kode:** 8 Oktober 2026 untuk baris yang disentuh W8; selebihnya 26 September 2026, setelah gelombang W0. Status adalah FAKTA dari berkas yang disebut (R-023).
 
 ## Tujuan dan pertanyaan pengguna
 
@@ -42,7 +42,7 @@ Satu halaman menyatukan ringkasan, peta, pos, profil elevasi, kondisi terkini ya
 
 | Tabel | Kolom yang dipakai | Migrasi |
 |---|---|---|
-| `trails` | angka kunci, karakter medan, `elevation_profile`, `geometry` (PostgreSQL), `data_source_id`, `is_published` | `create_trails_table`, `add_elevation_profile_to_trails_table` |
+| `trails` | angka kunci, karakter medan, `elevation_profile`, `geometry` (PostgreSQL), `data_source_id`, `is_published`; `technical_demand`, `navigation_complexity`, dan `camping_available` boleh kosong (belum diketahui, W8) dan `elevation_loss_m` hanya turunan yang diukur | `create_trails_table`, `add_elevation_profile_to_trails_table`, `make_trail_characteristics_nullable`, `clear_copied_elevation_loss_on_trails` |
 | `trail_segments` | `sequence`, `name`, `description`, `distance_km`, `elevation_gain_m`, `technical_demand`, `terrain_character`, `geometry` | `create_trail_segments_table` |
 | `checkpoints` | `sequence`, `name`, `checkpoint_type`, `elevation_m`, `latitude`, `longitude`, `trail_segment_id` | `create_checkpoints_table`, `add_coordinates_to_checkpoints` |
 | `official_statuses` | `statusable`, `scope`, `status`, `source`, `source_url`, `published_at`, `verified_at`, `effective_at`, `expires_at`, `reason` | `create_official_statuses_table` |
@@ -79,8 +79,9 @@ Sumber luar: prakiraan BMKG per kode wilayah adm4, diambil perintah `weather:ref
 | Izin resmi | Ada | `perizinan` di `TrailDetailPage`, `tests/Feature/PermitVisibilityTest.php` |
 | Jalur belum lengkap | Ada | `Trails/Awaiting`, `tests/Feature/AwaitingDataTest.php` |
 | Halaman publik SEO | Ada, rute lama | `app/Http/Controllers/PublicTrailController.php`, `resources/views/public/trail.blade.php` |
-| Halaman gunung | Ada (W3) | `/mountains/{slug}` lewat `app/Http/Controllers/Trails/MountainPageController.php`, `app/Services/Mountains/HalamanGunung.php`, `resources/js/pages/Mountains/Show.tsx`, `tests/Feature/MountainPageTest.php` (DK-44); foto berlisensi dan status gunung api menunggu W8 (DK-37, DK-43) |
-| Status gunung api PVMBG | Belum ada | DK-43, W8 |
+| Halaman gunung | Ada (W3) | `/mountains/{slug}` lewat `app/Http/Controllers/Trails/MountainPageController.php`, `app/Services/Mountains/HalamanGunung.php`, `resources/js/pages/Mountains/Show.tsx`, `tests/Feature/MountainPageTest.php` (DK-44); foto berlisensi dengan atribusi di pojok sejak W8 (`resources/js/components/trails/gunung/FotoGunung.tsx`, `tests/Feature/MountainPhotoLicenseTest.php`, DK-37) |
+| Status gunung api PVMBG | Ada (W8) | `app/Services/DataResmi/StatusGunungApi.php`, `resources/js/components/trails/KartuGunungApi.tsx` di halaman gunung, rincian jalur, dan Cek kesiapan, `tests/Feature/VolcanoStatusTest.php` (DK-43) |
+| Laporkan kesalahan data | Ada (W8) | `resources/js/components/trails/LaporkanKesalahan.tsx` di kartu status jalur dan gunung, `app/Http/Controllers/Community/DataErrorReportController.php`, `tests/Feature/DataErrorReportTest.php` |
 
 ## Task NgodingPakeAI
 

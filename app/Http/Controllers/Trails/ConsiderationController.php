@@ -22,8 +22,11 @@ use Illuminate\Support\Str;
  */
 class ConsiderationController extends Controller
 {
-    /** Awalan kunci sesi penanda pemulihan; diikuti id jalur. */
-    private const KUNCI_PEMULIHAN = 'simpanan-pulihkan.';
+    /** Satu kunci sesi untuk seluruh penanda pemulihan: id jalur => {user, waktu}. */
+    private const KUNCI_PEMULIHAN = 'simpanan-pemulihan';
+
+    /** Penanda pemulihan kedaluwarsa sesudah sepuluh menit, jauh di atas umur toast Urungkan. */
+    private const UMUR_PEMULIHAN_DETIK = 600;
 
     /**
      * Menghapus dari simpanan, sumber yang sama dengan hitungan Simpanan dan halaman Banding.
@@ -52,14 +55,19 @@ class ConsiderationController extends Controller
 
         // Penanda pemulihan sekali-pakai (C1 tinjauan akhir W3, ruling W3-F2). Bukan flash:
         // flash habis pada kunjungan yang menampilkan toast, sebelum POST Urungkan tiba.
-        // Nilainya id pemilik, supaya sesi yang berganti akun tidak mewarisinya.
-        $request->session()->put(self::KUNCI_PEMULIHAN.$trail, $request->user()->id);
+        // Satu kunci sesi untuk semua penanda dan kedaluwarsa sesudah sepuluh menit (N5 W3).
+        $penanda = $this->penandaBerlaku($request);
+        $penanda[$trail] = ['user' => $request->user()->id, 'waktu' => now()->getTimestamp()];
+        $request->session()->put(self::KUNCI_PEMULIHAN, $penanda);
 
         $nama = Trail::query()->whereKey($trail)->value('name');
+        $kembali = back()->with('simpanan-terhapus', ['trailId' => $trail, 'nama' => $nama, 'catatan' => $catatan]);
 
-        return back()
-            ->with('pengumuman', $nama.' '.Str::lcfirst(ConsiderationOutcome::DIHAPUS->label()).'.')
-            ->with('simpanan-terhapus', ['trailId' => $trail, 'nama' => $nama, 'catatan' => $catatan]);
+        // Toast Urungkan klien sudah mengumumkan penghapusan ini; satu kejadian, satu
+        // pengumuman (T4-M7 dan T7-M10 tinjauan akhir W3, W9).
+        return $request->boolean('dengan_toast')
+            ? $kembali
+            : $kembali->with('pengumuman', $nama.' '.Str::lcfirst(ConsiderationOutcome::DIHAPUS->label()).'.');
     }
 
     /**
@@ -79,12 +87,13 @@ class ConsiderationController extends Controller
      */
     public function store(StoreSavedTrailRequest $request, int $trail, ConsiderationService $consideration): RedirectResponse
     {
-        $kunci = self::KUNCI_PEMULIHAN.$trail;
-        $pulihkan = $request->session()->get($kunci) === $request->user()->id;
+        $penanda = $this->penandaBerlaku($request);
+        $pulihkan = ($penanda[$trail]['user'] ?? null) === $request->user()->id;
 
-        if ($pulihkan) {
-            $request->session()->forget($kunci);
-        }
+        unset($penanda[$trail]);
+        $penanda === []
+            ? $request->session()->forget(self::KUNCI_PEMULIHAN)
+            : $request->session()->put(self::KUNCI_PEMULIHAN, $penanda);
 
         $jalur = ($pulihkan ? Trail::active() : Trail::published())->findOrFail($trail);
 
@@ -103,6 +112,27 @@ class ConsiderationController extends Controller
                 ->with('simpanan-sudah-ada', ['trailId' => $jalur->id]);
         }
 
-        return back()->with('pengumuman', $jalur->name.' '.Str::lcfirst(ConsiderationOutcome::DITAMBAHKAN->label()).'.');
+        // Toast Urungkan klien sudah mengumumkan simpanan ini (W9, pengumuman tunggal).
+        return $request->boolean('dengan_toast')
+            ? back()
+            : back()->with('pengumuman', $jalur->name.' '.Str::lcfirst(ConsiderationOutcome::DITAMBAHKAN->label()).'.');
+    }
+
+    /**
+     * @return array<int, array{user: int, waktu: int}>
+     */
+    private function penandaBerlaku(Request $request): array
+    {
+        $batas = now()->getTimestamp() - self::UMUR_PEMULIHAN_DETIK;
+        $mentah = $request->session()->get(self::KUNCI_PEMULIHAN);
+
+        if (! is_array($mentah)) {
+            return [];
+        }
+
+        return array_filter(
+            $mentah,
+            fn (mixed $isi): bool => is_array($isi) && isset($isi['user'], $isi['waktu']) && $isi['waktu'] >= $batas,
+        );
     }
 }

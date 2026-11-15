@@ -1080,7 +1080,7 @@ class FieldPackDeviceTest extends TestCase
         $this->assertStringContainsString('{p.berakhir ? <p className="mt-2 text-isi font-bold text-primary">{kalimatBerakhir(p.berakhir.jenis, waktuBerakhir(p.berakhir.waktu))}</p> : null}', File::get(resource_path('js/luring/DaftarPaket.tsx')));
         $this->assertStringContainsString('berakhir: data.berakhir ? { jenis: data.berakhir.jenis, waktu: teksWaktu(data.berakhir.waktu) } : null,', File::get(resource_path('js/pages/Trips/Hike.tsx')));
 
-        $mode = File::get(resource_path('js/components/mendaki/ModeLapangan.tsx'));
+        $mode = str_replace("\r\n", "\n", File::get(resource_path('js/components/mendaki/ModeLapangan.tsx')));
         $this->assertStringContainsString('{tujuan && data.trip.berlangsung ? (', $mode, 'Tiba di pos hanya selama pendakian berlangsung.');
         $this->assertStringContainsString("{data.trip.berlangsung ? (\n                <div className=\"flex gap-3\">", $mode, 'Jeda, Lanjut, dan Selesai hanya selama pendakian berlangsung.');
     }

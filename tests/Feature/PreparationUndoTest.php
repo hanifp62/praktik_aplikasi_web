@@ -552,7 +552,7 @@ class PreparationUndoTest extends TestCase
      */
     public function test_a_message_that_arrives_with_the_page_sits_near_the_header(): void
     {
-        $halaman = File::get(resource_path('js/pages/Trips/Preparation.tsx'));
+        $halaman = str_replace("\r\n", "\n", File::get(resource_path('js/pages/Trips/Preparation.tsx')));
         $wilayahKabar = strpos($halaman, "<p role=\"status\" className={kabarMasuk ? 'rounded-kartu border border-brand-300 bg-brand-100 p-4 text-sm text-brand-900' : undefined}>\n                        {kabarMasuk}");
 
         $this->assertNotFalse($wilayahKabar);
@@ -665,7 +665,8 @@ class PreparationUndoTest extends TestCase
         $izin = function (array $aturan, string $tanggal = '2026-10-10', bool $hapusAturan = false): array {
             $trip = $this->trip($tanggal);
             $rule = PermitRequirement::factory()->create(['trail_id' => $trip->trail_id, 'authority' => 'Balai Uji'] + $aturan);
-            TripPreparationItem::create(['trip_plan_id' => $trip->id, 'category' => 'LOGISTICS', 'label' => PreparationService::PERMIT_LABEL, 'description' => 'Balai Uji · Pemesanan: https://lama.example.test', 'is_critical' => true, 'status' => 'NOT_CONFIRMED']);
+            // Kunci stabil butir izin (W8-R24): ditulis lewat forceFill karena kind bukan fillable.
+            (new TripPreparationItem)->forceFill(['trip_plan_id' => $trip->id, 'kind' => TripPreparationItem::JENIS_IZIN, 'category' => 'LOGISTICS', 'label' => PreparationService::PERMIT_LABEL, 'description' => 'Balai Uji · Pemesanan: https://lama.example.test', 'is_critical' => true, 'status' => 'NOT_CONFIRMED'])->save();
 
             if ($hapusAturan) {
                 $rule->delete();

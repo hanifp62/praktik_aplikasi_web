@@ -86,9 +86,8 @@ class ImageSanitizerTest extends TestCase
 
     public function test_a_file_that_is_not_an_image_is_rejected(): void
     {
-        $path = tempnam(sys_get_temp_dir(), 'bukan').'.jpg';
+        $path = $this->tempJpegPath('bukan');
         file_put_contents($path, 'ini hanya teks biasa');
-        $this->temporaryFiles[] = $path;
 
         $this->expectException(RuntimeException::class);
 
@@ -97,9 +96,8 @@ class ImageSanitizerTest extends TestCase
 
     public function test_the_forgiving_variant_reports_failure_instead_of_throwing(): void
     {
-        $path = tempnam(sys_get_temp_dir(), 'bukan').'.jpg';
+        $path = $this->tempJpegPath('bukan');
         file_put_contents($path, 'ini hanya teks biasa');
-        $this->temporaryFiles[] = $path;
 
         $this->assertFalse(ImageSanitizer::trySanitize($path, 2000));
     }
@@ -109,10 +107,8 @@ class ImageSanitizerTest extends TestCase
         $image = imagecreatetruecolor($width, $height);
         imagefill($image, 0, 0, imagecolorallocate($image, 30, 120, 90));
 
-        $path = tempnam(sys_get_temp_dir(), 'uji').'.jpg';
+        $path = $this->tempJpegPath('uji');
         imagejpeg($image, $path);
-
-        $this->temporaryFiles[] = $path;
 
         return $path;
     }
@@ -122,9 +118,27 @@ class ImageSanitizerTest extends TestCase
      */
     private function jpegWithExif(): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'uji').'.jpg';
+        $path = $this->tempJpegPath('uji');
         file_put_contents($path, $this->jpegBerExif());
 
+        return $path;
+    }
+
+    /**
+     * tempnam() langsung membuat berkas dasar (mis. ujiXXXX.tmp di Windows); keduanya
+     * didaftarkan agar tearDown() tidak menyisakan berkas yatim di folder sementara.
+     */
+    private function tempJpegPath(string $prefix): string
+    {
+        $base = tempnam(sys_get_temp_dir(), $prefix);
+
+        if ($base === false) {
+            throw new RuntimeException('Gagal membuat berkas sementara.');
+        }
+
+        @unlink($base);
+        $path = $base.'.jpg';
+        $this->temporaryFiles[] = $base;
         $this->temporaryFiles[] = $path;
 
         return $path;

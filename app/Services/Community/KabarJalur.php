@@ -12,6 +12,7 @@ use App\Models\TrailConditionReport;
 use App\Models\User;
 use App\Models\WeatherSnapshot;
 use App\Services\ConditionAggregatorService;
+use App\Services\DataResmi\StatusGunungApi;
 use App\Services\TrailNewsService;
 use App\Services\WeatherService;
 use App\Support\Timezone;
@@ -19,10 +20,10 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * Halaman Kabar dalam tiga kelompok menurut asalnya: status resmi, prakiraan cuaca,
- * dan laporan komunitas (PRD §92). Urutannya mengikuti hierarki otoritas (R-009):
- * yang resmi dibaca lebih dulu, dan laporan komunitas tidak pernah tampil sebagai
- * pengganti status resmi (R-010).
+ * Halaman Kabar dalam kelompok menurut asalnya: status resmi, status gunung api PVMBG (W8,
+ * DK-43, hanya bila ada), prakiraan cuaca, dan laporan komunitas (PRD §92). Urutannya mengikuti
+ * hierarki otoritas (R-009): yang resmi dibaca lebih dulu, dan laporan komunitas tidak pernah
+ * tampil sebagai pengganti status resmi (R-010).
  *
  * Isinya tetap milik TrailNewsService; kelas ini hanya memilah dan memformat, sehingga
  * aturan yang sudah diuji di sana (gunung yang diikuti saja, laporan yang lolos
@@ -43,25 +44,37 @@ class KabarJalur
         private readonly TrailNewsService $kabar,
         private readonly WeatherService $cuaca,
         private readonly ConditionAggregatorService $kondisi,
+        private readonly StatusGunungApi $gunungApi,
     ) {}
 
     /**
-     * @return array{mengikuti: ?string, resmi: array<int, array<string, mixed>>, cuaca: array<int, array<string, mixed>>, komunitas: array<int, array<string, mixed>>}
+     * @return array{mengikuti: ?string, gunung: array<int, array{id: int, nama: string, url: string}>, resmi: array<int, array<string, mixed>>, gunungApi: array<int, array<string, mixed>>, cuaca: array<int, array<string, mixed>>, komunitas: array<int, array<string, mixed>>}
      */
     public function untuk(User $user): array
     {
         $gunung = $this->kabar->followedMountains($user);
 
         if ($gunung->isEmpty()) {
-            return ['mengikuti' => null, 'resmi' => [], 'cuaca' => [], 'komunitas' => []];
+            return ['mengikuti' => null, 'gunung' => [], 'resmi' => [], 'gunungApi' => [], 'cuaca' => [], 'komunitas' => []];
         }
 
-        $butir = $this->kabar->forUser($user);
+        $butir = $this->kabar->forUser($user, gunung: $gunung->pluck('id'));
+        $gunungApi = $this->gunungApi->terkiniUntuk($gunung->pluck('id'));
 
         return [
             'mengikuti' => $gunung->pluck('name')->join(', ', ' dan '),
+            // Pintu ke halaman setiap gunung yang diikuti, tempat mengikuti dan berhenti mengikuti.
+            'gunung' => $gunung->map(fn (Mountain $m) => ['id' => $m->id, 'nama' => $m->name, 'url' => route('mountains.show', $m)])->values()->all(),
             'resmi' => $butir->where('jenis', TrailNewsService::STATUS)
                 ->map(fn (array $b) => $this->resmi($b))
+                ->values()
+                ->all(),
+            // Level PVMBG per gunung yang diikuti, hanya yang tercatat (DK-43, ruling W8-R18).
+            'gunungApi' => $gunung->filter(fn (Mountain $m) => isset($gunungApi[$m->id]))
+                ->map(fn (Mountain $m) => [
+                    'gunung' => $m->name,
+                    ...$this->gunungApi->bentuk($gunungApi[$m->id], Timezone::isSupported($m->timezone) ? $m->timezone : Timezone::DEFAULT),
+                ])
                 ->values()
                 ->all(),
             'cuaca' => $this->cuacaGunung($gunung),
@@ -88,7 +101,7 @@ class KabarJalur
             return null;
         }
 
-        $terbaru = $this->kabar->terbaru($user, self::RINGKAS_RESMI, self::RINGKAS_LAPORAN);
+        $terbaru = $this->kabar->terbaru($user, self::RINGKAS_RESMI, self::RINGKAS_LAPORAN, $gunung->pluck('id'));
 
         return [
             'gunung' => $gunung->pluck('name', 'id')->all(),

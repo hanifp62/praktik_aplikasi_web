@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\CompletionState;
+use App\Enums\HikeRecordSource;
 use App\Enums\TripType;
 use App\Models\HikingHistory;
 use App\Models\Trail;
@@ -36,5 +37,13 @@ class HikingHistoryFactory extends Factory
     public function abandoned(): static
     {
         return $this->state(fn () => ['completion_state' => CompletionState::ABANDONED->value]);
+    }
+
+    /**
+     * Pendakian di luar trip yang dicatat pendaki sendiri (FR-25): tanpa trip.
+     */
+    public function manual(): static
+    {
+        return $this->state(fn () => ['source' => HikeRecordSource::MANUAL->value, 'trip_plan_id' => null]);
     }
 }

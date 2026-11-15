@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ScheduledTaskRun;
+use App\Services\PeringatanOperasi;
 use App\Services\SchedulerHealthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,7 +35,7 @@ class CronController extends Controller
      */
     private const BATAS_DETIK = 270;
 
-    public function __invoke(Request $request, string $tugas): JsonResponse
+    public function __invoke(Request $request, string $tugas, PeringatanOperasi $peringatan): JsonResponse
     {
         $rahasia = (string) config('services.cron.secret');
 
@@ -71,6 +72,9 @@ class CronController extends Controller
             $kode = Artisan::call($kunci, ['--no-interaction' => true]);
         } catch (Throwable $galat) {
             ScheduledTaskRun::catatGalat($kunci, $galat, self::milidetikSejak($mulai));
+            $peringatan->tugasGagal($kunci, $galat->getMessage(), [
+                'jadwal' => $request->header('x-vercel-cron-schedule'),
+            ]);
             report($galat);
 
             return response()->json(['tugas' => $kunci, 'keadaan' => 'gagal'], 500);
@@ -80,6 +84,13 @@ class CronController extends Controller
 
         $durasi = self::milidetikSejak($mulai);
         ScheduledTaskRun::catatKeluar($kunci, $kode, $durasi);
+
+        if ($kode !== 0) {
+            $peringatan->tugasGagal($kunci, "Kode keluar {$kode}", [
+                'kode' => $kode,
+                'jadwal' => $request->header('x-vercel-cron-schedule'),
+            ]);
+        }
 
         Log::log($kode === 0 ? 'info' : 'warning', 'Tugas cron selesai.', [
             'tugas' => $kunci,

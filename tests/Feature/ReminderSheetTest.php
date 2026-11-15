@@ -57,15 +57,15 @@ class ReminderSheetTest extends TestCase
                 ->has('daftarPengingat.pengingat', 2)
                 ->where('daftarPengingat.pengingat.0.trip', 'Gede via Cibodas')
                 ->where('daftarPengingat.pengingat.0.jenis', '3 hari sebelum berangkat')
-                // Jam bertitik (07.00): kaidah bahasa Indonesia untuk jam (ruling audit-fix-B
-                // BF-1, M-1).
-                ->where('daftarPengingat.pengingat.0.waktu', 'Jumat, 09 Okt 2026 07.00 WIB')
+                // Jam bertitik (07.00) dan tanggal tanpa nol di depan sejak W9 (DESIGN.md
+                // bagian Tipografi; sapuan format jam yang ditunda W3-G2 dan W4).
+                ->where('daftarPengingat.pengingat.0.waktu', 'Jumat, 9 Okt 2026 07.00 WIB')
                 ->where('daftarPengingat.pengingat.0.url', '/trips/'.$trip->id)
                 ->where('daftarPengingat.pengingat.1.jenis', 'Sehari sebelum berangkat')
                 ->has('daftarPengingat.tenggatIzin', 1)
                 ->where('daftarPengingat.tenggatIzin.0.tripId', $trip->id)
                 ->where('daftarPengingat.tenggatIzin.0.keadaan', 'TERBUKA')
-                ->where('daftarPengingat.tenggatIzin.0.kalimat', 'Pemesanan izin ditutup Jumat, 09 Okt 2026 (H-3).')
+                ->where('daftarPengingat.tenggatIzin.0.kalimat', 'Pemesanan izin ditutup Jumat, 9 Okt 2026 (H-3).')
                 ->where('daftarPengingat.tenggatIzin.0.pengelola', 'Balai Besar TNGGP')));
 
         $this->actingAs($sari)->get('/dashboard')
@@ -186,7 +186,7 @@ class ReminderSheetTest extends TestCase
         $izin = app(DaftarPengingat::class)->untuk($budi)['tenggatIzin'][0];
 
         $this->assertSame('BUKA_BELUM_TERCATAT', $izin['keadaan']);
-        $this->assertSame('Tanggal buka pemesanan izin belum tercatat; pemesanan ditutup Jumat, 09 Okt 2026 (H-3).', $izin['kalimat']);
+        $this->assertSame('Tanggal buka pemesanan izin belum tercatat; pemesanan ditutup Jumat, 9 Okt 2026 (H-3).', $izin['kalimat']);
         $this->assertStringContainsString("keadaan: 'BELUM_DIBUKA' | 'TERBUKA' | 'BUKA_BELUM_TERCATAT' | 'DITUTUP';", File::get(resource_path('js/types/index.d.ts')));
     }
 

@@ -191,13 +191,14 @@ class TrailIndexMapTest extends TestCase
      * dipilih atau layar mulai 1280 px (kolom peta tetap). Sebelumnya peta terpasang di section
      * yang tersembunyi, dibingkai sekali pada kanvas 0x0, lalu tampil di bawaan Indonesia zoom 4
      * saat "Peta" ditekan, dan MapLibre dimuat di ponsel walau Peta tidak pernah dibuka (spec v3
-     * bagian 9.4: MapLibre dimuat sesuai kebutuhan). Ukuran nyatanya diukur di T12.
+     * bagian 9.4: MapLibre dimuat sesuai kebutuhan). Ukuran nyatanya diukur di T12. Sejak W9 kueri
+     * 1280 px dibaca dari satu sumber, MULAI_XL di resources/js/lib/layar.ts (BreakpointSourceTest).
      */
     public function test_the_map_mounts_only_when_it_can_be_seen(): void
     {
         $halaman = File::get(resource_path('js/pages/Trails/Index.tsx'));
 
-        $this->assertStringContainsString("useCocokMedia('(min-width: 1280px)')", $halaman);
+        $this->assertStringContainsString('useCocokMedia(MULAI_XL)', $halaman);
         $this->assertStringContainsString('window.matchMedia(kueri)', $halaman);
         $this->assertStringContainsString("const pasangPeta = tampilan === 'peta' || layarLebar;", $halaman);
         $this->assertMatchesRegularExpression('/\{pasangPeta \? \(\s*<PetaJelajah/', $halaman);

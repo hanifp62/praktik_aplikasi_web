@@ -26,6 +26,7 @@ import { TautanMenu, tombolMenu } from './NavLinks';
  */
 export function MenuAkun() {
     const { auth, perangkat } = usePage<PropsBersama>().props;
+    const pemicu = useRef<HTMLButtonElement>(null);
     const menu = useRef<HTMLDivElement>(null);
     const keadaanKeluar = useKeadaanKeluar('menu');
     const pengguna = auth.user;
@@ -50,11 +51,16 @@ export function MenuAkun() {
 
     return (
         <>
-            <button type="button" popoverTarget="menu-akun" className={kelas('inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full', fokusTerlihat, umpanTekan)}>
-                <Avatar nama={pengguna.name} ukuran={44} />
+            <button ref={pemicu} type="button" popoverTarget="menu-akun" className={kelas('inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full', fokusTerlihat, umpanTekan)}>
+                <Avatar nama={pengguna.name} foto={pengguna.foto} ukuran={44} />
                 <span className="sr-only">Menu akun {pengguna.name}</span>
             </button>
-            <div ref={menu} id="menu-akun" popover="auto" className="inset-auto right-6 top-18 m-0 w-72 rounded-kartu border border-subtle bg-surface p-2 text-primary shadow-overlay">
+            <div ref={menu} id="menu-akun" popover="auto" className="inset-auto right-6 top-18 m-0 w-72 rounded-kartu border border-subtle bg-surface p-2 text-primary shadow-overlay" onKeyDown={(e) => {
+                if (e.key === 'Escape' && !keluarBerjalan()) {
+                    menu.current?.hidePopover();
+                    pemicu.current?.focus();
+                }
+            }}>
                 <div className="flex flex-col">
                     <p className="px-3 pb-2 pt-1">
                         <span className="block font-bold">{pengguna.name}</span>
@@ -64,6 +70,7 @@ export function MenuAkun() {
                         <TautanMenu href={profile.url()}>Profil</TautanMenu>
                         {pengguna.isModerator ? <TautanMenu href="/moderation">Moderasi</TautanMenu> : null}
                         {pengguna.isAdmin ? <TautanMenu href="/admin/trails">Admin</TautanMenu> : null}
+                        {pengguna.isKurator ? <TautanMenu href="/kurator">Meja kurator</TautanMenu> : null}
                         <button type="button" onClick={() => void keluar(perangkat?.kunci ?? null, 'menu')} aria-busy={keadaanKeluar.sibuk} className={tombolMenu}>
                             Keluar
                         </button>

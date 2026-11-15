@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Tautan } from '@/components/ui/Tautan';
 import { AppLayout } from '@/layouts/AppLayout';
 import { kelas } from '@/lib/kelas';
-import { create as goalsCreate } from '@/routes/goals';
+import { index as trailsIndex } from '@/routes/trails';
 import { index as tripsIndex } from '@/routes/trips';
 import type { PropsBersama } from '@/types';
 
@@ -76,7 +76,7 @@ export default function TrackIndex() {
                         description="Mode lapangan dibuka dari trip yang sudah direncanakan. Rencanakan trip dulu, lalu kembali ke sini pada hari keberangkatan."
                     >
                         <Button href={tripsIndex.url()}>Buka trip saya</Button>
-                        <Button variant="secondary" href={goalsCreate.url()}>Cari jalur yang cocok</Button>
+                        <Button variant="secondary" href={trailsIndex.url()}>Jelajahi jalur</Button>
                     </EmptyState>
                 ) : (
                     <section aria-labelledby="judul-hari-h" className="rounded-utama border border-subtle bg-surface p-5">

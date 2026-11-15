@@ -9,6 +9,7 @@ use App\Models\PreparationTemplate;
 use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\TripPreparationItem;
+use App\Services\Trips\IsiAwalPerlengkapan;
 use App\Support\Timezone;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -20,20 +21,24 @@ use Illuminate\Support\Facades\DB;
  */
 class PreparationService
 {
-    /** Publik: rincian jalur menyebut butir izin dengan nama yang sama dengan daftar persiapan trip. */
-    public const PERMIT_LABEL = 'Booking izin pendakian (SIMAKSI)';
+    /**
+     * Publik: rincian jalur menyebut butir izin dengan nama yang sama dengan daftar persiapan trip.
+     * Hanya teks tampilan; butirnya dikenali lewat kolom jenis (butirIzin(), ruling W8-R24).
+     */
+    public const PERMIT_LABEL = 'Pesan izin pendakian (SIMAKSI)';
 
-    public function __construct(private readonly PermitService $permits) {}
+    public function __construct(
+        private readonly PermitService $permits,
+        private readonly IsiAwalPerlengkapan $perlengkapan,
+    ) {}
 
     /**
      * Butir izin di daftar persiapan trip sudah dikonfirmasi atau ditandai tidak berlaku.
-     * Butir itu dikenali lewat PERMIT_LABEL sampai kunci stabil butir sistem tersedia
-     * (titipan W8, ruling W4-C7b). Membutuhkan relasi preparationItems sudah dimuat.
+     * Membutuhkan relasi preparationItems sudah dimuat.
      */
     public static function izinDiurus(TripPlan $trip): bool
     {
-        return $trip->preparationItems->contains(fn (TripPreparationItem $butir) => $butir->preparation_item_id === null
-            && $butir->label === self::PERMIT_LABEL
+        return $trip->preparationItems->contains(fn (TripPreparationItem $butir) => self::butirIzin($butir)
             && $butir->status !== PreparationStatus::NOT_CONFIRMED);
     }
 
@@ -47,6 +52,11 @@ class PreparationService
         $items = $this->applicableItems($trip);
 
         return DB::transaction(function () use ($trip, $items) {
+            // Mengurutkan dua kunjungan pertama yang bersamaan ke trip yang sama (R-024):
+            // tanpa kunci baris trip ini, keduanya membaca daftar yang belum berisi butir izin
+            // lalu keduanya menyisipkan butir izin berkunci preparation_item_id = null.
+            TripPlan::query()->whereKey($trip->getKey())->lockForUpdate()->first();
+
             $existing = $trip->preparationItems()->get()->keyBy('preparation_item_id');
 
             foreach ($items as $item) {
@@ -65,6 +75,8 @@ class PreparationService
             }
 
             $this->addPermitItem($trip);
+            // Perlengkapan pribadi pemilik trip mengisi awal daftar, tetap belum dikonfirmasi (W7-R8).
+            $this->perlengkapan->isi($trip);
 
             return $trip->preparationItems()->get();
         });
@@ -89,29 +101,28 @@ class PreparationService
         // sendiri menurut keadaan jendela (PermitService::pemesanan()).
         $description = $requirement->summary();
 
-        $existing = $trip->preparationItems()
-            ->whereNull('preparation_item_id')
-            ->where('label', self::PERMIT_LABEL)
-            ->first();
+        // Dicari lewat jenisnya, jadi label lama yang sudah dimigrasikan tetap butir yang sama dan
+        // statusnya tidak hilang ketika daftar dibangkitkan ulang.
+        $butir = $trip->preparationItems()->where('kind', TripPreparationItem::JENIS_IZIN)->first()
+            ?? new TripPreparationItem(['trip_plan_id' => $trip->id, 'status' => PreparationStatus::NOT_CONFIRMED->value]);
 
-        TripPreparationItem::updateOrCreate(
-            ['trip_plan_id' => $trip->id, 'preparation_item_id' => null, 'label' => self::PERMIT_LABEL],
-            [
-                'category' => PreparationCategory::LOGISTICS->value,
-                'description' => $description,
-                'is_critical' => true,
-                'status' => $existing?->status?->value ?? PreparationStatus::NOT_CONFIRMED->value,
-            ]
-        );
+        $butir->fill([
+            'category' => PreparationCategory::LOGISTICS->value,
+            'label' => self::PERMIT_LABEL,
+            'description' => $description,
+            'is_critical' => true,
+        ]);
+        $butir->forceFill(['kind' => TripPreparationItem::JENIS_IZIN])->save();
     }
 
     /**
-     * Butir izin trip: baris tanpa templat berlabel PERMIT_LABEL (dibuat addPermitItem). Satu
-     * predikat untuk Persiapan dan Cek kesiapan.
+     * Butir izin trip, dikenali lewat kunci stabilnya (kolom kind; ruling W4-C7b dan W8-R24),
+     * bukan lewat teks label: butir perlengkapan pribadi atau butir lain yang kebetulan berlabel
+     * sama bukan butir izin. Satu predikat untuk Persiapan, Cek kesiapan, Beranda, dan pengingat.
      */
     public static function butirIzin(TripPreparationItem $item): bool
     {
-        return $item->preparation_item_id === null && $item->label === self::PERMIT_LABEL;
+        return $item->kind === TripPreparationItem::JENIS_IZIN;
     }
 
     /**
@@ -244,7 +255,7 @@ class PreparationService
 
         return $terbit === null
             ? null
-            : 'Prakiraan BMKG untuk tanggal trip ini belum terbit. Butir cuaca dapat dikonfirmasi mulai '.$terbit->translatedFormat('D, j M').'.';
+            : 'Prakiraan BMKG untuk tanggal trip ini belum terbit. Butir cuaca dapat dikonfirmasi mulai '.Timezone::tanggalPendek($terbit, denganHari: true).'.';
     }
 
     /**

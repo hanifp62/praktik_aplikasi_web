@@ -2,10 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CancellationReason;
 use App\Enums\CheckpointType;
 use App\Enums\CompletionState;
 use App\Enums\ConditionTag;
 use App\Enums\ExperienceLevel;
+use App\Enums\HikeRecordSource;
+use App\Enums\InterestRegion;
 use App\Enums\ModerationStatus;
 use App\Enums\NavigationComplexity;
 use App\Enums\NavigationExperience;
@@ -18,6 +21,7 @@ use App\Enums\TechnicalDemand;
 use App\Enums\TripStatus;
 use App\Enums\TripType;
 use App\Enums\VerificationStatus;
+use App\Enums\VolcanoLevel;
 use App\Enums\WaterAvailability;
 use App\Exceptions\DataContohDitolak;
 use App\Models\Checkpoint;
@@ -31,6 +35,7 @@ use App\Models\TrailConditionReport;
 use App\Models\TrailConsideration;
 use App\Models\TripPlan;
 use App\Models\User;
+use App\Models\VolcanoStatus;
 use App\Services\Trips\TripReminderScheduler;
 use App\Support\Timezone;
 use Illuminate\Database\Seeder;
@@ -43,8 +48,10 @@ use Illuminate\Support\Str;
  *
  * Satu pendaki pemula, Budi Setiawan; delapan gunung; sebelas jalur (sepuluh terbit, satu
  * menunggu data); trip "Gede via Cibodas" lima belas hari lagi dengan pengingat surel H-3 dan
- * H-1; tiga pendakian selesai; satu trip batal; lima jalur tersimpan; dan satu aturan izin
- * tingkat gunung untuk Gunung Gede (jendela pesan H-30 sampai H-3). Simpanan, pengingat, dan
+ * H-1; tiga pendakian selesai dan satu catatan pendakian di luar trip; satu trip batal karena
+ * cuaca; lima jalur tersimpan; target pribadi, lima barang perlengkapan pribadi, dan dua wilayah
+ * minat (W7, prototype 13 dan 14); dan satu aturan izin tingkat gunung untuk Gunung Gede
+ * (jendela pesan H-30 sampai H-3). Simpanan, pengingat, dan
  * aturan izin mengisi kerangka W2 (hitungan Simpanan dan lembar Pengingat) lewat tabel dan
  * penjadwal yang sama dengan fitur aslinya. Sejak W3 setiap jalur terbit membawa profil
  * elevasi, Gunung Gede punya status tingkat gunung, dan satu laporan kondisi termoderasi dari
@@ -119,6 +126,7 @@ class DemoSeeder extends Seeder
         $this->simpanan($budi, $jalur);
         $this->izin($sumber, $jalur);
         $this->statusGunung($sumber, $jalur);
+        $this->gunungApi($jalur);
         $this->laporan($jalur);
     }
 
@@ -152,8 +160,14 @@ class DemoSeeder extends Seeder
             // bawaan "Cari jalur yang sesuai" berakhir di teks wilayah yang tidak cocok
             // dengan gunung mana pun.
             'region_preference' => 'Jawa Barat',
+            'interest_regions' => [InterestRegion::JAWA_BARAT_BANTEN->value, InterestRegion::JAWA_TENGAH_DIY->value],
             'record_track' => false,
         ]);
+
+        // Prototype 14 dan 13 (W7): perlengkapan pribadi yang mengisi awal daftar persiapan, dan
+        // target bulanan yang dibandingkan hanya dengan pendakian Budi sendiri.
+        $budi->ownedItems()->createMany(array_map(fn (string $nama) => ['name' => $nama], ['Headlamp', 'Jas hujan', 'Jaket hangat', 'Sepatu mendaki', 'Kompor lipat']));
+        $budi->personalTargets()->createMany([['metric' => 'GAIN', 'monthly_value' => 1000], ['metric' => 'HIKES', 'monthly_value' => 1]]);
 
         $this->command?->info('Pendaki contoh: '.self::EMAIL_PENDAKI." dengan kata sandi {$kataSandi} (hanya untuk berkas lokal ini).");
 
@@ -192,7 +206,7 @@ class DemoSeeder extends Seeder
                 'description' => self::PENANDA.'. '.$data['keterangan'],
                 'distance_km' => $data['jarak'],
                 'elevation_gain_m' => $data['naik'],
-                'elevation_loss_m' => $data['naik'],
+                'elevation_loss_m' => null,
                 'elevation_profile' => $data['profil'] ?? null,
                 'estimated_duration_minutes' => $data['menit'],
                 'technical_demand' => $data['teknis']->value,
@@ -301,6 +315,22 @@ class DemoSeeder extends Seeder
             'trip_type' => TripType::CAMPING->value,
             'notes' => self::PENANDA.'. Dibatalkan karena cuaca.',
             'status' => TripStatus::CANCELLED->value,
+            'cancellation_reason' => CancellationReason::WEATHER->value,
+        ]);
+
+        // Pendakian di luar trip yang dicatat Budi sendiri (FR-25, W7): jalur katalog, angka
+        // yang ia tulis, tanpa trip.
+        HikingHistory::create([
+            'user_id' => $budi->id,
+            'source' => HikeRecordSource::MANUAL->value,
+            'trip_plan_id' => null,
+            'trail_id' => $jalur['papandayan-via-camp-david']->id,
+            'trip_type' => TripType::TEKTOK->value,
+            'completion_state' => CompletionState::COMPLETED->value,
+            'completed_at' => $hariIni->copy()->subDays(3)->setTime(12, 0),
+            'recorded_gain_m' => 610,
+            'recorded_distance_m' => 14800,
+            'recorded_moving_minutes' => 330,
         ]);
     }
 
@@ -358,6 +388,24 @@ class DemoSeeder extends Seeder
             'effective_at' => now()->subDays(9),
             'verified_at' => now()->subDays(7),
         ]);
+    }
+
+    /**
+     * Satu level gunung api PVMBG untuk Gunung Gede (DK-43, W8), supaya kartu gunung api di
+     * halaman gunung, rincian jalur, dan Cek kesiapan punya isi. Rekomendasinya berpenanda DATA
+     * CONTOH; tautannya ke beranda MAGMA Indonesia, bukan laporan tertentu.
+     *
+     * @param  array<string, Trail>  $jalur
+     */
+    private function gunungApi(array $jalur): void
+    {
+        $catatan = new VolcanoStatus([
+            'level' => VolcanoLevel::NORMAL->value,
+            'recommendation' => self::PENANDA.'. Pendaki dan wisatawan tidak mendekati kawah aktif dalam radius 1 km.',
+            'report_url' => 'https://magma.esdm.go.id/',
+            'issued_at' => now()->subHours(5),
+        ]);
+        $catatan->forceFill(['mountain_id' => $jalur['gede-via-cibodas']->mountain_id, 'verified_at' => now()->subHours(2)])->save();
     }
 
     /**

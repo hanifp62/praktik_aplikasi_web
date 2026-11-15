@@ -58,4 +58,27 @@ class TestsAssertSomethingTest extends TestCase
         $this->assertStringContainsString('assertGreaterThan', $isi);
         $this->assertStringContainsString('$diperiksa', $isi);
     }
+
+    /**
+     * Berkas test rintisan bawaan `make:test` (`test_example` yang hanya membuka `/`)
+     * pernah menumpang nama fitur sungguhan seperti `ManualHikeRecordTest`, `PersonalTargetTest`,
+     * dan `OwnedEquipmentTest`, sehingga suite tampak menguji fitur padahal hanya memeriksa
+     * halaman depan.
+     */
+    public function test_no_feature_test_is_an_unimplemented_get_root_stub(): void
+    {
+        $rintisan = [];
+
+        foreach (File::allFiles(base_path('tests')) as $berkas) {
+            if (! str_ends_with($berkas->getFilename(), 'Test.php') || $berkas->getFilename() === 'TestsAssertSomethingTest.php') {
+                continue;
+            }
+
+            if (preg_match('/public\s+function\s+test_example\s*\(/', $berkas->getContents())) {
+                $rintisan[] = $berkas->getRelativePathname();
+            }
+        }
+
+        $this->assertSame([], $rintisan, 'Berkas test rintisan `test_example` belum ditulis: '.implode(', ', $rintisan));
+    }
 }

@@ -1,10 +1,11 @@
 import { router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { BarisStatus } from '@/components/trails/BarisStatus';
+import { BarisGunungApi } from '@/components/trails/KartuGunungApi';
 import { nadaKesegaran } from '@/components/trails/Kesegaran';
 import { LabelKecocokan, type LabelFit } from '@/components/trails/LabelKecocokan';
 import { LabelKomunitas } from '@/components/trails/LabelSumber';
-import type { StatusRingkas } from '@/components/trails/types';
+import type { GunungApi, StatusRingkas } from '@/components/trails/types';
 import { KepalaTrip } from '@/components/trips/KepalaTrip';
 import { LangkahRingkas, type KunciLangkah } from '@/components/trips/LangkahRingkas';
 import type { KepalaTripData } from '@/components/trips/types';
@@ -79,6 +80,7 @@ interface Props extends PropsBersama {
     };
     kondisi: {
         status: StatusRingkas;
+        gunungApi: GunungApi | null;
         prakiraan: Prakiraan;
         laporan: { ringkas: string; segmen: string | null; kapan: string; kesegaran: string } | null;
         peringatan: string[];
@@ -240,7 +242,7 @@ export default function Readiness() {
                                     </p>
                                     <div aria-hidden="true" className="flex gap-1">
                                         {Array.from({ length: persiapan.berlaku }, (_, i) => (
-                                            <span key={i} className={kelas('h-2 flex-1 rounded-full', i < persiapan.dikonfirmasi ? 'bg-brand-700' : 'bg-surface-sunken')} />
+                                            <span key={i} className={kelas('h-2 flex-1 rounded-full', i < persiapan.dikonfirmasi ? 'bg-brand-700' : 'border border-control')} />
                                         ))}
                                     </div>
                                 </>
@@ -310,6 +312,8 @@ export default function Readiness() {
                                 <BarisStatus status={kondisi.status} className="mt-1" />
                                 <p className="mt-1 text-meta text-secondary">Status resmi menjelaskan ketentuan pengelola, bukan jaminan keselamatan.</p>
                             </div>
+
+                            {kondisi.gunungApi ? <BarisGunungApi data={kondisi.gunungApi} /> : null}
 
                             <div className="border-t border-subtle pt-3">
                                 <p className="flex flex-wrap items-center justify-between gap-2">

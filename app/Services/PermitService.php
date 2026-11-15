@@ -218,7 +218,8 @@ class PermitService
 
     /**
      * Keterangan dan ajakan pemesanan izin per keadaan jendela, satu penentu untuk Persiapan,
-     * Rencanakan, dan Cek kesiapan (M1 tinjauan akhir W4; ruang kerja menyusul di W8).
+     * Rencanakan, Cek kesiapan, dan ruang kerja trip (M1 tinjauan akhir W4; ruang kerja sejak W8,
+     * ruling W8-R25). `judul` adalah kalimat keadaannya dalam satu baris.
      *
      * - Terbuka: ajakan "Pesan di sistem resmi", dengan hari terakhirnya bila tercatat.
      * - Tanggal buka belum tercatat: tautan netral "Periksa di sistem resmi", bukan ajakan
@@ -232,7 +233,7 @@ class PermitService
      * begitu (tinjauan Tugas 4 M9, lewat PermitRequirement::summary()). Memount menautkan,
      * tidak memesan (§43).
      *
-     * @return array{keadaan: string|null, tautan: array{href: string, teks: string, label: string}|null, keterangan: string}
+     * @return array{keadaan: string|null, judul: string, tautan: array{href: string, teks: string, label: string}|null, keterangan: string}
      */
     public function pemesanan(Trail $trail, ?CarbonInterface $tanggal, PermitRequirement $aturan, bool $bolehMemesan = true): array
     {
@@ -246,7 +247,7 @@ class PermitService
      * (W4-FK N4).
      *
      * @param  array{state: string, message: string, requirement: PermitRequirement, buka: Carbon|null, tutup: Carbon|null}|null  $jendela  hasil bookingWindowFor()
-     * @return array{keadaan: string|null, tautan: array{href: string, teks: string, label: string}|null, keterangan: string}
+     * @return array{keadaan: string|null, judul: string, tautan: array{href: string, teks: string, label: string}|null, keterangan: string}
      */
     public static function pemesananDariJendela(?array $jendela, PermitRequirement $aturan, bool $bolehMemesan = true): array
     {
@@ -258,6 +259,7 @@ class PermitService
         return match ($jendela['state'] ?? null) {
             self::BOOKING_TERBUKA => [
                 'keadaan' => self::BOOKING_TERBUKA,
+                'judul' => 'Pemesanan izin sedang dibuka',
                 'tautan' => $dapatDitautkan ? [
                     'href' => $aturan->booking_url,
                     'teks' => 'Pesan di sistem resmi'.($tutup !== null ? ', paling lambat '.self::hari($tutup) : ''),
@@ -267,20 +269,23 @@ class PermitService
             ],
             self::BOOKING_BUKA_BELUM_TERCATAT => [
                 'keadaan' => self::BOOKING_BUKA_BELUM_TERCATAT,
+                'judul' => 'Tanggal buka pemesanan izin belum tercatat',
                 'tautan' => $bolehMemesan ? self::tautanPeriksa($aturan) : null,
                 'keterangan' => $ringkas.'. Tanggal buka pemesanan belum tercatat di Memount'.$hariTerakhir.'.',
             ],
             self::BOOKING_DITUTUP => [
                 'keadaan' => self::BOOKING_DITUTUP,
+                'judul' => 'Pemesanan izin sudah tutup',
                 'tautan' => null,
                 'keterangan' => $ringkas.'. Pemesanan di sistem resmi sudah tutup'.$hariTerakhir.'.',
             ],
             self::BOOKING_BELUM_DIBUKA => [
                 'keadaan' => self::BOOKING_BELUM_DIBUKA,
+                'judul' => 'Pemesanan izin belum dibuka',
                 'tautan' => null,
                 'keterangan' => $ringkas.'. Pemesanan di sistem resmi dibuka mulai '.self::hari($jendela['buka']).'.',
             ],
-            default => ['keadaan' => null, 'tautan' => null, 'keterangan' => $ringkas],
+            default => ['keadaan' => null, 'judul' => 'Jalur ini mewajibkan izin', 'tautan' => null, 'keterangan' => $ringkas],
         };
     }
 
@@ -317,7 +322,7 @@ class PermitService
      */
     public static function hari(CarbonInterface $tanggal): string
     {
-        return $tanggal->translatedFormat('D, j M');
+        return Timezone::tanggalPendek($tanggal, denganHari: true);
     }
 
     /**

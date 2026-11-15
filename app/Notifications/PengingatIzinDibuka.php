@@ -50,7 +50,7 @@ class PengingatIzinDibuka extends Notification
     {
         $jalur = $this->trip->trail;
         $zona = Timezone::label(Timezone::forTrail($jalur));
-        $tanggal = $this->trip->planned_date->translatedFormat('l, d F Y');
+        $tanggal = $this->trip->planned_date->translatedFormat('l, j F Y');
         $tempat = $this->aturan?->authority ? ' di sistem resmi '.$this->aturan->authority : '';
         $tautanResmi = $this->aturan !== null ? PermitService::tautanPeriksa($this->aturan) : null;
 

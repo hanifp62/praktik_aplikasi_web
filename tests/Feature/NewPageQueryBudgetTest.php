@@ -166,6 +166,23 @@ class NewPageQueryBudgetTest extends TestCase
         );
     }
 
+    /**
+     * Hub Profil W7: perlengkapan pribadi dibaca satu kueri, berapa pun jumlah barangnya.
+     */
+    public function test_the_profile_page_does_not_grow_with_the_number_of_owned_items(): void
+    {
+        $user = User::factory()->create();
+        $user->ownedItems()->create(['name' => 'Barang 0']);
+
+        $this->actingAs($user);
+
+        $this->tidakTumbuh(
+            route('profile'),
+            fn () => $user->ownedItems()->createMany(collect(range(1, 12))->map(fn (int $i) => ['name' => 'Barang '.$i])->all()),
+            'Halaman Profil tumbuh bersama jumlah perlengkapan'
+        );
+    }
+
     private function simpanJalur(User $user, int $jumlah): void
     {
         foreach (range(1, $jumlah) as $i) {

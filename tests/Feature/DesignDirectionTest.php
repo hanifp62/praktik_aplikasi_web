@@ -137,7 +137,8 @@ class DesignDirectionTest extends TestCase
         }
 
         $this->assertStringContainsString('@media (min-width: 1024px)', $css);
-        $this->assertStringContainsString("useCocokMedia('(min-width: 1280px)')", File::get(resource_path('js/pages/Trails/Index.tsx')));
+        $this->assertStringContainsString('useCocokMedia(MULAI_XL)', File::get(resource_path('js/pages/Trails/Index.tsx')));
+        $this->assertStringContainsString("'(min-width: 1280px)'", File::get(resource_path('js/lib/layar.ts')));
         $this->assertMatchesRegularExpression('/@utility divide-subtle \{\s*& > :not\(\[hidden\]\) ~ :not\(\[hidden\]\) \{\s*border-color: rgb\(var\(--border-subtle\)\);\s*\}\s*:where\(&\) > :not\(template\) \{\s*border-color: revert-layer;/', $css);
 
         // Setiap kotak centang dan tombol radio bergaris border-control menulis batas transparannya

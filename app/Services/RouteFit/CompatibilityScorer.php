@@ -224,6 +224,17 @@ class CompatibilityScorer
 
     private function technicalMatch(int $experienceRank, Trail $trail, array $weights): FactorScore
     {
+        // R-006: tuntutan teknis yang belum tercatat adalah belum diketahui, bukan Sedang (W8-R22).
+        if ($trail->technical_demand === null) {
+            return new FactorScore(
+                CompatibilityFactor::TECHNICAL_MATCH,
+                0.6,
+                $this->weightFor(CompatibilityFactor::TECHNICAL_MATCH, $weights),
+                'Tingkat teknis jalur ini belum tercatat.',
+                isUnknown: true,
+            );
+        }
+
         $score = $this->rankScore($experienceRank, $trail->technical_demand->expectedExperienceRank());
 
         $detail = $score >= $this->strongThreshold()
@@ -269,6 +280,17 @@ class CompatibilityScorer
 
     private function navigationMatch(User $user, Trail $trail, array $weights): FactorScore
     {
+        // R-006: kerumitan navigasi yang belum tercatat adalah belum diketahui, bukan Sedang (W8-R22).
+        if ($trail->navigation_complexity === null) {
+            return new FactorScore(
+                CompatibilityFactor::NAVIGATION_MATCH,
+                0.6,
+                $this->weightFor(CompatibilityFactor::NAVIGATION_MATCH, $weights),
+                'Kompleksitas navigasi jalur ini belum tercatat.',
+                isUnknown: true,
+            );
+        }
+
         $userRank = ($user->experience?->navigation_experience ?? NavigationExperience::NONE)->rank();
         $required = $trail->navigation_complexity->expectedNavigationRank();
         $score = $this->rankScore($userRank, $required, 0.5);
@@ -302,6 +324,17 @@ class CompatibilityScorer
 
         $needsCamping = in_array($tripType, [TripType::CAMPING, TripType::MULTI_DAY], true);
         $durationFits = ($trail->estimated_duration_minutes ?? 0) <= $tripType->typicalMaxDurationMinutes();
+
+        // R-007: area kemah yang belum tercatat tidak dianggap tidak ada (W8-R22).
+        if ($needsCamping && $trail->camping_available === null) {
+            return new FactorScore(
+                CompatibilityFactor::TRIP_PREFERENCE,
+                0.6,
+                $weight,
+                'Ketersediaan area kemah resmi jalur ini belum tercatat.',
+                isUnknown: true,
+            );
+        }
 
         $score = match (true) {
             $needsCamping && ! $trail->camping_available => 0.3,

@@ -42,6 +42,10 @@ class AuthenticatedSessionController extends Controller
     {
         $logout();
 
+        if (config('inertia.history.encrypt')) {
+            Inertia::clearHistory();
+        }
+
         // Lapis kedua penghapusan data perangkat (spec v3 bagian 10.6; ruling W6-R10): halaman
         // sudah menghapus paket, jejak, antrean aksi, kunci perangkat, cache paket, penanda shell
         // paket, dan OPFS sebelum memanggil rute ini (resources/js/luring/keluar.ts); peramban

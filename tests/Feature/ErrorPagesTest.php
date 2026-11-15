@@ -6,6 +6,7 @@ use App\Models\Trail;
 use App\Models\TripPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -30,6 +31,7 @@ class ErrorPagesTest extends TestCase
             '404' => ['404'],
             '403' => ['403'],
             '419' => ['419'],
+            '429' => ['429'],
             '500' => ['500'],
             '503' => ['503'],
         ];
@@ -100,5 +102,41 @@ class ErrorPagesTest extends TestCase
         foreach (['@livewire', 'auth()->user()', 'DB::', '::query()'] as $terlarang) {
             $this->assertStringNotContainsString($terlarang, $sumber);
         }
+    }
+
+    /**
+     * Kata-kata keenam halaman kini tinggal di satu kelas (App\Support\HalamanGalat) yang juga
+     * dibaca halaman React Galat untuk kunjungan Inertia (W9). Kelas dan layoutnya tunduk pada
+     * larangan yang sama: tanpa basis data, tanpa sesi, tanpa pengguna.
+     */
+    public function test_the_shared_layout_and_its_words_do_not_depend_on_anything_that_may_be_broken(): void
+    {
+        foreach ([resource_path('views/errors/layout.blade.php'), app_path('Support/HalamanGalat.php')] as $berkas) {
+            $sumber = file_get_contents($berkas);
+
+            foreach (['@livewire', 'auth()', 'DB::', '::query()', 'session(', '->user()'] as $terlarang) {
+                $this->assertStringNotContainsString($terlarang, $sumber, basename($berkas));
+            }
+        }
+    }
+
+    /**
+     * 429 dari batas laju dulu dijawab halaman bawaan Laravel berbahasa Inggris (ruling
+     * W4-6j). Halaman ini menyebut berapa lama menunggu dari kepala Retry-After, bukan
+     * angka karangan.
+     */
+    public function test_a_rate_limited_page_load_says_how_long_to_wait(): void
+    {
+        Route::middleware(['web', 'throttle:1,1'])->get('/_uji/halaman-terbatas', fn () => 'isi');
+
+        $this->get('/_uji/halaman-terbatas')->assertOk();
+
+        $this->get('/_uji/halaman-terbatas')
+            ->assertStatus(429)
+            ->assertSee('Terlalu banyak permintaan dalam waktu singkat')
+            ->assertSeeText('Muat ulang halaman')
+            ->assertDontSee('Too Many Requests');
+
+        $this->assertMatchesRegularExpression('/Tunggu sekitar \d+ detik, lalu muat ulang halaman\./', $this->get('/_uji/halaman-terbatas')->getContent());
     }
 }

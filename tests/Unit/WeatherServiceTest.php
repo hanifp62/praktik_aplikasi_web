@@ -50,6 +50,16 @@ class WeatherServiceTest extends TestCase
         $this->assertSame('BMKG', $snapshot->source);
     }
 
+    public function test_trail_weather_snapshots_relation_matches_adm4_code_without_trail_id_column(): void
+    {
+        $trail = Trail::factory()->create(['weather_adm4_code' => '33.08.10.2001']);
+        WeatherSnapshot::factory()->create(['adm4_code' => '33.08.10.2001']);
+        WeatherSnapshot::factory()->create(['adm4_code' => '35.07.17.2002']);
+
+        $this->assertCount(1, $trail->weatherSnapshots);
+        $this->assertCount(1, Trail::query()->with('weatherSnapshots')->findOrFail($trail->id)->weatherSnapshots);
+    }
+
     public function test_it_stores_nothing_when_the_api_fails(): void
     {
         Http::fake(['api.bmkg.go.id/*' => Http::response(status: 500)]);

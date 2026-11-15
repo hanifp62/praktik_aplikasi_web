@@ -285,8 +285,10 @@ status.
 ### Media dan foto
 
 Foto gunung diunggah admin dengan kolom wajib pembuat, lisensi, URL sumber, teks atribusi, dan teks alternatif, lalu
-tampil dengan atribusinya. Tanpa foto, hero memakai visual data (bentuk rute di atas pola kontur). Foto komunitas tidak
-pernah menjadi hero (R-017). Avatar berupa unggahan pengguna atau inisial (`Avatar`); data contoh memakai inisial,
+tampil dengan atribusinya. Atribusi duduk di pojok kanan bawah foto pada keping permukaan buram (bukan teks di atas foto),
+jadi kontrasnya tidak bergantung pada isi foto, dan keping itu menautkan sumber bila tercatat (W8,
+`components/trails/gunung/FotoGunung.tsx`). Tanpa foto, hero memakai visual data (bentuk rute di atas pola kontur).
+Foto komunitas tidak pernah menjadi hero (R-017): kepala halaman hanya membaca tabel foto gunung. Avatar berupa unggahan pengguna atau inisial (`Avatar`); data contoh memakai inisial,
 tidak pernah wajah stok (antislop R-23).
 
 ### Nada dan teks
@@ -364,6 +366,24 @@ halaman gunung). "Jalur lain untuk Anda" bergulir menyamping di ponsel dan pinda
 bersama tangga tanjakan, yang menyebut jalur beserta gunungnya karena nama jalur tidak unik; tanpa isi samping,
 halaman tetap satu kolom. Daftar yang bergulir menyamping diberi
 `relative`, supaya teks sr-only di dalamnya tidak melebarkan halaman.
+
+**Progres, Profil, dan onboarding** (W7, spec v3 bagian 6.14 sampai 6.16, prototype 00, 13, dan 14). Grafik per
+pendakian digambar sebagai baris mendatar dengan angka tertulis di ujungnya; baris itu disembunyikan dari pembaca layar
+dan digantikan tabel di dalam pembungkus `sr-only`, karena tabel yang diberi `sr-only` sendiri melebarkan halaman
+sempit. Pendakian batal bergaris putus-putus dan menyebut dirinya dengan kata. Target bulanan tanpa persen, rentetan,
+atau teguran (R-015), dengan strip dua belas bulan yang ditulis ulang untuk pembaca layar. Onboarding adalah halaman
+tugas tanpa bilah tab: satu pertanyaan per langkah, kartu radio berketerangan, chip radio untuk pilihan pendek, bar
+aksi di bawah, dan layar hasil yang menyebut "N jalur berlabel Cocok". Profil menyusun bagian dari yang membentuk
+penilaian ke yang jarang disentuh; perlengkapan pribadi berupa chip yang membuka lembar ubah. Setiap bagian yang
+menulis punya wilayah `role="status"` sendiri yang selalu terpasang.
+
+**Data resmi** (W8, spec v3 bagian 10.7). Meja kurator adalah halaman kerja, dipakai di layar lebar tetapi utuh di
+papan ketik dan di 320 px: antrean bertajuk dengan hitungan, setiap baris menyebut sasaran, status dengan bentuk dan kata,
+keadaan verifikasinya sebagai lencana, dan satu aksi; langkah alur catatan ditulis sebagai daftar bernomor dengan kata
+"Selesai" atau "Belum", bukan warna saja. Status gunung api PVMBG tampil sebagai kartu bergaris padat merek dengan
+kalimat tetap "Disimpan terpisah dari status akses, dan tidak pernah diterjemahkan menjadi Buka atau Tutup", atribusi
+PVMBG, dan tautan laporannya; di Cek kesiapan ia satu baris di "Kondisi terkini". "Laporkan kesalahan data" adalah
+tautan teks di bawah kartu status yang membuka dialog, dan kalimatnya menyebut bahwa laporan tidak mengubah status.
 
 **Fokus tidak pernah jatuh ke body.** Chip saringan yang dilepas menyerahkan fokus ke chip tetangga atau wadah grupnya;
 toast yang dipicu papan ketik mengambil fokus ke Urungkan, dan fokus kembali ke unsur sebelumnya atau ke `#konten`

@@ -45,6 +45,17 @@ class RefreshWeatherSnapshots extends Command
             $this->line(sprintf('%s: %d prakiraan.', $trail->weather_adm4_code, $stored));
         }
 
+        $succeeded = $areas->count() - $failed;
+
+        if ($failed > 0 && $succeeded === 0) {
+            $this->error(sprintf(
+                'Gagal memperbarui prakiraan cuaca untuk seluruh %d area referensi.',
+                $areas->count()
+            ));
+
+            return self::FAILURE;
+        }
+
         $this->info(sprintf(
             'Selesai. %d area diproses, %d tanpa data baru.',
             $areas->count(),

@@ -317,8 +317,8 @@ class NavigationConsistencyTest extends TestCase
 
     /**
      * Halaman tugas dengan bar aksi tetap menyembunyikan bilah tab (spec v3 bagian 5.1):
-     * detail jalur, penilaian kecocokan (W3), dan rencanakan trip. Halaman lain tetap
-     * membawa bilah tab.
+     * detail jalur, penilaian kecocokan (W3), rencanakan dan ubah trip, serta onboarding profil
+     * pendaki (W7, prototype 00 tanpa bilah tab). Halaman lain tetap membawa bilah tab.
      */
     public function test_only_task_pages_hide_the_tab_bar(): void
     {
@@ -332,7 +332,7 @@ class NavigationConsistencyTest extends TestCase
 
         sort($tanpaBilah);
 
-        $this->assertSame(['Trails/Fit.tsx', 'Trails/Show.tsx', 'Trips/Create.tsx'], $tanpaBilah);
+        $this->assertSame(['Onboarding/ProfileSetup.tsx', 'Trails/Fit.tsx', 'Trails/Show.tsx', 'Trips/Create.tsx', 'Trips/Edit.tsx'], $tanpaBilah);
     }
 
     /**
@@ -340,7 +340,7 @@ class NavigationConsistencyTest extends TestCase
      */
     private function daftarPermukaan(): string
     {
-        $isi = File::get(resource_path('js/layouts/NavLinks.tsx'));
+        $isi = str_replace("\r\n", "\n", File::get(resource_path('js/layouts/NavLinks.tsx')));
         $mulai = strpos($isi, 'export const permukaan = [');
 
         $this->assertNotFalse($mulai, 'Daftar permukaan tidak ditemukan di NavLinks.tsx.');

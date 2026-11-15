@@ -18,7 +18,7 @@ export default function ConfirmPassword() {
     return (
         <>
             <h1 className={judulTamu}>Konfirmasi kata sandi</h1>
-            <p className="mt-2 text-sm text-secondary">Ini area aman aplikasi. Konfirmasi kata sandi Anda sebelum melanjutkan.</p>
+            <p className="mt-2 text-sm text-secondary">Langkah ini meminta konfirmasi identitas Anda. Masukkan kata sandi sebelum melanjutkan.</p>
 
             <form onSubmit={kirim} className="mt-4 space-y-4" noValidate>
                 <IsianKataSandi

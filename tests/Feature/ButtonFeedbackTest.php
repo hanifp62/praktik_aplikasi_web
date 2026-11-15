@@ -266,16 +266,16 @@ class ButtonFeedbackTest extends TestCase
     {
         return [
             'hapus checkpoint' => ['pages/Admin/Checkpoints.tsx', "konfirmasiLalu('Hapus checkpoint ini?'"],
-            'hapus aturan perizinan' => ['pages/Admin/Permits.tsx', "window.confirm('Hapus aturan perizinan ini?')"],
+            'hapus aturan perizinan' => ['pages/Admin/Permits.tsx', "konfirmasiLalu('Hapus aturan perizinan ini?'"],
             'arsipkan gunung' => ['pages/Admin/Mountains.tsx', "konfirmasiLalu(baris.archived ? null : 'Arsipkan gunung ini? Seluruh jalurnya ikut hilang dari pencarian pendaki.'"],
             // W6: dialog BatalkanTrip (alasan opsional DK-50) menggantikan window.confirm.
             // Putaran perbaikan 1 (ruling W6-5f): keterangan kini bercabang menurut
             // trip.berlangsung, jadi anchor memeriksa kalimat itu sendiri, bukan lagi atribut
             // keterangan="..." yang literal (sekarang sebuah ekspresi ternary).
             'batalkan trip' => ['components/trips/BatalkanTrip.tsx', 'Trip yang dibatalkan tidak dapat dimulai lagi. Alasannya opsional dan hanya untuk catatan Anda sendiri.'],
-            'hapus jejak pendakian' => ['pages/Community/HikeSummary.tsx', "window.confirm('Hapus jejak pendakian ini? Pendakiannya sendiri tetap tersimpan.')"],
-            'keputusan kredensial' => ['pages/Admin/Credentials.tsx', 'if (k.konfirmasi && !window.confirm(k.konfirmasi))'],
-            'tindakan moderasi' => ['pages/Moderation/Queue.tsx', 'if (t.konfirmasi && !window.confirm(t.konfirmasi))'],
+            'hapus jejak pendakian' => ['pages/Community/HikeSummary.tsx', 'Hapus jejak pendakian ini? Pendakiannya sendiri tetap tersimpan.'],
+            'keputusan kredensial' => ['pages/Admin/Credentials.tsx', 'keterangan={konfirmasi?.keputusan.konfirmasi ?? undefined}'],
+            'tindakan moderasi' => ['pages/Moderation/Queue.tsx', 'keterangan={konfirmasi?.tindakan.konfirmasi ?? undefined}'],
         ];
     }
 
@@ -286,7 +286,7 @@ class ButtonFeedbackTest extends TestCase
     }
 
     /**
-     * Kelola Jalur kini halaman React: konfirmasinya window.confirm lewat konfirmasiLalu(),
+     * Kelola Jalur kini halaman React: konfirmasinya Dialog asli lewat useKonfirmasiAdmin(),
      * dirender di klien. Yang dapat dijaga dari server adalah halamannya terbuka dengan
      * baris jalurnya, dan dari sumbernya bahwa arah yang menghilangkan jalur dari hadapan
      * pendaki (arsip, tarik publikasi) bertanya dulu dengan menyebut akibatnya.
@@ -303,7 +303,7 @@ class ButtonFeedbackTest extends TestCase
         $halaman = File::get(resource_path('js/pages/Admin/Trails.tsx'));
         $this->assertStringContainsString("konfirmasiLalu(j.archived ? null : 'Arsipkan jalur ini? Jalur yang diarsipkan hilang dari pencarian", $halaman);
         $this->assertStringContainsString("konfirmasiLalu(j.published ? 'Tarik jalur ini dari publikasi? Pendaki tidak akan menemukannya lagi", $halaman);
-        $this->assertStringContainsString('window.confirm(pesan)', File::get(resource_path('js/components/admin/FormulirAdmin.tsx')));
+        $this->assertStringContainsString('<Dialog', File::get(resource_path('js/components/admin/FormulirAdmin.tsx')));
     }
 
     private function tombol(): string

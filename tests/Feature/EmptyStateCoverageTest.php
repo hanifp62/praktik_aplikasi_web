@@ -33,6 +33,10 @@ class EmptyStateCoverageTest extends TestCase
      * @var array<string, array<string, string>>
      */
     private const DAFTAR_TETAP = [
+        'pages/Galat.tsx' => [
+            'galat.penjelasan' => 'HalamanGalat::isi() menulis satu sampai dua kalimat untuk setiap kode',
+            'galat.tindakan' => 'HalamanGalat::isi() menulis satu sampai dua tombol untuk setiap kode',
+        ],
         'pages/Admin/Usability.tsx' => [
             'ringkasan.tugas' => 'satu baris per tugas di UsabilityStudyService::TUGAS',
             'daftarTugas' => 'konstanta UsabilityStudyService::TUGAS',
@@ -41,6 +45,12 @@ class EmptyStateCoverageTest extends TestCase
         'pages/Community/ConditionReport.tsx' => [
             'tags' => 'seluruh ConditionTag::cases()',
         ],
+        'pages/Curator/Desk.tsx' => [
+            'badan' => 'halamannya menjawab 403 tanpa keanggotaan aktif (OfficialStatusPolicy::viewDesk), jadi selalu ada paling sedikit satu badan',
+        ],
+        'pages/Curator/Status.tsx' => [
+            'langkah' => 'lima langkah tetap HalamanCatatanStatus::langkah()',
+        ],
         'pages/Community/TrailContribution.tsx' => [
             'kredensial' => 'halamannya menjawab 403 bagi pengguna tanpa kredensial berlaku',
         ],
@@ -48,7 +58,7 @@ class EmptyStateCoverageTest extends TestCase
             'cuaca' => 'satu entri per gunung yang diikuti, dan bagiannya hanya tampil bila ada yang diikuti',
         ],
         'pages/Onboarding/ProfileSetup.tsx' => [
-            'ringkasan' => 'sebelas baris tetap ringkasan profil, tampil hanya bila profilnya lengkap',
+            'pilihan.wilayah' => 'seluruh InterestRegion::cases(), delapan kelompok wilayah yang menutup Indonesia (DK-42)',
         ],
         'pages/Public/SharedComparison.tsx' => [
             'props.baris' => 'sembilan baris tetap RouteComparisonTable::baris(); tabelnya hanya tampil bila ada jalur',

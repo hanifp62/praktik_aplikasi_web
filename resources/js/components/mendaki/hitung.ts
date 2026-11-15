@@ -674,3 +674,43 @@ export function sisaJarak(
 
     return null;
 }
+
+/**
+ * Ringkasan luring pos tujuan tanpa sinyal GPS: ketinggian pos tercatat, ditambah jarak
+ * menyusuri garis jalur dan selisih tanjakan dari pos sebelumnya bila keduanya tersedia
+ * (GAP-15). Tidak memakai bacaan ketinggian perangkat.
+ */
+export function ringkasanRuasPos(
+    garis: Titik[] | null,
+    sebelumnya: { urutan: number; lng: number | null; lat: number | null; elevasi: number | null } | null,
+    tujuan: { urutan: number; lng: number | null; lat: number | null; elevasi: number | null },
+): string | null {
+    const bagianKetinggian = tujuan.elevasi !== null ? `${angkaBulat.format(Math.round(tujuan.elevasi))} mdpl` : null;
+
+    if (sebelumnya === null) {
+        return bagianKetinggian;
+    }
+
+    const rincianRuas: string[] = [];
+
+    if (garis !== null) {
+        const awalM = sepanjangPos(garis, sebelumnya.lng, sebelumnya.lat);
+        const akhirM = sepanjangPos(garis, tujuan.lng, tujuan.lat);
+
+        if (awalM !== null && akhirM !== null && akhirM > awalM) {
+            rincianRuas.push(teksJarak(akhirM - awalM));
+        }
+    }
+
+    if (sebelumnya.elevasi !== null && tujuan.elevasi !== null && tujuan.elevasi > sebelumnya.elevasi) {
+        rincianRuas.push(teksNaik(tujuan.elevasi - sebelumnya.elevasi));
+    }
+
+    const bagianRuas = rincianRuas.length > 0 ? `dari pos sebelumnya ${rincianRuas.join(', ')}` : null;
+
+    if (bagianKetinggian !== null && bagianRuas !== null) {
+        return `${bagianKetinggian} · ${bagianRuas}`;
+    }
+
+    return bagianKetinggian ?? bagianRuas;
+}

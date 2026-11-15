@@ -3,30 +3,44 @@
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\AuthorityController;
+use App\Http\Controllers\Admin\AuthorityMemberController;
 use App\Http\Controllers\Admin\CheckpointController;
 use App\Http\Controllers\Admin\CredentialController;
 use App\Http\Controllers\Admin\DataSourceController;
 use App\Http\Controllers\Admin\MountainController;
+use App\Http\Controllers\Admin\MountainPhotoManagerController;
 use App\Http\Controllers\Admin\OfficialStatusController;
 use App\Http\Controllers\Admin\PermitController;
 use App\Http\Controllers\Admin\SystemHealthController;
 use App\Http\Controllers\Admin\TrailController;
 use App\Http\Controllers\Admin\TrailGeometryController;
+use App\Http\Controllers\Admin\TrailSegmentController;
 use App\Http\Controllers\Admin\UsabilityStudyController;
 use App\Http\Controllers\Community\ConditionReportController;
+use App\Http\Controllers\Community\DataErrorReportController;
 use App\Http\Controllers\Community\HikeNumbersController;
 use App\Http\Controllers\Community\HikerProgressController;
 use App\Http\Controllers\Community\HikeSummaryController;
 use App\Http\Controllers\Community\HikingHistoryController;
+use App\Http\Controllers\Community\ManualHikeController;
+use App\Http\Controllers\Community\PersonalTargetController;
 use App\Http\Controllers\Community\TrailContributionController;
 use App\Http\Controllers\Community\TrailNewsController;
+use App\Http\Controllers\Curator\CuratorDeskController;
+use App\Http\Controllers\Curator\CuratorStatusController;
+use App\Http\Controllers\Curator\DataErrorCheckController;
+use App\Http\Controllers\Curator\EvidenceController;
+use App\Http\Controllers\Curator\VolcanoStatusController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisplayPreferenceController;
 use App\Http\Controllers\Goals\GoalController;
 use App\Http\Controllers\HikeTrackController;
 use App\Http\Controllers\Moderation\ModerationQueueController;
 use App\Http\Controllers\Onboarding\ProfileSetupController;
+use App\Http\Controllers\Profile\OwnedItemController;
 use App\Http\Controllers\Profile\ProfileController;
+use App\Http\Controllers\Profile\ProfilePhotoController;
+use App\Http\Controllers\Profile\TrackDataController;
 use App\Http\Controllers\ProgressiveWebAppController;
 use App\Http\Controllers\PublicTrailController;
 use App\Http\Controllers\Recommendations\RecommendationController;
@@ -36,6 +50,7 @@ use App\Http\Controllers\Trails\ComparisonShareController;
 use App\Http\Controllers\Trails\ConsiderationController;
 use App\Http\Controllers\Trails\MountainFollowController;
 use App\Http\Controllers\Trails\MountainPageController;
+use App\Http\Controllers\Trails\MountainPhotoController;
 use App\Http\Controllers\Trails\ReportThanksController;
 use App\Http\Controllers\Trails\RouteComparisonController;
 use App\Http\Controllers\Trails\SavedRoutesController;
@@ -46,26 +61,25 @@ use App\Http\Controllers\Trails\TrailIndexController;
 use App\Http\Controllers\Trips\FieldPackController;
 use App\Http\Controllers\Trips\HikeModeController;
 use App\Http\Controllers\Trips\PreparationController;
+use App\Http\Controllers\Trips\PreparationNoteController;
 use App\Http\Controllers\Trips\ReadinessController;
 use App\Http\Controllers\Trips\TrackController;
 use App\Http\Controllers\Trips\TripController;
 use App\Http\Controllers\Trips\TripLifecycleController;
 use App\Http\Controllers\Trips\TripReminderController;
 use App\Http\Controllers\Trips\TripSafetyController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
- * Halaman depan: halaman React pertama (jalur C, 24 September 2026). Judul dan
- * ringkasan dikirim sebagai prop supaya templat akar merender <title> dan meta
- * description di server, sebelum React berjalan.
+ * Halaman depan: halaman React pertama (jalur C, 24 September 2026). Judul, ringkasan,
+ * dan contoh jalur terbit dikirim sebagai prop supaya templat akar merender <title> dan
+ * meta description di server sebelum React berjalan.
  */
-Route::inertia('/', 'Welcome', [
-    'title' => config('app.name').': '.config('brand.tagline'),
-    'description' => config('brand.description'),
-])->name('welcome');
+Route::get('/', WelcomeController::class)->name('welcome');
 
 /*
  * Pilihan tema tampilan, untuk tamu maupun pengguna masuk. Hanya menulis cookie milik
@@ -109,18 +123,29 @@ Route::get('b/{token}', [ComparisonShareController::class, 'show'])
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', DashboardController::class)->middleware('verified')->name('dashboard');
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile');
-    Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::put('profile/password', [ProfileController::class, 'password'])->name('profile.password');
-    Route::put('profile/preference', [ProfileController::class, 'preference'])->name('profile.preference');
-    Route::delete('profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Batas tulisan pribadi per kelompok: sandi dan hapus akun punya hitungan sendiri,
+    // jadi menyunting profil tidak menghabiskan jatah keduanya.
+    Route::patch('profile', [ProfileController::class, 'update'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,profil')->name('profile.update');
+    Route::put('profile/password', [ProfileController::class, 'password'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,sandi')->name('profile.password');
+    Route::put('profile/preference', [ProfileController::class, 'preference'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,profil')->name('profile.preference');
+    Route::delete('profile', [ProfileController::class, 'destroy'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,hapus-akun')->name('profile.destroy');
+    // Foto profil (W7): tanpa id pengguna di rute; berkasnya hanya untuk pemilik sesi.
+    Route::get('profile/foto', [ProfilePhotoController::class, 'show'])->name('profile.photo.show');
+    Route::post('profile/foto', [ProfilePhotoController::class, 'store'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,foto-profil')->name('profile.photo.store');
+    Route::delete('profile/foto', [ProfilePhotoController::class, 'destroy'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,foto-profil')->name('profile.photo.destroy');
+    Route::delete('profile/jejak', TrackDataController::class)->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,hapus-jejak')->name('profile.tracks.destroy');
+    // Perlengkapan pribadi (W7): pemilik dari sesi, barang dari rute dan Policy.
+    Route::post('profile/perlengkapan', [OwnedItemController::class, 'store'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,perlengkapan')->name('profile.items.store');
+    Route::put('profile/perlengkapan/{item}', [OwnedItemController::class, 'update'])->whereNumber('item')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,perlengkapan')->name('profile.items.update');
+    Route::delete('profile/perlengkapan/{item}', [OwnedItemController::class, 'destroy'])->whereNumber('item')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,perlengkapan')->name('profile.items.destroy');
 
     // Profile -> goal -> route fit -> plan -> prepare -> check -> hike -> report -> history.
     Route::get('onboarding', [ProfileSetupController::class, 'show'])->name('onboarding');
-    Route::post('onboarding', [ProfileSetupController::class, 'store'])->name('onboarding.store');
+    Route::post('onboarding', [ProfileSetupController::class, 'store'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,onboarding')->name('onboarding.store');
     Route::get('goals/create', [GoalController::class, 'create'])->name('goals.create');
     Route::post('goals', [GoalController::class, 'store'])->name('goals.store');
     Route::get('recommendations/{run}', [RecommendationController::class, 'show'])->name('recommendations.show');
-    Route::post('recommendations/{run}/pilih', [RecommendationController::class, 'pilih'])->name('recommendations.pilih');
+    Route::post('recommendations/{run}/pilih', [RecommendationController::class, 'pilih'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,pilih-rekomendasi')->name('recommendations.pilih');
 
     Route::get('trails', TrailIndexController::class)->name('trails.index');
     Route::get('trails/saved', SavedRoutesController::class)->name('trails.saved');
@@ -151,6 +176,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('mountains/{mountain}/follow', [MountainFollowController::class, 'store'])->middleware('throttle:60,1')->name('mountains.follow');
     // Halaman gunung (DK-44): hub jalur sebuah gunung, hanya untuk pengguna masuk.
     Route::get('mountains/{mountain:slug}', MountainPageController::class)->name('mountains.show');
+    // Foto gunung berlisensi (W8, DK-37): berkasnya untuk kepala halaman gunung.
+    Route::get('mountains/{mountain:slug}/foto', MountainPhotoController::class)->name('mountains.photo');
+    // "Laporkan kesalahan data" (W8, ruling W8-R17): antrean cek ulang kurator, dibatasi laju per jam.
+    Route::post('trails/{trail:slug}/laporkan-kesalahan', [DataErrorReportController::class, 'storeForTrail'])->middleware('throttle:'.config('hiking.rate_limits.data_error_reports_per_hour').',60,laporan-kesalahan')->name('trails.data-errors.store');
+    Route::post('mountains/{mountain:slug}/laporkan-kesalahan', [DataErrorReportController::class, 'storeForMountain'])->middleware('throttle:'.config('hiking.rate_limits.data_error_reports_per_hour').',60,laporan-kesalahan')->name('mountains.data-errors.store');
 
     Route::get('trips', [TripController::class, 'index'])->name('trips.index');
     Route::get('trips/create', [TripController::class, 'create'])->name('trips.create');
@@ -169,6 +199,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('trips/{trip}/complete', [TripLifecycleController::class, 'complete'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,siklus-trip')->name('trips.complete');
     Route::post('trips/{trip}/cancel', [TripLifecycleController::class, 'cancel'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,siklus-trip')->name('trips.cancel');
     Route::get('trips/{trip}/preparation', [PreparationController::class, 'show'])->name('trips.preparation');
+    Route::put('trips/{trip}/preparation/{item}/catatan', PreparationNoteController::class)->whereNumber('item')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-butir')->name('trips.preparation.note');
     Route::post('trips/{trip}/preparation/regenerate', [PreparationController::class, 'regenerate'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,persiapan-daftar')->name('trips.preparation.regenerate');
     Route::post('trips/{trip}/preparation/{item}', [PreparationController::class, 'update'])->whereNumber('item')->middleware('throttle:'.config('hiking.rate_limits.preparation_toggles_per_minute').',1,persiapan-butir')->name('trips.preparation.update');
     Route::get('trips/{trip}/readiness', [ReadinessController::class, 'show'])->name('trips.readiness');
@@ -211,6 +242,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/{report}/photo', ReportPhotoController::class)->name('reports.photo');
     Route::get('kabar', TrailNewsController::class)->name('news');
     Route::get('progres', HikerProgressController::class)->name('progress');
+    // Catat pendakian di luar trip (FR-25, W7): pemilik dari sesi, catatan dari rute dan Policy.
+    Route::post('progres/catatan', [ManualHikeController::class, 'store'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-pendakian')->name('progress.records.store');
+    Route::put('progres/catatan/{riwayat}', [ManualHikeController::class, 'update'])->whereNumber('riwayat')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-pendakian')->name('progress.records.update');
+    Route::delete('progres/catatan/{riwayat}', [ManualHikeController::class, 'destroy'])->whereNumber('riwayat')->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,catatan-pendakian')->name('progress.records.destroy');
+    // Target pribadi bulanan (FR-25, W7): satu set milik pendaki yang masuk, tanpa id.
+    Route::put('progres/target', [PersonalTargetController::class, 'update'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,target-pribadi')->name('progress.targets.update');
     Route::get('history', HikingHistoryController::class)->name('history');
     Route::get('history/{trip}', HikeSummaryController::class)->name('history.summary');
     // "Ubah angka" ringkasan pendakian (W6, spec v3 bagian 6.13).
@@ -218,7 +255,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Terbuka untuk pemegang kredensial yang berlaku; controllernya menolak yang lain.
     Route::get('kontribusi', [TrailContributionController::class, 'index'])->name('contribute');
-    Route::post('kontribusi/{trail}', [TrailContributionController::class, 'store'])->name('contribute.store');
+    Route::post('kontribusi/{trail}', [TrailContributionController::class, 'store'])->middleware('throttle:15,1,kontribusi')->name('contribute.store');
 
     /*
      * Geometri jalur dan koordinat pos dahulu terkunci di grup admin, padahal kedua
@@ -232,7 +269,7 @@ Route::middleware(['auth'])->group(function () {
      * berlaku utuh.
      */
     Route::get('jalur/{trail}/geometri', [TrailGeometryController::class, 'show'])->name('trails.geometry');
-    Route::post('jalur/{trail}/geometri', [TrailGeometryController::class, 'store'])->name('trails.geometry.store');
+    Route::post('jalur/{trail}/geometri', [TrailGeometryController::class, 'store'])->middleware('throttle:30,1,geometri')->name('trails.geometry.store');
     Route::post('jalur/{trail}/geometri/berkas', [TrailGeometryController::class, 'preview'])
         ->middleware('throttle:30,1')
         ->name('trails.geometry.preview');
@@ -242,58 +279,99 @@ Route::middleware(['auth'])->group(function () {
         ->name('trails.geometry.search');
     Route::post('jalur/{trail}/geometri/osm/{osm}', [TrailGeometryController::class, 'choose'])
         ->whereNumber('osm')
+        ->middleware('throttle:30,1,geometri')
         ->name('trails.geometry.choose');
-    Route::post('jalur/{trail}/geometri/tanjakan', [TrailGeometryController::class, 'applyElevation'])->name('trails.geometry.elevation');
+    Route::post('jalur/{trail}/geometri/tanjakan', [TrailGeometryController::class, 'applyElevation'])->middleware('throttle:30,1,geometri')->name('trails.geometry.elevation');
 
     Route::get('jalur/{trail}/pos', [CheckpointController::class, 'index'])->name('trails.checkpoints');
-    Route::post('jalur/{trail}/pos', [CheckpointController::class, 'store'])->name('trails.checkpoints.store');
+    Route::post('jalur/{trail}/pos', [CheckpointController::class, 'store'])->middleware('throttle:30,1,pos')->name('trails.checkpoints.store');
     // scopeBindings: checkpoint harus milik jalur di URL-nya, sehingga izin atas satu
     // jalur tidak pernah menjadi izin atas checkpoint jalur lain.
-    Route::scopeBindings()->group(function () {
+    Route::scopeBindings()->middleware('throttle:30,1,pos')->group(function () {
         Route::put('jalur/{trail}/pos/{checkpoint}', [CheckpointController::class, 'update'])->name('trails.checkpoints.update');
         Route::post('jalur/{trail}/pos/{checkpoint}/pindah', [CheckpointController::class, 'move'])->name('trails.checkpoints.move');
         Route::delete('jalur/{trail}/pos/{checkpoint}', [CheckpointController::class, 'destroy'])->name('trails.checkpoints.destroy');
+    });
+
+    Route::get('jalur/{trail}/segmen', [TrailSegmentController::class, 'index'])->name('trails.segments');
+    Route::post('jalur/{trail}/segmen', [TrailSegmentController::class, 'store'])->middleware('throttle:30,1,segmen')->name('trails.segments.store');
+    Route::scopeBindings()->middleware('throttle:30,1,segmen')->group(function () {
+        Route::put('jalur/{trail}/segmen/{segment}', [TrailSegmentController::class, 'update'])->name('trails.segments.update');
+        Route::post('jalur/{trail}/segmen/{segment}/pindah', [TrailSegmentController::class, 'move'])->name('trails.segments.move');
+        Route::delete('jalur/{trail}/segmen/{segment}', [TrailSegmentController::class, 'destroy'])->name('trails.segments.destroy');
+    });
+
+    /*
+     * Meja kurator data resmi (W8, spec v3 bagian 10.7). Tanpa middleware peran, karena admin
+     * lolos middleware role apa pun padahal kurator terpisah dari admin; setiap aksi dijaga
+     * OfficialStatusPolicy (keanggotaan aktif dan yurisdiksi).
+     */
+    Route::get('kurator/status/{status}/bukti', [EvidenceController::class, 'show'])->whereNumber('status')->name('curator.evidence.show');
+    Route::get('kurator', [CuratorDeskController::class, 'index'])->name('curator.desk');
+    Route::get('kurator/status/baru', [CuratorStatusController::class, 'create'])->name('curator.statuses.create');
+    Route::get('kurator/status/{status}', [CuratorStatusController::class, 'show'])->whereNumber('status')->name('curator.statuses.show');
+    Route::get('kurator/status/{status}/ubah', [CuratorStatusController::class, 'edit'])->whereNumber('status')->name('curator.statuses.edit');
+    Route::get('kurator/gunung-api/baru', [VolcanoStatusController::class, 'create'])->name('curator.volcano.create');
+    // Tulisan meja kurator dibatasi laju dengan hitungannya sendiri (meja-kurator).
+    Route::middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,meja-kurator')->group(function () {
+        Route::post('kurator/status', [CuratorStatusController::class, 'store'])->name('curator.statuses.store');
+        Route::put('kurator/status/{status}', [CuratorStatusController::class, 'update'])->whereNumber('status')->name('curator.statuses.update');
+        Route::delete('kurator/status/{status}', [CuratorStatusController::class, 'destroy'])->whereNumber('status')->name('curator.statuses.destroy');
+        Route::post('kurator/status/{status}/kirim', [CuratorStatusController::class, 'submit'])->whereNumber('status')->name('curator.statuses.submit');
+        Route::post('kurator/status/{status}/verifikasi', [CuratorStatusController::class, 'verify'])->whereNumber('status')->name('curator.statuses.verify');
+        Route::post('kurator/status/{status}/persoalkan', [CuratorStatusController::class, 'dispute'])->whereNumber('status')->name('curator.statuses.dispute');
+        Route::post('kurator/status/{status}/tinjau', [CuratorStatusController::class, 'review'])->whereNumber('status')->name('curator.statuses.review');
+        Route::post('kurator/laporan/{laporan}/dicek', DataErrorCheckController::class)->whereNumber('laporan')->name('curator.data-errors.check');
+        Route::post('kurator/gunung-api', [VolcanoStatusController::class, 'store'])->name('curator.volcano.store');
     });
 });
 
 Route::middleware(['auth', 'role:moderator'])->prefix('moderation')->name('moderation.')->group(function () {
     Route::get('/', [ModerationQueueController::class, 'index'])->name('queue');
-    Route::post('reports/{report}', [ModerationQueueController::class, 'act'])->name('act');
+    Route::post('reports/{report}', [ModerationQueueController::class, 'act'])->middleware('throttle:60,1,moderasi')->name('act');
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('mountains', [MountainController::class, 'index'])->name('mountains');
-    Route::post('mountains', [MountainController::class, 'store'])->name('mountains.store');
-    Route::put('mountains/{mountain}', [MountainController::class, 'update'])->name('mountains.update');
-    Route::post('mountains/{mountain}/arsip', [MountainController::class, 'toggleArchive'])->name('mountains.archive');
+    Route::get('mountains/{mountain}/foto', [MountainPhotoManagerController::class, 'edit'])->name('mountains.photo');
     Route::get('trails', [TrailController::class, 'index'])->name('trails');
-    Route::post('trails', [TrailController::class, 'store'])->name('trails.store');
-    Route::put('trails/{trail}', [TrailController::class, 'update'])->name('trails.update');
-    Route::post('trails/{trail}/publikasi', [TrailController::class, 'togglePublish'])->name('trails.publish');
-    Route::post('trails/{trail}/arsip', [TrailController::class, 'toggleArchive'])->name('trails.archive');
     Route::get('sources', [DataSourceController::class, 'index'])->name('sources');
-    Route::post('sources', [DataSourceController::class, 'store'])->name('sources.store');
-    Route::put('sources/{source}', [DataSourceController::class, 'update'])->name('sources.update');
-    Route::post('sources/{source}/verifikasi', [DataSourceController::class, 'verify'])->name('sources.verify');
-    Route::post('sources/{source}/perdebatkan', [DataSourceController::class, 'dispute'])->name('sources.dispute');
     Route::get('official-statuses', [OfficialStatusController::class, 'index'])->name('statuses');
-    Route::post('official-statuses', [OfficialStatusController::class, 'store'])->name('statuses.store');
     Route::get('permits', [PermitController::class, 'index'])->name('permits');
-    Route::post('permits', [PermitController::class, 'store'])->name('permits.store');
-    Route::put('permits/{permit}', [PermitController::class, 'update'])->name('permits.update');
-    Route::delete('permits/{permit}', [PermitController::class, 'destroy'])->name('permits.destroy');
     Route::get('authorities', [AuthorityController::class, 'index'])->name('authorities');
-    Route::post('authorities', [AuthorityController::class, 'store'])->name('authorities.store');
-    Route::put('authorities/{authority}', [AuthorityController::class, 'update'])->name('authorities.update');
     Route::get('credentials', [CredentialController::class, 'index'])->name('credentials');
-    Route::post('credentials/{credential}/{keputusan}', [CredentialController::class, 'keputusan'])
-        ->whereIn('keputusan', CredentialController::keputusanTersedia())
-        ->name('credentials.decide');
     Route::get('audit-logs', AuditLogController::class)->name('audit');
     Route::get('analytics', AnalyticsController::class)->name('analytics');
     Route::get('usability', [UsabilityStudyController::class, 'index'])->name('usability');
-    Route::post('usability', [UsabilityStudyController::class, 'store'])->name('usability.store');
     Route::get('health', SystemHealthController::class)->name('health');
+
+    Route::middleware('throttle:60,1,admin')->group(function () {
+        Route::post('mountains', [MountainController::class, 'store'])->name('mountains.store');
+        Route::put('mountains/{mountain}', [MountainController::class, 'update'])->name('mountains.update');
+        Route::post('mountains/{mountain}/arsip', [MountainController::class, 'toggleArchive'])->name('mountains.archive');
+        Route::post('mountains/{mountain}/foto', [MountainPhotoManagerController::class, 'store'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,foto-gunung')->name('mountains.photo.store');
+        Route::delete('mountains/{mountain}/foto', [MountainPhotoManagerController::class, 'destroy'])->middleware('throttle:'.config('hiking.rate_limits.personal_writes_per_minute').',1,foto-gunung')->name('mountains.photo.destroy');
+        Route::post('trails', [TrailController::class, 'store'])->name('trails.store');
+        Route::put('trails/{trail}', [TrailController::class, 'update'])->name('trails.update');
+        Route::post('trails/{trail}/publikasi', [TrailController::class, 'togglePublish'])->name('trails.publish');
+        Route::post('trails/{trail}/arsip', [TrailController::class, 'toggleArchive'])->name('trails.archive');
+        Route::post('sources', [DataSourceController::class, 'store'])->name('sources.store');
+        Route::put('sources/{source}', [DataSourceController::class, 'update'])->name('sources.update');
+        Route::post('sources/{source}/verifikasi', [DataSourceController::class, 'verify'])->name('sources.verify');
+        Route::post('sources/{source}/perdebatkan', [DataSourceController::class, 'dispute'])->name('sources.dispute');
+        Route::post('permits', [PermitController::class, 'store'])->name('permits.store');
+        Route::put('permits/{permit}', [PermitController::class, 'update'])->name('permits.update');
+        Route::delete('permits/{permit}', [PermitController::class, 'destroy'])->name('permits.destroy');
+        Route::post('authorities', [AuthorityController::class, 'store'])->name('authorities.store');
+        Route::put('authorities/{authority}', [AuthorityController::class, 'update'])->name('authorities.update');
+        // Anggota meja kurator (W8, ruling W8-R7): badan dari rute; keanggotaan harus milik badan di URL.
+        Route::post('authorities/{authority}/anggota', [AuthorityMemberController::class, 'store'])->name('authorities.members.store');
+        Route::delete('authorities/{authority}/anggota/{member}', [AuthorityMemberController::class, 'destroy'])->scopeBindings()->name('authorities.members.destroy');
+        Route::post('credentials/{credential}/{keputusan}', [CredentialController::class, 'keputusan'])
+            ->whereIn('keputusan', CredentialController::keputusanTersedia())
+            ->name('credentials.decide');
+        Route::post('usability', [UsabilityStudyController::class, 'store'])->name('usability.store');
+    });
 });
 
 require __DIR__.'/auth.php';
@@ -310,6 +388,7 @@ require __DIR__.'/auth.php';
  */
 $tanpaSesi = [StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class];
 
+Route::get('robots.txt', [PublicTrailController::class, 'robots'])->withoutMiddleware($tanpaSesi)->name('public.robots');
 Route::get('manifest.webmanifest', [ProgressiveWebAppController::class, 'manifest'])->withoutMiddleware($tanpaSesi)->name('pwa.manifest');
 Route::get('sw.js', [ProgressiveWebAppController::class, 'serviceWorker'])->withoutMiddleware($tanpaSesi)->name('pwa.sw');
 Route::view('offline', 'offline')->withoutMiddleware($tanpaSesi)->name('pwa.offline');

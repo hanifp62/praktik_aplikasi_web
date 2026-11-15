@@ -35,6 +35,7 @@ benar pada hari itu dan tidak ditulis ulang.
 | Dokumen | Isi |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Peta kode, aturan yang tidak boleh dilanggar, struktur repo, kontrak SEO teknis, catatan operasional |
+| [RUNBOOK-OPERASI.md](RUNBOOK-OPERASI.md) | Panduan penanganan insiden operasional: BMKG, PVMBG, penjadwal, Vercel Cron, dan paritas PostgreSQL |
 | [../database/README.md](../database/README.md) | Skema per domain, PostGIS, kebijakan migrasi |
 | [MATRIKS-SKILL.md](MATRIKS-SKILL.md) | Skill terpasang, kelasnya, urutan wewenang, status pelacakan |
 | [lisensi-pihak-ketiga.md](lisensi-pihak-ketiga.md) | Karya pihak ketiga dan lisensinya |

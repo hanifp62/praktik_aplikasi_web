@@ -5,10 +5,12 @@ namespace App\Services\Trips;
 use App\Enums\OfficialStatusValue;
 use App\Enums\RouteFitLabel;
 use App\Enums\TripType;
+use App\Models\Checkpoint;
 use App\Models\HikingGoal;
 use App\Models\PermitRequirement;
 use App\Models\Trail;
 use App\Models\TrailConsideration;
+use App\Models\TripPlan;
 use App\Models\User;
 use App\Services\ConsiderationService;
 use App\Services\PermitService;
@@ -108,6 +110,67 @@ final class RencanaTrip
             'kecocokan' => fn () => $trail === null ? null : $this->kecocokan($user, $trail, $goal, $jenis, $tanggal),
             'jadwal' => fn () => $tanggal === null ? null : $this->jadwal($tanggal, $selesai, $trail),
             'izin' => fn () => $trail === null ? null : $this->izin($trail, $tanggal),
+        ];
+    }
+
+    /**
+     * Props halaman Ubah Rencana Trip dengan paritas penuh ke Rencanakan Trip (S2.2: GAP-10):
+     * menghitung ulang kecocokan, jadwal & prakiraan BMKG, jendela izin SIMAKSI, serta daftar pos.
+     *
+     * @return array<string, mixed>
+     */
+    public function propsUbah(User $user, TripPlan $trip, Request $request): array
+    {
+        $trip->loadMissing(['trail.mountain', 'trail.checkpoints', 'hikingGoal']);
+        $trail = $trip->trail;
+        $goal = $trip->hikingGoal;
+
+        $jenisMentah = $request->query('jenis');
+        $jenis = (is_string($jenisMentah) ? TripType::tryFrom($jenisMentah) : null) ?? $trip->trip_type;
+
+        $adaTanggalUrl = is_string($request->query('tanggal'));
+        $tanggal = $adaTanggalUrl
+            ? (self::tanggalSah($request->query('tanggal')) ?? $trip->planned_date->copy())
+            : $trip->planned_date->copy();
+
+        $adaSelesaiUrl = $request->query->has('selesai');
+        $selesai = ($adaTanggalUrl || is_string($jenisMentah) || $adaSelesaiUrl)
+            ? $this->selesai($tanggal, self::tanggalSah($request->query('selesai')), $jenis)
+            : $trip->end_date?->copy();
+
+        return [
+            'trip' => [
+                'id' => $trip->id,
+                'jalur' => $trail->name.' - '.$trail->mountain->name,
+            ],
+            'awal' => [
+                'name' => $trip->name,
+                'planned_date' => $trip->planned_date->toDateString(),
+                'end_date' => $trip->end_date?->toDateString() ?? '',
+                'start_time' => $trip->start_time ? Carbon::parse($trip->start_time)->format('H:i') : '',
+                'participants_count' => $trip->participants_count !== null ? (string) $trip->participants_count : '',
+                'trip_type' => $trip->trip_type->value,
+                'notes' => $trip->notes ?? '',
+            ],
+            'tripTypes' => array_map(fn (TripType $t) => ['value' => $t->value, 'label' => $t->label()], TripType::cases()),
+            'jalur' => fn () => $this->jalur($trail),
+            'jenisTrip' => array_map(
+                fn (TripType $t) => ['nilai' => $t->value, 'label' => $t->labelPendek(), 'keterangan' => $t->lamaHari().' hari', 'lamaHari' => $t->lamaHari()],
+                TripType::cases(),
+            ),
+            'tanggalTerawal' => Timezone::earliestDateInIndonesia(),
+            'batas' => self::batasIsian(),
+            'zona' => Timezone::label(Timezone::forTrail($trail)),
+            'kecocokan' => fn () => $this->kecocokan($user, $trail, $goal, $jenis, $tanggal),
+            'jadwal' => fn () => $this->jadwal($tanggal, $selesai, $trail),
+            'izin' => fn () => $this->izin($trail, $tanggal),
+            'pos' => fn () => $trail->checkpoints->map(fn (Checkpoint $cp) => [
+                'id' => $cp->id,
+                'urutan' => $cp->sequence,
+                'nama' => $cp->name,
+                'tipe' => $cp->checkpoint_type->label(),
+                'elevasi' => $cp->elevation_m !== null ? number_format($cp->elevation_m, 0, ',', '.').' mdpl' : null,
+            ])->values()->all(),
         ];
     }
 
@@ -256,12 +319,12 @@ final class RencanaTrip
             'rentang' => KepalaTrip::rentang($tanggal, $selesai),
             // Bentuk pendek untuk ringkasan di bar aksi, supaya tetap satu baris di 360 px.
             'ringkas' => $selesai === null
-                ? $tanggal->translatedFormat('j M')
-                : $tanggal->translatedFormat($tanggal->month === $selesai->month ? 'j' : 'j M').' sampai '.$selesai->translatedFormat('j M'),
+                ? Timezone::tanggalPendek($tanggal)
+                : ($tanggal->isSameMonth($selesai) ? $tanggal->format('j') : Timezone::tanggalPendek($tanggal)).' sampai '.Timezone::tanggalPendek($selesai),
             'lama' => $lama.' hari',
             'prakiraan' => $terbit->toDateString() > $hariIni
-                ? 'Prakiraan BMKG untuk '.$tanggal->translatedFormat('D, j M').' terbit mulai '.$terbit->translatedFormat('D, j M').'. Sebelum itu Memount tidak menebak cuacanya.'
-                : 'Prakiraan BMKG untuk '.$tanggal->translatedFormat('D, j M').' sudah dapat terbit. Prakiraannya tampil di cek kesiapan begitu tersedia dari BMKG.',
+                ? 'Prakiraan BMKG untuk '.PermitService::hari($tanggal).' terbit mulai '.PermitService::hari($terbit).'. Sebelum itu Memount tidak menebak cuacanya.'
+                : 'Prakiraan BMKG untuk '.PermitService::hari($tanggal).' sudah dapat terbit. Prakiraannya tampil di cek kesiapan begitu tersedia dari BMKG.',
         ];
     }
 

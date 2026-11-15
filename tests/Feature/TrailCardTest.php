@@ -239,6 +239,35 @@ class TrailCardTest extends TestCase
     }
 
     /**
+     * Titipan W9 (tinjauan akhir W5, Declined): panel "Kenapa?" menyebut status resmi yang belum
+     * diketahui atau dibatasi dua kali, sekali dari peringatan mesin dan sekali dari baris status
+     * penjelasan, dengan kalimat yang hampir sama. Kalimat status kini hanya datang dari
+     * RouteFitService::peringatan() (W3-3c), jadi setiap status disebut sekali, di penjelasan
+     * mesin maupun di dua kalimat pertama kartu.
+     */
+    public function test_the_why_panel_names_an_official_status_once(): void
+    {
+        $gunung = Mountain::factory()->create();
+        $belumDiketahui = Trail::factory()->for($gunung)->published()->create();
+        $dibatasi = Trail::factory()->for($gunung)->published()->create();
+        OfficialStatus::factory()->restricted()->create([
+            'statusable_type' => $dibatasi->getMorphClass(),
+            'statusable_id' => $dibatasi->id,
+            'source' => 'Balai Uji',
+        ]);
+        $pendaki = $this->pendaki();
+        $kartu = collect($this->jelajah($pendaki)->viewData('page')['props']['trails']['data'])->keyBy('id');
+        $sebutanStatus = fn (array $baris): int => count(array_filter($baris, fn (string $kalimat) => str_starts_with($kalimat, 'Status resmi jalur ini')));
+
+        foreach ([$belumDiketahui, $dibatasi] as $jalur) {
+            $mesin = app(RouteFitService::class)->evaluate($pendaki, null, $jalur->fresh());
+
+            $this->assertSame(1, $sebutanStatus($mesin->explanation['what_to_watch']), $jalur->name);
+            $this->assertSame(1, $sebutanStatus($kartu[$jalur->id]['fit']['perluDiperhatikan']), $jalur->name);
+        }
+    }
+
+    /**
      * T4-M9 dan T4-M6 tinjauan akhir W3: kartu tahu jalurnya tersimpan dan bercatatan (tombol
      * simpan bertanya dulu sebelum melepas catatan), dibaca lewat predikat simpanan aktif yang
      * sama dengan Simpanan untuk satu halaman hasil saja, bukan kueri trail_considerations

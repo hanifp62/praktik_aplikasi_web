@@ -2,6 +2,7 @@
 
 namespace App\Services\Trails;
 
+use App\Enums\DataErrorCategory;
 use App\Enums\FreshnessState;
 use App\Enums\OfficialStatusValue;
 use App\Enums\RouteFitLabel;
@@ -21,6 +22,7 @@ use App\Services\CheckpointPaceService;
 use App\Services\ConditionAggregatorService;
 use App\Services\ConsiderationService;
 use App\Services\DataFreshnessService;
+use App\Services\DataResmi\StatusGunungApi;
 use App\Services\PermitService;
 use App\Services\PreparationService;
 use App\Services\ProgressLadderService;
@@ -58,6 +60,7 @@ class TrailDetailPage
         private readonly PreparationService $persiapan,
         private readonly PosSepanjangJalur $posKm,
         private readonly DataFreshnessService $kesegaran,
+        private readonly StatusGunungApi $gunungApi,
     ) {}
 
     /**
@@ -110,14 +113,15 @@ class TrailDetailPage
         return [
             'kecocokan' => $fit === null ? null : $this->kecocokan($fit, $trail, $user, $trip),
             'ujung' => $this->ujung($trail),
-            // Tiga angka sekali jalan naik. Turunan tidak ikut: elevation_loss_m di data pemilik
-            // (MvpDatasetSeeder, DemoSeeder) sama dengan tanjakan, yaitu turunan pulang, jadi
-            // menulisnya sebagai angka sekali jalan akan keliru (R-005; ruling W3, OPEN ISSUE).
-            'angkaNaik' => [
+            // Angka sekali jalan naik. Turunan ikut hanya bila tercatat (W8-R23): salinan tanjakan
+            // di data lama sudah dikosongkan, jadi angka keempat selalu turunan sepanjang jalan
+            // naik dari GPX atau kurator, tidak pernah karangan (R-005, R-007).
+            'angkaNaik' => array_values(array_filter([
                 $this->angka('Jarak', TrailFigures::jarak($trail->distance_km)),
                 $this->angka('Tanjakan', TrailFigures::meter($trail->elevation_gain_m)),
+                $trail->elevation_loss_m !== null ? $this->angka('Turunan', TrailFigures::meter($trail->elevation_loss_m)) : null,
                 $this->angka('Naik', TrailFigures::durasi($trail->estimated_duration_minutes)),
-            ],
+            ])),
             'tantangan' => $this->tantangan($trail),
             'profilElevasi' => ProfilElevasiJalur::untuk($trail->elevation_profile, $trail->checkpoints, $posKm),
             // Bukan 'peta': nama itu milik props bersama (konfigurasi basemap).
@@ -138,6 +142,10 @@ class TrailDetailPage
                 'description' => $s->description,
             ])->values()->all(),
             'statusResmi' => $this->statusResmi($kondisi['official_status'], $zona),
+            // "Laporkan kesalahan data" ke antrean cek ulang kurator (W8, ruling W8-R17).
+            'laporKesalahan' => ['url' => route('trails.data-errors.store', $trail), 'kategori' => DataErrorCategory::pilihan()],
+            // Level PVMBG gunungnya, terpisah dari status akses dan hanya bila ada (DK-43, ruling W8-R18).
+            'gunungApi' => $this->gunungApi->untukGunung($trail->mountain_id, $zona),
             'perizinan' => $this->perizinan($izin, $zona),
             'cuaca' => $this->cuaca($kondisi['weather_context']) + ['untukTrip' => $this->untukTrip($kondisi['weather_context'], $trip, $zona)],
             'komunitas' => $this->komunitas($kondisi['community_context'], $laporan, $user),
@@ -261,7 +269,11 @@ class TrailDetailPage
             ],
             ['judul' => 'Medan', 'kata' => $medan === [] ? TrailFigures::BELUM : implode(', ', $medan), 'ruas' => null],
             ['judul' => 'Sumber air', 'kata' => $trail->water_availability?->label() ?? TrailFigures::BELUM, 'ruas' => null],
-            ['judul' => 'Area kemah', 'kata' => $trail->camping_available ? 'Tersedia' : 'Tidak tersedia', 'ruas' => null],
+            ['judul' => 'Area kemah', 'kata' => match ($trail->camping_available) {
+                true => 'Tersedia',
+                false => 'Tidak tersedia',
+                null => TrailFigures::BELUM,
+            }, 'ruas' => null],
         ];
     }
 
@@ -299,13 +311,13 @@ class TrailDetailPage
         // Tanggal terbit dari satu aritmetika yang sama dengan butir cuaca dan Rencanakan
         // (tinjauan Tugas 4 M1).
         $terbit = PreparationService::tanggalTerbit($trip->planned_date);
-        $tanggal = $trip->planned_date->translatedFormat('j M');
+        $tanggal = Timezone::tanggalPendek($trip->planned_date);
 
         if ($terbit->toDateString() > Carbon::now($zona)->toDateString()) {
             return [
                 'status' => 'menunggu',
                 'pesan' => 'Prakiraan untuk '.$tanggal.' belum terbit. BMKG menerbitkan '.$hari
-                    .' hari ke depan; prakiraan tanggal Anda muncul di sini mulai '.$terbit->translatedFormat('j M').'.',
+                    .' hari ke depan; prakiraan tanggal Anda muncul di sini mulai '.Timezone::tanggalPendek($terbit).'.',
             ];
         }
 
@@ -490,7 +502,7 @@ class TrailDetailPage
             'waktu' => $dikutip === null ? null : Timezone::display(Carbon::instance($dikutip['waktu']), $zona),
             'awalanWaktu' => $dikutip['awalan'] ?? null,
             'kesegaran' => $adaCatatan
-                ? $this->kesegaran->keadaanDari($this->stempel($snapshot['verified_at'] ?? null), $this->stempel($snapshot['expires_at'] ?? null))
+                ? $this->kesegaran->keadaanDari($this->stempel($snapshot['verified_at'] ?? null), $this->stempel($snapshot['expires_at'] ?? null), $nilai, $this->stempel($snapshot['next_review_at'] ?? null))
                 : null,
         ];
     }
@@ -576,7 +588,7 @@ class TrailDetailPage
     {
         return [
             'id' => $s->id,
-            'waktu' => $s->forecast_at->copy()->setTimezone($zona)->translatedFormat('d M H.i'),
+            'waktu' => $s->forecast_at->copy()->setTimezone($zona)->translatedFormat('j M H.i'),
             'cuaca' => $s->weather_description ?? '-',
             'suhu' => $s->temperature_c !== null ? number_format((float) $s->temperature_c, 1, ',', '.').' °C' : '-',
             'kelembapan' => $s->humidity_percent !== null ? $s->humidity_percent.'%' : '-',

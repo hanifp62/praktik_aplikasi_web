@@ -31,10 +31,12 @@ class OfficialStatusSafetySentenceTest extends TestCase
 
     /**
      * Pengecualian bernama:
-     * - Admin/OfficialStatuses: meja kurator yang mencatat status, bukan layar pembaca yang
-     *   memutuskan berangkat (ruling W3-S5).
+     * - Admin/OfficialStatuses: halaman admin yang meninjau status, bukan layar pembaca yang
+     *   memutuskan berangkat (ruling W3-S5);
+     * - Curator/Desk dan Curator/Status: meja kurator W8 yang mencatat status dari sumber
+     *   resmi, juga bukan layar pembaca (ruling W8-R15).
      */
-    private const PENGECUALIAN = ['Admin/OfficialStatuses'];
+    private const PENGECUALIAN = ['Admin/OfficialStatuses', 'Curator/Desk', 'Curator/Status'];
 
     public function test_every_reader_page_that_shows_an_official_status_says_it_is_not_a_safety_guarantee(): void
     {

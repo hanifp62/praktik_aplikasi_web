@@ -1,6 +1,7 @@
 import { router, useForm, usePage } from '@inertiajs/react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
+import { useKonfirmasiAdmin } from '@/components/admin/FormulirAdmin';
 import { BingkaiTabel, type Paginasi } from '@/components/admin/Tabel';
 import { SelectField, TextareaField } from '@/components/discovery/Isian';
 import { Alert } from '@/components/ui/Alert';
@@ -87,6 +88,7 @@ const ID_JUDUL_DAFTAR = 'judul-daftar-izin';
 export default function Permits() {
     const { flash, rules, trails, mountains } = usePage<Props>().props;
     const [editingId, setEditingId] = useState<number | null>(null);
+    const { konfirmasiLalu, dialogKonfirmasi } = useKonfirmasiAdmin();
     const form = useForm<Isian>(kosong);
 
     const batal = () => {
@@ -135,29 +137,27 @@ export default function Permits() {
      * fokus masih di body, tidak ada, atau di #konten (pola CC-3).
      */
     const hapus = (id: number) => {
-        if (!window.confirm('Hapus aturan perizinan ini?')) {
-            return;
-        }
-
         const posisi = rules.data.findIndex((r) => r.id === id);
         const tujuan = posisi < 0 ? [] : [rules.data[posisi + 1], rules.data[posisi - 1]].flatMap((r) => (r ? [idHapus(r.id)] : []));
 
-        router.delete(destroy.url(id), {
-            preserveScroll: true,
-            onSuccess: () => {
-                if (editingId === id) {
-                    batal();
-                }
+        konfirmasiLalu('Hapus aturan perizinan ini?', () =>
+            router.delete(destroy.url(id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    if (editingId === id) {
+                        batal();
+                    }
 
-                const aktif = document.activeElement;
+                    const aktif = document.activeElement;
 
-                if (document.getElementById(idHapus(id)) !== null || (aktif !== null && aktif !== document.body && aktif.id !== 'konten')) {
-                    return;
-                }
+                    if (document.getElementById(idHapus(id)) !== null || (aktif !== null && aktif !== document.body && aktif.id !== 'konten')) {
+                        return;
+                    }
 
-                [...tujuan, ID_JUDUL_DAFTAR].map((t) => document.getElementById(t)).find((unsur) => unsur !== null)?.focus();
-            },
-        });
+                    [...tujuan, ID_JUDUL_DAFTAR].map((t) => document.getElementById(t)).find((unsur) => unsur !== null)?.focus();
+                },
+            }),
+        );
     };
 
     const angka = (nama: keyof Isian, label: string) => (
@@ -311,6 +311,7 @@ export default function Permits() {
                         </div>
                     </Card>
                 )}
+                {dialogKonfirmasi}
             </div>
         </div>
     );

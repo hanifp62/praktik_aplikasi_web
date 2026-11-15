@@ -1,6 +1,6 @@
 @php
     // distance_km di-cast 'decimal:2', jadi nilai mentahnya string ("0.00"), dan
-    // (bool) "0.00" adalah true di PHP -- hanya "" dan "0" yang falsy. Truthiness mentah
+    // (bool) "0.00" adalah true di PHP; hanya "" dan "0" yang falsy. Truthiness mentah
     // di sini berarti jalur berjarak nol tetap menulis "Jarak 0.00 km" di ringkasan
     // publik, seolah itu ukuran sungguhan. Dicast ke float dulu, baru diuji, sama seperti
     // pola yang dipakai trail-row.blade.php dan App\Http\Resources\TrailRowResource.
@@ -9,9 +9,52 @@
     // HikingHistoryController: koma untuk desimal, titik untuk ribuan (tanjakan di bawah),
     // supaya satu kalimat tidak memakai titik untuk dua arti berbeda.
     $ringkas = $trail->name.' di '.$trail->mountain->name.', '.$trail->mountain->province.'. '
-        .((float) $trail->distance_km ? 'Jarak '.number_format((float) $trail->distance_km, 1, ',', '.').' km. ' : '')
+        .((float) $trail->distance_km > 0 ? 'Jarak '.number_format((float) $trail->distance_km, 1, ',', '.').' km. ' : '')
         .($trail->elevation_gain_m ? 'Tanjakan '.number_format($trail->elevation_gain_m, 0, ',', '.').' m. ' : '')
         .'Karakteristik jalur, daftar pos, dan profil elevasi.';
+
+    $gunungTerstruktur = array_filter([
+        '@type' => 'Mountain',
+        'name' => $trail->mountain->name,
+        'address' => [
+            '@type' => 'PostalAddress',
+            'addressRegion' => $trail->mountain->province,
+            'addressCountry' => 'ID',
+        ],
+        'elevation' => ($trail->mountain->elevation_mdpl !== null && $trail->mountain->elevation_mdpl > 0)
+            ? number_format($trail->mountain->elevation_mdpl, 0, ',', '.').' mdpl'
+            : null,
+    ], static fn ($nilai) => $nilai !== null);
+
+    $dataTerstruktur = [
+        '@context' => 'https://schema.org',
+        '@graph' => [
+            [
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 1,
+                        'name' => config('app.name'),
+                        'item' => url('/'),
+                    ],
+                    [
+                        '@type' => 'ListItem',
+                        'position' => 2,
+                        'name' => $trail->name.' ('.$trail->mountain->name.')',
+                        'item' => route('public.trail', $trail),
+                    ],
+                ],
+            ],
+            [
+                '@type' => 'Place',
+                'name' => $trail->name,
+                'description' => \Illuminate\Support\Str::limit($ringkas, 200),
+                'url' => route('public.trail', $trail),
+                'containedInPlace' => $gunungTerstruktur,
+            ],
+        ],
+    ];
 @endphp
 
 <!DOCTYPE html>
@@ -52,6 +95,7 @@
         <meta property="og:image" content="{{ url('/icons/app-512.png') }}">
         <meta property="og:locale" content="id_ID">
         <meta name="twitter:card" content="summary">
+        <script type="application/ld+json">{!! json_encode($dataTerstruktur, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
 
         @vite(['resources/css/app.css'])
     </head>
@@ -83,9 +127,9 @@
 
             {{--
                 Yang dipublikasikan hanya keterangan yang berumur panjang. Jarak dan
-                elevation gain sebuah jalur berubah ketika datanya dikoreksi, bukan
-                ketika keadaannya berubah, jadi cuplikan lama tidak pernah menjadi
-                pernyataan yang keliru tentang hari ini.
+                tanjakan sebuah jalur berubah ketika datanya dikoreksi, bukan ketika
+                keadaannya berubah, jadi cuplikan lama tidak pernah menjadi pernyataan
+                yang keliru tentang hari ini.
             --}}
             <section>
                 <h2 class="text-bagian text-primary">Karakteristik jalur</h2>
@@ -93,31 +137,31 @@
                 <dl class="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
                     <div>
                         <dt class="text-muted">Jarak</dt>
-                        <dd class="font-medium text-primary">{{ $trail->distance_km !== null ? number_format((float) $trail->distance_km, 1, ',', '.') : '-' }} km</dd>
+                        <dd class="font-medium text-primary">{{ (float) $trail->distance_km > 0 ? number_format((float) $trail->distance_km, 1, ',', '.').' km' : 'Belum tersedia' }}</dd>
                     </div>
                     <div>
                         <dt class="text-muted">Tanjakan</dt>
                         <dd class="font-medium text-primary">
-                            {{ $trail->elevation_gain_m ? number_format($trail->elevation_gain_m, 0, ',', '.') : '-' }} m
+                            {{ $trail->elevation_gain_m ? number_format($trail->elevation_gain_m, 0, ',', '.').' m' : 'Belum tersedia' }}
                         </dd>
                     </div>
                     <div>
                         <dt class="text-muted">Estimasi durasi</dt>
                         <dd class="font-medium text-primary">
-                            {{ $trail->estimated_duration_minutes ? number_format($trail->estimated_duration_minutes / 60, 1, ',', '.').' jam' : '-' }}
+                            {{ $trail->estimated_duration_minutes ? number_format($trail->estimated_duration_minutes / 60, 1, ',', '.').' jam' : 'Belum tersedia' }}
                         </dd>
                     </div>
                     <div>
                         <dt class="text-muted">Tingkat teknis</dt>
-                        <dd class="font-medium text-primary">{{ $trail->technical_demand->label() }}</dd>
+                        <dd class="font-medium text-primary">{{ $trail->technical_demand?->label() ?? 'Belum tersedia' }}</dd>
                     </div>
                     <div>
                         <dt class="text-muted">Navigasi</dt>
-                        <dd class="font-medium text-primary">{{ $trail->navigation_complexity->label() }}</dd>
+                        <dd class="font-medium text-primary">{{ $trail->navigation_complexity?->label() ?? 'Belum tersedia' }}</dd>
                     </div>
                     <div>
                         <dt class="text-muted">Ketinggian puncak</dt>
-                        <dd class="font-medium text-primary">{{ $trail->mountain->elevation_mdpl !== null ? number_format($trail->mountain->elevation_mdpl, 0, ',', '.') : '-' }} mdpl</dd>
+                        <dd class="font-medium text-primary">{{ ($trail->mountain->elevation_mdpl !== null && $trail->mountain->elevation_mdpl > 0) ? number_format($trail->mountain->elevation_mdpl, 0, ',', '.').' mdpl' : 'Belum tersedia' }}</dd>
                     </div>
                 </dl>
             </section>
@@ -138,8 +182,8 @@
 
             {{--
                 Ketiadaan status di halaman ini tidak boleh terbaca sebagai jalurnya
-                terbuka. Yang disebut bukan permintaan mendaftar, melainkan ke mana
-                status terkini dicari dan mengapa ia tidak ada di sini.
+                terbuka. Tautan mengarah ke halaman kecocokan dan rincian jalur di dalam
+                aplikasi sehingga middleware auth menyimpan tujuan url.intended pengguna.
             --}}
             <section class="rounded-control border border-warn-300 bg-warn-50 p-4">
                 <h2 class="text-subjudul text-warn-900">Sebelum berangkat</h2>
@@ -153,7 +197,10 @@
                     Periksa status resmi dan prakiraan terbaru di dalam aplikasi, atau tanyakan
                     langsung kepada pengelola kawasan dan basecamp.
                 </p>
-                <x-ui.button :href="route('login')" class="mt-3">Lihat status terkini di aplikasi</x-ui.button>
+                <div class="mt-3 flex flex-wrap gap-3">
+                    <x-ui.button :href="route('trails.fit', $trail)">Cek kecocokan untuk saya</x-ui.button>
+                    <x-ui.button :href="route('trails.show', $trail)" variant="secondary">Lihat status terkini di aplikasi</x-ui.button>
+                </div>
             </section>
         </main>
     </body>

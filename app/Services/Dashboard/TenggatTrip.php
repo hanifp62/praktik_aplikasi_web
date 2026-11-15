@@ -122,7 +122,7 @@ final class TenggatTrip
         return [[
             'urutan' => $hari->getTimestamp(),
             'kapan' => self::kapan($hari, $zona),
-            'judul' => 'Prakiraan BMKG untuk '.$trip->planned_date->translatedFormat('j M').' mulai terbit',
+            'judul' => 'Prakiraan BMKG untuk '.Timezone::tanggalPendek($trip->planned_date).' mulai terbit',
             'keterangan' => sprintf(
                 'BMKG menerbitkan prakiraan untuk %d hari ke depan. Sebelum itu belum ada prakiraan untuk tanggal Anda, dan Memount tidak menebaknya.',
                 (int) config('hiking.conditions.weather_forecast_days'),

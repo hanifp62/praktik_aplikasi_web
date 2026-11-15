@@ -12,12 +12,19 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'role' => 'hiker',
+    ];
 
     protected function casts(): array
     {
@@ -82,6 +89,31 @@ class User extends Authenticatable
     public function hikingHistory(): HasMany
     {
         return $this->hasMany(HikingHistory::class);
+    }
+
+    public function personalTargets(): HasMany
+    {
+        return $this->hasMany(PersonalTarget::class);
+    }
+
+    public function ownedItems(): HasMany
+    {
+        return $this->hasMany(UserOwnedItem::class);
+    }
+
+    public function authorityMemberships(): HasMany
+    {
+        return $this->hasMany(AuthorityMember::class);
+    }
+
+    /**
+     * Berperan kurator (ruling W8-R7). Meja kurator menuntut juga keanggotaan aktif di badan yang
+     * berwenang menyatakan status (OfficialStatusPolicy::viewDesk()), jadi ini saja tidak membuka
+     * apa pun.
+     */
+    public function isCurator(): bool
+    {
+        return $this->role === UserRole::CURATOR;
     }
 
     public function isAdmin(): bool

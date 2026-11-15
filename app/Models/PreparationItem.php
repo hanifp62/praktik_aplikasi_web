@@ -40,8 +40,8 @@ class PreparationItem extends Model
             $matches = match ($key) {
                 'camping_available' => $trail->camping_available === (bool) $expected,
                 'min_elevation_gain_m' => ($trail->elevation_gain_m ?? 0) >= (int) $expected,
-                'technical_demand' => $trail->technical_demand->value === $expected,
-                'navigation_complexity' => $trail->navigation_complexity->value === $expected,
+                'technical_demand' => $trail->technical_demand?->value === $expected,
+                'navigation_complexity' => $trail->navigation_complexity?->value === $expected,
                 default => true,
             };
 

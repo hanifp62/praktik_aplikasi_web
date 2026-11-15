@@ -384,28 +384,29 @@ class TrustGrammarTest extends TestCase
 
     /**
      * P-3: DataFreshnessService::keadaan() dengan waktu dibekukan, termasuk satu kasus
-     * tepat di batas hari tinjau (perbandingannya "lt", bukan "lte", jadi tepat di batas
-     * masih Terkini).
+     * tepat di batas jadwal tinjau (tepat di batas masih Terkini). Sejak W8 jadwalnya per jenis
+     * status (Q9, ruling W8-R13): kasus di sini memakai Buka, yang ditinjau sesudah jam ambang
+     * Buka paket luring, bukan sesudah 90 hari.
      */
     public function test_the_freshness_state_matches_its_three_words_including_the_boundary(): void
     {
         $this->travelTo(Carbon::parse('2026-06-15 12:00:00'));
 
-        $hariTinjau = (int) config('hiking.freshness.status_review_days', 90);
+        $jamTinjau = app(DataFreshnessService::class)->jamTinjau(OfficialStatusValue::OPEN);
         $hariPeringatan = (int) config('hiking.freshness.status_expiry_warning_days', 14);
         $layanan = app(DataFreshnessService::class);
 
         $kasus = [
             'terkini' => [now(), null, 'Terkini'],
             'belum pernah diverifikasi' => [null, null, 'Perlu ditinjau'],
-            'terlalu lama tidak diverifikasi' => [now()->subDays($hariTinjau + 1), null, 'Perlu ditinjau'],
+            'terlalu lama tidak diverifikasi' => [now()->subHours($jamTinjau + 1), null, 'Perlu ditinjau'],
             'segera kedaluwarsa' => [now(), now()->addDays($hariPeringatan - 1), 'Perlu ditinjau'],
             'sudah kedaluwarsa' => [now(), now()->subDay(), 'Kedaluwarsa'],
-            'tepat di batas hari tinjau, belum Perlu ditinjau' => [now()->subDays($hariTinjau), null, 'Terkini'],
+            'tepat di batas jadwal tinjau, belum Perlu ditinjau' => [now()->subHours($jamTinjau), null, 'Terkini'],
         ];
 
         foreach ($kasus as $nama => [$verified, $expires, $diharapkan]) {
-            $status = new OfficialStatus(['verified_at' => $verified, 'expires_at' => $expires]);
+            $status = new OfficialStatus(['status' => OfficialStatusValue::OPEN->value, 'verified_at' => $verified, 'expires_at' => $expires]);
 
             $this->assertSame($diharapkan, $layanan->keadaan($status), $nama);
         }
@@ -564,8 +565,8 @@ class TrustGrammarTest extends TestCase
      */
     public function test_the_detail_page_and_the_jelajah_card_agree_on_freshness(): void
     {
-        $hariTinjau = (int) config('hiking.freshness.status_review_days', 90);
-        $jalur = $this->jalurTerbitDenganCatatan(['verified_at' => now()->subDays($hariTinjau + 10)]);
+        // Tiga puluh hari melewati jadwal tinjau jenis status mana pun (ruling W8-R13).
+        $jalur = $this->jalurTerbitDenganCatatan(['verified_at' => now()->subDays(30)]);
         $pembaca = User::factory()->create();
 
         $kartu = $this->actingAs($pembaca)->get(route('trails.index'))->viewData('page')['props']['trails']['data'][0]['status'];

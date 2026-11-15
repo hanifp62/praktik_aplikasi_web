@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Lembar';
 import { destroy } from '@/routes/trips';
 
 /** Keputusan server: apa yang boleh dilakukan pada rencana ini, dan alasannya bila tidak. */
@@ -16,6 +17,7 @@ export interface KelolaRencana {
  * boleh dihapus menyebut alasannya di tempat yang sama, sebelum pendaki mencoba.
  */
 export function HapusRencana({ tripId, kelola }: { tripId: number; kelola: KelolaRencana }) {
+    const [terbuka, setTerbuka] = useState(false);
     const [menghapus, setMenghapus] = useState(false);
 
     if (!kelola.bolehHapus && !kelola.alasanTidakDapatDihapus) {
@@ -23,13 +25,12 @@ export function HapusRencana({ tripId, kelola }: { tripId: number; kelola: Kelol
     }
 
     const hapus = () => {
-        if (!window.confirm('Hapus rencana trip ini? Daftar persiapan, penilaian kesiapan, dan pengingatnya ikut terhapus dan tidak dapat dikembalikan.')) {
-            return;
-        }
-
         router.delete(destroy.url(tripId), {
             onStart: () => setMenghapus(true),
-            onFinish: () => setMenghapus(false),
+            onFinish: () => {
+                setMenghapus(false);
+                setTerbuka(false);
+            },
         });
     };
 
@@ -41,9 +42,25 @@ export function HapusRencana({ tripId, kelola }: { tripId: number; kelola: Kelol
                     <p className="mt-1 max-w-prose text-sm text-secondary">
                         Rencana yang belum dimulai atau sudah dibatalkan dapat dihapus beserta daftar persiapan, penilaian kesiapan, dan pengingatnya.
                     </p>
-                    <Button variant="secondary" className="mt-3" onClick={hapus} processing={menghapus}>
+                    <Button variant="secondary" className="mt-3" onClick={() => setTerbuka(true)} processing={menghapus}>
                         Hapus rencana
                     </Button>
+                    <Dialog
+                        terbuka={terbuka}
+                        onTutup={() => setTerbuka(false)}
+                        judul="Hapus rencana trip ini?"
+                        keterangan="Hapus rencana trip ini? Daftar persiapan, penilaian kesiapan, dan pengingatnya ikut terhapus dan tidak dapat dikembalikan."
+                        aksi={
+                            <>
+                                <Button variant="secondary" onClick={() => setTerbuka(false)} disabled={menghapus}>
+                                    Batal
+                                </Button>
+                                <Button variant="danger" onClick={hapus} processing={menghapus}>
+                                    Hapus rencana
+                                </Button>
+                            </>
+                        }
+                    />
                 </>
             ) : (
                 <p className="mt-1 max-w-prose text-sm text-secondary">{kelola.alasanTidakDapatDihapus}</p>

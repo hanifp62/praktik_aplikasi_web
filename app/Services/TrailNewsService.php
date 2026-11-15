@@ -50,11 +50,12 @@ class TrailNewsService
     /**
      * Kabar terbaru, terurut waktu, dari gunung yang diikuti.
      *
+     * @param  Collection<int, int>|null  $gunung  id gunung yang sudah dimuat pemanggil, supaya tidak dibaca lagi
      * @return Collection<int, array<string, mixed>>
      */
-    public function forUser(User $user, int $limit = 30): Collection
+    public function forUser(User $user, int $limit = 30, ?Collection $gunung = null): Collection
     {
-        $cakupan = $this->cakupan($user);
+        $cakupan = $this->cakupan($user, $gunung);
 
         if ($cakupan === null) {
             return collect();
@@ -74,11 +75,12 @@ class TrailNewsService
      * $resmi perubahan status dan $laporan laporan komunitas, masing-masing dari kuerinya
      * sendiri, sehingga laporan tidak terdesak keluar oleh status yang lebih baru.
      *
+     * @param  Collection<int, int>|null  $gunung  id gunung yang sudah dimuat pemanggil
      * @return array{resmi: Collection<int, array<string, mixed>>, laporan: Collection<int, array<string, mixed>>}
      */
-    public function terbaru(User $user, int $resmi, int $laporan): array
+    public function terbaru(User $user, int $resmi, int $laporan, ?Collection $gunung = null): array
     {
-        $cakupan = $this->cakupan($user);
+        $cakupan = $this->cakupan($user, $gunung);
 
         if ($cakupan === null) {
             return ['resmi' => collect(), 'laporan' => collect()];
@@ -96,11 +98,12 @@ class TrailNewsService
      * status atau laporan tentangnya tidak boleh bocor lewat pintu paling ramai ini. Status
      * yang diumumkan untuk gunungnya sendiri tetap sampai.
      *
+     * @param  Collection<int, int>|null  $gunung
      * @return array{0: Collection<int, int>, 1: Collection<int, int>}|null
      */
-    private function cakupan(User $user): ?array
+    private function cakupan(User $user, ?Collection $gunung = null): ?array
     {
-        $gunung = MountainFollow::where('user_id', $user->id)->pluck('mountain_id');
+        $gunung ??= MountainFollow::where('user_id', $user->id)->pluck('mountain_id');
 
         if ($gunung->isEmpty()) {
             return null;
@@ -125,6 +128,8 @@ class TrailNewsService
             // dataSource dimuat sekali untuk seluruh baris (bukan per baris): Kabar
             // membutuhkan jenis sumbernya untuk memilih label yang benar (P-2, R-009).
             ->with(['statusable', 'dataSource:id,source_type'])
+            // Draf dan pembukaan yang belum diverifikasi tidak pernah menjadi kabar (W8).
+            ->terlihatPendaki()
             ->where(fn ($q) => $q
                 ->orWhere(fn ($w) => $w->where('statusable_type', (new Mountain)->getMorphClass())->whereIn('statusable_id', $gunung))
                 ->orWhere(fn ($w) => $w->where('statusable_type', (new Trail)->getMorphClass())->whereIn('statusable_id', $jalur))

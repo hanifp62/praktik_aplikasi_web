@@ -4,13 +4,50 @@ Dokumen ini ditulis supaya percakapan dapat dilanjutkan di terminal baru **tanpa
 dari nol**. Isinya tujuan, kesepakatan, keadaan kode, dan semua keputusan yang sudah
 diambil beserta alasannya.
 
-Terakhir diperbarui: 6 November 2026 (bagian 0, blok paling atas: dependensi dipulihkan ke Symfony 8 lewat branch
-`fix/pulihkan-dependensi-php85`; pemetaan Job 6 dan catatan deploy 15 Oktober ada di bawahnya).
+Terakhir diperbarui: 15 November 2026 (bagian 0, blok paling atas: Sprint 1 sampai 4 dan gelombang W7 sampai W9,
+pengerasan kompatibilitas lintas platform Windows/macOS/Linux, serta integrasi `php artisan memount:lokal` / `composer lokal`
+untuk `php artisan serve` bergeometri PostGIS terkirim di cabang `feat/rilis-w7-w9` pada PR #7; `laravel/framework` v13.42.0
+menutup CVE-2026-128083; seluruh suite Unit/Feature/Pratinjau/Spatial PostGIS/Docker image hijau).
 Bagian 1–10 berasal dari 21 September 2026 dan akan ditulis ulang penuh di Tugas 13 rencana konsolidasi.
 
 ---
 
 ## 0. Titik lanjut terkini (tonggak M1, 26 September 2026)
+
+### 15 November 2026: penyelesaian Sprint 1 sampai 4 (W7 sampai W9), kompatibilitas Windows, integrasi PostGIS lokal untuk `php artisan serve`, dan CI hijau penuh di PR #7
+
+Arahan terakhir pemilik (verbatim): `"pastikan competibe di windows juga integrasikan dan commit update updatean terbaru pastikan tidak error dan failed dalam bentuk apapun"` (melanjutkan `"real world testing saya di php artisan serve"` dan `"lanjutkan, saya izinkan, jangan berhenti, boleh melaporkan sampai semua pekerjaan anda sudah selesai dan semua sudah terintegrasi dengan baik dan benar pastikan saya bisa melakukan real world testing nya"`).
+
+Seluruh rangkaian riset mendalam (AllTrails, Strava, Traveloka), audit kelengkapan 252 butir (`A` sampai `N` sesuai `docs/AUDIT-PROTOCOL.md`), rencana pengembangan pasca-audit, implementasi Sprint 1 sampai 4 (termasuk penyelarasan penuh gelombang W7, W8, dan W9), pembaruan `laravel/framework` dari `v13.32.0` ke `v13.42.0` untuk menutup `CVE-2026-128083` atas izin pemilik (R-020), pengerasan kompatibilitas lintas sistem operasi (Windows PowerShell/CMD/Git Bash, macOS, Linux), integrasi penyiapan PostgreSQL + PostGIS lokal (`docker compose up -d postgres` + `composer lokal` / `php artisan memount:lokal`) untuk pengujian langsung di `php artisan serve` (`http://127.0.0.1:8000`), serta verifikasi CI PostgreSQL 16 + PostGIS 3.4 pada Pull Request #7 (`feat/rilis-w7-w9` ke `main`) telah selesai tanpa pernah membaca `.env*` dan tanpa menggabungkan PR ke `main` sebelum migrasi Supabase #15 sampai #32 dipasang (Ruling W3-8b).
+
+| Gerbang verifikasi | Hasil terukur (15 November 2026) | Bukti |
+|---|---|---|
+| Suite `Unit,Feature` (`laravel/framework` v13.42.0) | 3.015 test, 3.014 lulus, 1 dilewati, 0 gagal (21.278 assertion) | `WindowsCompatibilityTest`, `MemountLokalCommandGuardTest` |
+| Suite `Spatial` di PostGIS (`postgis/postgis:16-3.4`) | 103 test, 103 lulus, 0 dilewati, 0 gagal (`--fail-on-skipped`) | `LocalPostgisSeederTest`, `docs/audit/kandidat-rilis-w9.md` |
+| Citra produksi (`Dockerfile`) di CI PostGIS | Lulus: 83 migrasi PostGIS, `/up`, `/api/health`, `/api/mountains`, `/api/trails`, `/sitemap.xml`, `/login`, dan penjaga `CRON_SECRET` | `.github/workflows/test.yml` |
+| Suite `Pratinjau` | 57 test, 57 lulus, 0 gagal (1.137 assertion); mencakup seluruh 57 halaman React (`PreviewCoverageTest`) | `docs/audit/kandidat-rilis-w9.md` |
+| Audit dependensi & pemindai rahasia | 0 advisori Composer (`laravel/framework` v13.42.0), 0 kerentanan npm, `SecretsNotInRepoTest` 20/20 lulus | `.github/workflows/security.yml` |
+| TypeScript (`npm run types`) & Build (`npm run build`) | 0 galat TypeScript; build sukses (891 modul); CSS aplikasi 84.371 B (W2-C10) | `docs/audit/kandidat-rilis-w9.md` |
+| Format PHP & pemindaian em dash / kata klaim | `vendor/bin/pint --format agent` lulus bersih; 0 kecocokan em dash; `SafetyClaimWordTest` dan `MachineVocabularyTest` lulus | `docs/audit/anti-slop/audit-002-2026-10-09.md` |
+| Basis data lokal `php artisan serve` (`127.0.0.1:8000`) | PostgreSQL + PostGIS lokal (`127.0.0.1:5432/hiking`) terisi idempoten lewat `composer lokal` (`LocalPostgisSeeder`, 17 jalur terbit bergeometri `LineString`) + `database/demo.sqlite` siap lewat `composer inspeksi` | `app/Console/Commands/MemountLokal.php`, `app/Console/Commands/MemountDemo.php` |
+
+Ringkasan cakupan per sprint:
+- **Sprint 1 (`CRITICAL`, `GAP-01` sampai `GAP-06`):** keselarasan masa berlaku status resmi (`OfficialStatus::isCurrentlyEffective()` + pengosongan cache saat `DataSource` dihapus), halaman Inertia React `Expert/TrailGeometry.tsx` menggantikan tampilan Blade usang, penghapusan akun moderator (`nullOnDelete` pada `moderation_actions.moderator_id`) serta anonimisasi dan pembersihan berkas pengguna terhapus, indeks pencarian/filter/FK serta constraint CHECK non-negatif dan unik item persiapan, serta JSON-LD `Place`/`SportsActivityLocation` dan `noindex` varian query di halaman jalur publik.
+- **Sprint 2 (`HIGH`, `GAP-07` sampai `GAP-11` + W7 Tugas 1 sampai 12):** pemangkasan N+1 di `PreparationService` dan pemisahan `ModerationService`, plus seluruh permukaan Progres dan Profil v3: `Timezone` per pulau gunung, riwayat dan ringkasan progres perbandingan diri (R-015), catatan pendakian di luar katalog, target pribadi tanpa tenggat/peringkat, pencapaian tonggak pribadi, perlengkapan yang dimiliki (`OwnedGear` terhubung ke daftar persiapan trip), foto profil privat terkompresi tanpa EXIF, wilayah minat (`interest_regions`), dan penurunan otomatis tingkat pengalaman dengan persetujuan perubahan.
+- **Sprint 3 (`MEDIUM`, `GAP-12` sampai `GAP-15` + W8 Tugas 1 sampai 17 + S3B):** meja kurator (`Curator/Desk`, `Status`, `StatusForm`, `VolcanoForm`) dengan aturan terbit asimetris (`TerbitStatus`) dan verifikasi orang kedua, peran `curator` dan keanggotaan yurisdiksi `authority_members`, arsip bukti privat `ArsipBukti`, status gunung api PVMBG `volcano_statuses` (dengan RLS PostgreSQL), foto gunung berlisensi `mountain_photos`, formulir publik koreksi data `data_error_reports`, kolom karakteristik jalur nullable sesuai R-006 (`Trail::scopeTanpaGeometri()`), kunci stabil butir izin `kind = 'permit'` dan pengingat hari buka pemesanan izin, perombakan `/kabar`, CRUD admin segmen jalur (`Admin/TrailSegments.tsx`), lokalisasi halaman Admin/Moderasi, antrean surel `TripReminderNotification`, header `Cache-Control: private` + ETag di `ReportPhotoController`, selisih jarak dan tanjakan pos berikutnya di `ModeLapangan`, serta test aktivasi terkendali paket luring dan fitur keselamatan.
+- **Sprint 4 (`LOW` & Polish, `GAP-16` sampai `GAP-24` + W9 Tugas 1 sampai 16 + S4B):** halaman galat 403/404/419/429/500/503 satu sumber (`App\Support\HalamanGalat` untuk Inertia `Galat.tsx` dan Blade `errors/layout.blade.php`) dengan pemindahan fokus ke `<h1>`, format jam bertitik berzona dan tanggal pendek bertahun lintas tahun, penyelarasan kosakata Indonesia dan panel "Kenapa?", pengumuman tunggal pembaca layar pada aksi simpan + target remah 44 px + kontras ruas kosong peta + `Escape` di `MenuAkun` + `.sr-only` pada `checkpoint-journey.blade.php`, penjaga sesi dan throttle pada seluruh rute tulis (`WriteRouteGuardTest`) + `TrustedProxyTest`, sakelar `INERTIA_ENCRYPT_HISTORY` dan pemangkasan tautan bagikan (`ComparisonShare::prunable()`), pemicu HTTP `/api/cron/{tugas}` ber-`CRON_SECRET` selaras `vercel.json`, kait `PeringatanOperasi` dan `docs/RUNBOOK-OPERASI.md`, telemetri corong bebas PII di `AnalyticsRecorder`, pratinjau jalur nyata di `Welcome.tsx`, benchmark 300 jalur `RouteFitLoadBenchmarkTest`, cakupan pratinjau penuh 57 halaman React (`PreviewCoverageTest`), materi sesi uji kegunaan Q15 (`docs/riset/2026-10-uji-kegunaan/materi-sesi-w9.md`), serta rangkaian dokumen audit dan penutupan W9 (`docs/audit/aksesibilitas-w9.md`, `docs/audit/keamanan-w9.md`, `docs/audit/kandidat-rilis-w9.md`, `docs/audit/anti-slop/audit-002-2026-10-09.md`, dan GR-09 serta DK-30 sampai DK-58 di `docs/PRD.md`).
+
+- **Lintas sistem operasi & PostGIS lokal (`php artisan serve`):** penguncian eksplisit LF untuk `*.sh` dan `Dockerfile` di `.gitattributes`, perbaikan pemanggilan Node TypeScript `--experimental-strip-types` + `pathToFileURL` lewat stdin di `FieldFeatureActivationTest`, normalisasi CRLF di 12 test pemindai berkas sumber/dokumen, `DB::purge` sebelum `unlink()` di `DemoCommandGuardTest`, pencocokan folder peka-OS `PenjagaDataContoh::folderSama()`, pembersihan berkas dasar `tempnam()` di `ImageSanitizerTest`, `platform: linux/amd64` serta layanan `postgres` loopback (`127.0.0.1:5432`) di `docker-compose.yml`, serta perintah `php artisan memount:lokal` (`composer lokal`) berpenjaga `PenjagaPostgresLokal` dan `LocalPostgisSeeder`.
+
+Titik lanjut pemilik: (1) menjalankan real-world testing lokal lewat `docker compose up -d postgres && composer lokal && php artisan serve` di `http://127.0.0.1:8000` (atau `composer inspeksi` tanpa Docker); (2) memperbarui secret `SUPABASE_DB_URL` di GitHub dan menjalankan workflow "Migrasi Supabase" (`terapkan: false` lalu `terapkan: true`) untuk memasang migrasi #15 sampai #32 sebelum merge PR #7 ke `main`; (3) menyelaraskan variabel Vercel (`DB_URL`, `TRUSTED_PROXIES`, `CRON_SECRET`) sesuai `docs/RUNBOOK-OPERASI.md` dan menunjuk kurator pertama (Q11).
+
+**Tempelkan ini di terminal baru:**
+
+> Baca `CLAUDE.md`, lalu `HANDOVER.md` bagian 0 ini, lalu `docs/AGENTS.md` dan `docs/audit/kandidat-rilis-w9.md`.
+> Periksa keadaan nyata dulu: `git status --short`, `gh pr checks 7`, `php artisan test --compact --testsuite=Unit,Feature`,
+> `php artisan test --compact --testsuite=Pratinjau`, `node_modules/.bin/tsc --noEmit`. Jangan merge PR #7 ke `main`
+> sebelum migrasi #15 sampai #32 terpasang di Supabase, dan jangan mengakses Supabase, membaca `.env*`, atau mengubah
+> dependensi tanpa izin eksplisit saya.
 
 ### 6 November 2026: dependensi turun ke Symfony 7.4 dan workflow Security merah
 

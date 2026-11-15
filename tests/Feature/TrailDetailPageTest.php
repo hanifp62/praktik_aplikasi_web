@@ -226,12 +226,13 @@ class TrailDetailPageTest extends TestCase
     }
 
     /**
-     * Angka sekali jalan naik: jarak, tanjakan, dan lama naik. Turunan tidak ditulis karena
-     * data pemilik menyimpan turunan pulang (ruling W3). Angka kosong ditulis apa adanya.
+     * Angka sekali jalan naik: jarak, tanjakan, dan lama naik. Turunan hanya ditulis bila
+     * tercatat (W8-R23; sebelumnya ditiadakan karena data pemilik menyimpan salinan tanjakan,
+     * ruling W3). Angka kosong ditulis apa adanya.
      */
     public function test_missing_figures_are_stated_honestly(): void
     {
-        $jalur = $this->jalur(['elevation_loss_m' => 800]);
+        $jalur = $this->jalur(['elevation_loss_m' => null]);
         $jalur->forceFill(['estimated_duration_minutes' => null])->saveQuietly();
 
         $angka = collect($this->actingAs(User::factory()->create())

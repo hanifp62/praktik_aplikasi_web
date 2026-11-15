@@ -85,7 +85,7 @@ class RouteFitService
             factors: $factors,
             failedRules: $failedRules,
             warnings: $warnings,
-            explanation: $this->explanations->build($trail, $factors, $warnings, $status),
+            explanation: $this->explanations->build($trail, $factors, $warnings),
             engineVersion: self::ENGINE_VERSION,
             segmentRestrictions: $segmentRestrictions,
         );
@@ -323,6 +323,8 @@ class RouteFitService
     {
         $user->loadMissing(['profile', 'experience', 'preference']);
 
+        $batasKandidat = max(1, (int) config('hiking.route_fit.candidate_limit', 200));
+
         $candidates = $trails ?? Trail::query()
             ->published()
             // R-008/R-022 lapis pertama: jalur dengan data kritis yang hilang tidak
@@ -341,6 +343,8 @@ class RouteFitService
                 fn ($q) => $q->whereRaw('lower(region) = ?', [mb_strtolower($region)])
                     ->orWhereRaw('lower(province) = ?', [mb_strtolower($region)])
             ))
+            ->orderBy('id')
+            ->limit($batasKandidat)
             ->get();
 
         // Dimuat sekali per run, bukan per jalur: tanpa ini jumlah query tumbuh linear
@@ -403,7 +407,8 @@ class RouteFitService
                 RecommendationResult::insert($rows);
             }
 
-            return $run->load('results.trail.mountain');
+            // Hasil rekomendasi tanpa garis rute (titipan W3 I7, ruling W8-R20).
+            return $run->load(['results.trail' => fn ($query) => $query->tanpaGeometri(), 'results.trail.mountain']);
         });
     }
 

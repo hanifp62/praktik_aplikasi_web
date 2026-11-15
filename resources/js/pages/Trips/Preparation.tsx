@@ -1,5 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { CatatanButir } from '@/components/trips/CatatanButir';
 import { KepalaTrip } from '@/components/trips/KepalaTrip';
 import { LangkahRingkas, type KunciLangkah } from '@/components/trips/LangkahRingkas';
 import { PengingatTrip, type PengingatHalaman } from '@/components/trips/PengingatTrip';
@@ -370,7 +371,7 @@ export default function Preparation() {
                             </p>
                             <div aria-hidden="true" className="mt-3 flex gap-1">
                                 {Array.from({ length: kritis.berlaku }, (_, i) => (
-                                    <span key={i} className={kelas('h-2 flex-1 rounded-full', i < kritis.dikonfirmasi ? 'bg-brand-700' : 'bg-surface-sunken')} />
+                                    <span key={i} className={kelas('h-2 flex-1 rounded-full', i < kritis.dikonfirmasi ? 'bg-brand-700' : 'border border-control')} />
                                 ))}
                             </div>
                         </>
@@ -496,6 +497,7 @@ export default function Preparation() {
                                                         <span className="sr-only"> (membuka tab baru)</span>
                                                     </a>
                                                 ) : null}
+                                                <CatatanButir tripId={kepala.id} itemId={item.id} label={item.label} />
                                             </li>
                                         );
                                     })}

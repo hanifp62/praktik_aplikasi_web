@@ -9,7 +9,11 @@ export interface PenggunaBersama {
     email: string;
     isModerator: boolean;
     isAdmin: boolean;
+    /** Kurator dengan keanggotaan aktif (W8): menampilkan pintu meja kurator. */
+    isKurator: boolean;
     hasCompletedProfile: boolean;
+    /** Alamat foto profil milik pengguna ini (W7), atau null bila memakai inisial. */
+    foto: string | null;
 }
 
 /** Pendakian berlangsung milik pengguna, untuk strip di atas bilah tab. */

@@ -74,14 +74,23 @@ class TripPermitWindowTest extends TestCase
     }
 
     /**
-     * Kalimat izin yang dikirim server ke halaman trip (React), atau string kosong bila
-     * halaman tidak menyebut izin sama sekali.
+     * Kalimat izin yang dikirim server ke halaman trip (React): judul keadaan dan keterangannya
+     * dari PermitService::pemesananDariJendela() (ruling W8-R25), atau string kosong bila halaman
+     * tidak menyebut izin sama sekali.
      */
     private function izin(TripPlan $trip): string
     {
         $props = $this->actingAs($trip->user)->get(route('trips.show', $trip))->assertOk()->viewData('page')['props'];
 
-        return $props['izin']['pesan'] ?? '';
+        return trim(($props['izin']['judul'] ?? '').' '.($props['izin']['keterangan'] ?? ''));
+    }
+
+    /**
+     * @return array{href: string, teks: string, label: string}|null
+     */
+    private function tautan(TripPlan $trip): ?array
+    {
+        return $this->actingAs($trip->user)->get(route('trips.show', $trip))->assertOk()->viewData('page')['props']['izin']['tautan'] ?? null;
     }
 
     public function test_it_says_when_booking_has_not_opened_yet(): void
@@ -105,7 +114,36 @@ class TripPermitWindowTest extends TestCase
     public function test_it_says_when_booking_has_closed(): void
     {
         $pesan = $this->izin($this->tripBerjarak(1));
-        $this->assertStringContainsString('sudah ditutup', $pesan);
+        $this->assertStringContainsString('sudah tutup', $pesan);
+    }
+
+    /**
+     * Satu penentu tautan dengan Persiapan dan Cek kesiapan (W4 M1, ruling W8-R25): ajakan
+     * memesan hanya saat jendela terbuka, dengan hari terakhirnya, dan alamat pemesanan tidak
+     * pernah ditulis mentah di kalimatnya.
+     */
+    public function test_the_booking_link_follows_the_window(): void
+    {
+        $terbuka = $this->tripBerjarak(10);
+        PermitRequirement::query()->update(['booking_url' => 'https://bookingsemeru.bromotenggersemeru.org']);
+
+        $this->assertStringStartsWith('Pesan di sistem resmi, paling lambat', $this->tautan($terbuka)['teks']);
+        $this->assertStringNotContainsString('bookingsemeru', $this->izin($terbuka));
+        $this->assertNull($this->tautan($this->tripBerjarak(40)), 'Belum dibuka: tanpa ajakan memesan.');
+        $this->assertNull($this->tautan($this->tripBerjarak(1)), 'Sudah tutup: tanpa ajakan memesan.');
+    }
+
+    /**
+     * Tanggal buka yang belum tercatat tidak pernah ditulis "sedang dibuka" (R-007, W4-FE):
+     * tautannya netral, "Periksa di sistem resmi".
+     */
+    public function test_an_unrecorded_opening_day_offers_only_a_neutral_link(): void
+    {
+        $trip = $this->tripBerjarak(10);
+        PermitRequirement::query()->update(['booking_opens_days_before' => null, 'booking_url' => 'https://bookingsemeru.bromotenggersemeru.org']);
+
+        $this->assertStringContainsString('Tanggal buka pemesanan izin belum tercatat', $this->izin($trip));
+        $this->assertSame('Periksa di sistem resmi', $this->tautan($trip)['teks']);
     }
 
     /**
@@ -152,7 +190,7 @@ class TripPermitWindowTest extends TestCase
         ]);
 
         $pesan = $this->izin($trip);
-        $this->assertStringContainsString('sudah ditutup', $pesan);
+        $this->assertStringContainsString('sudah tutup', $pesan);
         $this->assertStringNotContainsString('sedang dibuka', $pesan);
     }
 

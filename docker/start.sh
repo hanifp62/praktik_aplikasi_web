@@ -19,6 +19,15 @@ if [ "${APP_ENV:-production}" != production ] || [ "${APP_DEBUG:-false}" != fals
 fi
 export APP_ENV=production APP_DEBUG=false
 export TRUSTED_PROXIES="${TRUSTED_PROXIES:-*}" LOG_CHANNEL="${LOG_CHANNEL:-stderr}"
+case "${LOG_CHANNEL}" in
+    stack|single|daily)
+        echo "start.sh: LOG_CHANNEL=${LOG_CHANNEL} menulis ke berkas kontainer yang hilang saat instans dibuang; dialihkan ke stderr." >&2
+        export LOG_CHANNEL=stderr
+        ;;
+esac
+if [ "${REPORT_PHOTOS_DISK:-local}" = "local" ]; then
+    echo "start.sh: REPORT_PHOTOS_DISK=${REPORT_PHOTOS_DISK:-local} menyimpan foto laporan di berkas kontainer sementara; gunakan disk objek untuk produksi." >&2
+fi
 
 php artisan optimize --no-interaction
 

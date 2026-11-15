@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ComparisonShare;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -21,3 +22,7 @@ Schedule::command('data:freshness-check')->dailyAt('07:00')->withoutOverlapping(
 // Klaim atomik di TripReminderScheduler yang mencegah kirim ganda; kunci tumpang
 // tindih ini hanya menghemat kerja, dan kedaluwarsa sebelum jam berikutnya.
 Schedule::command('trips:kirim-pengingat')->hourly()->withoutOverlapping(50);
+
+// KEBIJAKAN-DATA-PRIBADI.md bagian 2: tautan bagikan yang sudah kedaluwarsa atau dicabut melewati
+// masa retensi dihapus setiap hari pukul 20.00 UTC (03.00 WIB).
+Schedule::command('model:prune', ['--model' => [ComparisonShare::class]])->dailyAt('20:00')->withoutOverlapping();

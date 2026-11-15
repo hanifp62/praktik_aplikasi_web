@@ -7,6 +7,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { InputError, Label, Select, TextInput } from '@/components/ui/Field';
+import { Dialog } from '@/components/ui/Lembar';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
 import { fokusTerlihat } from '@/components/ui/gaya';
@@ -57,16 +58,14 @@ export default function Credentials() {
     const { flash, errors, filter, statuses, keputusan, kredensial } = usePage<Props>().props;
     const [catatan, setCatatan] = useState<Record<number, string>>({});
     const [sedang, setSedang] = useState<{ id: number; keputusan: string } | null>(null);
+    const [konfirmasi, setKonfirmasi] = useState<{ id: number; keputusan: Keputusan } | null>(null);
     // Galat catatan milik kartu yang terakhir dikirim, bukan semua kartu.
     const [terakhir, setTerakhir] = useState<number | null>(null);
 
     const saring = (nilai: string) =>
         router.get(credentials.url({ query: { filter: nilai } }), {}, { preserveState: true, preserveScroll: true, replace: true });
 
-    const putuskan = (id: number, k: Keputusan) => {
-        if (k.konfirmasi && !window.confirm(k.konfirmasi)) {
-            return;
-        }
+    const jalankanKeputusan = (id: number, k: Keputusan) => {
         setSedang({ id, keputusan: k.value });
         setTerakhir(id);
         router.post(
@@ -93,6 +92,16 @@ export default function Credentials() {
                 onFinish: () => setSedang(null),
             },
         );
+    };
+
+    const putuskan = (id: number, k: Keputusan) => {
+        if (k.konfirmasi) {
+            setKonfirmasi({ id, keputusan: k });
+
+            return;
+        }
+
+        jalankanKeputusan(id, k);
     };
 
     return (
@@ -210,6 +219,31 @@ export default function Credentials() {
                         </div>
                     </>
                 )}
+                <Dialog
+                    terbuka={konfirmasi !== null}
+                    onTutup={() => setKonfirmasi(null)}
+                    judul={konfirmasi ? `${konfirmasi.keputusan.label} kredensial ini?` : 'Konfirmasi tindakan'}
+                    keterangan={konfirmasi?.keputusan.konfirmasi ?? undefined}
+                    aksi={
+                        <>
+                            <Button variant="secondary" onClick={() => setKonfirmasi(null)}>
+                                Batal
+                            </Button>
+                            <Button
+                                variant="danger"
+                                onClick={() => {
+                                    if (konfirmasi !== null) {
+                                        const target = konfirmasi;
+                                        setKonfirmasi(null);
+                                        jalankanKeputusan(target.id, target.keputusan);
+                                    }
+                                }}
+                            >
+                                {konfirmasi?.keputusan.label ?? 'Lanjutkan'}
+                            </Button>
+                        </>
+                    }
+                />
             </div>
         </div>
     );

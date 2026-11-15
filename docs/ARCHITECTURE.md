@@ -12,22 +12,27 @@ Profil pendaki  →  Rencana (goal)  →  Route Fit  →  Trip  →  Persiapan
         Riwayat  ←  Laporan kondisi  ←  Hike Mode  ←  Readiness check
 ```
 
-Frontend sedang dimigrasi dari Livewire ke **React 19 + Inertia 3** (keputusan pemilik
-24 September 2026, jalur C). Kolom komponen di bawah menyebut yang berlaku hari ini;
-halaman yang sudah pindah ditandai **[React]**, ledger lengkapnya di `HANDOVER.md` §0.
+Seluruh antarmuka aplikasi adalah **React 19 lewat Inertia 3** (keputusan pemilik 24 September 2026, jalur C).
+Blade tinggal untuk templat akar Inertia, halaman publik jalur untuk mesin pencari, halaman galat muat penuh, dan shell
+luring. Setiap halaman di bawah adalah satu berkas di `resources/js/pages/` dan punya pratinjau di suite `Pratinjau`
+(`PreviewCoverageTest`). Kolom tengah menyebut kelas yang merakit props halaman itu (spec v3 bagian 9.2).
 
-| Langkah | Komponen | Route |
-|---|---|---|
-| Profil | `Onboarding\ProfileSetup` | `/onboarding` |
-| Rencana | `Goals\GoalForm` | `/goals/create` |
-| Route Fit | `Recommendations\RecommendationResults` | `/recommendations/{run}` |
-| Jelajah jalur | **[React]** Jelajah, rincian jalur, penilaian kecocokan, Simpanan, dan Bandingkan di `pages/Trails/`; halaman gunung `pages/Mountains/Show.tsx`; tautan bagikan publik `pages/Public/SharedComparison.tsx` | `/trails*`, `/mountains/{mountain:slug}`, `/b/{token}` |
-| Trip | **[React]** indeks `pages/Trips/Index.tsx` (`Trips\IndeksTrip`), rencanakan `pages/Trips/Create.tsx` (`Trips\RencanaTrip`), ruang kerja `pages/Trips/Show.tsx` | `/trips`, `/trips/create`, `/trips/{trip}` |
-| Persiapan | **[React]** `pages/Trips/Preparation.tsx` (`Trips\HalamanPersiapan`) | `/trips/{trip}/preparation` |
-| Readiness | **[React]** `pages/Trips/Readiness.tsx` (`Trips\HalamanKesiapan`) | `/trips/{trip}/readiness` |
-| Hike Mode | `Trips\HikeMode` | `/trips/{trip}/hike` |
-| Laporan | `Reports\ConditionReportForm` | `/reports/create` |
-| Riwayat | `History\HikingHistoryPage` | `/history` |
+| Langkah | Halaman React | Kelas halaman atau layanan | Route |
+|---|---|---|---|
+| Tamu | `Welcome` | `WelcomeController` | `/` |
+| Profil | `Onboarding/ProfileSetup`, `Profile/Edit` | `Profil\HalamanProfil`, `Profil\TurunanPengalaman` | `/onboarding`, `/profile` |
+| Rencana | `Goals/Create` | `GoalController` | `/goals/create` |
+| Route Fit | `Recommendations/Show`, `Trails/Fit` | `RouteFitService`, `Trails\PenilaianKecocokan` | `/recommendations/{run}`, `/trails/{trail:slug}/kecocokan` |
+| Jelajah | `Trails/Index`, `Trails/Show`, `Trails/Awaiting`, `Trails/Saved`, `Trails/Compare`, `Mountains/Show`, `Public/SharedComparison` | `Trails\HalamanJelajah`, `Trails\TrailDetailPage`, `Trails\RouteComparisonTable`, `Mountains\HalamanGunung`, `Trails\TautanBagikan` | `/trails*`, `/mountains/{mountain:slug}`, `/b/{token}` |
+| Trip | `Trips/Index`, `Trips/Create`, `Trips/Edit`, `Trips/Show`, `Trips/Print` | `Trips\IndeksTrip`, `Trips\RencanaTrip`, `Trips\KepalaTrip`, `Trips\TripSteps`, `Trips\CetakTrip` | `/trips*` |
+| Persiapan | `Trips/Preparation` | `Trips\HalamanPersiapan`, `PreparationService` | `/trips/{trip}/preparation` |
+| Readiness | `Trips/Readiness` | `Trips\HalamanKesiapan`, `Trips\PreDepartureCheck` | `/trips/{trip}/readiness` |
+| Mendaki | `Track/Index`, `Trips/Hike` | `Trips\PintuMendaki`, `Trips\HalamanMendaki`, `Trips\PaketLapangan`, `Trips\KartuDarurat` | `/mendaki`, `/trips/{trip}/hike` |
+| Laporan | `Community/ConditionReport`, `Community/HikeSummary` | `Community\HasilPendakian` | `/reports/create`, `/history/{trip}` |
+| Riwayat dan progres | `Community/HikingHistory`, `Community/HikerProgress` | `Community\HubProgres`, `Community\PencapaianPribadi` | `/history`, `/progres` |
+| Kabar | `Community/TrailNews` | `Community\KabarJalur` | `/kabar` |
+| Beranda | `Dashboard` | `Dashboard\RingkasanDasbor` dan kelas bagian Beranda | `/dashboard` |
+| Galat | `Galat` | `App\Support\HalamanGalat` | jawaban galat setiap kunjungan Inertia |
 
 Admin di `/admin/*` (middleware `role:admin`), moderasi di `/moderation` (middleware `role:moderator`).
 
@@ -101,9 +106,23 @@ berikutnya berhenti begitu rencana tidak lagi `masihDirencanakan()`, yaitu sudah
 | Menambah faktor kompatibilitas baru | `App\Enums\CompatibilityFactor` + method baru di `CompatibilityScorer::score()` |
 | Menambah kategori item persiapan | `App\Enums\PreparationCategory` + seeder `PreparationTemplateSeeder` |
 | Menambah tag kondisi jalur | `App\Enums\ConditionTag` |
+| Disk, batas ukuran, dan sisi foto profil | `config/filesystems.php` → `avatars_disk` (`AVATARS_DISK`), dan `config/hiking.php` → `uploads.avatar_max_kb` serta `uploads.avatar_dimension`; berkasnya hanya disajikan rute `profile.photo.show` kepada pemilik sesi |
+| Daftar wilayah minat dan turunan pengalaman onboarding | `App\Enums\InterestRegion` (daftar putih DK-42) dan `App\Services\Profil\TurunanPengalaman` (tangga navigasi yang sama dengan `NavigationComplexity::expectedNavigationRank`) |
 | Mengubah zona waktu sebuah gunung | Kolom `mountains.timezone` |
 | Mencatat aturan izin sebuah jalur | `/admin/permits` |
-| Menambah halaman admin baru | Daftarkan route-nya, lalu tambahkan ke `resources/views/components/ui/admin-nav.blade.php` |
+| Mencatat status resmi | Meja kurator `/kurator` (W8): kurator anggota aktif badan yang berwenang atas kawasan itu, dengan aturan terbit asimetris di `App\Services\DataResmi\TerbitStatus`. Halaman admin `/admin/official-statuses` hanya membaca |
+| Memberi peran kurator | Peran `curator` pada `users.role` diberikan pemilik (Q11); keanggotaan badan di `/admin/authorities` (`authority_members`). Tidak ada akun kurator yang dibuat otomatis |
+| Jadwal tinjau status resmi per jenis | `config/hiking.php` → `freshness.status_review_hours` (Dibatasi, Tutup, Belum diketahui) dan `field_pack.open_status_stale_after_hours` (Buka, 24 jam); level gunung api `freshness.volcano_review_hours` |
+| Disk dan batas arsip bukti serta foto gunung | `config/filesystems.php` → `evidence_disk` (`EVIDENCE_DISK`) dan `mountain_photos_disk` (`MOUNTAIN_PHOTOS_DISK`); `config/hiking.php` → `uploads.evidence_*` dan `uploads.mountain_photo_*`. Arsip bukti hanya diunduh lewat `curator.evidence.show`, foto gunung lewat `mountains.photo` |
+| Batas jarak pos dari garis rute untuk km sepanjang jalur | `config/hiking.php` → `map.batas_jarak_pos_m` |
+| Menambah halaman admin baru | Daftarkan route-nya di grup `role:admin`, tambahkan tautannya ke prop `adminNav` di `app/Http/Middleware/HandleInertiaRequests.php` (digambar `resources/js/components/admin/AdminNav.tsx`), lalu tambahkan pratinjaunya |
+| Kata halaman galat 403, 404, 419, 429, 500, dan 503 | `app/Support/HalamanGalat.php`, satu sumber untuk Blade muat penuh (`resources/views/errors/layout.blade.php`) dan halaman React `Galat` bagi kunjungan Inertia; kaitnya `respond()` di `bootstrap/app.php` (W9) |
+| Proxy tepercaya di depan aplikasi | `config/app.php` → `trusted_proxies` atau `TRUSTED_PROXIES` (dipasang di `bootstrap/app.php`); kosong berarti alamat terusan diabaikan dan batas laju per IP memakai alamat penghubung langsung |
+| Enkripsi riwayat Inertia saat keluar | `config/inertia.php` → `history.encrypt` atau `INERTIA_ENCRYPT_HISTORY`, mati sampai pemilik memutus kebijakan data di perangkat |
+| Lama simpan tautan bagikan yang berakhir | `config/hiking.php` → `share_links.prune_after_days` atau `SHARE_LINK_PRUNE_AFTER_DAYS`; kosong berarti tidak dipangkas; tugas hariannya `model:prune` di `routes/console.php` |
+| Format jam dan tanggal di layar | `App\Support\Timezone::display()` (jam bertitik dengan WIB, WITA, atau WIT) dan `Timezone::tanggalPendek()` (tahun ditulis bila beda tahun) |
+| Batas lebar layar di kode klien | `resources/js/lib/layar.ts`, satu sumber yang dicocokkan `BreakpointSourceTest` dengan tema Tailwind |
+| Peringatan operasi keluar dan pemicu cron HTTP | `app/Services/PeringatanOperasi.php`, `app/Http/Controllers/CronController.php`, dan panduan insiden `docs/RUNBOOK-OPERASI.md` |
 
 ## Lapisan kode
 
@@ -132,13 +151,21 @@ berikutnya berhenti begitu rencana tidak lagi `masihDirencanakan()`, yaitu sudah
 | `AuditLogService`, `AnalyticsRecorder` | Jejak audit dan funnel |
 | `Trails\HalamanJelajah`, `Trails\TrailDetailPage`, `Trails\PenilaianKecocokan`, `Trails\RouteComparisonTable`, `Mountains\HalamanGunung` | Kelas halaman (spec v3 bagian 9.2): satu kelas merakit props satu halaman React dari service domain, dengan anggaran kueri yang tidak tumbuh bersama jumlah data |
 | `Trails\TautanBagikan` | Tautan bagikan perbandingan (FR-23): token acak 192 bit yang hanya disimpan hash SHA-256-nya, masa berlaku, batas tautan aktif, dan cabut oleh pemiliknya |
-| `Trails\ProfilElevasiJalur`, `Trails\PosSepanjangJalur` | Profil elevasi dengan ruas tercuram, dan km pos di sepanjang garis rute (PostGIS); tanpa geometri tidak ada km yang ditebak |
+| `Trails\ProfilElevasiJalur`, `Trails\PosSepanjangJalur` | Profil elevasi dengan ruas tercuram, dan km pos di sepanjang garis rute (PostGIS); tanpa geometri tidak ada km yang ditebak, dan pos yang jauh dari garis atau urutan km yang mundur tidak diberi km (W8) |
+| `DataResmi\TerbitStatus`, `DataResmi\ArahPerubahan`, `DataResmi\PemeriksaanKonsistensi` | Layanan terbit asimetris meja kurator (W8): draf, kirim, verifikasi orang kedua, tinjau ulang, persoalkan, dan rantai penggantian; pembatasan berbukti primer terbit seketika, pembukaan menunggu orang kedua, berita saja tidak pernah membuka; pemeriksaan konsistensi otomatis sebelum kirim dan verifikasi |
+| `DataResmi\Yurisdiksi`, `DataResmi\MejaKurator`, `DataResmi\HalamanCatatanStatus`, `DataResmi\ArsipBukti` | Kawasan kurator dari keanggotaan aktif (satu-satunya tempat aturan yurisdiksi), kelas halaman meja dan catatan, dan arsip bukti di disk privat dengan EXIF dibuang dan SHA-256 |
+| `DataResmi\StatusGunungApi`, `Mountains\FotoGunung` | Level gunung api PVMBG terakhir per gunung (DK-43, tidak pernah dibaca status akses atau Route Fit) dan foto gunung berlisensi (DK-37) |
+| `Community\HubProgres`, `Community\PencapaianPribadi` | Kelas halaman Progres (W7): ringkasan tahun, grafik per pendakian, target bulanan, pencapaian dari riwayat sendiri, riwayat dua sumber (trip dan catatan manual), dan peta gunung; angka satu pendakian dari satu aturan (`HubProgres::angka`) |
+| `Profil\HalamanProfil`, `Profil\FotoProfil`, `Profil\TurunanPengalaman` | Hub Profil (W7): identitas, pengalaman, preferensi, dan perlengkapan; foto profil yang ditulis ulang tanpa EXIF sebelum disimpan; nilai pengalaman yang diturunkan dari jalur terberat |
+| `Trips\IsiAwalPerlengkapan`, `Trips\CatatanButir`, `Trails\CariJalur` | Perlengkapan pribadi yang mengisi awal daftar persiapan sebagai butir belum dikonfirmasi (W7-R8), catatan per butir Perlengkapan dan Logistik (W7-R9), dan pencarian jalur katalog untuk isian satu jalur |
+| `Trips\PintuMendaki`, `Trips\HalamanMendaki`, `Trips\PendakianAktif`, `Trips\PaketLapangan`, `Trips\KartuDarurat`, `Trips\CetakTrip`, `Trips\PesanRencana` | Mendaki (W6): pintu tab, mode lapangan yang menghitung di perangkat, strip pendakian berlangsung, paket lapangan luring di balik sakelar, kartu darurat, versi cetak, dan pesan rencana untuk kontak |
+| `Community\KabarJalur`, `Community\HasilPendakian`, `PeringatanOperasi` | Kabar berkelompok menurut asal (R-009, R-010), ringkasan satu pendakian, dan pengiriman peringatan operasi ke webhook yang dibatasi laju |
 
-**`app/Support`**: utilitas yang tidak memuat kebijakan produk: `Timezone` (konversi WIB/WITA/WIT), `ImageSanitizer` (pembersih EXIF), `PostGis` (kolom geografi).
+**`app/Support`**: utilitas yang tidak memuat kebijakan produk: `Timezone` (konversi WIB/WITA/WIT dan format jam), `ImageSanitizer` (pembersih EXIF), `PostGis` (kolom geografi), `HalamanGalat` (kata halaman galat, W9), `PenjagaDataContoh` (penolak data contoh di luar SQLite lokal, DK-35), `AsetLuring` dan `KunciPerangkat` (shell luring dan kunci penyimpanan perangkat per pengguna, W6).
 
-**`app/Policies`**: otorisasi tingkat objek. Setiap komponen Livewire yang menerima model dari route **wajib** memanggil `$this->authorize()` di `mount()`.
+**`app/Policies`**: otorisasi tingkat objek. Controller memanggil `authorize()` atau FormRequest-nya memeriksa Policy; klien tidak pernah dipercaya untuk kepemilikan atau peran.
 
-**`app/Livewire`**: presentasi lama, sedang dimigrasi. Komponen boleh memanggil service; komponen tidak boleh memuat aturan domain. Kalau Anda menulis `if` yang berisi kebijakan produk di komponen, tempatnya salah.
+Paket `livewire/livewire` dan `livewire/volt` masih terpasang walaupun tidak ada lagi komponen Livewire; rute `livewire/*` bawaannya tercatat di `WriteRouteGuardTest`. Melepas paket adalah perubahan dependensi yang menunggu izin pemilik (Konflik W9).
 
 **`app/Http/Controllers` + `resources/js/pages`**: presentasi baru (React lewat Inertia). Kontraknya:
 
@@ -147,7 +174,7 @@ berikutnya berhenti begitu rencana tidak lagi `masihDirencanakan()`, yaitu sudah
 - **Judul dan meta dirender server**: setiap halaman mengirim prop `title` (dan `description` bila publik) yang dibaca `resources/views/inertia.blade.php`, supaya tab, riwayat, dan mesin pencari benar sebelum React berjalan. SSR belum diaktifkan (`config/inertia.php`), keputusan terpisah.
 - **Rute bertipe** dari Wayfinder (`resources/js/routes`, `resources/js/actions`); jalankan `php artisan wayfinder:generate` setiap rute berubah. Jangan menulis URL sebagai string di komponen.
 - **Skor internal tidak pernah sampai ke props** (BR-09), sama seperti ke HTML.
-- **Dua pintu masuk Vite** selama migrasi: `app.js` (layout Livewire) dan `app.tsx` (Inertia), berbagi `dasar.js` (service worker, tema, pemuat peta). Token warna tetap satu-satunya sumber; komponen React memakai kelas Tailwind yang sama, tanpa CSS-in-JS dan tanpa `dark:`.
+- **Dua pintu masuk Vite**: `resources/js/app.tsx` (Inertia) dan `resources/js/luring/shell.tsx` (shell luring), berbagi `resources/js/dasar.js` (service worker, tema, pemuat peta). Token warna tetap satu-satunya sumber; komponen React memakai kelas Tailwind yang sama, tanpa CSS-in-JS dan tanpa `dark:`.
 - **Test**: halaman React diuji lewat HTTP dan `assertInertia` (props), aksi lewat POST; markup yang dirender klien dijaga dari sumbernya (`InertiaLayoutTest`) dan dipotret di peramban.
 
 ## Aturan yang tidak boleh dilanggar
@@ -213,14 +240,15 @@ Ini kontrak engineering, bukan strategi pemasaran. Strategi pertumbuhan ada di `
 
 Dicatat terbuka supaya tidak terlupakan:
 
-- **Pemeriksaan aksesibilitas manual.** Test hanya menutup hal yang dapat diperiksa mesin: label, struktur judul, bahasa dokumen. Urutan fokus, kebermaknaan teks alternatif, dan kontras pada seluruh kombinasi masih butuh mata manusia.
+- **Pemeriksaan aksesibilitas manual.** Test hanya menutup hal yang dapat diperiksa mesin: label, struktur judul, bahasa dokumen, kontras token, target sentuh, dan kata. Peta kriteria WCAG 2.2 AA ke test ada di `docs/audit/aksesibilitas-w9.md`; urutan fokus, pembaca layar, dan reflow di layar dibuktikan klik-lewat (`docs/audit/klik-lewat/2026-10-09-daftar-periksa-w9.md`) dan uji kegunaan pemilik.
 - **Suite spasial belum pernah hijau.** Dua run CI publik yang ada gagal; run terakhir (21 September 2026, commit `6d9e090`) gagal di langkah Spatial. Sampai 26 September 2026 `SpatialTestCase` galat sebelum terhubung ke basis data apa pun; setelah perbaikannya, hasil pertama di PostGIS menunggu push yang diizinkan. Secara lokal suite ini dilewati sampai `SPATIAL_TEST_DSN` diisi; `docker-compose.yml` menyediakan PostGIS yang sama dengan CI (DK-55), tetapi Docker tidak wajib.
 - **Kurasi data lapangan.** Per 20 September 2026: 7 jalur, semuanya tayang, **0 punya geometri**; 34 checkpoint, **0 punya koordinat**; 7 status resmi tercatat, semuanya `UNKNOWN`. Artinya peta tidak dapat menggambar jalur, mode pendakian tidak dapat mengenali checkpoint terdekat, dan ketujuh jalur yang tayang tidak lolos gerbang §110. Koordinat gunung sungguhan tidak boleh dikarang: angka yang salah pada fitur navigasi lapangan lebih berbahaya daripada tidak ada angka. Ini pekerjaan kurator, bukan pekerjaan kode.
-- **Pengambilan sumber resmi otomatis.** §98 menyebutnya pekerjaan background. Belum ada, dan memang belum ada API resmi yang dapat dipanggil; status tetap dicatat manual oleh kurator. Pemeriksaan data basi sendiri sudah ada (`data:freshness-check` dan panel "Perlu ditinjau"), sehingga status yang kedaluwarsa tidak lagi mundur ke `UNKNOWN` tanpa suara.
+- **Pengambilan sumber resmi otomatis.** §98 menyebutnya pekerjaan background. Belum ada, dan memang belum ada API resmi yang dapat dipanggil; status tetap dicatat kurator di meja kurator (W8), level PVMBG juga (Q13).
+- **Kurator yang bertugas.** Meja kurator sudah ada, tetapi peran `curator` dan keanggotaan badan belum diberikan kepada siapa pun (Q11). Sampai pemilik memberikannya, status lama dari seeder kedaluwarsa menjadi Belum diketahui dan menunggu di antrean tinjau. Pemeriksaan data basi sendiri sudah ada (`data:freshness-check` dan panel "Perlu ditinjau"), sehingga status yang kedaluwarsa tidak lagi mundur ke `UNKNOWN` tanpa suara.
 
 ## Jalur kegagalan
 
-Halaman galat ada di `resources/views/errors/`, berbahasa Indonesia, dan **tidak menyentuh basis data, sesi, maupun Livewire**: ia dirender justru ketika sesuatu sedang rusak. Font dari luar juga tidak dimuat, karena kalau jaringannya yang bermasalah, menunggunya hanya menunda pengguna membaca apa yang terjadi. Halaman 500 dan 503 mengarahkan pendaki yang sedang bersiap berangkat untuk memastikan status jalur langsung ke pengelola, bukan menunggu aplikasi pulih.
+Halaman galat berbahasa Indonesia dan **tidak menyentuh basis data maupun sesi**: ia dirender justru ketika sesuatu sedang rusak. Muat penuh memakai Blade di `resources/views/errors/`; kunjungan Inertia menerima halaman React `Galat` lewat `respond()` di `bootstrap/app.php`, tanpa props bersama kerangka, dengan kata dari sumber yang sama (`App\Support\HalamanGalat`). Aksi yang ditolak 429 kembali ke halaman asalnya dari Referer satu asal saja, dan detail galat 500 hanya tampil dalam mode debug. Font dari luar juga tidak dimuat, karena kalau jaringannya yang bermasalah, menunggunya hanya menunda pengguna membaca apa yang terjadi. Halaman 500 dan 503 mengarahkan pendaki yang sedang bersiap berangkat untuk memastikan status jalur langsung ke pengelola, bukan menunggu aplikasi pulih.
 
 **Menghapus jalur akan ikut menghapus laporan komunitasnya.** Seluruh foreign key ke `trails` memakai `CASCADE`. Saat ini tidak ada cara menghapus jalur dari antarmuka, hanya mengarsipkan, jadi risikonya belum terjangkau. Kalau suatu saat fitur hapus jalur ditambahkan, intel lapangan ikut hilang, dan itu bertentangan dengan keputusan pada penghapusan akun yang justru mempertahankan laporan tanpa nama pemiliknya.
 

@@ -1,12 +1,15 @@
 import { router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { DaftarJalurGunung } from '@/components/trails/gunung/DaftarJalurGunung';
+import { FotoGunung } from '@/components/trails/gunung/FotoGunung';
 import { KartuIzin } from '@/components/trails/gunung/KartuIzin';
 import { KartuStatusGunung } from '@/components/trails/gunung/KartuStatusGunung';
+import { KartuGunungApi } from '@/components/trails/KartuGunungApi';
 import { KondisiPendaki } from '@/components/trails/gunung/KondisiPendaki';
-import type { GunungRingkas, IzinGunung, JalurGunung, LaporanGunung, ProfilGunung, Provenans } from '@/components/trails/gunung/types';
+import type { FotoGunungData, GunungRingkas, IzinGunung, JalurGunung, LaporanGunung, ProfilGunung, Provenans } from '@/components/trails/gunung/types';
 import { VisualProfilGunung } from '@/components/trails/gunung/VisualProfilGunung';
-import type { StatusRingkas } from '@/components/trails/types';
+import type { LaporKesalahan } from '@/components/trails/LaporkanKesalahan';
+import type { GunungApi, StatusRingkas } from '@/components/trails/types';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Icon } from '@/components/ui/Icon';
@@ -21,6 +24,9 @@ interface Props extends PropsBersama {
     mengikuti: boolean;
     bolehDiikuti: boolean;
     status: StatusRingkas;
+    laporKesalahan: LaporKesalahan;
+    gunungApi: GunungApi | null;
+    foto: FotoGunungData | null;
     jalur: JalurGunung[];
     jumlahMenunggu: number;
     profil: ProfilGunung | null;
@@ -39,11 +45,11 @@ const judulBagian = 'text-bagian text-primary';
  * Halaman gunung (spec v3 bagian 6.3, DK-44, prototype 03). Gunung membuka jalurnya
  * (R-001): keputusan tetap per jalur (R-002), jadi halaman ini menyajikan status tingkat
  * gunung, pilihan jalur dengan label dan status masing-masing, izin, kondisi dari pendaki,
- * dan asal-usul datanya. Tanpa foto berlisensi (DK-37, W8) kepala halamannya visual data:
- * profil setiap jalur pada skala yang sama.
+ * dan asal-usul datanya. Kepala halamannya foto berlisensi dengan atribusi di pojoknya (DK-37,
+ * W8); tanpa foto, visual data: profil setiap jalur pada skala yang sama.
  */
 export default function Show() {
-    const { gunung, mengikuti, bolehDiikuti, status, jalur, jumlahMenunggu, profil, izin, kondisi, hariLaporan, provenans, kataBelumDinilai, pengumuman } = usePage<Props>().props;
+    const { gunung, mengikuti, bolehDiikuti, status, laporKesalahan, gunungApi, foto, jalur, jumlahMenunggu, profil, izin, kondisi, hariLaporan, provenans, kataBelumDinilai, pengumuman } = usePage<Props>().props;
     const [memproses, setMemproses] = useState(false);
 
     const ikuti = () => {
@@ -69,7 +75,7 @@ export default function Show() {
                     <p className="mt-1 text-kecil text-secondary">{[gunung.provinsi, `waktu dalam ${gunung.zona}`].filter(Boolean).join(', ')}</p>
                 </PageHeader>
 
-                {profil ? <VisualProfilGunung profil={profil} /> : null}
+                {foto ? <FotoGunung foto={foto} /> : profil ? <VisualProfilGunung profil={profil} /> : null}
 
                 <section aria-labelledby="judul-puncak" className="rounded-lg border border-subtle bg-surface p-5 sm:flex sm:items-center sm:gap-6">
                     <div className="shrink-0">
@@ -89,7 +95,8 @@ export default function Show() {
                     <h2 id="judul-status" className={judulBagian}>
                         Status saat ini
                     </h2>
-                    <KartuStatusGunung status={status} />
+                    <KartuStatusGunung status={status} lapor={laporKesalahan} sasaran={gunung.nama} />
+                    {gunungApi ? <KartuGunungApi data={gunungApi} /> : null}
                 </section>
 
                 <section aria-labelledby="judul-jalur" className="space-y-3">

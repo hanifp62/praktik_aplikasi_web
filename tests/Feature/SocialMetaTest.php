@@ -84,4 +84,32 @@ class SocialMetaTest extends TestCase
             $this->assertFileExists(public_path($berkas));
         }
     }
+
+    public function test_the_landing_page_carries_canonical_and_social_meta_in_server_html(): void
+    {
+        $halaman = $this->get('/')->assertOk();
+
+        $halaman->assertSee('<link rel="canonical" href="'.url('/').'">', escape: false);
+
+        foreach (['og:type', 'og:title', 'og:description', 'og:url', 'og:image', 'twitter:card'] as $tag) {
+            $halaman->assertSee($tag, escape: false);
+        }
+    }
+
+    public function test_track_and_onboarding_ctas_point_to_v3_trails_and_trips_not_legacy_goals_wizard(): void
+    {
+        $mendaki = File::get(resource_path('js/pages/Track/Index.tsx'));
+        $profil = File::get(resource_path('js/pages/Onboarding/ProfileSetup.tsx'));
+        $pengendali = File::get(app_path('Http/Controllers/Onboarding/ProfileSetupController.php'));
+
+        $this->assertStringContainsString('trailsIndex.url()', $mendaki);
+        $this->assertStringNotContainsString('goalsCreate.url()', $mendaki);
+
+        $this->assertStringContainsString('tautan.jelajah', $profil);
+        $this->assertStringContainsString('tautan.cocok', $profil);
+        $this->assertStringNotContainsString('goalsCreate.url()', $profil);
+
+        $this->assertStringContainsString("route('trails.index'", $pengendali);
+        $this->assertStringNotContainsString("route('goals.create'", $pengendali);
+    }
 }

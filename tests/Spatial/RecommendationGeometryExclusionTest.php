@@ -17,7 +17,7 @@ use App\Services\RouteFitService;
  * RecommendationExclusionTest sudah menguji kedua lapis penyaringnya, tetapi ia berjalan
  * di SQLite dan karena itu harus memakai `data_source_id` yang kosong untuk membuat
  * jalurnya tidak lengkap. Geometri tidak dapat dipakai di sana: kolomnya tidak ada,
- * `hasGeometry()` mengembalikan true tanpa syarat, dan `scopeDataComplete()` melepas
+ * `hasGeometry()` menjawab null (tidak dapat diperiksa), dan `scopeDataComplete()` melepas
  * klausa `whereNotNull('geometry')`.
  *
  * Justru geometri itulah satu-satunya yang hilang dari tujuh jalur terbit di basis data

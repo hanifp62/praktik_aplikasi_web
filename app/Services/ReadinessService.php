@@ -203,8 +203,9 @@ class ReadinessService
         // melihat jalurnya terbuka hari ini, lalu ditolak tanpa tahu sebabnya.
         if ($statusTanggalRencana === OfficialStatusValue::CLOSED && $status !== OfficialStatusValue::CLOSED) {
             $reasons[] = sprintf(
-                'Pada tanggal rencana Anda%s jalur ini tercatat TUTUP, meskipun hari ini tidak.',
-                $tanggalRencana ? ' ('.$tanggalRencana->translatedFormat('d F Y').')' : ''
+                'Pada tanggal rencana Anda%s jalur ini tercatat %s, meskipun hari ini tidak.',
+                $tanggalRencana ? ' ('.$tanggalRencana->translatedFormat('j F Y').')' : '',
+                OfficialStatusValue::CLOSED->label(),
             );
         }
         $outstanding = [];
@@ -216,7 +217,7 @@ class ReadinessService
         $weather = $conditions['weather_context'] ?? [];
 
         if ($status === OfficialStatusValue::CLOSED) {
-            $reasons[] = 'Status resmi jalur ini tercatat TUTUP.';
+            $reasons[] = 'Status resmi jalur ini tercatat '.OfficialStatusValue::CLOSED->label().'.';
         }
 
         if ($status === OfficialStatusValue::UNKNOWN) {
@@ -235,7 +236,7 @@ class ReadinessService
                 }
 
                 $reasons[] = match ($rule) {
-                    'official_status_closed' => 'Jalur tidak tersedia karena status resmi TUTUP.',
+                    'official_status_closed' => 'Jalur tidak tersedia karena status resminya '.OfficialStatusValue::CLOSED->label().'.',
                     'trail_not_published' => 'Data jalur ini belum dipublikasikan.',
                     'trail_data_incomplete' => 'Data kritis jalur ini belum lengkap, sehingga '
                         .'kecocokannya belum dapat dinilai.',
@@ -281,7 +282,7 @@ class ReadinessService
         }
 
         if ($state === ReadinessState::READY) {
-            $reasons[] = 'Route fit, persiapan, status resmi, dan kondisi terkini saat ini tidak menunjukkan isu yang belum selesai.';
+            $reasons[] = 'Kecocokan jalur, persiapan, status resmi, dan kondisi terkini saat ini tidak menunjukkan isu yang belum selesai.';
         }
 
         return [

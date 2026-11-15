@@ -43,7 +43,7 @@ class TripReminderNotification extends Notification
     {
         $jalur = $this->trip->trail;
         $zona = Timezone::label(Timezone::forTrail($jalur));
-        $tanggal = $this->trip->planned_date->translatedFormat('l, d F Y');
+        $tanggal = $this->trip->planned_date->translatedFormat('l, j F Y');
 
         $waktu = $this->trip->start_time
             ? sprintf('%s, mulai pukul %s %s', $tanggal, Carbon::parse($this->trip->start_time)->format('H.i'), $zona)

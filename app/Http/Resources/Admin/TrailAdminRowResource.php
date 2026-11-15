@@ -37,6 +37,7 @@ class TrailAdminRowResource extends JsonResource
             'kurang' => $this->publishabilityReport(),
             'tautan' => [
                 'checkpoint' => route('trails.checkpoints', $this->resource),
+                'segmen' => route('trails.segments', $this->resource),
                 'geometri' => route('trails.geometry', $this->resource),
             ],
             'isian' => [
@@ -47,11 +48,11 @@ class TrailAdminRowResource extends JsonResource
                 'elevation_gain_m' => $this->elevation_gain_m !== null ? (string) $this->elevation_gain_m : '',
                 'elevation_loss_m' => $this->elevation_loss_m !== null ? (string) $this->elevation_loss_m : '',
                 'estimated_duration_minutes' => $this->estimated_duration_minutes !== null ? (string) $this->estimated_duration_minutes : '',
-                'technical_demand' => $this->technical_demand->value,
-                'navigation_complexity' => $this->navigation_complexity->value,
+                'technical_demand' => $this->technical_demand?->value ?? '',
+                'navigation_complexity' => $this->navigation_complexity?->value ?? '',
                 'water_availability' => $this->water_availability->value,
                 'terrain_character' => array_values($this->terrain_character ?? []),
-                'camping_available' => (bool) $this->camping_available,
+                'camping_available' => $this->camping_available === null ? '' : ($this->camping_available ? '1' : '0'),
                 'starting_point' => $this->starting_point ?? '',
                 'weather_adm4_code' => $this->weather_adm4_code ?? '',
                 'weather_reference_area' => $this->weather_reference_area ?? '',

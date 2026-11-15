@@ -27,6 +27,10 @@ class RefusalMessagesTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Status ditulis dengan kata lencananya, "Tutup", sejak W9 (ruling W4-C3), bukan nilai
+     * mesin "TUTUP".
+     */
     public function test_a_blocked_pre_departure_check_names_its_reasons(): void
     {
         $trip = $this->trip(OfficialStatusValue::CLOSED);
@@ -36,7 +40,7 @@ class RefusalMessagesTest extends TestCase
             ->post(route('trips.readiness.confirm', $trip))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Trips/Readiness')
-                ->where('penolakan', fn (?string $pesan) => str_contains((string) $pesan, 'TUTUP')
+                ->where('penolakan', fn (?string $pesan) => str_contains((string) $pesan, 'tercatat Tutup')
                     && ! str_contains((string) $pesan, 'tidak memungkinkan')));
     }
 

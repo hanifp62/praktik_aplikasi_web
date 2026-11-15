@@ -59,14 +59,6 @@ export interface ButirKomunitas {
     foto: boolean;
 }
 
-/** Satu batang grafik: tanjakan jalur pada satu pendakian yang tuntas. m null berarti belum dicatat, bukan nol. */
-export interface TitikTanjakan {
-    tanggal: string;
-    jalur: string;
-    m: number | null;
-    teks: string;
-}
-
 export interface GarisGeoJson {
     type: 'LineString';
     coordinates: Array<[number, number]>;

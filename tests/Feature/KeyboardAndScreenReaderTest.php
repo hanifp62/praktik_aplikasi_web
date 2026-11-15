@@ -93,10 +93,10 @@ class KeyboardAndScreenReaderTest extends TestCase
                 continue;
             }
 
-            // Hanya halaman aplikasi. Manifest, service worker, sitemap, dan endpoint
-            // kesehatan bukan halaman dan tidak punya navigasi untuk dilewati.
+            // Hanya halaman aplikasi. Manifest, service worker, sitemap, robots.txt, dan
+            // endpoint kesehatan bukan halaman dan tidak punya navigasi untuk dilewati.
             if (! in_array('web', $rute->gatherMiddleware(), true)
-                || preg_match('/^(sitemap\.xml|sw\.js|manifest|up$|logout)/', $rute->uri())) {
+                || preg_match('/^(sitemap\.xml|robots\.txt|sw\.js|manifest|up$|logout|profile\/foto$)/', $rute->uri())) {
                 continue;
             }
 
@@ -220,7 +220,7 @@ class KeyboardAndScreenReaderTest extends TestCase
      */
     private function formField(): string
     {
-        $isi = File::get(resource_path('js/components/ui/Field.tsx'));
+        $isi = str_replace("\r\n", "\n", File::get(resource_path('js/components/ui/Field.tsx')));
         $mulai = strpos($isi, 'export function FormField(');
 
         $this->assertNotFalse($mulai, 'FormField tidak ditemukan di Field.tsx.');

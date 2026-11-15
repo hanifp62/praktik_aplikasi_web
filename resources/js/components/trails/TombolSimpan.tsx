@@ -74,7 +74,9 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
 
     const simpan = (catatan: string | null = null, urungkan = true) => {
         setMemproses(true);
-        router.post(store.url({ trail: jalur.id }), { catatan }, {
+        // dengan_toast: toast Urungkan di bawah yang mengumumkan simpanan ini, bukan wilayah
+        // role="status" halaman (W9, pengumuman tunggal). Urungkan sendiri tanpa toast.
+        router.post(store.url({ trail: jalur.id }), { catatan, dengan_toast: urungkan }, {
             ...opsi,
             onFinish: () => setMemproses(false),
             onSuccess: (halaman) => {
@@ -114,6 +116,7 @@ export function TombolSimpan({ jalur, tampilkanToast, bentuk = 'ikon' }: TombolS
         setMemproses(true);
         router.delete(remove.url({ trail: jalur.id }), {
             ...opsi,
+            data: { dengan_toast: true },
             onFinish: () => setMemproses(false),
             onSuccess: (halaman) => {
                 const terhapus = (halaman.props as unknown as PropsBersama).flash.simpananTerhapus;

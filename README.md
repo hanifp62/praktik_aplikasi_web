@@ -30,9 +30,10 @@ dinyatakan "belum diketahui", tidak pernah ditebak.
 
 | Lapisan | Teknologi (versi terpasang) |
 |---|---|
-| Server | Laravel 13.31, PHP 8.5 |
+| Server | Laravel 13.42, PHP 8.5 |
 | Antarmuka | React 19.3 lewat Inertia 3 (satu aplikasi, tanpa API terpisah), TypeScript 5.9 |
 | Gaya | Tailwind CSS 4.3 (konfigurasi CSS-first di `resources/css/app.css`, plugin Vite) dengan token warna CSS variable, tema terang dan gelap |
+| Sistem desain | Token di `resources/css/app.css`, primitif React di `resources/js/components/ui/`, huruf Plus Jakarta Sans dihosting sendiri di `public/fonts/`, ikon Phosphor tersalin di registri `resources/js/components/ui/ikon/`; arah di `DESIGN.md`, pratinjau tanpa basis data di `tests/Pratinjau` (`CONTRIBUTING.md`) |
 | Rute bertipe | Laravel Wayfinder (dibangkitkan saat build, tidak dilacak git) |
 | Peta | MapLibre GL 6.14, dimuat hanya di halaman yang menggambar peta |
 | Basis data | PostgreSQL + PostGIS (produksi di Supabase); test berjalan di SQLite in-memory |
@@ -43,9 +44,10 @@ Keputusan arsitektur dan alasannya ada di `docs/ARCHITECTURE.md`.
 
 ## Menjalankan di komputer sendiri
 
-Prasyarat: PHP 8.5 (ekstensi `pdo_pgsql`, `pdo_sqlite`, `mbstring`, `gd`),
-Composer 2, Node 22 atau lebih baru, dan PostgreSQL 16+ dengan PostGIS, atau Docker,
-bila ingin menguji fitur spasial.
+Prasyarat: PHP 8.5 (ekstensi `pdo_pgsql`, `pdo_sqlite`, `mbstring`, `gd`, `exif`, `fileinfo`),
+Composer 2, Node 22 atau lebih baru, serta Docker Desktop atau PostgreSQL 16+ dengan PostGIS.
+
+Di macOS, Linux, atau Git Bash:
 
 ```sh
 git clone <url-repo> memount && cd memount
@@ -53,29 +55,62 @@ composer install
 npm ci
 cp .env.example .env
 php artisan key:generate
+npm run build
+```
+
+Di Windows PowerShell:
+
+```powershell
+git clone <url-repo> memount; Set-Location memount
+composer install
+npm ci
+Copy-Item .env.example .env
+php artisan key:generate
+npm run build
 ```
 
 **Arahkan `.env` ke basis data lokal, bukan Supabase.** Bawaan `.env.example` adalah
-PostgreSQL lokal bernama `hiking`. Supabase adalah basis data produksi; aksesnya hanya
-dengan izin pemilik produk (lihat [Keamanan](#keamanan)).
+PostgreSQL lokal bernama `hiking` di `127.0.0.1:5432`. Supabase adalah basis data produksi;
+aksesnya hanya dengan izin pemilik produk (lihat [Keamanan](#keamanan)).
+
+**Cara 1 (disarankan di Windows, macOS, dan Linux): Docker PostGIS lokal + `php artisan serve`.**
+Layanan `postgres` di `docker-compose.yml` menyalakan PostgreSQL 16 + PostGIS 3.4 hanya di
+`127.0.0.1:5432`, lalu `composer lokal` (`php artisan memount:lokal`) memasang ekstensi
+PostGIS, menjalankan migrasi, dan mengisi jalur terbit lengkap dengan garis rute PostGIS
+serta mencetak kata sandi acak akun uji per peran:
+
+```sh
+docker compose up -d postgres
+composer lokal          # idempoten; pakai `composer lokal:ulang` bila ingin mengosongkan ulang tabel lokal
+php artisan serve       # berjalan di http://127.0.0.1:8000
+```
+
+Saat sedang mengubah kode React/CSS sekaligus, `composer run dev` menyalakan peladen PHP,
+antrean, log, dan Vite secara bersamaan (`@laravel/multiplex` di macOS/Linux dan
+`concurrently` di Windows).
+
+**Cara 2: PostgreSQL 16+ dengan PostGIS yang terpasang langsung di mesin.**
 
 ```sh
 createdb hiking && psql hiking -c "CREATE EXTENSION IF NOT EXISTS postgis"
 php artisan migrate
-php artisan db:seed     # data contoh lokal: admin@example.com, moderator@example.com,
+php artisan db:seed     # data dasar lokal: admin@example.com, moderator@example.com,
                         # pendaki@example.com, kata sandi "password" (hanya untuk lokal)
-composer run dev        # server, antrean, log, dan Vite sekaligus
+composer lokal          # opsional: melengkapi garis rute PostGIS dan data uji lengkap di loopback lokal
+php artisan serve
 ```
 
-Buka `http://localhost:8000`.
+Buka `http://127.0.0.1:8000` (atau `http://localhost:8000`).
 
-**Inspeksi cepat tanpa PostgreSQL.** `composer inspeksi:data` mengisi `database/demo.sqlite` dengan data
-contoh dan mencetak sandi akun `budi@contoh.test`; `composer inspeksi` lalu menyalakan `http://127.0.0.1:8000`
-dengan data itu. Peta jalur tampil tanpa garis rute, karena SQLite tidak punya PostGIS.
+**Cara 3: Inspeksi cepat tanpa PostgreSQL dan tanpa Docker.** `composer inspeksi:data` mengisi
+`database/demo.sqlite` dengan data contoh dan mencetak sandi akun `budi@contoh.test`;
+`composer inspeksi` lalu menyalakan `http://127.0.0.1:8000` dengan data itu. Peta jalur tampil
+tanpa garis rute, karena SQLite tidak memiliki PostGIS.
 
-**Windows:** PHP butuh CA bundle untuk panggilan HTTPS (misalnya prakiraan BMKG). Isi
-`curl.cainfo` dan `openssl.cafile` di `php.ini` dengan `ca-bundle.crt`; Git for Windows
-sudah membawa satu.
+**Catatan Windows:** aktifkan ekstensi `pdo_pgsql`, `pdo_sqlite`, `mbstring`, `gd`, `exif`, dan
+`fileinfo` di `php.ini`. PHP di Windows juga butuh CA bundle untuk panggilan HTTPS keluar
+(misalnya prakiraan BMKG): isi `curl.cainfo` dan `openssl.cafile` di `php.ini` dengan jalur
+`ca-bundle.crt` (Git for Windows sudah menyertakannya di `mingw64/etc/ssl/certs/ca-bundle.crt`).
 
 ## Perintah harian
 
@@ -158,47 +193,12 @@ Langkah pemilik, sekali saja:
    Lakukan sebelum langkah 3, karena kode di `main` membutuhkan skema terbaru.
 3. **Vercel.** Masuk dengan akun GitHub (paket Hobby), pilih Add New > Project, impor repo ini, dan biarkan pengaturan
    build bawaan karena `vercel.json` yang mengaturnya. Di Environment Variables, pilih environment **Production** saja,
-   tempel blok di bawah sekaligus, lalu isi nilai yang kosong. Salin blok lewat tombol salin di tampilan GitHub; bila
-   disalin dari berkas mentah, hapus spasi di awal tiap baris, karena nama variabel hanya boleh berisi huruf, angka,
-   dan garis bawah. `APP_KEY` dibuat dengan
+   tempel blok variabel produksi di bawah daftar ini sekaligus, lalu isi nilai yang kosong. `APP_KEY` dibuat dengan
    `php -r "echo 'base64:'.base64_encode(random_bytes(32)), PHP_EOL;"`, sedangkan `DEVICE_KEY_SECRET` dan
    `CRON_SECRET` masing-masing dengan `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. Nilai rahasia hanya diisi
    di dashboard, tidak pernah ditulis di repo.
-
-   ```
-   APP_NAME=Memount
-   APP_ENV=production
-   APP_DEBUG=false
-   APP_DEMO=false
-   APP_URL=https://<nama-proyek>.vercel.app
-   APP_KEY=
-   DB_CONNECTION=pgsql
-   DB_URL=
-   SESSION_DRIVER=database
-   SESSION_SECURE_COOKIE=true
-   CACHE_STORE=database
-   QUEUE_CONNECTION=sync
-   MAIL_MAILER=log
-   BROADCAST_CONNECTION=null
-   LOG_CHANNEL=stderr
-   LOG_LEVEL=info
-   TRUSTED_PROXIES=*
-   FILESYSTEM_DISK=local
-   REPORT_PHOTOS_DISK=supabase
-   SUPABASE_STORAGE_ENDPOINT=
-   SUPABASE_STORAGE_REGION=ap-southeast-1
-   SUPABASE_STORAGE_BUCKET=
-   SUPABASE_STORAGE_KEY=
-   SUPABASE_STORAGE_SECRET=
-   DEVICE_KEY_SECRET=
-   CRON_SECRET=
-   PENJADWAL_HANYA_HARIAN=true
-   FIELD_PACK_ENABLED=true
-   FIELD_SAFETY_ENABLED=true
-   ```
-
 4. **Periksa sebelum membagikan** (PRD §154, K27):
-   1. `https://<nama-proyek>.vercel.app/up` menjawab, juga dari peramban yang tidak masuk ke akun Vercel.
+   1. `https://<nama-proyek>.vercel.app/up` dan `https://<nama-proyek>.vercel.app/api/health` menjawab 200, juga dari peramban yang tidak masuk ke akun Vercel.
    2. Settings > Functions menunjukkan region Singapore, dan Settings > Cron Jobs menampilkan tujuh jadwal.
    3. Daftar akun baru, isi profil awal, lalu kirim satu formulir. Ini membuktikan sesi, token CSRF, dan header Inertia
       bertahan melewati Vercel.
@@ -210,6 +210,40 @@ Langkah pemilik, sekali saja:
       periksa `CRON_SECRET`. Halaman Kesehatan Sistem (admin) ikut mencatat jalannya.
 5. **Bagikan alamatnya.** Anggota tim mendaftar sendiri; menaikkan peran ke moderator atau admin butuh persetujuan
    pemilik.
+
+Blok variabel lingkungan produksi Vercel (rata kiri tanpa spasi awal agar penyalinan langsung ke dashboard Vercel tidak mengubah nama variabel):
+
+```
+APP_NAME=Memount
+APP_ENV=production
+APP_DEBUG=false
+APP_DEMO=false
+APP_URL=https://<nama-proyek>.vercel.app
+APP_KEY=
+DB_CONNECTION=pgsql
+DB_URL=
+SESSION_DRIVER=database
+SESSION_SECURE_COOKIE=true
+CACHE_STORE=database
+QUEUE_CONNECTION=sync
+MAIL_MAILER=log
+BROADCAST_CONNECTION=null
+LOG_CHANNEL=stderr
+LOG_LEVEL=info
+TRUSTED_PROXIES=*
+FILESYSTEM_DISK=local
+REPORT_PHOTOS_DISK=supabase
+SUPABASE_STORAGE_ENDPOINT=
+SUPABASE_STORAGE_REGION=ap-southeast-1
+SUPABASE_STORAGE_BUCKET=
+SUPABASE_STORAGE_KEY=
+SUPABASE_STORAGE_SECRET=
+DEVICE_KEY_SECRET=
+CRON_SECRET=
+PENJADWAL_HANYA_HARIAN=true
+FIELD_PACK_ENABLED=true
+FIELD_SAFETY_ENABLED=true
+```
 
 ## Peta repo
 
@@ -241,6 +275,8 @@ bagian "Cara memakai dokumen ini":
 - [`DESIGN.md`](DESIGN.md): arah desain; wajib sebelum pekerjaan antarmuka.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): cara mengubah sesuatu tanpa merusak yang lain.
 - [`SECURITY.md`](SECURITY.md): pelaporan kerentanan dan kebijakan rahasia.
+- [`docs/RUNBOOK-OPERASI.md`](docs/RUNBOOK-OPERASI.md): runbook operasi dan pemulihan insiden penjadwal, cuaca, status resmi, dan skema.
+- [`docs/audit/`](docs/audit/): audit antislop, keamanan, aksesibilitas, dan daftar periksa klik-lewat beserta buktinya.
 
 ## Aturan yang tidak boleh dilanggar
 

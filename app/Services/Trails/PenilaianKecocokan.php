@@ -122,7 +122,7 @@ final class PenilaianKecocokan
                 'rencana' => $trip?->ringkasan(),
                 'rencanaUrl' => $trip === null ? null : route('trips.edit', $trip),
             ],
-            'syaratDasar' => $this->syaratDasar($hasil, $goal, $status, $ringkasStatus),
+            'syaratDasar' => $this->syaratDasar($hasil, $goal, $status, $ringkasStatus, $trail->hasGeometry()),
             // P-2: status Dibatasi/belum diketahui, pembatasan segmen, dan jendela izin,
             // dalam kata, dekat syarat dasar (lihat peringatan() di akhir kelas).
             'peringatan' => $this->peringatan($status, $segmentRestrictions, $trail, $goal, $permit),
@@ -203,10 +203,14 @@ final class PenilaianKecocokan
             CompatibilityFactor::EXPERIENCE_MATCH => $this->bebanFisik($trail),
             CompatibilityFactor::DURATION_MATCH => ucfirst(Durasi::panjang($trail->estimated_duration_minutes)),
             CompatibilityFactor::TERRAIN_MATCH => $trail->terrainTypes() === [] ? 'Belum diketahui' : TrailFigures::medan($trail),
-            CompatibilityFactor::TECHNICAL_MATCH => $trail->technical_demand->label(),
+            CompatibilityFactor::TECHNICAL_MATCH => $trail->technical_demand?->label() ?? 'Belum diketahui',
             CompatibilityFactor::ELEVATION_GAIN_MATCH => $trail->elevation_gain_m === null ? 'Belum diketahui' : '↑'.number_format($trail->elevation_gain_m, 0, ',', '.').' m',
-            CompatibilityFactor::NAVIGATION_MATCH => $trail->navigation_complexity->label(),
-            CompatibilityFactor::TRIP_PREFERENCE => $trail->camping_available ? 'Ada area kemah' : 'Tanpa area kemah resmi',
+            CompatibilityFactor::NAVIGATION_MATCH => $trail->navigation_complexity?->label() ?? 'Belum diketahui',
+            CompatibilityFactor::TRIP_PREFERENCE => match ($trail->camping_available) {
+                true => 'Ada area kemah',
+                false => 'Tanpa area kemah resmi',
+                null => 'Area kemah belum diketahui',
+            },
         };
     }
 
@@ -258,10 +262,14 @@ final class PenilaianKecocokan
      * daftar Jelajah, atau mengaku belum ada catatan bila memang tidak ada. Syarat rencana
      * hanya muncul bila ada rencana yang membawanya.
      *
+     * Garis peta hanya disebut bila koneksi ini dapat memeriksanya ($adaGaris bukan null, ruling
+     * W8-R20): di SQLite tidak ada yang memeriksanya, jadi menyebutnya terpenuhi adalah klaim yang
+     * tidak dimiliki sistem.
+     *
      * @param  array{sumber: array{jenis: string|null, label: string|null, nama: string|null}|null, waktu: string|null, awalanWaktu: string|null}  $ringkasStatus
      * @return array<int, array{teks: string, keadaan: string}>
      */
-    private function syaratDasar(RouteFitResult $hasil, ?HikingGoal $goal, OfficialStatusValue $status, array $ringkasStatus): array
+    private function syaratDasar(RouteFitResult $hasil, ?HikingGoal $goal, OfficialStatusValue $status, array $ringkasStatus, ?bool $adaGaris): array
     {
         $gagal = fn (string $aturan) => in_array($aturan, $hasil->failedRules, true);
 
@@ -280,7 +288,7 @@ final class PenilaianKecocokan
 
         $syarat = [
             ['teks' => 'Status resmi tidak Tutup (sekarang '.$status->label().'). '.$sumberWaktu, 'keadaan' => $keadaanStatus],
-            ['teks' => 'Data kritis jalur lengkap: sumber, jarak, tanjakan, durasi, pos, status resmi, dan garis peta', 'keadaan' => $gagal('trail_data_incomplete') ? 'gagal' : 'terpenuhi'],
+            ['teks' => 'Data kritis jalur lengkap: sumber, jarak, tanjakan, durasi, pos, '.($adaGaris === null ? 'dan status resmi' : 'status resmi, dan garis peta'), 'keadaan' => $gagal('trail_data_incomplete') ? 'gagal' : 'terpenuhi'],
         ];
 
         if ($goal?->trip_type !== null) {

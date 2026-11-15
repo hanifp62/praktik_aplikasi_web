@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum AnalyticsEvent: string
 {
+    case PUBLIC_TRAIL_VIEWED = 'public_trail_viewed';
     case PROFILE_COMPLETED = 'profile_completed';
     case RECOMMENDATION_VIEWED = 'route_recommendation_viewed';
     case ROUTE_SELECTED = 'route_selected';
@@ -12,10 +13,12 @@ enum AnalyticsEvent: string
     case PRE_DEPARTURE_CHECK_COMPLETED = 'pre_departure_check_completed';
     case TRIP_COMPLETED = 'trip_completed';
     case CONDITION_REPORT_SUBMITTED = 'condition_report_submitted';
+    case RETURN_VISIT_AFTER_TRIP = 'return_visit_after_trip';
 
     public function label(): string
     {
         return match ($this) {
+            self::PUBLIC_TRAIL_VIEWED => 'Halaman jalur publik dilihat',
             self::PROFILE_COMPLETED => 'Profil selesai',
             self::RECOMMENDATION_VIEWED => 'Rekomendasi dilihat',
             self::ROUTE_SELECTED => 'Jalur dipilih',
@@ -24,6 +27,7 @@ enum AnalyticsEvent: string
             self::PRE_DEPARTURE_CHECK_COMPLETED => 'Pre-departure check selesai',
             self::TRIP_COMPLETED => 'Trip selesai',
             self::CONDITION_REPORT_SUBMITTED => 'Laporan kondisi dikirim',
+            self::RETURN_VISIT_AFTER_TRIP => 'Kunjungan kembali sesudah pendakian',
         };
     }
 }

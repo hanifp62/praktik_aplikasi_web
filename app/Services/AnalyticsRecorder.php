@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\AnalyticsEvent as AnalyticsEventName;
 use App\Models\AnalyticsEvent;
+use App\Models\HikingHistory;
 use App\Models\User;
 
 /**
@@ -21,6 +22,27 @@ class AnalyticsRecorder
             'event_name' => $event->value,
             'payload' => $payload ?: null,
         ]);
+    }
+
+    /**
+     * Mencatat kunjungan kembali ke Beranda bagi pendaki yang sudah memiliki riwayat
+     * pendakian, paling banyak satu kali per hari kalender dan tanpa data pribadi.
+     */
+    public function recordReturnVisitAfterTrip(User $user): void
+    {
+        if (! HikingHistory::query()->where('user_id', $user->id)->exists()) {
+            return;
+        }
+
+        $sudahTercatatHariIni = AnalyticsEvent::query()
+            ->where('user_id', $user->id)
+            ->where('event_name', AnalyticsEventName::RETURN_VISIT_AFTER_TRIP->value)
+            ->where('created_at', '>=', now()->startOfDay())
+            ->exists();
+
+        if (! $sudahTercatatHariIni) {
+            $this->record(AnalyticsEventName::RETURN_VISIT_AFTER_TRIP, $user);
+        }
     }
 
     /**

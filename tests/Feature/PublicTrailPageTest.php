@@ -105,13 +105,18 @@ class PublicTrailPageTest extends TestCase
 
     /**
      * Ketiadaan status tidak boleh terbaca sebagai jalurnya terbuka. Halaman ini harus
-     * menyebut ke mana status terkini dicari.
+     * menyebut ke mana status terkini dicari dan menautkan langsung ke halaman jalur
+     * sehingga middleware auth menyimpan tujuan url.intended pengguna.
      */
     public function test_it_says_where_the_current_status_lives(): void
     {
-        $this->get(route('public.trail', $this->jalur()))
+        $trail = $this->jalur();
+
+        $this->get(route('public.trail', $trail))
             ->assertSee('status resmi terkini')
-            ->assertSee(route('login'), escape: false);
+            ->assertSee('Cek kecocokan untuk saya')
+            ->assertSee(route('trails.fit', $trail), escape: false)
+            ->assertSee(route('trails.show', $trail), escape: false);
     }
 
     public function test_it_never_publishes_the_weather_forecast(): void
@@ -273,16 +278,116 @@ class PublicTrailPageTest extends TestCase
     }
 
     /**
-     * Ketinggian puncak yang belum dicatat tetap tidak diketahui (R-007): ditulis "-" seperti jarak dan tanjakan di
-     * sebelahnya, bukan "0 mdpl" dari number_format(null).
+     * Angka yang belum tercatat ditulis jujur sebagai "Belum tersedia" tanpa satuan menggantung
+     * seperti "- km", "- m", atau "- mdpl", dan bukan "0 mdpl" (R-007).
      */
     public function test_an_unrecorded_summit_height_is_a_dash_not_zero(): void
     {
         $gunung = Mountain::factory()->create(['name' => 'Gede', 'province' => 'Jawa Barat', 'elevation_mdpl' => null]);
-        $trail = Trail::factory()->published()->easy()->for($gunung)->create();
+        $trail = Trail::factory()->published()->easy()->for($gunung)->create([
+            'distance_km' => 0,
+            'elevation_gain_m' => 0,
+            'estimated_duration_minutes' => 0,
+        ]);
 
         $isi = $this->get(route('public.trail', $trail))->assertOk()->getContent();
 
-        $this->assertMatchesRegularExpression('/Ketinggian puncak<\/dt>\s*<dd[^>]*>- mdpl<\/dd>/', $isi);
+        $this->assertMatchesRegularExpression('/Ketinggian puncak<\/dt>\s*<dd[^>]*>\s*Belum tersedia\s*<\/dd>/', $isi);
+        $this->assertMatchesRegularExpression('/Jarak<\/dt>\s*<dd[^>]*>\s*Belum tersedia\s*<\/dd>/', $isi);
+        $this->assertMatchesRegularExpression('/Tanjakan<\/dt>\s*<dd[^>]*>\s*Belum tersedia\s*<\/dd>/', $isi);
+        $this->assertMatchesRegularExpression('/Estimasi durasi<\/dt>\s*<dd[^>]*>\s*Belum tersedia\s*<\/dd>/', $isi);
+        $this->assertStringNotContainsString('- km', $isi);
+        $this->assertStringNotContainsString('- m', $isi);
+        $this->assertStringNotContainsString('- mdpl', $isi);
+        $this->assertDoesNotMatchRegularExpression('/(?<![0-9.])0 mdpl/', $isi);
+    }
+
+    public function test_guest_clicking_cta_lands_back_on_trail_fit_after_login(): void
+    {
+        $trail = $this->jalur();
+        $user = User::factory()->create();
+
+        $this->get(route('public.trail', $trail))
+            ->assertOk()
+            ->assertSee(route('trails.fit', $trail), escape: false);
+
+        $this->get(route('trails.fit', $trail))
+            ->assertRedirect(route('login'));
+
+        $masuk = $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $masuk->assertRedirect(route('trails.fit', $trail, absolute: false));
+    }
+
+    public function test_guest_clicking_cta_lands_back_on_trail_fit_after_register_and_onboarding(): void
+    {
+        $trail = $this->jalur();
+
+        $this->get(route('trails.fit', $trail))
+            ->assertRedirect(route('login'));
+
+        $this->post(route('register.store'), [
+            'name' => 'Pendaki Baru',
+            'email' => 'pendaki-organik@contoh.id',
+            'password' => 'kata-sandi-kuat',
+            'password_confirmation' => 'kata-sandi-kuat',
+        ])->assertRedirect(route('onboarding', absolute: false));
+
+        $this->post(route('onboarding.store'), [
+            'experience_level' => 'BEGINNER',
+            'cara_pengalaman' => 'MANUAL',
+            'completed_hikes_count' => 1,
+            'navigation_experience' => 'NONE',
+            'preferred_duration' => 'ONE_DAY',
+            'preferred_trip_type' => 'TEKTOK',
+        ])->assertSessionHasNoErrors()->assertRedirect(route('trails.fit', $trail));
+    }
+
+    public function test_it_publishes_truthful_evergreen_json_ld_without_volatile_status_or_weather(): void
+    {
+        $trail = $this->jalur();
+
+        OfficialStatus::create([
+            'statusable_type' => (new Trail)->getMorphClass(),
+            'statusable_id' => $trail->id,
+            'scope' => StatusScope::TRAIL->value,
+            'status' => OfficialStatusValue::CLOSED->value,
+            'source' => 'Balai Besar TN',
+            'effective_at' => now()->subHour(),
+        ]);
+
+        $isi = $this->get(route('public.trail', $trail))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<script type="application\/ld\+json">(.*?)<\/script>/s',
+            $isi,
+        );
+        preg_match('/<script type="application\/ld\+json">(.*?)<\/script>/s', $isi, $cocok);
+
+        $terstruktur = json_decode($cocok[1], true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('https://schema.org', $terstruktur['@context']);
+        $this->assertCount(2, $terstruktur['@graph']);
+        $this->assertSame('BreadcrumbList', $terstruktur['@graph'][0]['@type']);
+        $this->assertSame('Place', $terstruktur['@graph'][1]['@type']);
+        $this->assertSame('Jalur Selo', $terstruktur['@graph'][1]['name']);
+        $this->assertSame('Merbabu', $terstruktur['@graph'][1]['containedInPlace']['name']);
+
+        $mentah = strtolower($cocok[1]);
+        $this->assertStringNotContainsString('closed', $mentah);
+        $this->assertStringNotContainsString('ditutup', $mentah);
+        $this->assertStringNotContainsString('cuaca', $mentah);
+    }
+
+    public function test_robots_txt_is_public_and_points_to_sitemap(): void
+    {
+        $respons = $this->get('/robots.txt');
+
+        $respons->assertOk();
+        $this->assertStringStartsWith('text/plain', (string) $respons->headers->get('Content-Type'));
+        $respons->assertSee('User-agent: *');
+        $respons->assertSee('Sitemap: '.route('public.sitemap'), escape: false);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services\Mountains;
 
+use App\Enums\DataErrorCategory;
 use App\Enums\RouteFitLabel;
 use App\Models\Mountain;
 use App\Models\OfficialStatus;
@@ -10,6 +11,7 @@ use App\Models\Trail;
 use App\Models\TrailConditionReport;
 use App\Models\User;
 use App\Services\ConditionAggregatorService;
+use App\Services\DataResmi\StatusGunungApi;
 use App\Services\OfficialStatusService;
 use App\Services\TrailFitService;
 use App\Services\TrailNewsService;
@@ -42,6 +44,7 @@ final class HalamanGunung
         private readonly OfficialStatusService $statusResmi,
         private readonly TrailNewsService $kabar,
         private readonly ConditionAggregatorService $kondisi,
+        private readonly StatusGunungApi $gunungApi,
     ) {}
 
     /**
@@ -50,7 +53,7 @@ final class HalamanGunung
     public function props(Mountain $gunung, User $pembaca): array
     {
         $zona = Timezone::isSupported($gunung->timezone) ? $gunung->timezone : Timezone::DEFAULT;
-        $gunung->loadMissing('dataSource:id,source_name,source_type,verified_at');
+        $gunung->loadMissing(['dataSource:id,source_name,source_type,verified_at', 'photo']);
 
         /** @var Collection<int, Trail> $jalur */
         $jalur = $gunung->trails()->published()->with('mountain')->orderBy('name')->get();
@@ -63,6 +66,12 @@ final class HalamanGunung
             // tombolnya tidak ditawarkan bila aksinya akan ditolak (DK-40).
             'bolehDiikuti' => $gunung->trails()->whereNull('archived_at')->exists(),
             'status' => $this->statusGunung($gunung, $zona),
+            // "Laporkan kesalahan data" ke antrean cek ulang kurator (W8, ruling W8-R17).
+            'laporKesalahan' => ['url' => route('mountains.data-errors.store', $gunung), 'kategori' => DataErrorCategory::pilihan()],
+            // Level PVMBG terpisah dari status akses dan hanya bila ada (DK-43, ruling W8-R18).
+            'gunungApi' => $this->gunungApi->untukGunung($gunung->id, $zona),
+            // Foto berlisensi kepala halaman, hanya dari mountain_photos (DK-37, R-017, ruling W8-R19).
+            'foto' => FotoGunung::bentuk($gunung->photo, $gunung),
             'jalur' => $jalur->map(fn (Trail $t) => [
                 'id' => $t->id,
                 'nama' => $t->name,

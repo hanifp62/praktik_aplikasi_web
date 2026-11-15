@@ -478,7 +478,8 @@ class TripStepGuidanceTest extends TestCase
         $batal = $this->trip(['status' => TripStatus::CANCELLED->value], $jalur);
         $aktif = $this->trip([], $jalur);
         $tautanIzin = function (TripPlan $trip): ?array {
-            TripPreparationItem::create(['trip_plan_id' => $trip->id, 'category' => 'LOGISTICS', 'label' => PreparationService::PERMIT_LABEL, 'is_critical' => true, 'status' => 'NOT_CONFIRMED']);
+            // Kunci stabil butir izin (W8-R24): ditulis lewat forceFill karena kind bukan fillable.
+            (new TripPreparationItem)->forceFill(['trip_plan_id' => $trip->id, 'kind' => TripPreparationItem::JENIS_IZIN, 'category' => 'LOGISTICS', 'label' => PreparationService::PERMIT_LABEL, 'is_critical' => true, 'status' => 'NOT_CONFIRMED'])->save();
 
             return collect($this->props($trip, 'trips.preparation')['kategori'])->flatMap(fn (array $k) => $k['items'])->firstWhere('label', PreparationService::PERMIT_LABEL)['tautan'];
         };

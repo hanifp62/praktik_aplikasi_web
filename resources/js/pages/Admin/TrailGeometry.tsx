@@ -2,7 +2,7 @@ import { router, useForm, usePage } from '@inertiajs/react';
 import type { LineString } from 'geojson';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
-import { konfirmasiLalu } from '@/components/admin/FormulirAdmin';
+import { useKonfirmasiAdmin } from '@/components/admin/FormulirAdmin';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { PetaJalur } from '@/components/trails/rinci/PetaJalur';
@@ -48,6 +48,7 @@ type Aksi = 'cari' | 'pilih' | 'tanjakan' | 'simpan';
 export default function TrailGeometry() {
     const { auth, flash, trail, spasial, titikTersimpan, maksTitik, ambangKetinggian, kandidat, pratinjau, galat, galatOsm, penolakan } = usePage<Props>().props;
     const admin = auth.user?.isAdmin ?? false;
+    const { konfirmasiLalu, dialogKonfirmasi } = useKonfirmasiAdmin();
     const [sibuk, setSibuk] = useState<Aksi | null>(null);
     // Kandidat OSM yang sedang dipratinjau: hanya tombol Pratinjau miliknya yang `processing`,
     // supaya useFokusKembali di Button mengembalikan fokus ke tombol itu (ruling CF-5, TA-m7).
@@ -201,6 +202,7 @@ export default function TrailGeometry() {
                 ) : (
                     <Button variant="secondary" href={contribute.url()}>Kembali ke halaman kontribusi</Button>
                 )}
+                {dialogKonfirmasi}
             </div>
         </div>
     );

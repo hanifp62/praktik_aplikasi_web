@@ -25,7 +25,7 @@ export function FormKataSandi({ petunjukSandi }: { petunjukSandi: string }) {
     };
 
     return (
-        <Card title="Perbarui Kata Sandi" subtitle="Pastikan akun Anda memakai kata sandi yang panjang dan acak agar tetap aman.">
+        <Card title="Perbarui Kata Sandi" subtitle="Pastikan akun Anda memakai kata sandi yang panjang dan acak yang sulit ditebak.">
             <form onSubmit={kirim} className="max-w-xl space-y-4" noValidate>
                 <IsianKataSandi
                     id="update_password_current_password"

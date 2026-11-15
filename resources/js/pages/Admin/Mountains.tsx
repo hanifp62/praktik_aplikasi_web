@@ -1,7 +1,7 @@
 import { router, useForm, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
-import { FormulirAdmin, PilihanAdmin, TeksPanjangAdmin, konfirmasiLalu, type Pilihan } from '@/components/admin/FormulirAdmin';
+import { FormulirAdmin, PilihanAdmin, TeksPanjangAdmin, useKonfirmasiAdmin, type Pilihan } from '@/components/admin/FormulirAdmin';
 import { Tabel } from '@/components/admin/Tabel';
 import type { TautanHalaman } from '@/components/trails/types';
 import { Alert } from '@/components/ui/Alert';
@@ -33,6 +33,8 @@ interface BarisGunung {
     trails: string;
     status: string;
     archived: boolean;
+    /** Halaman foto berlisensi gunung ini (W8, DK-37). */
+    foto: string;
     isian: IsianGunung;
 }
 
@@ -47,6 +49,7 @@ const kosong: IsianGunung = { name: '', province: '', region: '', elevation_mdpl
 export default function Mountains() {
     const { flash, mountains, sources } = usePage<Props>().props;
     const [sunting, setSunting] = useState<number | 'baru' | null>(null);
+    const { konfirmasiLalu, dialogKonfirmasi } = useKonfirmasiAdmin();
     const form = useForm<IsianGunung>(kosong);
 
     const buka = (baris?: BarisGunung) => {
@@ -140,6 +143,7 @@ export default function Mountains() {
                             isi: (g) => (
                                 <div className="flex flex-wrap gap-2">
                                     <Button variant="secondary" size="sm" onClick={() => buka(g)} aria-label={`Ubah ${g.name}`}>Ubah</Button>
+                                    <Button variant="secondary" size="sm" href={g.foto} aria-label={`Foto ${g.name}`}>Foto</Button>
                                     <Button variant="secondary" size="sm" onClick={() => ubahArsip(g)} aria-label={`${g.archived ? 'Aktifkan' : 'Arsipkan'} ${g.name}`}>
                                         {g.archived ? 'Aktifkan' : 'Arsipkan'}
                                     </Button>
@@ -152,6 +156,7 @@ export default function Mountains() {
                 <div className="mt-6">
                     <Pagination links={mountains.links} />
                 </div>
+                {dialogKonfirmasi}
             </div>
         </div>
     );

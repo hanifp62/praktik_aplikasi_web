@@ -119,6 +119,10 @@ class CiWorkflowsTest extends TestCase
         $this->assertStringContainsString('--env DB_URL=pgsql://hiking:hiking@127.0.0.1:5432/hiking_test', $jalankan);
         $this->assertStringNotContainsString('--env PORT=', $jalankan, 'Image diuji di port 80, port yang dipakai Vercel.');
         $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1/up', $jalankan);
+        $this->assertStringContainsString('curl --silent --fail http://127.0.0.1/api/health | grep --quiet \'"db":true\'', $jalankan, 'Kesiapan basis data harus diuji di image produksi, karena /up tidak menyentuh Postgres.');
+        $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1/api/mountains', $jalankan);
+        $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1/api/trails', $jalankan);
+        $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1/sitemap.xml', $jalankan);
         $this->assertStringContainsString('curl --silent --fail --output /dev/null http://127.0.0.1/login', $jalankan);
         $this->assertStringContainsString('/api/cron/data-freshness-check)" = 401', $jalankan);
         $this->assertStringContainsString('--header "Authorization: Bearer $CRON_SECRET" http://127.0.0.1/api/cron/data-freshness-check', $jalankan);
@@ -158,6 +162,8 @@ class CiWorkflowsTest extends TestCase
         $this->assertLessThan(strpos($mulai, "\nphp artisan optimize --no-interaction\n"), $paksa, 'Nilai dipaksa sebelum konfigurasi di-cache.');
         $this->assertStringContainsString('TRUSTED_PROXIES="${TRUSTED_PROXIES:-*}"', $mulai);
         $this->assertStringContainsString('LOG_CHANNEL="${LOG_CHANNEL:-stderr}"', $mulai);
+        $this->assertStringContainsString('stack|single|daily)', $mulai, 'Kanal log berkas kontainer harus dialihkan ke stderr agar galat produksi tidak hilang.');
+        $this->assertStringContainsString('export LOG_CHANNEL=stderr', $mulai);
 
         $bernama = $this->langkahBernama($this->alur('test.yml')['jobs']['image']['steps']);
         $urutan = array_keys($bernama);
@@ -165,10 +171,23 @@ class CiWorkflowsTest extends TestCase
 
         $this->assertLessThan(array_search('Jalankan image dengan variabel keliru', $urutan, true), array_search('Jalankan image', $urutan, true));
         $this->assertStringContainsString('--env APP_ENV=local --env APP_DEBUG=true', $keliru);
+        $this->assertStringContainsString('--env LOG_CHANNEL=stack', $keliru, 'Pengalihan kanal log berkas ke stderr harus diuji dengan LOG_CHANNEL=stack.');
         $this->assertStringNotContainsString('TRUSTED_PROXIES', $keliru, 'Bawaan proxy tepercaya diuji tanpa nilai dari platform.');
         $this->assertStringContainsString("if grep --quiet 'MethodNotAllowedHttpException'", $keliru, 'Halaman galat tidak boleh memperlihatkan jejak.');
         $this->assertStringContainsString('http://127.0.0.1/dev/primitif)" = 404', $keliru, 'Rute pengembangan tidak boleh termuat.');
         $this->assertStringContainsString("http://127.0.0.1/login | grep --quiet 'https://contoh.test/build/assets/'", $keliru);
+        $this->assertStringContainsString('LOG_CHANNEL=stack menulis ke berkas kontainer', $keliru);
+    }
+
+    public function test_readme_vercel_environment_block_has_no_leading_spaces_on_keys(): void
+    {
+        $readme = str_replace("\r\n", "\n", File::get(base_path('README.md')));
+
+        $this->assertMatchesRegularExpression(
+            '/^```\nAPP_NAME=Memount\n(?:[A-Z0-9_]+=.*\n)+FIELD_SAFETY_ENABLED=true\n```$/m',
+            $readme,
+            'Blok variabel lingkungan produksi di README.md harus rata kiri tanpa spasi awal agar penyalinan mentah ke Vercel tidak merusak nama kunci seperti DB_URL.'
+        );
     }
 
     public function test_the_security_workflow_audits_dependencies_and_scans_for_secrets(): void

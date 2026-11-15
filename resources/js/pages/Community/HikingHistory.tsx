@@ -16,14 +16,17 @@ import type { PropsBersama } from '@/types';
 
 interface Entri {
     id: number;
-    tripId: number;
-    trailId: number;
-    jalur: string | null;
+    /** Null untuk catatan manual (FR-25): pendakian di luar trip tidak punya ringkasan. */
+    tripId: number | null;
+    /** Null bila jalurnya di luar katalog. */
+    trailId: number | null;
+    jalur: string;
     gunung: string | null;
+    manual: boolean;
     tanggal: string;
     jenisTrip: string | null;
     hasil: string | null;
-    persiapan: string;
+    persiapan: string | null;
     jarak: string;
     durasi: string;
     catatan: string | null;
@@ -37,14 +40,14 @@ interface Props extends PropsBersama {
 
 const tautanAksi = 'inline-flex min-h-11 items-center text-brand-ink underline';
 
-/** FR-14: catatan perjalanan, kelengkapan persiapan saat itu, dan laporan kondisi yang dikirim. */
+/** FR-14: catatan perjalanan, kelengkapan persiapan, dan laporan kondisi yang dikirim. */
 export default function HikingHistory() {
     const { flash, entri, peringatanFoto } = usePage<Props>().props;
 
     return (
         <div className="py-8">
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                <PageHeader induk={{ href: progress.url(), label: 'Progres' }} title="Riwayat Pendakian" description="Catatan perjalanan Anda, kelengkapan persiapan saat itu, dan laporan kondisi yang Anda kirim." />
+                <PageHeader induk={{ href: progress.url(), label: 'Progres' }} title="Riwayat Pendakian" description="Catatan perjalanan Anda, hitungan butir persiapan, dan laporan kondisi yang Anda kirim." />
 
                 {flash.status ? <Alert variant="success" className="mb-4">{flash.status}</Alert> : null}
                 {peringatanFoto ? <Alert variant="warning" className="mb-4">{peringatanFoto}</Alert> : null}
@@ -65,33 +68,43 @@ export default function HikingHistory() {
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div className="min-w-0">
                                             <h2 className="text-base font-semibold text-primary">
-                                                <Tautan href={summary.url(e.tripId)} className="rounded-control py-1 hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
-                                                    {e.jalur}
-                                                </Tautan>
+                                                {e.tripId !== null ? (
+                                                    <Tautan href={summary.url(e.tripId)} className="rounded-control py-1 hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600">
+                                                        {e.jalur}
+                                                    </Tautan>
+                                                ) : (
+                                                    e.jalur
+                                                )}
                                             </h2>
                                             <p className="text-sm text-secondary">{e.gunung}</p>
                                             <p className="mt-1 text-sm text-muted">
                                                 {e.tanggal} &middot; {e.jenisTrip} &middot; {e.hasil}
                                             </p>
                                             <p className="mt-1 text-sm text-muted">
-                                                Jarak jalur {e.jarak} &middot; Lama pendakian {e.durasi}
+                                                {e.manual ? `Dicatat manual · Jarak ${e.jarak} · Lama pendakian ${e.durasi}` : `Jarak jalur ${e.jarak} · Lama pendakian ${e.durasi}`}
                                             </p>
                                         </div>
                                         {/* Hitungan butir dari server, bukan persen (ruling AF-4, R-005, R-007). */}
-                                        <p className="text-sm text-secondary sm:max-w-56 sm:text-right">{e.persiapan}</p>
+                                        {e.persiapan !== null ? (
+                                            <p className="text-sm text-secondary sm:max-w-56 sm:text-right">{e.persiapan}</p>
+                                        ) : null}
                                     </div>
 
                                     {e.catatan ? <p className="mt-3 text-sm text-secondary">{e.catatan}</p> : null}
 
                                     <div className="mt-2 flex flex-wrap gap-x-4 text-sm">
-                                        <Tautan href={tripShow.url(e.tripId)} className={tautanAksi}>Lihat trip</Tautan>
+                                        {e.tripId !== null ? (
+                                            <Tautan href={tripShow.url(e.tripId)} className={tautanAksi}>
+                                                Lihat trip
+                                            </Tautan>
+                                        ) : null}
                                         {e.laporan ? (
                                             <span className="inline-flex min-h-11 items-center text-secondary">Laporan kondisi: {e.laporan.status}</span>
-                                        ) : (
-                                            <Tautan href={reportsCreate.url({ query: { trail: e.trailId, trip: e.tripId } })} className={tautanAksi}>
+                                        ) : e.trailId !== null ? (
+                                            <Tautan href={reportsCreate.url({ query: { trail: e.trailId, ...(e.tripId !== null ? { trip: e.tripId } : {}) } })} className={tautanAksi}>
                                                 Kirim laporan kondisi
                                             </Tautan>
-                                        )}
+                                        ) : null}
                                     </div>
 
                                     {/* Pelapor berhak tahu apa yang salah, kalau tidak ia tidak dapat memperbaikinya. */}

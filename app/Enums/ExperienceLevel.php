@@ -20,6 +20,20 @@ enum ExperienceLevel: string
     }
 
     /**
+     * Penjelasan tingkat di onboarding dan Profil (prototype 00). Tingkat diisi sendiri dan
+     * tidak naik otomatis karena riwayat (BR-11).
+     */
+    public function keterangan(): string
+    {
+        return match ($this) {
+            self::BEGINNER => 'Baru beberapa kali, di jalur yang ramai dan bertanda.',
+            self::INTERMEDIATE => 'Sudah beberapa kali, termasuk bermalam di gunung.',
+            self::ADVANCED => 'Rutin mendaki jalur panjang dan membaca medan sendiri.',
+            self::EXPERT => 'Navigasi mandiri, termasuk di jalur yang jarang dilalui.',
+        };
+    }
+
+    /**
      * Ordinal position used for comparing hiker capability against route demand.
      */
     public function rank(): int

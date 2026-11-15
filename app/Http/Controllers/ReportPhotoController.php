@@ -3,20 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\TrailConditionReport;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Menyajikan foto laporan kondisi dari disk privat (PRD §67).
  *
- * Sebelumnya foto disimpan ke disk publik, sehingga foto pada laporan yang masih
- * menunggu moderasi maupun yang sudah ditolak dapat diakses siapa pun yang menebak
- * URL-nya. Menyajikannya lewat route memungkinkan aturan akses yang sama dengan
- * laporannya sendiri diterapkan pada berkasnya.
+ * Otorisasi selalu diperiksa lebih dulu sebelum ETag dibandingkan, sehingga pengamat
+ * yang tidak berhak tidak pernah menerima jawaban 304 untuk foto laporan tertunda
+ * atau ditolak.
  */
 class ReportPhotoController extends Controller
 {
-    public function __invoke(TrailConditionReport $report): StreamedResponse
+    public function __invoke(Request $request, TrailConditionReport $report): Response|StreamedResponse
     {
         $this->authorize('view', $report);
 
@@ -26,11 +27,21 @@ class ReportPhotoController extends Controller
 
         abort_unless($disk->exists($report->photo_path), 404);
 
-        return $disk->response(
-            $report->photo_path,
-            null,
-            // Foto privat tidak boleh disimpan proxy bersama.
-            ['Cache-Control' => 'private, max-age=600']
+        $etag = '"'.sha1($report->photo_path.'|'.$disk->size($report->photo_path).'|'.$disk->lastModified($report->photo_path)).'"';
+        $headers = [
+            'Cache-Control' => 'private, max-age=3600',
+            'ETag' => $etag,
+        ];
+
+        $ifNoneMatch = array_map(
+            fn (string $nilai) => trim(trim($nilai), '"'),
+            explode(',', (string) $request->header('If-None-Match')),
         );
+
+        if ($request->headers->has('If-None-Match') && in_array(trim($etag, '"'), $ifNoneMatch, true)) {
+            return response('', 304, $headers);
+        }
+
+        return $disk->response($report->photo_path, null, $headers);
     }
 }

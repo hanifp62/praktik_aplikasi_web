@@ -20,6 +20,18 @@ export interface JalurGunung {
     status: StatusRingkas;
 }
 
+/** Foto berlisensi kepala halaman gunung (FotoGunung::bentuk, DK-37); null berarti visual data. */
+export interface FotoGunungData {
+    url: string;
+    alt: string;
+    atribusi: string;
+    lisensi: string;
+    pembuat: string;
+    sumber: string | null;
+    lebar: number;
+    tinggi: number;
+}
+
 /** Profil setiap jalur pada skala mutlak yang sama (SkalaProfil::mutlakBersama), 0..1. */
 export interface ProfilGunung {
     garis: Array<{ id: number; nama: string; titik: Array<[number, number]> }>;

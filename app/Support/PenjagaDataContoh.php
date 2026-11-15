@@ -55,8 +55,12 @@ final class PenjagaDataContoh
         $berkas = (string) $koneksi->getConfig('database');
         $folder = realpath(database_path());
         $induk = $berkas === '' || $berkas === ':memory:' ? false : realpath(dirname($berkas));
+        $pekaHuruf = PHP_OS_FAMILY !== 'Windows';
+        $akhiranValid = $pekaHuruf
+            ? str_ends_with($berkas, '.sqlite')
+            : str_ends_with(strtolower($berkas), '.sqlite');
 
-        if ($folder === false || $induk !== $folder || ! str_ends_with($berkas, '.sqlite')) {
+        if ($folder === false || $induk === false || ! self::folderSama($induk, $folder, $pekaHuruf) || ! $akhiranValid) {
             throw new DataContohDitolak("Berkas demo di luar folder database/ ditolak: {$berkas}.");
         }
 
@@ -111,6 +115,9 @@ final class PenjagaDataContoh
         // dapat menunjuk bucket Supabase produksi.
         config(['filesystems.report_photos_disk' => 'local']);
 
+        // Disk foto profil (W7), arsip bukti status resmi, dan foto gunung (W8) punya kunci .env sendiri juga.
+        config(['filesystems.avatars_disk' => 'local', 'filesystems.evidence_disk' => 'local', 'filesystems.mountain_photos_disk' => 'local']);
+
         // Tinjauan W1-9b #2: config/broadcasting.php tidak ada di config/ aplikasi, tapi
         // itu tidak berarti config('broadcasting.*') kosong. LoadConfiguration memuat
         // konfigurasi dasar framework untuk setiap berkas yang tidak ditimpa aplikasi
@@ -156,5 +163,16 @@ final class PenjagaDataContoh
     public static function sedangDisajikan(): bool
     {
         return (bool) config('app.demo') || config('database.default') === self::KONEKSI;
+    }
+
+    /**
+     * Membandingkan dua jalur folder sesudah realpath() dengan menghormati kepekaan huruf
+     * sistem operasi (Windows NTFS tidak peka huruf pada huruf drive maupun nama folder).
+     */
+    public static function folderSama(string $induk, string $folder, ?bool $pekaHuruf = null): bool
+    {
+        $peka = $pekaHuruf ?? (PHP_OS_FAMILY !== 'Windows');
+
+        return $peka ? $induk === $folder : strcasecmp($induk, $folder) === 0;
     }
 }

@@ -24,7 +24,7 @@ Desain konsolidasi: `docs/superpowers/specs/2026-09-23-konsolidasi-dokumen-desig
 ## Cara membaca
 
 1. **Nomor § adalah ID permanen, bukan halaman.** Setiap bagian membawa ID-nya di judul. Urutan baca disusun untuk manusia yang membaca dari atas, sehingga boleh berbeda dari urutan nomor. Untuk mencari §N, buka Lampiran A.
-2. **Tidak ada ID yang dihapus atau dipakai ulang.** Bagian yang dipadatkan ke bagian lain tetap tercatat sebagai alias di Lampiran A, misalnya §137 dipadatkan ke §1. ID baru: bagian mulai §147 (kini terpakai sampai §161), fitur mulai FR-22 (terpakai sampai FR-27), aturan bisnis baru memakai nomor setelah BR-16 (belum ada), governance record berikutnya GR-09.
+2. **Tidak ada ID yang dihapus atau dipakai ulang.** Bagian yang dipadatkan ke bagian lain tetap tercatat sebagai alias di Lampiran A, misalnya §137 dipadatkan ke §1. ID baru: bagian mulai §147 (kini terpakai sampai §161), fitur mulai FR-22 (terpakai sampai FR-27), aturan bisnis baru memakai nomor setelah BR-16 (belum ada), governance record berikutnya GR-10.
 3. **Rujukan di kode tidak disentuh.** Karena ID tetap, ratusan rujukan `§N`, `BR-N`, dan `FR-N` di kode, test, dan dokumen tetap menunjuk isi yang sama. `tests/Feature/PrdReferenceIntegrityTest.php` menjaganya: setiap ID yang dirujuk harus punya heading atau alias di sini, indeks tidak boleh melompat, tidak ada ID yang dipakai dua kali, PRD hanya ada di `docs/PRD.md`, dan setiap berkas `.md` yang disebut dokumen hidup benar-benar ada.
 4. **Konvensi rujukan.** Di dokumen ini, "§N" selalu berarti ID PRD. Bagian dokumen lain ditulis "bagian N" beserta nama berkasnya, misalnya "HANDOVER.md bagian 3". Aturan R-001 sampai R-024 tidak disalin ke sini; PRD hanya merujuk pemiliknya (peta di bawah).
 5. **Istilah.** Teks untuk pengguna memakai pos (bukan checkpoint), jalur, kawasan, dan pengelola. Istilah domain di dokumen ini: Mountain, Trail, Route Fit. Nilai enum ditulis kapital, misalnya OPEN atau COCOK.
@@ -814,8 +814,8 @@ Nama Inggris adalah kata-kata pemilik. Label Indonesia mengikuti asumsi A1 spec 
 | Tab | Pertanyaan pengguna | Cakupan | Batas negatif |
 |---|---|---|---|
 | **Beranda** (Home) | "Apa langkah saya berikutnya?" | Perjalanan berikutnya, rekomendasi "karena ...", status kesiapan, trip mendatang, ringkasan progres, kabar gunung yang diikuti, satu langkah berikutnya | Beranda tidak memutuskan untuk pengguna; kabar yang tampil adalah intel kondisi, bukan feed sosial |
-| **Jelajah** (Explore) | "Apa yang tersedia dan mana yang relevan?" | Peta, daftar jalur, tampilan gunung (gunung membuka jalurnya, R-001), saringan, pencarian kalimat sederhana (FR-27), Route Fit, detail jalur, simpanan dengan catatan pribadi (FR-22) | Jelajah tidak memutuskan; ia menyajikan kandidat beserta alasannya. Peta hanya menggambar jalur yang bergeometri; titik gunung tidak dipakai sebagai pengganti jalur (DK-06, **diputuskan atas delegasi pemilik**) |
-| **Trip** (Trips) | "Bagaimana saya memilih, merencanakan, dan bersiap?" | Rekomendasi Route Fit, banding maksimal 3 jalur yang dipilih dari simpanan (DK-05, **diputuskan atas delegasi pemilik**), trip, detail rencana (tanggal selesai, peserta), persiapan, cek kesiapan, pengingat (FR-24), tautan bagikan read-only (FR-23) | Banding tidak menghasilkan pemenang (R-016, §33). Tautan bagikan read-only dan tidak pernah menulis ke simpanan siapa pun. Kesiapan adalah dukungan keputusan, bukan izin medis atau hukum (§40) |
+| **Jelajah** (Explore) | "Apa yang tersedia dan mana yang relevan?" | Peta, daftar jalur, halaman gunung `/mountains/{gunung}` sebagai hub jalurnya (gunung membuka jalurnya, R-001; DK-44, GR-09), saringan, pencarian kalimat sederhana (FR-27), Route Fit dengan penilaian kecocokan per jalur beserta alasan per faktor di `/trails/{jalur}/kecocokan`, untuk rencana tertentu lewat `?trip=` (GR-09), detail jalur, simpanan dengan catatan pribadi (FR-22) | Jelajah tidak memutuskan; ia menyajikan kandidat beserta alasannya. Peta hanya menggambar jalur yang bergeometri; titik gunung tidak dipakai sebagai pengganti jalur (DK-06, **diputuskan atas delegasi pemilik**) |
+| **Trip** (Trips) | "Bagaimana saya memilih, merencanakan, dan bersiap?" | Rekomendasi Route Fit, banding maksimal 3 jalur yang dipilih dari simpanan (DK-05, **diputuskan atas delegasi pemilik**), indeks trip berkelompok Berlangsung, Mendatang, dan Selesai, dengan tautan Lihat semua untuk trip lama (GR-09), trip, detail rencana (tanggal selesai, peserta), persiapan, cek kesiapan, pengingat (FR-24), tautan bagikan read-only (FR-23) | Banding tidak menghasilkan pemenang (R-016, §33). Tautan bagikan read-only dan tidak pernah menulis ke simpanan siapa pun. Kesiapan adalah dukungan keputusan, bukan izin medis atau hukum (§40) |
 | **Mendaki** (Track) | "Apa yang saya butuhkan di jalur sekarang?" | Mulai pendakian, peta langsung, posisi atas izin, pos berikutnya dan sisa jarak, posisi pada profil elevasi, selesai; paket lapangan luring, kartu darurat, dan pesan rencana untuk kontak di balik sakelar (GR-07) | Mode lapangan minimal (§54). Lokasi hanya diminta di sini, atas persetujuan di perangkat, dan tidak dikirim ke server di luar rekam jejak yang opsional (§82, §83). Tidak menjanjikan pelacakan latar, deteksi keluar jalur, navigasi offline penuh, atau SOS (§53); data dinamis di paket selalu berlabel "terakhir diketahui" (GR-07) |
 | **Progres** (Progress) | "Bagaimana perkembangan saya?" | Riwayat pendakian, statistik, target pribadi (FR-25), pencapaian, catatan pendakian manual (FR-25) | Pembandingnya diri sendiri (R-015), tanpa papan peringkat antarpendaki; riwayat tidak menaikkan level pengalaman (BR-11); pencapaian tidak pernah memberi hadiah pada kecepatan (§156) |
 | **Profil** (Profile) | "Siapa saya sebagai pendaki, dan apa pengaturan saya?" | Pengalaman, preferensi, perlengkapan pribadi, pengaturan (tema §157, bahasa §158, akun, sandi), privasi (rekam jejak, hapus akun, kebijakan data); pintu ke konsol admin, moderator, dan kontribusi ahli bagi yang berhak | Pengalaman yang diisi sendiri adalah masukan, bukan sertifikasi (§22). Pintu konsol hanya tampilan; otorisasinya tetap di server (§76) |
@@ -1752,7 +1752,7 @@ Kriteria per permukaan ada di `docs/fitur/01` sampai `08`.
 
 ## §128 Fase pengembangan
 
-Satu tabel yang menyatukan fase PRD v2.0 (1 sampai 8), Fase 1 sampai 4 PRD NgodingPakeAI, peta jalan `ourplan.md` (0 sampai 15), tahap DK-23, dan aliran kerja spec v2. Setiap tahap ditutup dengan gerbang persetujuan pemilik dan bukti (§161). Keadaan per 25 September 2026; tingkat L mengikuti §161.
+Satu tabel yang menyatukan fase PRD v2.0 (1 sampai 8), Fase 1 sampai 4 PRD NgodingPakeAI, peta jalan `ourplan.md` (0 sampai 15), tahap DK-23, dan aliran kerja spec v2. Setiap tahap ditutup dengan gerbang persetujuan pemilik dan bukti (§161). Keadaan per 25 September 2026, kecuali baris 7, 8, 9, dan 12 yang diperbarui GR-09 pada gelombang W9; tingkat L mengikuti §161.
 
 | Tahap | Isi | Asal | Keadaan | Bukti |
 |---|---|---|---|---|
@@ -1763,12 +1763,12 @@ Satu tabel yang menyatukan fase PRD v2.0 (1 sampai 8), Fase 1 sampai 4 PRD Ngodi
 | 4. Data dan kepercayaan | Audit data, golden trail, provenance | ourplan 3, 4; DK-22 fase 1 | Belum: 0 jalur bergeometri; golden trail menunggu pemilik (P6) | §108 |
 | 5. Rekomendasi inti | Profil, data jalur, Route Fit, penjelasan | Lama 4; ourplan 6 | L2: kode dan test ada; belum dengan data nyata | `RouteFitService`; matriks §101 |
 | 6. Jelajah dan detail | Halaman Jelajah dan detail jalur | NgodingPakeAI Fase 1; ourplan 4, 5 | Halaman React ada; task Jelajah #1 sampai #10 berstatus selesai di server (#1 sampai #9 belum diverifikasi); peta menunggu geometri | `docs/fitur/01`, `02` |
-| 7. Pertimbangkan, perjalanan, kondisi | Simpan, banding, trip, persiapan, kesiapan, Kabar | Lama 5, 6; NgodingPakeAI Fase 2; ourplan 7 sampai 9, 11 | L2 untuk yang lama; banding maks 3, catatan, tautan bagikan, pengingat, detail rencana belum | `docs/fitur/03`, `04`, `05` |
-| 8. Mode pendakian, progres, akun | Mode pendakian, riwayat, progres, akun | Lama 7; NgodingPakeAI Fase 3; ourplan 10, 12 | L2 tanpa data lapangan; target pribadi, catatan manual, Google, dan passkey belum | `docs/fitur/06`, `07` |
-| 9. Tata kelola data | Konsol pengelola, moderasi, kontribusi ahli | NgodingPakeAI Fase 4; ourplan 13 | L2; kelola peran pengguna belum | `docs/fitur/08` |
+| 7. Pertimbangkan, perjalanan, kondisi | Simpan, banding, trip, persiapan, kesiapan, Kabar | Lama 5, 6; NgodingPakeAI Fase 2; ourplan 7 sampai 9, 11 | Banding maksimal 3, catatan, tautan bagikan, pengingat, dan detail rencana dibangun W3 dan W4; L2 tanpa data lapangan | `docs/fitur/03`, `04`, `05`; `HANDOVER.md` bagian 0 |
+| 8. Mode pendakian, progres, akun | Mode pendakian, riwayat, progres, akun | Lama 7; NgodingPakeAI Fase 3; ourplan 10, 12 | Mode lapangan dan paket luring (W6, paket dan alat keselamatan di balik sakelar mati), target pribadi dan catatan manual (W7) dibangun di pohon kerja, menunggu izin commit; L2 tanpa data lapangan; Google dan passkey belum, menunggu izin dependensi | `docs/fitur/06`, `07`; `HANDOVER.md` bagian 0 |
+| 9. Tata kelola data | Konsol pengelola, moderasi, kontribusi ahli | NgodingPakeAI Fase 4; ourplan 13 | Meja kurator, keanggotaan badan resmi, dan status gunung api (W8) dibangun di pohon kerja, menunggu izin commit dan kurator pertama (Q11); L2; kelola peran pengguna lain belum | `docs/fitur/08`; `HANDOVER.md` bagian 0 |
 | 10. Fase nol platform | Perbaikan F8, F9, F11 sampai F13, mode gelap, adaptasi perangkat, pencabutan `@tailwindcss/vite`, sketsa logo | DK-23 fase nol | Selesai 24 September 2026, kecuali aset logo final (gerbang DK-16) | HANDOVER.md bagian 0a |
 | 11. Migrasi frontend | Semua halaman aplikasi ke React dan Inertia; pensiun Livewire | Keputusan jalur C; aliran A | Halaman aplikasi sudah React; pensiun Blade dan Livewire sedang diselesaikan | HANDOVER.md bagian 0 |
-| 12. Memount v2 | Fondasi desain, halaman per tab, fitur DK-07 tanpa dependensi | Spec v2 aliran D sampai F | Direncanakan | Spec v2 bagian 7 |
+| 12. Memount v2 | Fondasi desain, halaman per tab, fitur DK-07 tanpa dependensi | Spec v2 aliran D sampai F | Gelombang W1 sampai W9 spec v3 selesai di pohon kerja; menunggu izin commit, push, migrasi, dan deploy (permintaan izin akhir W9) | Spec v3 bagian 12; `HANDOVER.md` bagian 0 |
 | 13. Bahasa Inggris | Peluncuran `/en/` bersama migrasi URL publik | DK-21, DK-23 | Belum | §158 |
 | 14. Program data nasional | Katalog, status, golden trail, kontribusi termoderasi | DK-22 | Belum; menunggu keputusan terbuka | §159 |
 | 15. Hardening dan deploy | Keamanan, aksesibilitas, performa, SEO, PWA; deploy Vercel | Lama 8; ourplan 14; sub-proyek 5 | Sebagian berjalan; deploy belum | §123, §154 |
@@ -1930,13 +1930,13 @@ Membuka kunci butuh governance record (§130) dan persetujuan pemilik.
 | Masalah | Tetap |
 | Pengguna sasaran | Tetap |
 | Alur inti | Tetap |
-| Cakupan fitur utama | Diamandemen GR-02 (FR-22 sampai FR-27) |
+| Cakupan fitur utama | Diamandemen GR-02 (FR-22 sampai FR-27) dan GR-06 (pengingat hari pemesanan izin dibuka di FR-24) |
 | Model data | Tetap; skema kanonis adalah migrasi, perubahan aditif menurut DK-23 |
-| Baseline teknis | Diamandemen: versi terpasang, presentasi React, deploy Vercel |
+| Baseline teknis | Diamandemen: versi terpasang, presentasi React, deploy Vercel, Tailwind 4.3 dan MapLibre 6 (GR-08) |
 | Model keamanan | Tetap; diperkuat OWASP 2025 (§75) |
 | Model keandalan | Tetap |
-| Batas MVP | Diamandemen GR-01 dan GR-02 |
-| Arsitektur navigasi | Diamandemen GR-02 (DK-25) |
+| Batas MVP | Diamandemen GR-01 dan GR-02; amandemen paket lapangan GR-07 menunggu keputusan pemilik (Q7) |
+| Arsitektur navigasi | Diamandemen GR-02 (DK-25); isi tab Jelajah dan Trip dilengkapi GR-09 |
 | Merek dan platform | Ditambahkan GR-03 |
 | Dokumen ini | Draf konsolidasi v3.0, di-commit atas izin pemilik 26 September 2026; persetujuan isinya masih ditunggu |
 | Lokasi berkas | `docs/PRD.md` sejak GR-04; keluaran `ngodingpakeai plan get` di root tidak lagi dapat menimpanya |
@@ -2282,6 +2282,39 @@ masih memuat `blob:` peninggalan MapLibre 4; build produksi MapLibre 6 tidak lag
 - Lantai peramban baru di §88: Firefox 125 sampai 127 dan Safari di bawah 16.4 kini di bawah lantai.
 - Pencabutan `blob:` dari CSP `worker-src` sesudah uji peramban mode lapangan luring.
 
+### GR-09: Permukaan Jelajah dan Trip yang sudah dibangun, status program, dan log keputusan spec v3 (gelombang W9)
+
+**Requirement changed.**
+
+- §145.1 baris Jelajah menyebut halaman gunung `/mountains/{gunung}` sebagai hub jalurnya (DK-44) dan penilaian
+  kecocokan per jalur di `/trails/{jalur}/kecocokan`, termasuk untuk rencana tertentu lewat `?trip=`. Baris Trip
+  menyebut indeks trip berkelompok Berlangsung, Mendatang, dan Selesai dengan tautan Lihat semua untuk trip lama.
+- §128 baris 7, 8, 9, dan 12 diperbarui ke keadaan gelombang W9: dibangun di pohon kerja dan menunggu izin commit,
+  bukan "belum".
+- §143 mencatat GR-06 di cakupan fitur, GR-08 di baseline teknis, GR-07 yang menunggu Q7 di batas MVP, dan GR-09 di
+  arsitektur navigasi.
+- Log keputusan menerima DK-30 sampai DK-35 dan DK-37 sampai DK-58 dari spec v3 bagian 4 dan 17.4. DK-36 sudah
+  tercatat lewat GR-07.
+
+**Reason.** Spec v3 bagian 16 meminta §145.1 untuk halaman gunung, penilaian kecocokan, dan indeks trip beserta catatan
+tata kelola di §146. GR-04 menjadwalkan log DK-30 sampai DK-58 di W9. Rencana W7 (Konflik 9) dan W8 (Konflik 8)
+mencatat baris status program yang basi tetapi tidak menyuntingnya, karena PRD hanya berubah lewat governance record.
+
+**Impact.** PRD menggambarkan permukaan yang sudah dibangun W3 dan W4, dan pemilik dapat membatalkan setiap keputusan
+spec v3 lewat nomornya. Tidak ada perilaku produk yang berubah.
+
+**Affected modules.** Dokumentasi: `docs/PRD.md` dan `tests/Feature/DecisionLogTest.php`. Tidak ada kode aplikasi,
+skema, atau rute.
+
+**Security impact.** Tidak ada permukaan baru.
+
+**Data impact.** Tidak ada.
+
+**Scope impact.** Tidak ada; batas MVP dan MVP+ tetap (§105, §106). Q7 tetap terbuka, jadi GR-07 tetap berstatus
+menunggu keputusan pemilik. Keputusan pemilik lain yang terbuka (kategori data pribadi baru W7 dan W8 di
+`docs/KEBIJAKAN-DATA-PRIBADI.md`, retensi tautan bagikan, dan enkripsi riwayat) tercatat di permintaan izin akhir W9 dan
+tidak diputus di sini.
+
 ### Log keputusan
 
 | ID | Keputusan | Oleh | Tanggal | Di PRD |
@@ -2315,7 +2348,35 @@ masih memuat `blob:` peninggalan MapLibre 4; build produksi MapLibre 6 tidak lag
 | DK-27 | Rencana konsolidasi 23 September dieksekusi dengan pembaruan: merek Memount, frontend React, IA v2 (GR-02), visi, misi, ekspektasi, dan kesepakatan bersama di Bagian I dan VIII | Pemilik | 25 Sep 2026 | Dokumen ini, §160, §161 |
 | DK-28 | Fitur DK-07 tanpa dependensi dibangun sekarang dengan migrasi yang diuji di SQLite dan PostgreSQL CI; tidak dijalankan di Supabase sebelum izin; Google, passkey, WhatsApp, dan SMS menunggu izin dependensi dan penyedia | Agen, dalam batas DK-07, DK-23, DK-24 | 25 Sep 2026 | §64, §105 |
 | DK-29 | Batas banding diselaraskan ke 3 (DK-05); PRODUCT.md diperbaiki mengikutinya | Delegasi pemilik (mengikuti DK-05) | 25 Sep 2026 | §33, PRODUCT.md |
+| DK-30 | Prototype pemilik menjadi patokan desain; bagian Turunan `DESIGN.md` ditulis ulang darinya, Arah pemilik dan R-015 sampai R-017 tetap | Pemilik | 25 Sep 2026 | `DESIGN.md` |
+| DK-31 | Koreksi terukur atas prototype: token kontras, label tab 12 px, tinggi mengikuti isi, waktu tempuh sebagai rentang bersumber, tombol "Jadikan dasar rencana" berbobot setara | Agen | 25 Sep 2026 | `DESIGN.md` |
+| DK-32 | Status akses memakai warna, bentuk, dan kata sekaligus, dengan kalimat R-012 di setiap tampilan utama | Agen, mengikuti prototype | 25 Sep 2026 | `DESIGN.md` |
+| DK-33 | Layar lebar mulai 1024 px: header 68 px dengan navigasi segmen dan menu avatar, bukan rail kiri | Agen, mengikuti prototype | 25 Sep 2026 | §145.1 (layar lebar) |
+| DK-34 | Pengerjaan irisan vertikal: stabilisasi, fondasi, kerangka, lalu klaster tab dikerjakan tuntas | Pemilik | 25 Sep 2026 | §128 baris 12 |
+| DK-35 | Data contoh hanya di SQLite lokal, berlabel DATA CONTOH, dan ditolak bila koneksinya bukan SQLite lokal | Pemilik | 25 Sep 2026 | Log saja; spec v3 bagian 11 dan `docs/ARCHITECTURE.md` |
 | DK-36 (Q7) | Paket lapangan luring sebagai sistem kedua dan mode lapangan yang dihitung di perangkat; paket dan alat keselamatan dibangun di balik sakelar mati sampai Q10 dan Q14 | Keputusan pemilik tertunda (Q7); ditulis agen menurut spec v3 yang disetujui (pola W3 P8) | 7 Okt 2026 | §13, §53, §55, §121, §145, GR-07 |
+| DK-37 | Foto gunung terkurasi berlisensi dengan atribusi wajib; tanpa foto tampil visual dari data; foto komunitas tidak pernah menjadi hero | Pemilik | 25 Sep 2026 | `DESIGN.md` (R-017) |
+| DK-38 | Tipografi satu keluarga Plus Jakarta Sans dengan angka tabular, isi 16 px, lantai 12 px | **Delegasi pemilik** kepada riset | 25 Sep 2026 | `DESIGN.md` |
+| DK-39 | Ikonografi hibrida: Phosphor untuk kendali umum ditambah glyph domain dari tanda "Jalur Berpos"; tombol tanpa panah hiasan | **Delegasi pemilik** kepada riset | 25 Sep 2026 | `DESIGN.md` |
+| DK-40 | Kontrol yang belum berfungsi tidak ditampilkan | Agen | 25 Sep 2026 | Log saja; spec v3 bagian 4 |
+| DK-41 | Onboarding menurunkan pengalaman medan dan navigasi dari jalur terberat yang dipilih, lalu meminta konfirmasi; dilewati berarti "Belum dinilai" | Agen | 25 Sep 2026 | Log saja; spec v3 bagian 4 |
+| DK-42 | Wilayah minat masuk preferensi pendaki (kolom baru) | Pemilik lewat prototype 00 dan 14 | 25 Sep 2026 | Log saja; spec v3 bagian 4 |
+| DK-43 | Status gunung api PVMBG di tabel sendiri, diisi kurator dari sumber resmi, tidak pernah dipetakan ke Buka atau Tutup, tampil hanya bila datanya ada | Keputusan pemilik D10 | 25 Sep 2026 | §41 (amandemen DK-22) |
+| DK-44 | Halaman gunung terautentikasi di `/mountains/{gunung}` sebagai hub jalur; halaman publik `/gunung/{slug}` tetap mengikuti rencana bersama `/en/` | Agen | 25 Sep 2026 | §145.1, GR-09 |
+| DK-45 | Beranda berfase dengan satu aksi utama per fase | Agen | 25 Sep 2026 | §145.1, GR-06 |
+| DK-46 | Gelombang 0 menutup 20 test merah sebelum redesain dimulai | Agen | 25 Sep 2026 | Log saja; spec v3 bagian 4 |
+| DK-47 | Prototype dan gambar acuannya pindah ke `docs/desain/prototype/` dan dilacak git | Agen | 25 Sep 2026 | GR-04 |
+| DK-48 | Label keadaan kesiapan: "Persiapan kritis lengkap", "Masih perlu persiapan", "Tidak disarankan dengan rencana ini" | Agen, mengikuti prototype | 25 Sep 2026 | §38, GR-05 |
+| DK-49 | Mode lapangan mengikuti tema pengguna dengan sakelar sekali ketuk; info kritis paling sedikit 7:1 di kedua tema | Agen | 25 Sep 2026 | GR-07; `DESIGN.md` |
+| DK-50 | Alasan pembatalan trip dicatat opsional | Agen, mengikuti prototype 13 | 25 Sep 2026 | Log saja; spec v3 bagian 4 |
+| DK-51 | Tetap monolit modular Laravel; prinsip panduan struktur luar diambil lewat pemetaan, bukan pemindahan `app/` | Pemilik (spec v3 bagian 17.4) | 26 Sep 2026 | §69; `docs/ARCHITECTURE.md` aturan 10 |
+| DK-52 | Dokumen tim di `docs/`; `DESIGN.md` dan `PRODUCT.md` tetap di root dengan penunjuk di `docs/` | Pemilik (spec v3 bagian 17.4) | 26 Sep 2026 | GR-04 |
+| DK-53 | Isi `docs/AGENTS.md`: visi, kesepakatan kerja, alur riset, tingkat bukti, cara audit, izin, definisi selesai, format rekap, matriks skill | Pemilik (spec v3 bagian 17.4) | 26 Sep 2026 | GR-04 |
+| DK-54 | CI dipecah menjadi `test.yml`, `security.yml`, dan `deploy.yml` manual | Pemilik (spec v3 bagian 17.4) | 26 Sep 2026 | §126, GR-04 |
+| DK-55 | `docker-compose.yml` untuk PostgreSQL dan PostGIS lokal, Docker opsional | Pemilik (spec v3 bagian 17.4) | 26 Sep 2026 | Log saja; `README.md` dan `CONTRIBUTING.md` |
+| DK-56 | Root dirapikan per berkas; prototype ke `docs/desain/prototype/`; `ourplan.md` ke `docs/arsip/` | Pemilik (spec v3 bagian 17.4) | 26 Sep 2026 | GR-04 |
+| DK-57 | Skill UI/UX digabung dengan urutan wewenang: arahan pemilik dan aturan kanonis, `DESIGN.md`, saringan antislop, lalu saran skill | Pemilik (spec v3 bagian 17.4) | 26 Sep 2026 | Log saja; `docs/AGENTS.md` dan `docs/MATRIKS-SKILL.md` |
+| DK-58 | Tonggak M1 "siap push" = W0 + WR; push tetap menunggu izin eksplisit pemilik | Pemilik (spec v3 bagian 17.4) | 26 Sep 2026 | Log saja; `HANDOVER.md` bagian 0 |
 
 **Keputusan pemilik lain yang tercatat:**
 

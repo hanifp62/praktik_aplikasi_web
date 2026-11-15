@@ -45,6 +45,39 @@ class PosSepanjangJalurTest extends SpatialTestCase
         $this->assertSame([], app(PosSepanjangJalur::class)->km($tanpaGaris->fresh()));
     }
 
+    /**
+     * Pos 400 m dari garis tidak diberi km (ruling W8-R21): proyeksinya ke garis tidak bermakna.
+     */
+    public function test_a_post_far_from_the_line_gets_no_distance(): void
+    {
+        $trail = Trail::factory()->create();
+        $trail->writeLineString('geometry', [[110.0000, -7.0000], [110.0000, -7.0200]]);
+        $dekat = Checkpoint::factory()->for($trail)->create(['sequence' => 1]);
+        $dekat->setCoordinates(-7.0000, 110.0000);
+        $jauh = Checkpoint::factory()->for($trail)->create(['sequence' => 2]);
+        $jauh->setCoordinates(-7.0100, 110.0036);
+
+        $km = app(PosSepanjangJalur::class)->km($trail->fresh());
+
+        $this->assertArrayHasKey($dekat->id, $km);
+        $this->assertArrayNotHasKey($jauh->id, $km);
+    }
+
+    /**
+     * Urutan pos yang berlawanan dengan arah garis membuat km mundur: tidak ada km sama sekali.
+     */
+    public function test_posts_running_against_the_line_get_no_distance(): void
+    {
+        $trail = Trail::factory()->create();
+        $trail->writeLineString('geometry', [[110.0000, -7.0000], [110.0000, -7.0200]]);
+        $pertama = Checkpoint::factory()->for($trail)->create(['sequence' => 1]);
+        $pertama->setCoordinates(-7.0180, 110.0000);
+        $kedua = Checkpoint::factory()->for($trail)->create(['sequence' => 2]);
+        $kedua->setCoordinates(-7.0020, 110.0000);
+
+        $this->assertSame([], app(PosSepanjangJalur::class)->km($trail->fresh()));
+    }
+
     public function test_one_query_serves_every_post(): void
     {
         $trail = Trail::factory()->create();

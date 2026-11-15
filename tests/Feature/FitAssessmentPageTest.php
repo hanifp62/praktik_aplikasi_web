@@ -347,6 +347,20 @@ class FitAssessmentPageTest extends TestCase
     }
 
     /**
+     * Garis peta hanya disebut bila koneksi dapat memeriksanya (titipan W3 artefak hasGeometry,
+     * ruling W8-R20). Di SQLite kolom geometri tidak ada, jadi syarat data kritis tidak menyebut
+     * garis peta sebagai terpenuhi, sedangkan rincian jalur yang sama menulis garis rutenya belum
+     * ada.
+     */
+    public function test_the_critical_data_condition_never_claims_a_map_line_nobody_checked(): void
+    {
+        $syarat = $this->halaman($this->pendaki(), $this->jalurDenganStatus(OfficialStatusValue::OPEN))->viewData('page')['props']['syaratDasar'][1];
+
+        $this->assertSame('Data kritis jalur lengkap: sumber, jarak, tanjakan, durasi, pos, dan status resmi', $syarat['teks']);
+        $this->assertStringNotContainsString('garis peta', $syarat['teks']);
+    }
+
+    /**
      * P-1: keadaan belum diketahui memakai ikon question dan awalan pembaca layar
      * "Belum diketahui:", tidak pernah tanda centang.
      */

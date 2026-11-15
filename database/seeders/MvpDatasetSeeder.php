@@ -80,7 +80,8 @@ class MvpDatasetSeeder extends Seeder
                         'description' => $trailData['description'],
                         'distance_km' => $trailData['distance_km'],
                         'elevation_gain_m' => $trailData['elevation_gain_m'],
-                        'elevation_loss_m' => $trailData['elevation_gain_m'],
+                        // Turunan tidak disalin dari tanjakan (W8-R23): datanya belum ada.
+                        'elevation_loss_m' => null,
                         'estimated_duration_minutes' => $trailData['duration'],
                         'technical_demand' => $trailData['technical']->value,
                         'navigation_complexity' => $trailData['navigation']->value,

@@ -104,7 +104,7 @@ class HikeTrackOnSummaryTest extends TestCase
 
     private function sumber(): string
     {
-        return File::get(resource_path('js/pages/Community/HikeSummary.tsx'));
+        return str_replace("\r\n", "\n", File::get(resource_path('js/pages/Community/HikeSummary.tsx')));
     }
 
     public function test_the_recorded_track_is_drawn_in_recording_order(): void

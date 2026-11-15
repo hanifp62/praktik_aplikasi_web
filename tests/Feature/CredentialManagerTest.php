@@ -136,7 +136,9 @@ class CredentialManagerTest extends TestCase
                 ->where('keputusan.2.value', 'cabut')
                 ->where('keputusan.2.konfirmasi', fn (?string $teks) => $teks !== null && str_contains($teks, 'berhenti berlaku')));
 
-        $this->assertStringContainsString('window.confirm(k.konfirmasi)', File::get(resource_path('js/pages/Admin/Credentials.tsx')));
+        $sumberKredensial = File::get(resource_path('js/pages/Admin/Credentials.tsx'));
+        $this->assertStringContainsString('<Dialog', $sumberKredensial);
+        $this->assertStringContainsString('keterangan={konfirmasi?.keputusan.konfirmasi ?? undefined}', $sumberKredensial);
     }
 
     /**

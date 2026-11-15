@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\CheckpointController;
 use App\Http\Controllers\CronController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MountainController;
 use App\Http\Controllers\TrailController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/health', HealthController::class)->middleware('throttle:30,1')->name('api.health');
 
 /*
  * API baca publik dari PR #1 tim (feature/db-migration), dipertahankan di atas skema kanonik.

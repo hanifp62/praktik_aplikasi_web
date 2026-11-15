@@ -13,6 +13,7 @@ import type { Penanda } from '@/components/trails/types';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { fokusTerlihat } from '@/components/ui/gaya';
+import { Dialog } from '@/components/ui/Lembar';
 import { Lencana } from '@/components/ui/Lencana';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useFokusSesudahRender } from '@/components/ui/ToastUrungkan';
@@ -87,6 +88,7 @@ export default function HikeSummary() {
         usePage<Props>().props;
     const kunci = perangkat?.kunci ?? null;
     const [menghapus, setMenghapus] = useState(false);
+    const [konfirmasiHapus, setKonfirmasiHapus] = useState(false);
     const [memuatUlang, setMemuatUlang] = useState(false);
     const [jumlahPerangkat, setJumlahPerangkat] = useState<number | null>(null);
     const [diterimaDiHalaman, setDiterimaDiHalaman] = useState(false);
@@ -148,9 +150,11 @@ export default function HikeSummary() {
     const hapusJejak = async () => {
         const sesiHapus = jejakTersimpan?.sesi ?? sesiId;
 
-        if (sesiHapus === null || !window.confirm('Hapus jejak pendakian ini? Pendakiannya sendiri tetap tersimpan.')) {
+        if (sesiHapus === null) {
             return;
         }
+
+        setKonfirmasiHapus(false);
 
         setMenghapus(true);
         setGagalHapus(false);
@@ -230,7 +234,7 @@ export default function HikeSummary() {
     };
 
     const tombolHapusJejak = (
-        <Button id="hapus-jejak-tombol" variant="secondary" size="sm" onClick={() => void hapusJejak()} processing={menghapus}>
+        <Button id="hapus-jejak-tombol" variant="secondary" size="sm" onClick={() => setKonfirmasiHapus(true)} processing={menghapus}>
             Hapus jejak ini
         </Button>
     );
@@ -352,6 +356,22 @@ export default function HikeSummary() {
                         Buka halaman jalur
                     </Button>
                 </div>
+                <Dialog
+                    terbuka={konfirmasiHapus}
+                    onTutup={() => setKonfirmasiHapus(false)}
+                    judul="Hapus jejak pendakian ini?"
+                    keterangan="Hapus jejak pendakian ini? Pendakiannya sendiri tetap tersimpan."
+                    aksi={
+                        <>
+                            <Button variant="secondary" onClick={() => setKonfirmasiHapus(false)} disabled={menghapus}>
+                                Batal
+                            </Button>
+                            <Button variant="danger" onClick={() => void hapusJejak()} processing={menghapus}>
+                                Hapus jejak
+                            </Button>
+                        </>
+                    }
+                />
             </div>
         </div>
     );

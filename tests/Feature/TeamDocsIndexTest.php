@@ -112,7 +112,7 @@ class TeamDocsIndexTest extends TestCase
 
     public function test_the_vision_mission_priorities_and_owner_words_match_the_prd(): void
     {
-        $prd = File::get(base_path('docs/PRD.md'));
+        $prd = $this->baca('docs/PRD.md');
         $kesepakatan = $this->kesepakatan();
 
         preg_match('/^## §4 Visi produk\R+> (.+)$/mu', $prd, $visi);
@@ -197,8 +197,8 @@ class TeamDocsIndexTest extends TestCase
 
     public function test_the_boost_block_is_untouched_and_the_memount_section_sits_outside_it(): void
     {
-        $agents = File::get(base_path('AGENTS.md'));
-        $claude = File::get(base_path('CLAUDE.md'));
+        $agents = $this->baca('AGENTS.md');
+        $claude = $this->baca('CLAUDE.md');
 
         $this->assertSame(1, substr_count($agents, '<laravel-boost-guidelines>'), 'AGENTS.md harus memuat tag pembuka blok Boost tepat sekali.');
         $this->assertSame(1, substr_count($claude, '<laravel-boost-guidelines>'), 'CLAUDE.md harus memuat tag pembuka blok Boost tepat sekali.');
@@ -226,7 +226,7 @@ class TeamDocsIndexTest extends TestCase
 
     public function test_the_prd_ownership_map_points_at_files_that_exist(): void
     {
-        preg_match('/^### Peta kepemilikan$(.*?)^---$/msu', File::get(base_path('docs/PRD.md')), $peta);
+        preg_match('/^### Peta kepemilikan$(.*?)^---$/msu', $this->baca('docs/PRD.md'), $peta);
 
         $this->assertNotEmpty($peta, 'Peta kepemilikan tidak ditemukan di docs/PRD.md.');
 
@@ -244,7 +244,7 @@ class TeamDocsIndexTest extends TestCase
 
     public function test_the_architecture_records_why_the_repo_stays_a_modular_monolith(): void
     {
-        $struktur = $this->bagian(File::get(base_path('docs/ARCHITECTURE.md')), '## Struktur repo dan panduan luar');
+        $struktur = $this->bagian($this->baca('docs/ARCHITECTURE.md'), '## Struktur repo dan panduan luar');
 
         $this->assertStringContainsString('DK-51', $struktur);
         $this->assertStringContainsString('Kriteria bukti kebutuhan', $struktur);
@@ -254,10 +254,10 @@ class TeamDocsIndexTest extends TestCase
     public function test_new_team_documents_carry_no_em_dash(): void
     {
         foreach (self::DOKUMEN_BARU as $berkas) {
-            $this->assertStringNotContainsString("\u{2014}", File::get(base_path($berkas)), "{$berkas} memuat em dash.");
+            $this->assertStringNotContainsString("\u{2014}", $this->baca($berkas), "{$berkas} memuat em dash.");
         }
 
-        $agents = File::get(base_path('AGENTS.md'));
+        $agents = $this->baca('AGENTS.md');
         $mulai = strpos($agents, '<!-- memount:mulai -->');
         $selesai = strpos($agents, '<!-- memount:selesai -->');
 
@@ -265,7 +265,7 @@ class TeamDocsIndexTest extends TestCase
         $this->assertNotFalse($selesai, 'Penutup bagian Memount tidak ditemukan di AGENTS.md.');
 
         $this->assertStringNotContainsString("\u{2014}", substr($agents, $mulai, $selesai - $mulai), 'Bagian Memount di AGENTS.md memuat em dash.');
-        $this->assertStringNotContainsString("\u{2014}", $this->bagian(File::get(base_path('docs/ARCHITECTURE.md')), '## Struktur repo dan panduan luar'), 'Bagian struktur repo memuat em dash.');
+        $this->assertStringNotContainsString("\u{2014}", $this->bagian($this->baca('docs/ARCHITECTURE.md'), '## Struktur repo dan panduan luar'), 'Bagian struktur repo memuat em dash.');
     }
 
     /**
@@ -275,7 +275,7 @@ class TeamDocsIndexTest extends TestCase
      */
     private function tautanIndeks(): array
     {
-        preg_match_all('/\]\(([^)\s]+)\)/', File::get(base_path('docs/README.md')), $cocok);
+        preg_match_all('/\]\(([^)\s]+)\)/', $this->baca('docs/README.md'), $cocok);
 
         $target = array_map(fn (string $tautan): string => explode('#', $tautan, 2)[0], $cocok[1]);
 
@@ -287,7 +287,12 @@ class TeamDocsIndexTest extends TestCase
 
     private function kesepakatan(): string
     {
-        return File::get(base_path('docs/AGENTS.md'));
+        return $this->baca('docs/AGENTS.md');
+    }
+
+    private function baca(string $relatif): string
+    {
+        return str_replace("\r\n", "\n", File::get(base_path($relatif)));
     }
 
     /**

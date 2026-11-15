@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use InvalidArgumentException;
 
 #[Fillable([
     'name', 'slug', 'province', 'region', 'timezone', 'elevation_mdpl', 'description',
@@ -30,6 +32,15 @@ class Mountain extends Model
             'latitude' => 'float',
             'longitude' => 'float',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Mountain $mountain): void {
+            if ($mountain->elevation_mdpl !== null && (int) $mountain->elevation_mdpl < 0) {
+                throw new InvalidArgumentException('Ketinggian gunung tidak boleh bernilai negatif.');
+            }
+        });
     }
 
     /**
@@ -90,6 +101,14 @@ class Mountain extends Model
     public function restrictedAreas(): HasMany
     {
         return $this->hasMany(RestrictedArea::class);
+    }
+
+    /**
+     * Foto berlisensi kepala halaman gunung (DK-37, W8). Foto komunitas tidak pernah di sini (R-017).
+     */
+    public function photo(): HasOne
+    {
+        return $this->hasOne(MountainPhoto::class);
     }
 
     public function scopeActive(Builder $query): Builder

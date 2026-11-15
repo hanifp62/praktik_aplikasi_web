@@ -12,10 +12,10 @@
 | otomatis seluruh repo. Halaman React (resources/js) wajib ikut dipindai. Tanpa baris itu,
 | setiap kelas yang hanya dipakai di komponen .tsx tidak pernah dibuat, dan kegagalannya diam:
 | navigasi bawah kehilangan inset-x-0 dan melebar melewati layar, tanpa galat apa pun di build
-| maupun di peramban (ditemukan lewat pengukuran 25 Sep 2026).
+| maupun di peramban (ditemukan lewat pengukuran 25 Sep 2026). View terkompilasi di
+| storage/framework/views tidak dipindai supaya build lokal identik dengan build produksi bersih (W2-C10).
 */
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
 @source '../views/**/*.blade.php';
 @source '../js/**/*.{js,jsx,ts,tsx}';
 

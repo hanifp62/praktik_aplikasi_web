@@ -89,13 +89,17 @@ class PermitWindowReminderTest extends TestCase
      */
     private function butirIzin(TripPlan $trip, PreparationStatus $status): TripPreparationItem
     {
-        return TripPreparationItem::create([
+        $butir = (new TripPreparationItem)->forceFill([
             'trip_plan_id' => $trip->id,
+            'kind' => TripPreparationItem::JENIS_IZIN,
             'category' => PreparationCategory::LOGISTICS->value,
             'label' => PreparationService::PERMIT_LABEL,
             'is_critical' => true,
             'status' => $status->value,
         ]);
+        $butir->save();
+
+        return $butir;
     }
 
     /**
@@ -208,13 +212,14 @@ class PermitWindowReminderTest extends TestCase
         Notification::fake();
         $trip = $this->trip();
         $this->nyalakan($trip);
-        TripPreparationItem::create([
+        (new TripPreparationItem)->forceFill([
             'trip_plan_id' => $trip->id,
+            'kind' => TripPreparationItem::JENIS_IZIN,
             'category' => PreparationCategory::LOGISTICS->value,
             'label' => PreparationService::PERMIT_LABEL,
             'is_critical' => true,
             'status' => PreparationStatus::CONFIRMED->value,
-        ]);
+        ])->save();
 
         $this->travelTo(Carbon::parse('2026-10-20 23:00:00', 'UTC'));
         $this->kirim();

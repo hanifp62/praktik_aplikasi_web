@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\DataFreshnessService;
+use App\Services\PeringatanOperasi;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -19,7 +20,7 @@ class CheckDataFreshness extends Command
 
     protected $description = 'Memeriksa status resmi yang kedaluwarsa, akan kedaluwarsa, atau lama tidak diverifikasi';
 
-    public function handle(DataFreshnessService $freshness): int
+    public function handle(DataFreshnessService $freshness, PeringatanOperasi $peringatan): int
     {
         $tinjau = $freshness->review();
 
@@ -44,6 +45,10 @@ class CheckDataFreshness extends Command
         $level = $ringkasan['kedaluwarsa'] > 0 ? 'warning' : 'info';
 
         Log::log($level, 'Pemeriksaan kesegaran status resmi', $ringkasan);
+
+        if ($ringkasan['kedaluwarsa'] > 0) {
+            $peringatan->statusKedaluwarsa($ringkasan);
+        }
 
         return self::SUCCESS;
     }

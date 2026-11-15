@@ -111,7 +111,8 @@ class RouteComparisonTable
             ['teknis', 'Tuntutan teknis', fn (Trail $t) => $t->technical_demand?->label() ?? TrailFigures::BELUM],
             ['navigasi', 'Kerumitan navigasi', fn (Trail $t) => $t->navigation_complexity?->label() ?? TrailFigures::BELUM],
             ['air', 'Air', fn (Trail $t) => $t->water_availability?->label() ?? TrailFigures::BELUM],
-            ['berkemah', 'Berkemah', fn (Trail $t) => $t->camping_available ? 'Bisa' : 'Tidak'],
+            // Belum tercatat bukan "Tidak" (R-007, butir izin akhir 6), juga di halaman publik /b/.
+            ['berkemah', 'Berkemah', fn (Trail $t) => $t->camping_available === null ? TrailFigures::BELUM : ($t->camping_available ? 'Bisa' : 'Tidak')],
             ['medan', 'Medan', fn (Trail $t) => TrailFigures::medan($t)],
         ];
 

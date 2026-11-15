@@ -50,16 +50,16 @@ class RecommendationFlowTest extends TestCase
     {
         return [
             'experience_level' => ExperienceLevel::BEGINNER->value,
-            'region_preference' => '',
-            'bio' => '',
-            'completed_hikes_count' => 0,
+            'cara_pengalaman' => 'MANUAL',
+            'jalur_terberat_id' => '',
+            'completed_hikes_count' => 1,
             'terrain_experience' => [],
             'navigation_experience' => NavigationExperience::BASIC->value,
-            'longest_hike_duration_minutes' => '',
             'highest_elevation_gain_m' => '',
+            'durasi_terlama_jam' => '',
             'preferred_duration' => 'ONE_DAY',
             'preferred_trip_type' => 'TEKTOK',
-            'preferred_challenge' => '',
+            'interest_regions' => [],
             'max_elevation_gain_preference_m' => '',
         ];
     }
@@ -150,8 +150,8 @@ class RecommendationFlowTest extends TestCase
         $this->actingAs($user)
             ->post(route('onboarding.store'), $this->profilLengkap())
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('goals.create'))
-            ->assertSessionHas('status', 'Profil pendaki tersimpan.');
+            ->assertRedirect(route('onboarding'))
+            ->assertSessionHas('onboarding-selesai', ['cocok' => 0]);
 
         $this->assertTrue($user->fresh()->hasCompletedProfile());
         $this->assertDatabaseHas('analytics_events', [
@@ -194,16 +194,17 @@ class RecommendationFlowTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('onboarding.store'), ['langkah' => 3, 'preferred_duration' => 'ONE_DAY', 'preferred_trip_type' => 'TEKTOK'])
-            ->assertSessionHasErrors(['experience_level', 'navigation_experience']);
+            ->assertSessionHasErrors(['experience_level', 'cara_pengalaman']);
 
         $this->assertFalse($user->fresh()->hasCompletedProfile());
     }
 
     /**
-     * Halaman onboarding merangkap penyunting profil: pendaki yang profilnya sudah
-     * lengkap melihat ringkasannya, dengan yang belum diisi disebut belum diisi.
+     * Halaman onboarding merangkap penyunting profil (W7): profil yang sudah lengkap dibuka
+     * sebagai isiannya sendiri, dengan yang belum diisi tetap kosong (R-007). Ringkasannya
+     * kini di hub Profil.
      */
-    public function test_a_completed_profile_is_summarised(): void
+    public function test_a_completed_profile_opens_as_its_own_values(): void
     {
         $this->actingAs($this->userWithProfile())
             ->get(route('onboarding'))
@@ -211,22 +212,23 @@ class RecommendationFlowTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Onboarding/ProfileSetup')
                 ->where('title', 'Profil Pendaki')
+                ->where('sudahLengkap', true)
                 ->where('nilai.experience_level', ExperienceLevel::INTERMEDIATE->value)
-                ->where('ringkasan.0.nilai', ExperienceLevel::INTERMEDIATE->label())
-                // Label diterjemahkan dari "Elevation gain tertinggi" menjadi "Tanjakan
-                // tertinggi" (ruling audit-fix-B BF-7a, M-3 sisa).
-                ->where('ringkasan.6.label', 'Tanjakan tertinggi')
-                ->where('ringkasan.6.nilai', 'Belum diisi'));
+                ->where('nilai.cara_pengalaman', 'MANUAL')
+                ->where('nilai.completed_hikes_count', 8)
+                ->where('nilai.highest_elevation_gain_m', ''));
     }
 
-    public function test_an_incomplete_profile_gets_the_form_without_a_summary(): void
+    public function test_an_incomplete_profile_starts_from_the_catalog(): void
     {
         $this->actingAs(User::factory()->create())
             ->get(route('onboarding'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('ringkasan', null)
-                ->has('pilihan.terrainOptions', count(TerrainCharacter::cases())));
+                ->where('sudahLengkap', false)
+                ->where('selesai', null)
+                ->where('nilai.cara_pengalaman', 'KATALOG')
+                ->has('pilihan.medan', count(TerrainCharacter::cases())));
     }
 
     /**

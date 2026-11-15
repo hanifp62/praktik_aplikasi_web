@@ -1,7 +1,7 @@
 import { router, useForm, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
-import { konfirmasiLalu } from '@/components/admin/FormulirAdmin';
+import { useKonfirmasiAdmin } from '@/components/admin/FormulirAdmin';
 import { FormulirJalur, jalurKosong, type IsianJalur, type PilihanJalur } from '@/components/admin/FormulirJalur';
 import { RingkasanKesehatan, type Temuan } from '@/components/admin/RingkasanKesehatan';
 import { Tabel } from '@/components/admin/Tabel';
@@ -26,7 +26,7 @@ interface BarisJalurAdmin {
     published: boolean;
     archived: boolean;
     kurang: string[];
-    tautan: { checkpoint: string; geometri: string };
+    tautan: { checkpoint: string; segmen?: string; geometri: string };
     isian: IsianJalur;
 }
 
@@ -45,6 +45,7 @@ export default function Trails() {
     const props = usePage<Props>().props;
     const { flash, trails, kesehatan, penolakan, adminNav } = props;
     const [sunting, setSunting] = useState<number | 'baru' | null>(null);
+    const { konfirmasiLalu, dialogKonfirmasi } = useKonfirmasiAdmin();
     const form = useForm<IsianJalur>(jalurKosong);
 
     const buka = (baris?: BarisJalurAdmin) => {
@@ -150,6 +151,7 @@ export default function Trails() {
                 <div className="mt-6">
                     <Pagination links={trails.links} />
                 </div>
+                {dialogKonfirmasi}
             </div>
         </div>
     );
@@ -164,6 +166,9 @@ function AksiJalur({ jalur, onUbah, onPublikasi, onArsip }: { jalur: BarisJalurA
             <div className="flex flex-wrap gap-2">
                 <Button variant="secondary" size="sm" onClick={onUbah} aria-label={`Ubah ${jalur.name}`}>Ubah</Button>
                 <Button variant="secondary" size="sm" href={jalur.tautan.checkpoint} aria-label={`Checkpoint ${jalur.name}`}>Checkpoint</Button>
+                {jalur.tautan.segmen ? (
+                    <Button variant="secondary" size="sm" href={jalur.tautan.segmen} aria-label={`Segmen ${jalur.name}`}>Segmen</Button>
+                ) : null}
                 <Button variant="secondary" size="sm" href={jalur.tautan.geometri} aria-label={`Geometri ${jalur.name}`}>Geometri</Button>
                 <Button variant="secondary" size="sm" onClick={onPublikasi} aria-label={`${publikasi} ${jalur.name}`}>{publikasi}</Button>
                 <Button variant="secondary" size="sm" onClick={onArsip} aria-label={`${arsip} ${jalur.name}`}>{arsip}</Button>
